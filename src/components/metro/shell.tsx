@@ -190,7 +190,7 @@ export function MenuDrawer() {
       />
       {/* پنل */}
       <aside
-        className={`absolute top-0 right-0 h-full w-72 bg-surface-container-lowest shadow-2xl p-5 transform transition-transform duration-300 flex flex-col justify-between z-10 ${
+        className={`absolute top-0 right-0 h-full w-[min(18rem,85vw)] bg-surface-container-lowest shadow-2xl p-5 transform transition-transform duration-300 flex flex-col justify-between z-10 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -332,8 +332,8 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed z-50 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between"
-      style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+      className="fixed z-50 inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 px-1.5 py-1.5 flex items-center justify-between flex-nowrap"
+      style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
       dir="rtl"
       aria-label="ناوبری اصلی"
     >
@@ -344,14 +344,14 @@ export function BottomNav() {
             key={href}
             onClick={() => router.push(href)}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-1.5 rounded-full transition-all active:scale-95 ${
+            className={`flex items-center gap-1 rounded-full transition-all active:scale-95 shrink-0 ${
               active
-                ? "bg-[#0d58a6] text-white px-5 py-2.5 font-bold text-sm shadow-sm"
-                : "text-slate-600 px-3 py-2 font-medium text-sm hover:text-slate-900"
+                ? "bg-[#0d58a6] text-white px-3.5 py-2 font-bold text-xs shadow-sm"
+                : "text-slate-600 px-2 py-2 font-medium text-xs hover:text-slate-900"
             }`}
           >
             <Icon />
-            <span>{label}</span>
+            <span className="whitespace-nowrap leading-none">{label}</span>
           </button>
         );
       })}

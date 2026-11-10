@@ -46,7 +46,7 @@ export function InstallBanner() {
     <section className="bg-gradient-to-l from-metro-primary-c to-metro-primary text-white rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-md" aria-label="نصب برنامه">
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-          <MI name="install_mobile" size={22} fill />
+          <MI name="download_for_offline" size={22} fill />
         </div>
         <div className="min-w-0">
           <h3 className="text-sm font-bold">متروجو را نصب کنید</h3>
