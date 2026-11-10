@@ -29,12 +29,13 @@ interface ArrivalRow {
   color: string;
   textOnColor: string;
   headwayLabel: string;
-  to: string;
-  toBack: string;
-  nextMin: number;
-  next2Min: number;
-  crowd: CrowdLevel;
-  crowdLabel: string;
+  directions: {
+    to: string;
+    nextMin: number;
+    next2Min: number;
+    crowd: CrowdLevel;
+    crowdLabel: string;
+  }[];
   firstTrain: string;
   lastTrain: string;
 }
@@ -236,13 +237,15 @@ function StationDetail({ station }: { station: StationDef }) {
 
   /* ---------- اعلام صوتی ---------- */
   const speak = useCallback(() => {
-    const first = arrivals?.[0];
+    const first = arrivals?.[0]?.directions?.[0];
     const mins = first ? toFa(first.nextMin) : null;
-    if (mins === null) {
+    if (!first || mins === null) {
       announcer.announce(`ایستگاه ${station.name}`).catch(() => {});
       return;
     }
-    announcer.announce(`ایستگاه ${station.name}. قطار بعدی ${mins} دقیقه`).catch(() => {});
+    announcer
+      .announce(`ایستگاه ${station.name}. قطار بعدی به سمت ${first.to}، ${mins} دقیقه`)
+      .catch(() => {});
   }, [arrivals, announcer, station.name]);
 
   /* ---------- هشدار مقصد (بیدارباش هوشمند) ---------- */
@@ -409,40 +412,44 @@ function StationDetail({ station }: { station: StationDef }) {
             )
           ) : (
             <div className="divide-y divide-outline-variant/30">
-              {arrivals.map((a) => {
-                const c = CROWD_COLOR[a.crowd];
-                return (
-                  <div key={a.lineId} className="py-2.5 space-y-1.5 first:pt-0 last:pb-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
+              {arrivals.map((a) =>
+                a.directions.map((d) => {
+                  const c = CROWD_COLOR[d.crowd];
+                  return (
+                    <div key={`${a.lineId}-${d.to}`} className="py-2.5 space-y-1.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0"
+                            style={{ backgroundColor: a.color, color: a.textOnColor }}
+                          >
+                            {toFa(a.lineNumber)}
+                          </span>
+                          <span className="text-[11px] font-bold text-on-surface truncate">
+                            به سمت {d.to}
+                          </span>
+                        </div>
                         <span
-                          className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0"
-                          style={{ backgroundColor: a.color, color: a.textOnColor }}
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 shrink-0"
+                          style={{ color: c, backgroundColor: `${c}14` }}
                         >
-                          {toFa(a.lineNumber)}
+                          <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: c }} />
+                          {d.crowdLabel}
                         </span>
-                        <span className="text-[11px] font-bold text-on-surface truncate">به سمت {a.to}</span>
                       </div>
-                      <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 shrink-0"
-                        style={{ color: c, backgroundColor: `${c}14` }}
-                      >
-                        <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: c }} />
-                        {a.crowdLabel}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-primary">
+                          {toFa(d.nextMin)} دقیقه
+                        </span>
+                        <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-on-surface-variant">
+                          {toFa(d.next2Min)} دقیقه
+                        </span>
+                        <span className="text-[9px] text-outline ms-auto">هر {toFa(a.headwayLabel)} دقیقه یک قطار</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-primary">
-                        {toFa(a.nextMin)} دقیقه
-                      </span>
-                      <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-on-surface-variant">
-                        {toFa(a.next2Min)} دقیقه
-                      </span>
-                      <span className="text-[9px] text-outline ms-auto">هر {toFa(a.headwayLabel)} دقیقه یک قطار</span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           )}
         </section>

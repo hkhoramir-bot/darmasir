@@ -598,15 +598,58 @@ export function isWithinService(line: { firstTrain: string; lastTrain: string },
   return mins >= fh * 60 + fm && mins <= lh * 60 + lm;
 }
 
-export function nextArrivals(lineId: string, stationId: string, now = Date.now()): number[] {
+/** محاسبه دقایق تا دو قطار بعدی در یک جهت مشخص */
+function nextArrivalsDir(lineId: string, stationId: string, salt: string, now: number): number[] {
   const line = getLine(lineId);
   const headwaySec = Math.round(line.headway * 60);
-  const phase = hash(stationId + lineId + new Date(now).getHours()) % headwaySec;
+  const phase = hash(stationId + lineId + salt + new Date(now).getHours()) % headwaySec;
   const elapsed = Math.floor(now / 1000) % headwaySec;
   let next = phase - elapsed;
   while (next <= 0) next += headwaySec;
   const late = line.status === "delay" ? 8 * 60 : 0;
   return [next + late, next + headwaySec + late];
+}
+
+/** ورودهای بعدی به سمت terminals[1] — سازگاری با نسخه قبل */
+export function nextArrivals(lineId: string, stationId: string, now = Date.now()): number[] {
+  return nextArrivalsDir(lineId, stationId, "", now);
+}
+
+export interface DirectionalArrival {
+  /** نام ایستگاه مقصد قطار در این جهت (مثل تجریش) */
+  to: string;
+  /** دقایق تا قطار بعدی و قطار پس از آن */
+  minutes: number[];
+  crowd: CrowdLevel;
+  crowdLabel: string;
+}
+
+/**
+ * ورودهای بعدی به هر دو جهت — با نام درستِ مقصد هر جهت.
+ * ایستگاه سرخط فقط یک جهت دارد؛ ایستگاه میانی هر دو جهت.
+ */
+export function nextArrivalsBoth(
+  lineId: string,
+  stationId: string,
+  now = Date.now()
+): DirectionalArrival[] {
+  const line = getLine(lineId);
+  const list = stationsOfLine(lineId);
+  const idx = list.findIndex((s) => s.id === stationId);
+  if (idx < 0) return [];
+
+  const out: DirectionalArrival[] = [];
+  const mk = (to: string, salt: string): DirectionalArrival => {
+    const minutes = nextArrivalsDir(lineId, stationId, salt, now);
+    const crowd = crowdingNow(lineId, new Date(now));
+    return { to, minutes, crowd, crowdLabel: CROWD_LABEL[crowd] };
+  };
+
+  // به سمت terminals[1] — مگر این ایستگاه خودش همان سرخط باشد
+  if (idx < list.length - 1) out.push(mk(line.terminals[1], ""));
+  // به سمت terminals[0] — مگر این ایستگاه خودش همان سرخط باشد
+  if (idx > 0) out.push(mk(line.terminals[0], "b"));
+  return out;
 }
 
 export type CrowdLevel = "quiet" | "moderate" | "busy";

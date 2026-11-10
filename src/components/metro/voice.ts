@@ -5,8 +5,9 @@ import { getVoicePrefs, type VoiceGender } from "@/lib/voice-settings";
 
 /* ============================================================
    دستیار صوتی متروجو — کاملاً فارسی و بدون نیاز به هیچ کلید/API
-   TTS:  ۱) موتور گفتار فارسیِ دستگاه (Google TTS — fa-IR، آفلاین)
-         ۲) صدای فارسی سرور (رایگان و بدون کلید) — زن/مرد
+   دو گوینده فارسی:
+   • زن  — دلاورا (fa-IR-DilaraNeural) یا صدای فارسی دستگاه
+   • مرد — فرید  (fa-IR-FaridNeural)  یا صدای دستگاه بم‌شده
    ASR:  تشخیص گفتار فارسی مرورگر/اندروید (fa-IR)
    ============================================================ */
 
@@ -182,15 +183,30 @@ export function useAnnouncer() {
           return;
         }
 
-        // auto: اول دستگاه، بعد سرور — هر دو رایگان و بدون کلید
+        // auto — ترتیب بر اساس جنسیت انتخابی تا هر دو صدا واقعی و متمایز باشند:
+        //   زن: اول صدای فارسی دستگاه (معمولاً زن)، در نبودش دلاورا (آنلاین)
+        //   مرد: اول فرید (آنلاین — گوینده واقعی مرد)، در نبود اینترنت صدای دستگاه بم‌شده
+        if (prefs.gender === "male") {
+          try {
+            await playInCloud();
+            return;
+          } catch {
+            /* اینترنت نبود — ادامه با صدای دستگاه */
+          }
+        }
         const ok = await playOnDevice();
         if (ok) return;
-        try {
-          await playInCloud();
-        } catch (e) {
-          setSpeaking(false);
-          setError(e instanceof Error ? e.message : VOICE_ERRORS.cloudFail);
+        if (prefs.gender !== "male") {
+          try {
+            await playInCloud();
+          } catch (e) {
+            setSpeaking(false);
+            setError(e instanceof Error ? e.message : VOICE_ERRORS.cloudFail);
+          }
+          return;
         }
+        setSpeaking(false);
+        setError(VOICE_ERRORS.noDeviceVoice);
       } catch {
         setSpeaking(false);
         setError(VOICE_ERRORS.cloudFail);

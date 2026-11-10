@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStation, getLine, nextArrivals, toFa, crowdingNow, CROWD_LABEL } from "@/lib/metro-data";
+import { getStation, getLine, nextArrivalsBoth, toFa } from "@/lib/metro-data";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/arrivals?station=xxx — قطارهای بعدی هر خط ایستگاه */
+/**
+ * GET /api/arrivals?station=xxx — قطارهای بعدی هر خط ایستگاه، به تفکیک جهت.
+ * جهت‌ها با نام درستِ سرخط محاسبه می‌شوند (ایستگاه سرخط فقط یک جهت دارد).
+ */
 export async function GET(req: NextRequest) {
   const stationId = req.nextUrl.searchParams.get("station");
   const station = stationId ? getStation(stationId) : undefined;
@@ -12,7 +15,6 @@ export async function GET(req: NextRequest) {
   const now = Date.now();
   const arrivals = station.lines.map((ls) => {
     const line = getLine(ls.lineId);
-    const [a1, a2] = nextArrivals(ls.lineId, station.id, now);
     return {
       lineId: line.id,
       lineName: line.name,
@@ -20,12 +22,13 @@ export async function GET(req: NextRequest) {
       color: line.color,
       textOnColor: line.textOnColor,
       headwayLabel: toFa(line.headway),
-      to: line.terminals[1],
-      toBack: line.terminals[0],
-      nextMin: Math.max(1, Math.ceil(a1 / 60)),
-      next2Min: Math.max(2, Math.ceil(a2 / 60)),
-      crowd: crowdingNow(ls.lineId),
-      crowdLabel: CROWD_LABEL[crowdingNow(ls.lineId)],
+      directions: nextArrivalsBoth(ls.lineId, station.id, now).map((d) => ({
+        to: d.to,
+        nextMin: Math.max(1, Math.ceil(d.minutes[0] / 60)),
+        next2Min: Math.max(2, Math.ceil(d.minutes[1] / 60)),
+        crowd: d.crowd,
+        crowdLabel: d.crowdLabel,
+      })),
       firstTrain: line.firstTrain,
       lastTrain: line.lastTrain,
     };

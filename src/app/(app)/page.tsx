@@ -125,16 +125,22 @@ export default function HomePage() {
     return `${toFa(plan.transfers)} تعویض${name ? ` (${name})` : ""}`;
   }, [plan]);
 
-  /* ایستگاه جاری/بعدی — شبیه‌سازی زنده مثل دیزاین */
+  /* ایستگاه جاری/بعدی — شبیه‌سازی زنده مثل دیزاین (نام‌ها همیشه متوالی و متفاوت) */
   const live = useMemo(() => {
-    if (!plan || plan.legs.length === 0) return { current: "دروازه دولت", next: "ایستگاه بعدی: طالقانی (۲ دقیقه)" };
+    if (!plan || plan.legs.length === 0)
+      return { current: "دروازه دولت", next: "ایستگاه بعدی: طالقانی (۲ دقیقه)" };
     const leg = plan.legs[0];
-    const current = leg.stationNames[Math.min(1, leg.stationNames.length - 1)];
-    const nextName =
-      leg.stationNames.length > 2 ? leg.stationNames[2] : plan.legs[1]?.stationNames[0] ?? leg.toName;
+    const names = leg.stationNames;
+    if (names.length > 2) {
+      return {
+        current: names[1],
+        next: `ایستگاه بعدی: ${names[2]} (${toFa(2)} دقیقه)`,
+      };
+    }
+    // سوار شدن در مبدأ — ایستگاه بعدی همان ایستگاه بعدی روی خط است
     return {
-      current,
-      next: `ایستگاه بعدی: ${nextName} (${toFa(2)} دقیقه)`,
+      current: names[0],
+      next: `ایستگاه بعدی: ${names[1]} (${toFa(2)} دقیقه)`,
     };
   }, [plan]);
 

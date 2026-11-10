@@ -33,9 +33,9 @@ const AVAILABLE_CITIES: { id: ShellCity; name: string }[] = [
 const SOON_CITIES = ["شیراز", "تبریز"];
 
 const ENGINE_OPTIONS: { id: VoiceEngine; label: string; hint: string }[] = [
-  { id: "auto", label: "خودکار", hint: "اول صدای فارسی دستگاه، در نبودش صدای آنلاین رایگان" },
+  { id: "auto", label: "خودکار", hint: "زن: دستگاه ← دلاورا • مرد: فرید ← دستگاه (همه فارسی)" },
   { id: "device", label: "صدای دستگاه", hint: "گوگل TTS فارسی — آفلاین و بدون اینترنت" },
-  { id: "cloud", label: "صدای آنلاین", hint: "صدای نورال فارسی سرور — کیفیت بالا، رایگان و بدون کلید" },
+  { id: "cloud", label: "صدای آنلاین", hint: "گویندگان نئورال فارسی (دلاورا / فرید) — رایگان و بدون کلید" },
 ];
 
 /* ------------------------------ کلید تعویض ------------------------------ */
@@ -270,7 +270,7 @@ export default function SettingsPage() {
             </span>
           </div>
           <p className="text-[10px] text-outline leading-relaxed">
-            اعلام «ایستگاه بعدی» و جستجوی صوتی کاملاً به زبان فارسی است؛ با صدای زن یا مرد و به هیچ کلید یا API نیاز ندارد.
+            اعلام «ایستگاه بعدی» و جستجوی صوتی کاملاً به زبان فارسی است؛ با دو گوینده — زن (دلاورا) و مرد (فرید) — و به هیچ کلید یا API نیاز ندارد.
           </p>
 
           {/* انتخاب موتور گفتار */}
@@ -295,14 +295,14 @@ export default function SettingsPage() {
             {ENGINE_OPTIONS.find((o) => o.id === prefs.engine)?.hint}
           </p>
 
-          {/* انتخاب صدای زن / مرد */}
+          {/* انتخاب صدای زن / مرد — دو گوینده فارسی */}
           <div className="space-y-1.5">
-            <p className="text-[11px] font-bold text-on-surface-variant">نوع صدا</p>
+            <p className="text-[11px] font-bold text-on-surface-variant">نوع صدا (دو گوینده فارسی)</p>
             <div className="grid grid-cols-2 gap-1 bg-surface-container-low rounded-xl p-1">
               {(
                 [
-                  { id: "female", label: "صدای زن", icon: "woman", hint: "گوینندگان زن فارسی" },
-                  { id: "male", label: "صدای مرد", icon: "man", hint: "گوینندگان مرد فارسی" },
+                  { id: "female", label: "صدای زن", voice: "دلاورا", icon: "woman" },
+                  { id: "male", label: "صدای مرد", voice: "فرید", icon: "man" },
                 ] as const
               ).map((o) => (
                 <button
@@ -310,21 +310,26 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => prefs.setGender(o.id)}
                   aria-pressed={prefs.gender === o.id}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-[11px] font-bold transition-all active:scale-95 ${
+                  className={`flex flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
                     prefs.gender === o.id
                       ? "bg-primary text-white shadow-sm"
                       : "text-on-surface-variant"
                   }`}
                 >
-                  <MI name={o.icon} size={16} />
-                  {o.label}
+                  <span className="flex items-center gap-1.5">
+                    <MI name={o.icon} size={16} />
+                    {o.label}
+                  </span>
+                  <span className={`text-[9px] font-medium ${prefs.gender === o.id ? "text-white/80" : "text-outline"}`}>
+                    گوینده: {o.voice}
+                  </span>
                 </button>
               ))}
             </div>
             <p className="text-[10px] text-outline">
               {prefs.gender === "male"
-                ? "صدای مرد: فرید (آنلاین) یا بم‌کردن صدای دستگاه"
-                : "صدای زن: دلاورا (آنلاین) یا صدای فارسی دستگاه"}
+                ? "صدای مرد — گوینده فرید؛ در نبود اینترنت، صدای دستگاه بم‌تر پخش می‌شود"
+                : "صدای زن — گوینده دلاورا یا صدای فارسی دستگاه"}
             </p>
           </div>
 
