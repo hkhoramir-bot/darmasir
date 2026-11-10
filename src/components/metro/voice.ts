@@ -1,60 +1,253 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { getVoicePrefs } from "@/lib/voice-settings";
 
 /* ============================================================
-   دستیار صوتی متروجو — TTS (اعلام) و ASR (جستجوی صوتی)
+   دستیار صوتی متروجو — کاملاً فارسی
+   TTS:  ۱) موتور گفتار فارسیِ دستگاه (Google TTS — fa-IR)
+         ۲) صدای ابری Gemini (اختیاری؛ کلید در تنظیمات)
+   ASR:  ۱) تشخیص گفتار فارسی مرورگر/اندروید (fa-IR)
+         ۲) ضبط و ارسال به سرور (Gemini یا سرویس پشتیبان)
    ============================================================ */
 
-/** پخش اعلام صوتی فارسی با TTS سمت سرور */
+export const VOICE_ERRORS = {
+  noDeviceVoice:
+    "صدای فارسی روی این دستگاه یافت نشد. صدای فارسی گوگل را نصب کنید یا کلید Gemini را در تنظیمات وارد کنید.",
+  noKey: "برای صدای ابری، کلید Gemini را در تنظیمات برنامه وارد کنید.",
+  asrFail: "صدا واضح نبود، دوباره تلاش کنید",
+  asrUnsupported: "جستجوی صوتی در این مرورگر پشتیبانی نمی‌شود",
+  micDenied: "دسترسی به میکروفون داده نشد",
+};
+
+/* ---------------- موتور گفتار فارسی دستگاه ---------------- */
+
+let faVoice: SpeechSynthesisVoice | null | undefined; // undefined = هنوز بررسی نشده
+
+/** یافتن صدای فارسی دستگاه (fa / fa-IR) */
+export function findFaVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+  if (faVoice !== null && faVoice !== undefined) return faVoice;
+  const voices = window.speechSynthesis.getVoices();
+  faVoice =
+    voices.find((v) => v.lang?.toLowerCase().replace("_", "-") === "fa-ir") ??
+    voices.find((v) => v.lang?.toLowerCase().replace("_", "-").startsWith("fa")) ??
+    null;
+  return faVoice;
+}
+
+/** بازنشانی کش صدای دستگاه (پس از نصب صدای جدید) */
+export function resetFaVoiceCache() {
+  faVoice = undefined;
+}
+
+/** پخش با موتور گفتار دستگاه — true یعنی شروع شد */
+function deviceSpeak(text: string, rate: number, onEnd?: () => void): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      resolve(false);
+      return;
+    }
+    const synth = window.speechSynthesis;
+
+    const trySpeak = (): boolean => {
+      const voice = findFaVoice();
+      if (!voice) return false;
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = voice;
+      u.lang = voice.lang || "fa-IR";
+      u.rate = Math.min(1.5, Math.max(0.6, rate));
+      u.pitch = 1;
+      u.onend = () => onEnd?.();
+      u.onerror = () => onEnd?.();
+      synth.speak(u);
+      resolve(true);
+      return true;
+    };
+
+    if (trySpeak()) return;
+
+    // صداها ممکن است با تأخیر بارگذاری شوند — تا ۱.۶ ثانیه منتظر می‌مانیم
+    let waited = 0;
+    const timer = window.setInterval(() => {
+      waited += 200;
+      if (trySpeak()) {
+        window.clearInterval(timer);
+        return;
+      }
+      if (waited >= 1600) {
+        window.clearInterval(timer);
+        resolve(false);
+      }
+    }, 200);
+  });
+}
+
+/** پخش با صدای ابری (Gemini از طریق سرور) */
+async function serverSpeak(text: string, rate: number, audio: HTMLAudioElement): Promise<void> {
+  const { geminiKey } = getVoicePrefs();
+  const res = await fetch("/api/voice/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, key: geminiKey || undefined }),
+  });
+  if (!res.ok) {
+    let message = VOICE_ERRORS.noKey;
+    try {
+      const j = (await res.json()) as { message?: string };
+      if (j?.message) message = j.message;
+    } catch {
+      /* پاسخ JSON نبود */
+    }
+    throw new Error(message);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  audio.src = url;
+  audio.playbackRate = Math.min(1.5, Math.max(0.6, rate));
+  const cleanup = () => URL.revokeObjectURL(url);
+  audio.onended = () => cleanup();
+  await audio.play();
+}
+
+/* ---------------- هوک اعلام صوتی فارسی ---------------- */
+
 export function useAnnouncer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const announce = useCallback(async (text: string, voice: string = "tongtong") => {
-    setError(null);
-    setSpeaking(true);
-    try {
-      const res = await fetch("/api/voice/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice }),
-      });
-      if (!res.ok) throw new Error("tts failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      if (!audioRef.current) audioRef.current = new Audio();
-      audioRef.current.src = url;
-      audioRef.current.onended = () => {
-        setSpeaking(false);
-        URL.revokeObjectURL(url);
-      };
-      await audioRef.current.play();
-    } catch {
-      setSpeaking(false);
-      setError("پخش صوتی در دسترس نیست");
-    }
-  }, []);
-
   const stop = useCallback(() => {
-    audioRef.current?.pause();
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
     setSpeaking(false);
   }, []);
+
+  const announce = useCallback(
+    async (text: string) => {
+      setError(null);
+      stop();
+      setSpeaking(true);
+      const finish = () => setSpeaking(false);
+      const prefs = getVoicePrefs();
+
+      const playOnDevice = () =>
+        deviceSpeak(text, prefs.rate, finish);
+
+      const playInCloud = async () => {
+        if (!audioRef.current) audioRef.current = new Audio();
+        const a = audioRef.current;
+        a.onended = finish;
+        a.onerror = finish;
+        await serverSpeak(text, prefs.rate, a);
+      };
+
+      try {
+        if (prefs.engine === "device") {
+          const ok = await playOnDevice();
+          if (!ok) {
+            setSpeaking(false);
+            setError(VOICE_ERRORS.noDeviceVoice);
+          }
+          return;
+        }
+
+        if (prefs.engine === "gemini") {
+          try {
+            await playInCloud();
+          } catch (e) {
+            setSpeaking(false);
+            setError(e instanceof Error ? e.message : VOICE_ERRORS.noKey);
+          }
+          return;
+        }
+
+        // auto: اول دستگاه، بعد ابر
+        const ok = await playOnDevice();
+        if (ok) return;
+        try {
+          await playInCloud();
+        } catch (e) {
+          setSpeaking(false);
+          setError(
+            e instanceof Error ? e.message : VOICE_ERRORS.noDeviceVoice
+          );
+        }
+      } catch {
+        setSpeaking(false);
+        setError(VOICE_ERRORS.noDeviceVoice);
+      }
+    },
+    [stop]
+  );
 
   return { announce, stop, speaking, error };
 }
 
-/** ضبط صدا و تشخیص گفتار با ASR سمت سرور */
+/* ---------------- تشخیص گفتار فارسی ---------------- */
+
+interface SRAlternative {
+  transcript: string;
+}
+interface SRResult {
+  isFinal: boolean;
+  length: number;
+  [index: number]: SRAlternative;
+}
+interface SREvent {
+  results: { length: number; [index: number]: SRResult };
+}
+interface SRErrorEvent {
+  error?: string;
+}
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((e: SREvent) => void) | null;
+  onerror: ((e: SRErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+function bufToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+/** هوک جستجوی صوتی فارسی — اول موتور مرورگر، بعد ضبط و سرور */
 export function useVoiceSearch(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const manualStopRef = useRef(false);
+  const gotRef = useRef(false);
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
 
-  const start = useCallback(async () => {
-    setError(null);
+  /** مسیر پشتیبان: ضبط و ارسال به سرور */
+  const startRecorder = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(VOICE_ERRORS.asrUnsupported);
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
@@ -67,22 +260,20 @@ export function useVoiceSearch(onResult: (text: string) => void) {
         setBusy(true);
         try {
           const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-          const buf = await blob.arrayBuffer();
-          const base64 = btoa(
-            Array.from(new Uint8Array(buf))
-              .map((b) => String.fromCharCode(b))
-              .join("")
-          );
+          const base64 = bufToBase64(await blob.arrayBuffer());
+          const { geminiKey } = getVoicePrefs();
           const res = await fetch("/api/voice/asr", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ audioBase64: base64 }),
+            body: JSON.stringify({ audioBase64: base64, key: geminiKey || undefined }),
           });
-          const data = await res.json();
-          if (data.text) onResult(data.text);
-          else setError("صدا واضح نبود، دوباره تلاش کنید");
+          const data = (await res.json().catch(() => null)) as
+            | { text?: string; message?: string }
+            | null;
+          if (data?.text) onResultRef.current(data.text);
+          else setError(data?.message || VOICE_ERRORS.asrFail);
         } catch {
-          setError("تشخیص گفتار در دسترس نیست");
+          setError(VOICE_ERRORS.asrFail);
         } finally {
           setBusy(false);
           setListening(false);
@@ -91,18 +282,101 @@ export function useVoiceSearch(onResult: (text: string) => void) {
       rec.start();
       mediaRef.current = rec;
       setListening(true);
-      // حداکثر ۶ ثانیه ضبط
-      setTimeout(() => {
+      // حداکثر ۷ ثانیه ضبط
+      window.setTimeout(() => {
         if (rec.state === "recording") rec.stop();
-      }, 6000);
+      }, 7000);
     } catch {
-      setError("دسترسی به میکروفون داده نشد");
+      setError(VOICE_ERRORS.micDenied);
       setListening(false);
     }
-  }, [onResult]);
+  }, []);
+
+  /** موتور تشخیص گفتار مرورگر (اندروید/کروم — fa-IR) */
+  const startNative = useCallback((): boolean => {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!SR) return false;
+    try {
+      const rec = new SR();
+      recRef.current = rec;
+      rec.lang = "fa-IR";
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+      gotRef.current = false;
+      manualStopRef.current = false;
+
+      rec.onresult = (e) => {
+        let final = "";
+        for (let i = 0; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) final += r[0].transcript;
+        }
+        if (final.trim()) {
+          gotRef.current = true;
+          setError(null);
+          setListening(false);
+          onResultRef.current(final.trim());
+          try {
+            rec.abort();
+          } catch {
+            /* قبلاً متوقف شده */
+          }
+        }
+      };
+      rec.onerror = (e) => {
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          setError(VOICE_ERRORS.micDenied);
+          setListening(false);
+        }
+        // خطاهای دیگر (no-speech و...) در onend به مسیر سرور می‌روند
+      };
+      rec.onend = () => {
+        if (gotRef.current || manualStopRef.current) {
+          setListening(false);
+          return;
+        }
+        // نتیجه‌ای نگرفتیم → مسیر ضبط و سرور
+        void startRecorder();
+      };
+
+      rec.start();
+      setListening(true);
+      window.setTimeout(() => {
+        try {
+          if (!gotRef.current) rec.stop();
+        } catch {
+          /* تمام شده */
+        }
+      }, 7000);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [startRecorder]);
+
+  const start = useCallback(() => {
+    setError(null);
+    manualStopRef.current = false;
+    gotRef.current = false;
+    if (!startNative()) {
+      void startRecorder();
+    }
+  }, [startNative, startRecorder]);
 
   const stop = useCallback(() => {
+    manualStopRef.current = true;
+    try {
+      recRef.current?.abort();
+    } catch {
+      /* فعال نبود */
+    }
     if (mediaRef.current?.state === "recording") mediaRef.current.stop();
+    setListening(false);
   }, []);
 
   return { start, stop, listening, busy, error, clearError: () => setError(null) };
