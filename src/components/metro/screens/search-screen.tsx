@@ -89,7 +89,7 @@ export default function SearchScreen() {
         </div>
       )}
       {(voice.error || voice.busy) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[11px] text-amber-800 fade-in">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 text-[11px] text-amber-500 fade-in">
           {voice.busy ? "در حال پردازش صدای شما..." : voice.error}
         </div>
       )}
@@ -101,7 +101,7 @@ export default function SearchScreen() {
           <button
             onClick={() => setLineFilter(null)}
             className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all active:scale-95 ${
-              !lineFilter ? "bg-metro-primary text-white" : "bg-white text-metro-onvar border border-metro-outline-var/50"
+              !lineFilter ? "bg-metro-primary-c text-white" : "bg-metro-card text-metro-onvar border border-metro-outline-var/50"
             }`}
           >
             {toFa(cityLines.length)} خط همه
@@ -111,7 +111,7 @@ export default function SearchScreen() {
               key={l.id}
               onClick={() => setLineFilter(lineFilter === l.id ? null : l.id)}
               className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all active:scale-95 border ${
-                lineFilter === l.id ? "text-white shadow-sm" : "bg-white"
+                lineFilter === l.id ? "text-white shadow-sm" : "bg-metro-card"
               }`}
               style={
                 lineFilter === l.id
@@ -136,7 +136,7 @@ export default function SearchScreen() {
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-medium whitespace-nowrap transition-all active:scale-95 ${
                 facility === f
                   ? "bg-metro-primary-c text-white shadow-sm"
-                  : "bg-white text-metro-onvar border border-metro-outline-var/50"
+                  : "bg-metro-card text-metro-onvar border border-metro-outline-var/50"
               }`}
             >
               <MI name={AMENITIES[f].icon} size={14} />
@@ -170,7 +170,7 @@ export default function SearchScreen() {
         {loading &&
           [0, 1, 2, 3].map((i) => <div key={i} className="h-16 shimmer rounded-2xl" />)}
         {!loading && results.length === 0 && (
-          <div className="bg-white rounded-2xl border border-dashed border-metro-outline-var p-6 text-center">
+          <div className="bg-metro-card rounded-2xl border border-dashed border-metro-outline-var p-6 text-center">
             <MI name="search_off" size={30} className="text-metro-outline-var mx-auto" />
             <p className="text-xs text-metro-onvar mt-2">ایستگاهی با این مشخصات پیدا نشد</p>
           </div>
@@ -180,7 +180,7 @@ export default function SearchScreen() {
             <button
               key={s.id}
               onClick={() => nav.go("station-detail", { stationId: s.id })}
-              className="w-full bg-white rounded-2xl p-3 border border-metro-outline-var/40 shadow-sm flex items-center justify-between gap-3 hover:border-metro-primary transition-all active:scale-[0.99] text-right"
+              className="w-full bg-metro-card rounded-2xl p-3 border border-metro-outline-var/40 shadow-sm flex items-center justify-between gap-3 hover:border-metro-primary transition-all active:scale-[0.99] text-right"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="flex items-center -space-x-1.5 space-x-reverse shrink-0">

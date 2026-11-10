@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { nav } from "@/lib/store";
 import { MI, LineBadge, useTicker } from "../ui";
-import { toFa } from "@/lib/metro-data";
+import { toFa, isWithinService } from "@/lib/metro-data";
 
 interface StationRow {
   id: string;
@@ -125,7 +125,7 @@ export default function LineDetailScreen({ lineId }: { lineId: string }) {
 
       {/* زمان‌بندی */}
       {ttOpen && (
-        <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-3.5 space-y-2 fade-in" aria-label="زمان‌بندی حرکت قطارها">
+        <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-3.5 space-y-2 fade-in" aria-label="زمان‌بندی حرکت قطارها">
           <h3 className="text-sm font-bold text-metro-onsurface flex items-center gap-1.5">
             <MI name="schedule" size={18} className="text-metro-primary-c" />
             زمان‌بندی حرکت قطارها
@@ -149,19 +149,23 @@ export default function LineDetailScreen({ lineId }: { lineId: string }) {
 
       {/* وضعیت سرویس */}
       <div className="bg-metro-c-low rounded-xl px-3.5 py-2 flex items-center justify-between border border-metro-outline-var/20">
-        <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full pulse-dot ${line.status === "normal" ? "bg-emerald-600" : "bg-amber-500"}`} />
-          <span className="text-[11px] text-metro-onsurface">
-            {line.status === "normal" ? "وضعیت سرویس‌دهی: عادی و روان" : stats.crowdLabel + " — " + (line.status === "delay" ? "تاخیر ۸ دقیقه‌ای" : "ازدحام بالا")}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`w-2 h-2 rounded-full pulse-dot shrink-0 ${!isWithinService(line) ? "bg-metro-error" : line.status === "normal" ? "bg-emerald-600" : "bg-amber-500/100"}`} />
+          <span className="text-[11px] text-metro-onsurface truncate">
+            {!isWithinService(line)
+              ? "خارج از ساعات سرویس‌دهی — قطاری در حرکت نیست"
+              : line.status === "normal"
+                ? "وضعیت سرویس‌دهی: عادی و روان"
+                : stats.crowdLabel + " — " + (line.status === "delay" ? "تاخیر ۸ دقیقه‌ای" : "ازدحام بالا")}
           </span>
         </div>
-        <span className="text-[11px] text-metro-onvar dir-ltr">
+        <span className="text-[11px] text-metro-onvar dir-ltr shrink-0">
           {toFa(line.firstTrain)} تا {toFa(line.lastTrain)}
         </span>
       </div>
 
       {/* تب جهت */}
-      <div className="flex items-center gap-2 bg-white rounded-2xl p-1.5 border border-metro-outline-var/40" role="tablist" aria-label="جهت حرکت">
+      <div className="flex items-center gap-2 bg-metro-card rounded-2xl p-1.5 border border-metro-outline-var/40" role="tablist" aria-label="جهت حرکت">
         {[1, 0].map((d) => (
           <button
             key={d}
@@ -169,7 +173,7 @@ export default function LineDetailScreen({ lineId }: { lineId: string }) {
             aria-selected={dir === d}
             onClick={() => setDir(d)}
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all active:scale-95 ${
-              dir === d ? "bg-metro-primary text-white shadow-sm" : "text-metro-onvar"
+              dir === d ? "bg-metro-primary-c text-white shadow-sm" : "text-metro-onvar"
             }`}
           >
             <MI name={dir === d ? "north" : "south"} size={15} />
@@ -179,7 +183,7 @@ export default function LineDetailScreen({ lineId }: { lineId: string }) {
       </div>
 
       {/* لیست ایستگاه‌ها */}
-      <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-4" aria-label="لیست ایستگاه‌ها">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-4" aria-label="لیست ایستگاه‌ها">
         <div className="flex items-center justify-between pb-3 border-b border-metro-outline-var/20 mb-1">
           <span className="text-xs font-bold text-metro-onsurface flex items-center gap-1.5">
             <MI name="format_list_numbered" size={17} className="text-metro-primary-c" />
@@ -225,7 +229,7 @@ export default function LineDetailScreen({ lineId }: { lineId: string }) {
             </div>
 
             <div className="text-left shrink-0 flex items-center gap-1.5">
-              <span className="text-[11px] font-bold text-metro-tertiary bg-emerald-50 px-2 py-0.5 rounded-lg">
+              <span className="text-[11px] font-bold text-metro-tertiary bg-emerald-500/10 px-2 py-0.5 rounded-lg">
                 {toFa(Math.max(1, s.arrival + (dir === 0 ? 0 : 2)))} دقیقه
               </span>
               <MI name="chevron_left" size={16} className="text-metro-outline-var group-hover:text-metro-primary-c transition-colors" />
@@ -237,7 +241,7 @@ export default function LineDetailScreen({ lineId }: { lineId: string }) {
       {/* هشدار مقصد سریع روی این خط */}
       <button
         onClick={() => nav.go("alert", { lineId: line.id })}
-        className="w-full bg-white border border-metro-outline-var/50 rounded-2xl p-3 flex items-center justify-between active:scale-[0.99] transition-all shadow-sm"
+        className="w-full bg-metro-card border border-metro-outline-var/50 rounded-2xl p-3 flex items-center justify-between active:scale-[0.99] transition-all shadow-sm"
       >
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-metro-c-high text-metro-primary-c flex items-center justify-center">

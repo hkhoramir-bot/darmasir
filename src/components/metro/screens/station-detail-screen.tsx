@@ -110,7 +110,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
   return (
     <main className="w-full max-w-md mx-auto px-4 pt-3 pb-36 space-y-3">
       {/* هدر ایستگاه */}
-      <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-4 shadow-sm">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-4 shadow-sm">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <span className="flex items-center -space-x-1.5 space-x-reverse">
@@ -121,7 +121,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 {data.isInterchange && (
-                  <span className="bg-metro-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                  <span className="bg-metro-primary-c text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
                     ایستگاه تقاطعی
                   </span>
                 )}
@@ -142,7 +142,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
               disabled={favPending}
               aria-label={isFav ? "حذف از نشان‌شده‌ها" : "افزودن به نشان‌شده‌ها"}
               className={`w-9 h-9 rounded-xl flex items-center justify-center active:scale-95 transition-all ${
-                isFav ? "bg-amber-100 text-amber-600" : "bg-metro-c-low text-metro-outline hover:text-metro-primary"
+                isFav ? "bg-amber-500/20 text-amber-600" : "bg-metro-c-low text-metro-outline hover:text-metro-primary"
               }`}
             >
               <MI name="star" size={19} fill={isFav} />
@@ -168,7 +168,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
                 </span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[11px] font-bold text-metro-tertiary bg-white px-2 py-0.5 rounded-lg">
+                <span className="text-[11px] font-bold text-metro-tertiary bg-metro-card px-2 py-0.5 rounded-lg">
                   {toFa(l.arrivalsMin[0])} دقیقه
                 </span>
                 <span className="text-[10px] text-metro-outline">سپس {toFa(l.arrivalsMin[1])}</span>
@@ -180,7 +180,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
       </section>
 
       {/* تب‌ها */}
-      <div className="flex items-center gap-1 bg-white rounded-2xl p-1 border border-metro-outline-var/40" role="tablist">
+      <div className="flex items-center gap-1 bg-metro-card rounded-2xl p-1 border border-metro-outline-var/40" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -188,7 +188,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
             className={`flex-1 py-1.5 rounded-xl text-[10.5px] font-bold flex flex-col items-center gap-0.5 transition-all active:scale-95 ${
-              tab === t.key ? "bg-metro-primary text-white shadow-sm" : "text-metro-onvar"
+              tab === t.key ? "bg-metro-primary-c text-white shadow-sm" : "text-metro-onvar"
             }`}
           >
             <MI name={t.icon} size={16} />
@@ -200,7 +200,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
       {/* ---- تب امکانات ---- */}
       {tab === "info" && (
         <div className="space-y-3 fade-in">
-          <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-3.5">
+          <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-3.5">
             <h3 className="text-xs font-bold text-metro-onsurface flex items-center gap-1.5 mb-2.5">
               <MI name="checklist" size={16} className="text-metro-primary-c" />
               امکانات ایستگاه
@@ -215,7 +215,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
             </div>
           </section>
 
-          <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-3.5">
+          <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-3.5">
             <h3 className="text-xs font-bold text-metro-onsurface flex items-center gap-1.5 mb-2.5">
               <MI name="door_open" size={16} className="text-metro-primary-c" />
               خروجی‌ها و گیت‌ها ({toFa(data.exits.length)} خروجی فعال)
@@ -227,7 +227,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
                     <p className="text-xs font-bold text-metro-onsurface">
                       {e.label} — {e.direction}
                     </p>
-                    <span className="text-[10px] font-bold text-metro-tertiary bg-emerald-50 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-bold text-metro-tertiary bg-emerald-500/10 px-1.5 py-0.5 rounded">
                       {e.accessibility}
                     </span>
                   </div>
@@ -247,7 +247,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
           </section>
 
           {data.landmarks.length > 0 && (
-            <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-3.5">
+            <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-3.5">
               <h3 className="text-xs font-bold text-metro-onsurface flex items-center gap-1.5 mb-2.5">
                 <MI name="account_balance" size={16} className="text-metro-primary-c" />
                 مراکز مهم اطراف
@@ -275,14 +275,14 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
                 aria-selected={dirTab === i}
                 onClick={() => setDirTab(i)}
                 className={`flex-1 py-2 rounded-xl text-[11px] font-bold transition-all ${
-                  dirTab === i ? "bg-metro-primary text-white shadow-sm" : "bg-white text-metro-onvar border border-metro-outline-var/40"
+                  dirTab === i ? "bg-metro-primary-c text-white shadow-sm" : "bg-metro-card text-metro-onvar border border-metro-outline-var/40"
                 }`}
               >
                 {t.direction}
               </button>
             ))}
           </div>
-          <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-4 space-y-3">
+          <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-4 space-y-3">
             {(() => {
               const t = mainLine.firstLast[dirTab];
               return (
@@ -306,7 +306,7 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
       {/* ---- تب تجهیزات ---- */}
       {tab === "equip" && (
         <div className="space-y-3 fade-in">
-          <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-3.5 space-y-3">
+          <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-3.5 space-y-3">
             <h3 className="text-xs font-bold text-metro-onsurface flex items-center gap-1.5">
               <MI name="elevator" size={16} className="text-metro-primary-c" />
               وضعیت پله‌برقی‌ها و آسانسورها — به‌روزرسانی لحظه‌ای مسافران
@@ -326,11 +326,11 @@ export default function StationDetailScreen({ stationId }: { stationId: string }
                   </div>
                   <div className="h-2 bg-metro-c rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-metro-tertiary" : "bg-amber-500"}`}
+                      className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-metro-tertiary" : "bg-amber-500/100"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  {eq.note && <p className="text-[10px] text-amber-700 mt-1.5">{eq.note}</p>}
+                  {eq.note && <p className="text-[10px] text-amber-500 mt-1.5">{eq.note}</p>}
                 </div>
               );
             })}
@@ -425,7 +425,7 @@ function ReportForm({
 
   return (
     <div className="space-y-3 fade-in">
-      <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-3.5 space-y-3">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-3.5 space-y-3">
         <h3 className="text-xs font-bold text-metro-onsurface flex items-center gap-1.5">
           <MI name="add_task" size={16} className="text-metro-primary-c" />
           ثبت گزارش لحظه‌ای عملکرد تجهیزات
@@ -442,7 +442,7 @@ function ReportForm({
                 key={o.k}
                 onClick={() => setEquipmentType(o.k)}
                 className={`flex-1 py-2 rounded-xl text-[11px] font-bold transition-all ${
-                  equipmentType === o.k ? "bg-metro-primary text-white" : "bg-metro-c-low text-metro-onvar"
+                  equipmentType === o.k ? "bg-metro-primary-c text-white" : "bg-metro-c-low text-metro-onvar"
                 }`}
               >
                 {o.l}
@@ -476,7 +476,7 @@ function ReportForm({
                 key={o.k}
                 onClick={() => setStatus(o.k)}
                 className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all ${
-                  status === o.k ? "bg-white border-2 border-metro-primary-c" : "bg-metro-c-low border border-transparent"
+                  status === o.k ? "bg-metro-card border-2 border-metro-primary-c" : "bg-metro-c-low border border-transparent"
                 } ${status === o.k ? o.c : "text-metro-onvar"}`}
               >
                 {o.l}
@@ -500,7 +500,7 @@ function ReportForm({
           {sending ? "در حال ارسال..." : "ارسال گزارش مسافر"}
         </button>
         {done && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 flex items-center gap-2 fade-in">
+          <div className="bg-emerald-500/10 border border-emerald-200 rounded-xl p-2.5 flex items-center gap-2 fade-in">
             <MI name="check_circle" size={17} className="text-metro-tertiary" fill />
             <p className="text-[11px] text-metro-tertiary font-bold">
               گزارش شما با موفقیت ثبت شد. سپاس از یاری شما!
@@ -509,7 +509,7 @@ function ReportForm({
         )}
       </section>
 
-      <section className="bg-white rounded-2xl border border-metro-outline-var/40 p-3.5">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-3.5">
         <h3 className="text-xs font-bold text-metro-onsurface flex items-center gap-1.5 mb-2.5">
           <MI name="forum" size={16} className="text-metro-primary-c" />
           گزارش‌های اخیر {stationName}
@@ -532,10 +532,10 @@ function ReportForm({
               <span
                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                   r.status === "working"
-                    ? "bg-emerald-50 text-metro-tertiary"
+                    ? "bg-emerald-500/10 text-metro-tertiary"
                     : r.status === "under_maintenance"
-                      ? "bg-amber-50 text-amber-700"
-                      : "bg-red-50 text-metro-error"
+                      ? "bg-amber-500/10 text-amber-500"
+                      : "bg-red-500/10 text-metro-error"
                 }`}
               >
                 {r.statusLabel}

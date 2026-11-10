@@ -463,6 +463,14 @@ export function faMoney(n: number): string {
 
 /* ------------------------------ Simulated live ops ------------------------------ */
 
+/** آیا الان داخل ساعات سرویس‌دهی خط هستیم؟ */
+export function isWithinService(line: { firstTrain: string; lastTrain: string }, d = new Date()): boolean {
+  const [fh, fm] = line.firstTrain.split(":").map(Number);
+  const [lh, lm] = line.lastTrain.split(":").map(Number);
+  const mins = d.getHours() * 60 + d.getMinutes();
+  return mins >= fh * 60 + fm && mins <= lh * 60 + lm;
+}
+
 export function nextArrivals(lineId: string, stationId: string, now = Date.now()): number[] {
   const line = getLine(lineId);
   const headwaySec = Math.round(line.headway * 60);

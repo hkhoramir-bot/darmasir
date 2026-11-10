@@ -91,7 +91,7 @@ export default function HistoryScreen() {
       <section className="space-y-2" aria-label="لیست سفرها">
         {loading && [0, 1, 2].map((i) => <div key={i} className="h-20 shimmer rounded-2xl" />)}
         {!loading && trips.length === 0 && (
-          <div className="bg-white rounded-2xl border border-dashed border-metro-outline-var p-6 text-center">
+          <div className="bg-metro-card rounded-2xl border border-dashed border-metro-outline-var p-6 text-center">
             <MI name="travel_explore" size={32} className="text-metro-fixed-dim mx-auto" />
             <p className="text-xs text-metro-onvar mt-2">هنوز سفری ثبت نشده؛ از مسیریاب شروع کنید</p>
             <button
@@ -106,7 +106,7 @@ export default function HistoryScreen() {
           <button
             key={t.id}
             onClick={() => nav.go("station-detail", { stationId: undefined })}
-            className="w-full bg-white rounded-2xl p-3.5 border border-metro-outline-var/40 shadow-sm flex items-center justify-between gap-3 active:scale-[0.99] transition-all text-right"
+            className="w-full bg-metro-card rounded-2xl p-3.5 border border-metro-outline-var/40 shadow-sm flex items-center justify-between gap-3 active:scale-[0.99] transition-all text-right"
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-metro-c-low text-metro-primary flex items-center justify-center shrink-0">

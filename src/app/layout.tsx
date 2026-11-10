@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { PwaRegister } from "@/components/metro/pwa";
 
 export const metadata: Metadata = {
   title: "متروجو | سامانه هوشمند مترو",
@@ -47,7 +48,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased bg-metro-bg text-metro-onbg">{children}<Toaster /></body>
+      <body className="antialiased bg-metro-bg text-metro-onsurface">{children}<Toaster /><PwaRegister /></body>
     </html>
   );
 }

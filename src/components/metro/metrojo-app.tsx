@@ -28,7 +28,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   return (
     <div className="fixed inset-0 z-[100] bg-gradient-to-b from-metro-primary to-metro-primary-c flex flex-col items-center justify-center">
       <div className="splash-logo flex flex-col items-center">
-        <div className="w-28 h-28 rounded-[28px] bg-white shadow-2xl flex items-center justify-center overflow-hidden">
+        <div className="w-28 h-28 rounded-[28px] bg-metro-card shadow-2xl flex items-center justify-center overflow-hidden">
           { }
           <img src="/metrojo-symbol.png" alt="متروجو" className="w-24 h-24 object-contain" />
         </div>
@@ -50,7 +50,7 @@ function AppHeader({ onCityClick }: { onCityClick: () => void }) {
   return (
     <header className="bg-metro-surface/95 backdrop-blur border-b border-metro-outline-var/30 shadow-sm flex justify-between items-center w-full px-4 h-16 sticky top-0 z-40 transition-all">
       <div className="flex items-center gap-2">
-        <div className="w-9 h-9 rounded-xl bg-white border border-metro-outline-var/30 flex items-center justify-center overflow-hidden shadow-sm shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-metro-card border border-metro-outline-var/30 flex items-center justify-center overflow-hidden shadow-sm shrink-0">
           { }
           <img src="/metrojo-symbol.png" alt="لوگوی متروجو" className="w-8 h-8 object-contain" />
         </div>
@@ -85,6 +85,24 @@ export default function MetrojoApp() {
   const stack = useMetro((s) => s.stack);
   const [cityOpen, setCityOpen] = useState(false);
   const current = stack[stack.length - 1];
+
+  // اعمال تم ذخیره‌شده در شروع اپ (تمام صفحه‌ها)
+  useEffect(() => {
+    let theme = "light";
+    try {
+      theme = JSON.parse(localStorage.getItem("metrojo-settings") ?? "{}")?.theme ?? "light";
+    } catch {
+      theme = "light";
+    }
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      const isDark = theme === "dark" || (theme === "auto" && mq.matches);
+      document.documentElement.classList.toggle("dark", isDark);
+    };
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
 
   // اسکرول به بالا هنگام تغییر صفحه
   useEffect(() => {
@@ -136,7 +154,7 @@ export default function MetrojoApp() {
           }
           subtitle={
             <>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot inline-block" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/100 pulse-dot inline-block" />
               {subtitles[screen] ?? ""}
             </>
           }

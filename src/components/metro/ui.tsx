@@ -73,14 +73,16 @@ export function LineBadgeBig({
 
 /* ------------------------- وضعیت شلوغی ------------------------- */
 export function CrowdPill({ level, label }: { level: CrowdLevel; label?: string }) {
-  const color = level === "quiet" ? "#006638" : level === "moderate" ? "#b45309" : "#bc000c";
-  const bg = level === "quiet" ? "#e7f6ec" : level === "moderate" ? "#fef3c7" : "#fee2e2";
+  const cls =
+    level === "quiet"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      : level === "moderate"
+        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        : "bg-red-500/10 text-red-600 dark:text-red-400";
+  const dot = level === "quiet" ? "bg-emerald-500" : level === "moderate" ? "bg-amber-500" : "bg-red-500";
   return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-      style={{ color, backgroundColor: bg }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${cls}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
       {label ?? CROWD_LABEL[level]}
     </span>
   );
@@ -183,7 +185,7 @@ export function SearchInput({
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white border border-metro-outline-var/60 rounded-2xl py-2.5 pr-10 pl-10 text-xs text-metro-onsurface focus:outline-none focus:border-metro-primary-c shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+        className="w-full bg-metro-card border border-metro-outline-var/60 rounded-2xl py-2.5 pr-10 pl-10 text-xs text-metro-onsurface focus:outline-none focus:border-metro-primary-c shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
         placeholder={placeholder}
         type="text"
       />

@@ -34,9 +34,9 @@ export function StationPickerSheet({ open, title, excludeId, onClose, onSelect }
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true" aria-label={title}>
       <div className="absolute inset-0 bg-black/40 fade-in" onClick={onClose} />
-      <div className="sheet-in relative w-full max-w-md bg-white rounded-t-3xl max-h-[72vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-slate-100">
-          <span className="w-10 h-1.5 rounded-full bg-slate-200 absolute top-2 left-1/2 -translate-x-1/2" />
+      <div className="sheet-in relative w-full max-w-md bg-metro-card rounded-t-3xl max-h-[72vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-metro-outline-var/40">
+          <span className="w-10 h-1.5 rounded-full bg-metro-c-highest absolute top-2 left-1/2 -translate-x-1/2" />
           <h3 className="text-sm font-bold text-metro-onsurface flex items-center gap-1.5">
             <MI name="location_on" size={18} className="text-metro-primary-c" />
             {title}
@@ -44,7 +44,7 @@ export function StationPickerSheet({ open, title, excludeId, onClose, onSelect }
           <button
             onClick={onClose}
             aria-label="بستن"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-metro-outline hover:bg-slate-100 active:scale-95 transition-all"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-metro-outline hover:bg-metro-c active:scale-95 transition-all"
           >
             <MI name="close" size={20} />
           </button>

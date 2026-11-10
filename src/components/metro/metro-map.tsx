@@ -85,10 +85,10 @@ export default function MetroMap({ onStationSelect, highlightStations, className
       >
         <defs>
           <pattern id="map-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-            <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#e2e8f0" strokeWidth="0.7" />
+            <path d="M 28 0 L 0 0 0 28" fill="none" stroke="var(--mq-map-grid)" strokeWidth="0.7" />
           </pattern>
         </defs>
-        <rect width={MAP_CANVAS.w} height={MAP_CANVAS.h} fill="#f1f5f9" />
+        <rect width={MAP_CANVAS.w} height={MAP_CANVAS.h} fill="var(--mq-map-bg)" />
         <rect width={MAP_CANVAS.w} height={MAP_CANVAS.h} fill="url(#map-grid)" />
 
         <g transform={`translate(${t.tx} ${t.ty}) scale(${t.scale})`}>
@@ -127,13 +127,13 @@ export default function MetroMap({ onStationSelect, highlightStations, className
                 className="cursor-pointer"
               >
                 <circle cx={s.x} cy={s.y} r={13} fill="transparent" />
-                {isInter && <circle cx={s.x} cy={s.y} r={r + 3} fill="#fff" opacity={0.9} />}
+                {isInter && <circle cx={s.x} cy={s.y} r={r + 3} fill="var(--mq-card)" opacity={0.9} />}
                 <circle
                   cx={s.x}
                   cy={s.y}
                   r={isHi ? 6 : r}
-                  fill={isHi ? "#0d58a6" : "#ffffff"}
-                  stroke={isHi ? "#ffffff" : "#0f172a"}
+                  fill={isHi ? "#0d58a6" : "var(--mq-card)"}
+                  stroke={isHi ? "var(--mq-card)" : "var(--mq-ink)"}
                   strokeWidth={isHi ? 2 : 1.6}
                 />
                 {isHi && <circle cx={s.x} cy={s.y} r={11} fill="#0d58a6" opacity={0.22} />}
@@ -144,7 +144,7 @@ export default function MetroMap({ onStationSelect, highlightStations, className
                     textAnchor={s.x >= 300 ? "end" : "start"}
                     fontSize={s.label ? 10 : 8.5}
                     fontWeight={s.label ? 700 : 500}
-                    fill="#0f172a"
+                    fill="var(--mq-ink)"
                     style={{ fontFamily: "Vazirmatn, sans-serif" }}
                   >
                     {s.name}
@@ -181,7 +181,7 @@ export default function MetroMap({ onStationSelect, highlightStations, className
                     textAnchor="middle"
                     fontSize={8.5}
                     fontWeight={800}
-                    fill={ml.lineId === "l4" ? "#1a1a1a" : "#ffffff"}
+                    fill={ml.lineId === "l4" ? "#1a1a1a" : "var(--mq-card)"}
                     style={{ fontFamily: "Vazirmatn, sans-serif" }}
                   >
                     {num}
@@ -198,16 +198,16 @@ export default function MetroMap({ onStationSelect, highlightStations, className
         <button
           onClick={() => setLegendOpen((o) => !o)}
           aria-label="راهنمای خطوط"
-          className="w-9 h-9 rounded-xl bg-white shadow border border-slate-200 flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
         >
           <MI name="layers" size={18} />
         </button>
         {legendOpen && (
-          <div className="fade-in bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-md p-2 grid grid-cols-1 gap-1">
+          <div className="fade-in bg-metro-card/95 backdrop-blur rounded-xl border border-metro-outline-var shadow-md p-2 grid grid-cols-1 gap-1">
             {TEHRAN_LINES.map((l) => (
               <div key={l.id} className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
-                <span className="text-[9px] font-semibold text-slate-700">
+                <span className="text-[9px] font-semibold text-metro-onvar">
                   {l.name} — {l.terminals[0]} / {l.terminals[1]}
                 </span>
               </div>
@@ -221,21 +221,21 @@ export default function MetroMap({ onStationSelect, highlightStations, className
         <button
           onClick={() => applyZoom(1.25)}
           aria-label="بزرگ‌نمایی"
-          className="w-9 h-9 rounded-xl bg-white shadow border border-slate-200 flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
         >
           <MI name="add" size={18} />
         </button>
         <button
           onClick={() => applyZoom(0.8)}
           aria-label="کوچک‌نمایی"
-          className="w-9 h-9 rounded-xl bg-white shadow border border-slate-200 flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
         >
           <MI name="remove" size={18} />
         </button>
         <button
           onClick={() => setT({ scale: 1, tx: 0, ty: 0 })}
           aria-label="بازگشت به مرکز"
-          className="w-9 h-9 rounded-xl bg-white shadow border border-slate-200 flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
         >
           <MI name="my_location" size={18} />
         </button>

@@ -75,15 +75,15 @@ export default function StatusScreen() {
             <div
               key={a.lineId}
               className={`rounded-2xl p-3.5 border flex items-start gap-3 ${
-                a.severity === "high" ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
+                a.severity === "high" ? "bg-red-500/10 border-red-500/30" : "bg-amber-500/10 border-amber-500/30"
               }`}
             >
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${a.severity === "high" ? "bg-red-100" : "bg-amber-100"}`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${a.severity === "high" ? "bg-red-500/15" : "bg-amber-500/20"}`}>
                 <MI name={a.severity === "high" ? "priority_high" : "groups"} size={20} className={a.severity === "high" ? "text-metro-error" : "text-amber-600"} fill />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className={`text-xs font-bold ${a.severity === "high" ? "text-metro-error" : "text-amber-700"}`}>{a.title}</h3>
+                  <h3 className={`text-xs font-bold ${a.severity === "high" ? "text-metro-error" : "text-amber-500"}`}>{a.title}</h3>
                   <span className="text-[10px] text-metro-outline shrink-0">{a.time}</span>
                 </div>
                 <p className="text-[11px] text-metro-onvar mt-1">{a.body}</p>
@@ -98,7 +98,7 @@ export default function StatusScreen() {
         {loading && [0, 1, 2, 3].map((i) => <div key={i} className="h-24 shimmer rounded-2xl" />)}
         {!loading &&
           lines.map((l) => (
-            <article key={l.id} className="bg-white rounded-2xl border border-metro-outline-var/40 p-3.5 shadow-sm">
+            <article key={l.id} className="bg-metro-card rounded-2xl border border-metro-outline-var/40 p-3.5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
                   <LineBadgeBig number={l.number} color={l.color} textOn={l.textOnColor} />
@@ -114,7 +114,7 @@ export default function StatusScreen() {
                 <CrowdPill level={l.crowd} label={l.crowdLabel} />
               </div>
               <div className="mt-2.5 pt-2 border-t border-metro-outline-var/20 flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full pulse-dot ${l.status === "normal" ? "bg-emerald-600" : l.status === "delay" ? "bg-metro-error" : "bg-amber-500"}`} />
+                <span className={`w-2 h-2 rounded-full pulse-dot ${l.status === "normal" ? "bg-emerald-600" : l.status === "delay" ? "bg-metro-error" : "bg-amber-500/100"}`} />
                 <p className="text-[11px] text-metro-onvar">{l.statusNote}</p>
               </div>
             </article>

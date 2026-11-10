@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useMetro, nav } from "@/lib/store";
 import { AdBanner, MI, SectionTitle, CrowdPill, useTicker } from "../ui";
+import { InstallBanner } from "../pwa";
 import { toFa } from "@/lib/metro-data";
 
 interface DailyRoute {
@@ -90,10 +91,13 @@ export default function HomeScreen() {
       {/* بنر تبلیغ */}
       <AdBanner />
 
+      {/* پیشنهاد نصب اپ */}
+      <InstallBanner />
+
       {/* هشدار هوشمند حرکت */}
       <section className="bg-metro-c-low rounded-2xl p-3.5 border border-metro-outline-var/40 flex items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-metro-primary text-white flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-metro-primary-c text-white flex items-center justify-center shrink-0">
             <MI name="notifications_active" size={20} fill />
           </div>
           <div>
@@ -108,7 +112,7 @@ export default function HomeScreen() {
           className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${smartAlert ? "bg-metro-primary-c" : "bg-metro-outline-var"}`}
         >
           <span
-            className={`absolute top-[2px] w-5 h-5 bg-white rounded-full shadow transition-all ${smartAlert ? "right-[2px]" : "right-[22px]"}`}
+            className={`absolute top-[2px] w-5 h-5 bg-metro-card rounded-full shadow transition-all ${smartAlert ? "right-[2px]" : "right-[22px]"}`}
           />
         </button>
       </section>
@@ -119,7 +123,7 @@ export default function HomeScreen() {
           <button
             key={a.label}
             onClick={() => nav.go(a.screen)}
-            className="bg-white border border-metro-outline-var/50 p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
+            className="bg-metro-card border border-metro-outline-var/50 p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
           >
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${a.bg} ${a.fg}`}>
               <MI name={a.icon} size={20} fill />
@@ -167,7 +171,7 @@ export default function HomeScreen() {
         {routes.length === 0 && (
           <button
             onClick={() => nav.go("planner")}
-            className="w-full bg-white border border-dashed border-metro-outline-var rounded-2xl p-4 text-center active:scale-[0.99] transition-all"
+            className="w-full bg-metro-card border border-dashed border-metro-outline-var rounded-2xl p-4 text-center active:scale-[0.99] transition-all"
           >
             <MI name="add_circle" size={28} className="text-metro-fixed-dim mx-auto" />
             <p className="text-xs text-metro-onvar mt-1">مسیر خانه و محل کار را بسازید تا اینجا ببینید</p>
@@ -193,7 +197,7 @@ export default function HomeScreen() {
           }
         />
         {favs.length === 0 && (
-          <div className="bg-white border border-dashed border-metro-outline-var rounded-2xl p-4 text-center">
+          <div className="bg-metro-card border border-dashed border-metro-outline-var rounded-2xl p-4 text-center">
             <MI name="push_pin" size={26} className="text-metro-fixed-dim mx-auto" />
             <p className="text-xs text-metro-onvar mt-1">
               هنوز ایستگاهی نشان نکرده‌اید؛ از صفحه ایستگاه‌ها نشان کنید
@@ -204,7 +208,7 @@ export default function HomeScreen() {
           <button
             key={f.id}
             onClick={() => nav.go("station-detail", { stationId: f.id })}
-            className="w-full bg-white rounded-2xl p-3 border border-metro-outline-var/40 shadow-sm flex items-center justify-between gap-3 hover:border-metro-primary transition-all active:scale-[0.99]"
+            className="w-full bg-metro-card rounded-2xl p-3 border border-metro-outline-var/40 shadow-sm flex items-center justify-between gap-3 hover:border-metro-primary transition-all active:scale-[0.99]"
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex items-center -space-x-1.5 space-x-reverse shrink-0">
@@ -244,7 +248,7 @@ export default function HomeScreen() {
         className="w-full bg-metro-c-low rounded-2xl px-3.5 py-2.5 flex items-center justify-between border border-metro-outline-var/20 active:scale-[0.99] transition-all"
       >
         <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full pulse-dot ${serviceOk ? "bg-emerald-600" : "bg-amber-500"}`} />
+          <span className={`w-2 h-2 rounded-full pulse-dot ${serviceOk ? "bg-emerald-600" : "bg-amber-500/100"}`} />
           <span className="text-[11px] text-metro-onsurface">
             {serviceOk ? "وضعیت خطوط: سرویس‌دهی عادی و روان" : "اخباری از تاخیر و ازدحام ثبت شده"}
           </span>
@@ -268,7 +272,7 @@ export default function HomeScreen() {
         </div>
         <button
           onClick={() => nav.go("planner")}
-          className="bg-white text-metro-primary px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 active:scale-95 transition-all shadow-sm"
+          className="bg-metro-card text-metro-primary px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 active:scale-95 transition-all shadow-sm"
         >
           مسیریابی
         </button>
@@ -300,7 +304,7 @@ function RouteCard({ route, now }: { route: DailyRoute; now: number }) {
   const tint = route.kind === "home" ? "from-metro-primary-c via-[#1a5eac] to-metro-secondary" : "from-[#7d2382] via-metro-primary-c to-metro-c-highest";
 
   return (
-    <div className="bg-white rounded-2xl p-3.5 border border-metro-outline-var/40 shadow-sm relative overflow-hidden">
+    <div className="bg-metro-card rounded-2xl p-3.5 border border-metro-outline-var/40 shadow-sm relative overflow-hidden">
       <div className={`absolute top-0 right-0 left-0 h-1 bg-gradient-to-l ${tint}`} />
       <div className="flex items-center justify-between mb-2.5 pt-1">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -339,7 +343,7 @@ function RouteCard({ route, now }: { route: DailyRoute; now: number }) {
         )}
         <button
           onClick={() => nav.go("planner", { fromStationId: route.fromStationId, toStationId: route.toStationId })}
-          className="text-[10px] font-bold text-metro-primary-c bg-white px-2 py-0.5 rounded-full border border-metro-outline-var/40"
+          className="text-[10px] font-bold text-metro-primary-c bg-metro-card px-2 py-0.5 rounded-full border border-metro-outline-var/40"
         >
           مسیریابی
         </button>

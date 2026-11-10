@@ -30,34 +30,37 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Metro Yar Material palette */
-  --color-metro-bg: #f9f9ff;
-  --color-metro-surface: #f9f9ff;
-  --color-metro-surface-dim: #cfdaf2;
-  --color-metro-card: #ffffff;
-  --color-metro-c-low: #f0f3ff;
-  --color-metro-c: #e7eeff;
-  --color-metro-c-high: #dee8ff;
-  --color-metro-c-highest: #d8e3fb;
-  --color-metro-onsurface: #111c2d;
-  --color-metro-onvar: #424751;
-  --color-metro-outline: #727782;
-  --color-metro-outline-var: #c2c6d3;
-  --color-metro-primary: #00417f;
+  /* Metro Yar Material palette (var-based for dark mode) */
+  --color-metro-bg: var(--mq-bg);
+  --color-metro-surface: var(--mq-surface);
+  --color-metro-surface-dim: var(--mq-surface-dim);
+  --color-metro-card: var(--mq-card);
+  --color-metro-c-low: var(--mq-c-low);
+  --color-metro-c: var(--mq-c);
+  --color-metro-c-high: var(--mq-c-high);
+  --color-metro-c-highest: var(--mq-c-highest);
+  --color-metro-onsurface: var(--mq-onsurface);
+  --color-metro-onvar: var(--mq-onvar);
+  --color-metro-outline: var(--mq-outline);
+  --color-metro-outline-var: var(--mq-outline-var);
+  --color-metro-primary: var(--mq-primary);
   --color-metro-onprimary: #ffffff;
-  --color-metro-primary-c: #0d58a6;
-  --color-metro-onprimary-c: #b6d0ff;
+  --color-metro-primary-c: var(--mq-primary-c);
+  --color-metro-onprimary-c: var(--mq-onprimary-c);
   --color-metro-invprimary: #a8c8ff;
-  --color-metro-fixed: #d5e3ff;
+  --color-metro-fixed: var(--mq-fixed);
   --color-metro-fixed-dim: #a8c8ff;
   --color-metro-secondary: #bc000c;
   --color-metro-secondary-c: #e32220;
-  --color-metro-tertiary: #004c28;
-  --color-metro-tertiary-c: #006638;
+  --color-metro-tertiary: var(--mq-tertiary);
+  --color-metro-tertiary-c: var(--mq-tertiary-c);
   --color-metro-tertiary-fixed: #7efbac;
   --color-metro-error: #ba1a1a;
-  --color-metro-error-c: #ffdad6;
+  --color-metro-error-c: var(--mq-error-c);
   --color-metro-onerr-c: #93000a;
+  --color-metro-ink: var(--mq-ink);
+  --color-metro-map-bg: var(--mq-map-bg);
+  --color-metro-map-grid: var(--mq-map-grid);
 
   /* Transit line palette */
   --color-line-1: #e52421;
@@ -100,6 +103,76 @@
   --border: #c2c6d3;
   --input: #e2e8f0;
   --ring: #0d58a6;
+
+  /* Metro Yar light palette */
+  --mq-bg: #f9f9ff;
+  --mq-surface: #f9f9ff;
+  --mq-surface-dim: #cfdaf2;
+  --mq-card: #ffffff;
+  --mq-c-low: #f0f3ff;
+  --mq-c: #e7eeff;
+  --mq-c-high: #dee8ff;
+  --mq-c-highest: #d8e3fb;
+  --mq-onsurface: #111c2d;
+  --mq-onvar: #424751;
+  --mq-outline: #727782;
+  --mq-outline-var: #c2c6d3;
+  --mq-primary: #00417f;
+  --mq-primary-c: #0d58a6;
+  --mq-onprimary-c: #b6d0ff;
+  --mq-fixed: #d5e3ff;
+  --mq-error-c: #ffdad6;
+  --mq-ink: #0f172a;
+  --mq-map-bg: #f1f5f9;
+  --mq-map-grid: #e2e8f0;
+  --mq-tertiary: #004c28;
+  --mq-tertiary-c: #006638;
+}
+
+.dark {
+  --radius: 0.625rem;
+  --background: #0f1522;
+  --foreground: #e2e8f8;
+  --card: #182033;
+  --card-foreground: #e2e8f8;
+  --popover: #182033;
+  --popover-foreground: #e2e8f8;
+  --primary: #a8c8ff;
+  --primary-foreground: #0f1522;
+  --secondary: #1d2739;
+  --secondary-foreground: #e2e8f8;
+  --muted: #151d2e;
+  --muted-foreground: #a9b3c9;
+  --accent: #232e45;
+  --accent-foreground: #e2e8f8;
+  --destructive: #ff5449;
+  --border: #36415c;
+  --input: #232e45;
+  --ring: #2e6cb4;
+
+  /* Metro Yar dark palette */
+  --mq-bg: #0f1522;
+  --mq-surface: #131a29;
+  --mq-surface-dim: #0b101a;
+  --mq-card: #182033;
+  --mq-c-low: #151d2e;
+  --mq-c: #1d2739;
+  --mq-c-high: #232e45;
+  --mq-c-highest: #293450;
+  --mq-onsurface: #e2e8f8;
+  --mq-onvar: #a9b3c9;
+  --mq-outline: #8b93a7;
+  --mq-outline-var: #36415c;
+  --mq-primary: #a8c8ff;
+  --mq-primary-c: #3f82d6;
+  --mq-onprimary-c: #cfe1ff;
+  --mq-fixed: #1c2b46;
+  --mq-error-c: #3d1518;
+  --mq-ink: #e6ecfa;
+  --mq-map-bg: #121928;
+  --mq-map-grid: #1f2941;
+  --mq-tertiary: #4ade80;
+  --mq-tertiary-c: #6ee7a0;
 }
 
 @layer base {
@@ -180,7 +253,7 @@
   }
 }
 .shimmer {
-  background: linear-gradient(90deg, #eef2ff 25%, #e2e8f0 50%, #eef2ff 75%);
+  background: linear-gradient(90deg, var(--mq-c-low) 25%, var(--mq-c-high) 50%, var(--mq-c-low) 75%);
   background-size: 200% 100%;
   animation: metro-shimmer 1.4s infinite;
 }

@@ -30,7 +30,14 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     localStorage.setItem("metrojo-settings", JSON.stringify({ theme, notifLines, gps }));
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      const isDark = theme === "dark" || (theme === "auto" && mq.matches);
+      document.documentElement.classList.toggle("dark", isDark);
+    };
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
   }, [theme, notifLines, gps]);
 
   const testVoice = () => {
@@ -51,13 +58,13 @@ export default function SettingsScreen() {
       <AdBanner text="تهیه بلیت آنلاین مترو و اتوبوس" />
 
       {/* هشدارها */}
-      <section className="bg-white rounded-2xl border border-metro-outline-var/30 p-3.5 shadow-sm space-y-3">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/30 p-3.5 shadow-sm space-y-3">
         <div className="flex items-center justify-between pb-2 border-b border-metro-outline-var/20">
           <div className="flex items-center gap-2 text-metro-primary">
             <MI name="notifications_active" size={20} />
             <h2 className="text-sm font-bold text-metro-onsurface">هشدارها و اعلانات</h2>
           </div>
-          <span className="text-[10px] font-bold text-metro-tertiary bg-emerald-50 px-2 py-0.5 rounded-full">سیستم فعال</span>
+          <span className="text-[10px] font-bold text-metro-tertiary bg-emerald-500/10 px-2 py-0.5 rounded-full">سیستم فعال</span>
         </div>
         <SettingToggle label="نوتیفیکیشن وضعیت خطوط و تاخیرها" value={notifLines} onChange={setNotifLines} />
         <div className="h-px bg-metro-c" />
@@ -82,7 +89,7 @@ export default function SettingsScreen() {
       </section>
 
       {/* دستیار صوتی */}
-      <section className="bg-white rounded-2xl border border-metro-outline-var/30 p-3.5 shadow-sm space-y-3">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/30 p-3.5 shadow-sm space-y-3">
         <div className="flex items-center justify-between pb-2 border-b border-metro-outline-var/20">
           <div className="flex items-center gap-2">
             <MI name="record_voice_over" size={20} className="text-metro-primary" />
@@ -117,13 +124,13 @@ export default function SettingsScreen() {
           <div className="flex items-center p-0.5 bg-metro-c rounded-lg border border-metro-outline-var/30 text-[11px] font-bold">
             <button
               onClick={() => setVoiceGender("female")}
-              className={`px-2.5 py-1 rounded-md transition-all ${voiceGender === "female" ? "bg-white text-metro-primary shadow-sm" : "text-metro-onvar"}`}
+              className={`px-2.5 py-1 rounded-md transition-all ${voiceGender === "female" ? "bg-metro-card text-metro-primary shadow-sm" : "text-metro-onvar"}`}
             >
               خانم
             </button>
             <button
               onClick={() => setVoiceGender("male")}
-              className={`px-2.5 py-1 rounded-md transition-all ${voiceGender === "male" ? "bg-white text-metro-primary shadow-sm" : "text-metro-onvar"}`}
+              className={`px-2.5 py-1 rounded-md transition-all ${voiceGender === "male" ? "bg-metro-card text-metro-primary shadow-sm" : "text-metro-onvar"}`}
             >
               آقا
             </button>
@@ -139,7 +146,7 @@ export default function SettingsScreen() {
       </section>
 
       {/* ظاهری */}
-      <section className="bg-white rounded-2xl border border-metro-outline-var/30 p-3.5 shadow-sm space-y-3">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/30 p-3.5 shadow-sm space-y-3">
         <div className="flex items-center gap-2 pb-2 border-b border-metro-outline-var/20">
           <MI name="palette" size={20} className="text-metro-primary" />
           <h2 className="text-sm font-bold text-metro-onsurface">تنظیمات ظاهری و موقعیت</h2>
@@ -156,7 +163,7 @@ export default function SettingsScreen() {
                 key={o.k}
                 onClick={() => setTheme(o.k as typeof theme)}
                 className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all active:scale-95 ${
-                  theme === o.k ? "border-metro-primary-c bg-metro-fixed/40 text-metro-primary" : "border-metro-outline-var/30 bg-white text-metro-onvar"
+                  theme === o.k ? "border-metro-primary-c bg-metro-fixed/40 text-metro-primary" : "border-metro-outline-var/30 bg-metro-card text-metro-onvar"
                 }`}
               >
                 <MI name={o.icon} size={20} />
@@ -174,7 +181,7 @@ export default function SettingsScreen() {
             onClick={() => setGps((v) => !v)}
             className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${gps ? "bg-metro-primary-c" : "bg-metro-outline-var"}`}
           >
-            <span className={`absolute top-[2px] w-5 h-5 bg-white rounded-full shadow transition-all ${gps ? "right-[2px]" : "right-[22px]"}`} />
+            <span className={`absolute top-[2px] w-5 h-5 bg-metro-card rounded-full shadow transition-all ${gps ? "right-[2px]" : "right-[22px]"}`} />
           </button>
         </div>
         <div className="h-px bg-metro-c" />
@@ -194,7 +201,7 @@ export default function SettingsScreen() {
       </section>
 
       {/* درباره */}
-      <section className="bg-white rounded-2xl border border-metro-outline-var/30 p-3.5 shadow-sm space-y-1">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/30 p-3.5 shadow-sm space-y-1">
         <div className="flex items-center gap-2 pb-2 mb-1 border-b border-metro-outline-var/20">
           <MI name="info" size={20} className="text-metro-primary" />
           <h2 className="text-sm font-bold text-metro-onsurface">درباره ما و خدمات پشتیبانی</h2>
@@ -279,7 +286,7 @@ function SettingToggle({ label, value, onChange }: { label: string; value: boole
         onClick={() => onChange(!value)}
         className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${value ? "bg-metro-primary-c" : "bg-metro-outline-var"}`}
       >
-        <span className={`absolute top-[2px] w-5 h-5 bg-white rounded-full shadow transition-all ${value ? "right-[2px]" : "right-[22px]"}`} />
+        <span className={`absolute top-[2px] w-5 h-5 bg-metro-card rounded-full shadow transition-all ${value ? "right-[2px]" : "right-[22px]"}`} />
       </button>
     </div>
   );

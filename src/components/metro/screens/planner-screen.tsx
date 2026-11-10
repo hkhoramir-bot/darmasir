@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { nav, useMetro } from "@/lib/store";
 import { MI, useTicker } from "../ui";
 import { StationPickerSheet } from "../station-picker";
-import { toFa, faMoney } from "@/lib/metro-data";
+import { toFa, faMoney, isWithinService, getLine } from "@/lib/metro-data";
 
 interface RouteLeg {
   lineId: string;
@@ -57,6 +57,7 @@ export default function PlannerScreen({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [swapped, setSwapped] = useState(false);
+  const [shared, setShared] = useState(false);
   const now = useTicker(30000);
 
   // resolve initial names
@@ -149,10 +150,28 @@ export default function PlannerScreen({
     nav.go("alert", { fromStationId: from.id, toStationId: to.id });
   };
 
+  const shareRoute = async () => {
+    if (!plan || !from || !to) return;
+    const text = `مسیر من با متروجو: ${from.name} ← ${to.name} • ${toFa(plan.totalMinutes)} دقیقه • ${
+      plan.transfers > 0 ? `${toFa(plan.transfers)} تعویض خط` : "بدون تعویض خط"
+    } • کرایه ${faMoney(plan.fare)} تومان`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: "متروجو", text });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        setShared(true);
+        setTimeout(() => setShared(false), 2200);
+      }
+    } catch {
+      /* کاربر لغو کرد */
+    }
+  };
+
   return (
     <main className="w-full max-w-md mx-auto px-4 pt-3 pb-36 space-y-3">
       {/* انتخاب مبدأ و مقصد */}
-      <section className="bg-white border border-metro-outline-var/30 rounded-2xl p-3.5 shadow-sm space-y-3">
+      <section className="bg-metro-card border border-metro-outline-var/30 rounded-2xl p-3.5 shadow-sm space-y-3">
         <div className="relative flex items-center justify-between gap-2">
           <div className="flex-1 space-y-2 min-w-0">
             <button
@@ -195,7 +214,7 @@ export default function PlannerScreen({
               onClick={() => setPref(p.key)}
               className={`flex-1 py-1.5 px-2 rounded-xl text-[10.5px] font-bold text-center whitespace-nowrap transition-all active:scale-95 flex items-center justify-center gap-1 ${
                 pref === p.key
-                  ? "bg-metro-primary text-white shadow-sm"
+                  ? "bg-metro-primary-c text-white shadow-sm"
                   : "bg-metro-c-low text-metro-onvar border border-metro-outline-var/20"
               }`}
             >
@@ -250,8 +269,18 @@ export default function PlannerScreen({
             </div>
           </div>
 
+          {/* هشدار ساعات سرویس */}
+          {plan.legs.some((l) => !isWithinService(getLine(l.lineId))) && (
+            <div className="bg-amber-500/100/10 border border-amber-500/30 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+              <MI name="bedtime" size={17} className="text-amber-600 shrink-0" />
+              <span className="text-[11px] text-amber-500 dark:text-amber-400">
+                یکی از خطوط این مسیر خارج از ساعات سرویس‌دهی است؛ اولین قطار فردا صبح حرکت می‌کند.
+              </span>
+            </div>
+          )}
+
           {/* گام‌به‌گام */}
-          <section className="bg-white rounded-2xl border border-metro-outline-var/30 p-4 shadow-sm relative overflow-hidden">
+          <section className="bg-metro-card rounded-2xl border border-metro-outline-var/30 p-4 shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between pb-3 border-b border-metro-outline-var/20 mb-4">
               <div className="flex items-center gap-2">
                 <MI name="route" size={19} className="text-metro-primary" />
@@ -278,27 +307,34 @@ export default function PlannerScreen({
           </section>
 
           {/* اکشن‌ها */}
-          <section className="grid grid-cols-2 gap-2">
+          <section className="grid grid-cols-3 gap-2">
             <button
               onClick={startTrip}
-              className="py-2.5 bg-metro-primary-c text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm hover:bg-metro-primary active:scale-95 transition-all"
+              className="py-2.5 bg-metro-primary-c text-white rounded-2xl text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-sm hover:bg-metro-primary-c active:scale-95 transition-all"
             >
-              <MI name="near_me" size={17} fill />
-              شروع سفر و هشدار مقصد
+              <MI name="near_me" size={16} fill />
+              شروع سفر
             </button>
             <button
               onClick={() => saveDaily(swapped ? "work" : "home")}
-              className="py-2.5 bg-white border border-metro-outline-var/50 text-metro-primary rounded-2xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+              className="py-2.5 bg-metro-card border border-metro-outline-var/50 text-metro-primary rounded-2xl text-[11px] font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
             >
-              <MI name={saved ? "check_circle" : "bookmark_add"} size={17} />
-              {saved ? "ذخیره شد" : "ذخیره در مسیرهای روزمره"}
+              <MI name={saved ? "check_circle" : "bookmark_add"} size={16} />
+              {saved ? "ذخیره شد" : "ذخیره"}
+            </button>
+            <button
+              onClick={shareRoute}
+              className="py-2.5 bg-metro-card border border-metro-outline-var/50 text-metro-primary rounded-2xl text-[11px] font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+            >
+              <MI name={shared ? "check" : "share"} size={16} />
+              {shared ? "کپی شد" : "اشتراک"}
             </button>
           </section>
 
           {/* نقشه مسیر */}
           <button
             onClick={() => nav.go("map", { fromStationId: from?.id, toStationId: to?.id })}
-            className="w-full bg-white border border-metro-outline-var/40 rounded-2xl p-3 flex items-center justify-between active:scale-[0.99] transition-all shadow-sm"
+            className="w-full bg-metro-card border border-metro-outline-var/40 rounded-2xl p-3 flex items-center justify-between active:scale-[0.99] transition-all shadow-sm"
           >
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-metro-fixed text-metro-primary flex items-center justify-center">
@@ -312,7 +348,7 @@ export default function PlannerScreen({
       )}
 
       {!plan && !loading && !error && (
-        <div className="bg-white rounded-2xl border border-dashed border-metro-outline-var p-6 text-center">
+        <div className="bg-metro-card rounded-2xl border border-dashed border-metro-outline-var p-6 text-center">
           <MI name="route" size={34} className="text-metro-fixed-dim mx-auto" fill />
           <p className="text-xs text-metro-onvar mt-2">مبدأ و مقصد را انتخاب کنید تا بهترین مسیر محاسبه شود</p>
         </div>
@@ -348,7 +384,7 @@ function StatTile({
   tone?: "primary";
 }) {
   return (
-    <div className="bg-white border border-metro-outline-var/30 rounded-2xl p-3 text-center shadow-sm flex flex-col justify-between h-24">
+    <div className="bg-metro-card border border-metro-outline-var/30 rounded-2xl p-3 text-center shadow-sm flex flex-col justify-between h-24">
       <span className="text-[10px] text-metro-outline">{label}</span>
       <div className={`text-base font-bold ${tone === "primary" ? "text-metro-primary" : "text-metro-onsurface"} flex items-center justify-center gap-1`}>
         {value}
@@ -377,7 +413,7 @@ function Step({
       <div className="flex flex-col items-center flex-shrink-0 w-8">
         <div
           className={`w-7 h-7 rounded-full border-2 border-white shadow-sm flex items-center justify-center z-10 ${
-            origin ? "bg-emerald-600" : destination ? "bg-metro-secondary" : "bg-metro-primary"
+            origin ? "bg-emerald-600" : destination ? "bg-metro-secondary" : "bg-metro-primary-c"
           }`}
         >
           <MI name={origin ? "trip_origin" : destination ? "flag" : "sync_alt"} size={14} className="text-white" fill />

@@ -65,8 +65,8 @@ export default function LinesScreen() {
               onClick={() => setCity(c.id)}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all active:scale-95 ${
                 city === c.id
-                  ? "bg-metro-primary text-white shadow-sm"
-                  : "bg-white text-metro-onvar border border-metro-outline-var/50 hover:bg-metro-c"
+                  ? "bg-metro-primary-c text-white shadow-sm"
+                  : "bg-metro-card text-metro-onvar border border-metro-outline-var/50 hover:bg-metro-c"
               }`}
             >
               {city === c.id && <span className="w-2 h-2 rounded-full bg-metro-tertiary-fixed" />}
@@ -80,7 +80,7 @@ export default function LinesScreen() {
       <section className="grid grid-cols-3 gap-2" aria-label="ابزارهای شبکه">
         <button
           onClick={() => nav.go("map")}
-          className="bg-white border border-metro-outline-var/50 hover:border-metro-primary-c p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
+          className="bg-metro-card border border-metro-outline-var/50 hover:border-metro-primary-c p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
         >
           <div className="w-9 h-9 rounded-xl bg-metro-fixed flex items-center justify-center text-metro-primary">
             <MI name="picture_as_pdf" size={20} fill />
@@ -89,7 +89,7 @@ export default function LinesScreen() {
         </button>
         <button
           onClick={() => nav.go("search", {})}
-          className="bg-white border border-metro-outline-var/50 hover:border-metro-primary-c p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
+          className="bg-metro-card border border-metro-outline-var/50 hover:border-metro-primary-c p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
         >
           <div className="w-9 h-9 rounded-xl bg-metro-c-highest flex items-center justify-center text-metro-primary-c">
             <MI name="alt_route" size={20} fill />
@@ -98,7 +98,7 @@ export default function LinesScreen() {
         </button>
         <button
           onClick={() => nav.go("status")}
-          className="bg-white border border-metro-outline-var/50 hover:border-metro-primary-c p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
+          className="bg-metro-card border border-metro-outline-var/50 hover:border-metro-primary-c p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
         >
           <div className="w-9 h-9 rounded-xl bg-metro-c flex items-center justify-center text-metro-tertiary">
             <MI name="schedule" size={20} fill />
@@ -132,7 +132,7 @@ export default function LinesScreen() {
               <article
                 key={l.id}
                 onClick={() => nav.go("line-detail", { lineId: l.id })}
-                className="bg-white border border-metro-outline-var/40 rounded-2xl p-3.5 shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.99]"
+                className="bg-metro-card border border-metro-outline-var/40 rounded-2xl p-3.5 shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.99]"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0">
@@ -143,7 +143,7 @@ export default function LinesScreen() {
                           {l.terminals[0]} ↔ {l.terminals[1]}
                         </h3>
                         {l.badges.map((b) => (
-                          <span key={b} className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0">
+                          <span key={b} className="bg-amber-500/20 text-amber-500 text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0">
                             {b}
                           </span>
                         ))}
@@ -187,7 +187,7 @@ export default function LinesScreen() {
         </div>
         <button
           onClick={() => nav.go("planner")}
-          className="bg-white text-metro-primary px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 active:scale-95 transition-all shadow-sm"
+          className="bg-metro-card text-metro-primary px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 active:scale-95 transition-all shadow-sm"
         >
           مسیریابی
         </button>
@@ -204,8 +204,8 @@ export function CityDrawer({ open, onClose }: { open: boolean; onClose: () => vo
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/40 fade-in" onClick={onClose} />
-      <div className="sheet-in relative w-full max-w-md bg-white rounded-t-3xl p-4 shadow-2xl">
-        <div className="w-10 h-1.5 rounded-full bg-slate-200 mx-auto mb-3" />
+      <div className="sheet-in relative w-full max-w-md bg-metro-card rounded-t-3xl p-4 shadow-2xl">
+        <div className="w-10 h-1.5 rounded-full bg-metro-c-highest mx-auto mb-3" />
         <h3 className="text-sm font-bold text-metro-onsurface mb-3 flex items-center gap-1.5">
           <MI name="location_on" size={18} className="text-metro-primary-c" />
           انتخاب شهر
@@ -219,7 +219,7 @@ export function CityDrawer({ open, onClose }: { open: boolean; onClose: () => vo
                 onClose();
               }}
               className={`p-3 rounded-2xl border-2 text-right transition-all active:scale-95 ${
-                city === c.id ? "border-metro-primary-c bg-metro-fixed/40" : "border-metro-outline-var/40 bg-white"
+                city === c.id ? "border-metro-primary-c bg-metro-fixed/40" : "border-metro-outline-var/40 bg-metro-card"
               }`}
             >
               <p className="text-sm font-bold text-metro-onsurface flex items-center gap-1">

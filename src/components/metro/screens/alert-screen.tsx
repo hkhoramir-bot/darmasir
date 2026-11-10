@@ -102,7 +102,7 @@ export default function AlertScreen({
       </section>
 
       {/* انتخاب مقصد */}
-      <section className="bg-white rounded-2xl border border-metro-outline-var/30 p-3.5 space-y-3 shadow-sm">
+      <section className="bg-metro-card rounded-2xl border border-metro-outline-var/30 p-3.5 space-y-3 shadow-sm">
         <button
           onClick={() => setPickerOpen(true)}
           className="w-full flex items-center gap-2.5 bg-metro-c-low px-3 py-2.5 rounded-xl border border-metro-outline-var/20 active:scale-[0.99] transition-all text-right"
@@ -122,7 +122,7 @@ export default function AlertScreen({
                 key={n}
                 onClick={() => setBefore(n)}
                 className={`py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                  before === n ? "bg-metro-primary text-white shadow-sm" : "bg-metro-c-low text-metro-onvar"
+                  before === n ? "bg-metro-primary-c text-white shadow-sm" : "bg-metro-c-low text-metro-onvar"
                 }`}
               >
                 {toFa(n)} ایستگاه
@@ -176,7 +176,7 @@ export default function AlertScreen({
 
       {/* وضعیت فعال */}
       {armed && destination && (
-        <section className="bg-white rounded-2xl border-2 border-metro-tertiary/40 p-4 shadow-md fade-in space-y-3">
+        <section className="bg-metro-card rounded-2xl border-2 border-metro-tertiary/40 p-4 shadow-md fade-in space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2.5 w-2.5">
