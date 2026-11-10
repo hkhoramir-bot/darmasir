@@ -12,8 +12,7 @@ import { getVoicePrefs, type VoiceGender } from "@/lib/voice-settings";
    ============================================================ */
 
 export const VOICE_ERRORS = {
-  noDeviceVoice:
-    "صدای فارسی روی این دستگاه نصب نیست. در تنظیمات، موتور «صدای آنلاین» را انتخاب کنید.",
+  playbackFail: "پخش صدا ممکن نشد — اتصال اینترنت یا صدای دستگاه را بررسی کنید و دوباره تلاش کنید",
   cloudFail: "اتصال به سرویس صدای فارسی برقرار نشد. اینترنت را بررسی کنید.",
   asrFail: "صدا واضح نبود، دوباره تلاش کنید",
   asrUnsupported: "جستجوی صوتی در این مرورگر پشتیبانی نمی‌شود — لطفاً عبارت را تایپ کنید",
@@ -164,22 +163,34 @@ export function useAnnouncer() {
       };
 
       try {
+        // هر مسیری که شکست خورد، مسیر دیگر خودکار امتحان می‌شود؛
+        // خطا فقط وقتی نمایش داده می‌شود که هر دو مسیر در دسترس نباشند.
+
         if (prefs.engine === "device") {
           const ok = await playOnDevice();
-          if (!ok) {
-            setSpeaking(false);
-            setError(VOICE_ERRORS.noDeviceVoice);
+          if (ok) return;
+          try {
+            await playInCloud();
+            return;
+          } catch {
+            /* اینترنت نبود */
           }
+          setSpeaking(false);
+          setError(VOICE_ERRORS.playbackFail);
           return;
         }
 
         if (prefs.engine === "cloud") {
           try {
             await playInCloud();
-          } catch (e) {
-            setSpeaking(false);
-            setError(e instanceof Error ? e.message : VOICE_ERRORS.cloudFail);
+            return;
+          } catch {
+            /* اینترنت نبود — ادامه با صدای دستگاه */
           }
+          const ok = await playOnDevice();
+          if (ok) return;
+          setSpeaking(false);
+          setError(VOICE_ERRORS.playbackFail);
           return;
         }
 
@@ -193,23 +204,23 @@ export function useAnnouncer() {
           } catch {
             /* اینترنت نبود — ادامه با صدای دستگاه */
           }
-        }
-        const ok = await playOnDevice();
-        if (ok) return;
-        if (prefs.gender !== "male") {
+          const ok = await playOnDevice();
+          if (ok) return;
+        } else {
+          const ok = await playOnDevice();
+          if (ok) return;
           try {
             await playInCloud();
-          } catch (e) {
-            setSpeaking(false);
-            setError(e instanceof Error ? e.message : VOICE_ERRORS.cloudFail);
+            return;
+          } catch {
+            /* اینترنت نبود */
           }
-          return;
         }
         setSpeaking(false);
-        setError(VOICE_ERRORS.noDeviceVoice);
+        setError(VOICE_ERRORS.playbackFail);
       } catch {
         setSpeaking(false);
-        setError(VOICE_ERRORS.cloudFail);
+        setError(VOICE_ERRORS.playbackFail);
       }
     },
     [stop]

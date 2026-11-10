@@ -5,7 +5,7 @@ import { MI, PageHeader, useInitCity, useShell, type ShellCity } from "@/compone
 import { useAnnouncer, findFaVoice, resetFaVoiceCache } from "@/components/metro/voice";
 import { useToast } from "@/hooks/use-toast";
 import { toFa } from "@/lib/metro-data";
-import { useVoicePrefs, type VoiceEngine } from "@/lib/voice-settings";
+import { useVoicePrefs, speedOf, type VoiceEngine } from "@/lib/voice-settings";
 
 /* ============================================================
    تنظیمات و اطلاعات برنامه — متروجو
@@ -34,7 +34,7 @@ const SOON_CITIES = ["شیراز", "تبریز"];
 
 const ENGINE_OPTIONS: { id: VoiceEngine; label: string; hint: string }[] = [
   { id: "auto", label: "خودکار", hint: "زن: دستگاه ← دلاورا • مرد: فرید ← دستگاه (همه فارسی)" },
-  { id: "device", label: "صدای دستگاه", hint: "گوگل TTS فارسی — آفلاین و بدون اینترنت" },
+  { id: "device", label: "صدای دستگاه", hint: "گوگل TTS فارسی — آفلاین؛ در نبودش، آنلاین پخش می‌شود" },
   { id: "cloud", label: "صدای آنلاین", hint: "گویندگان نئورال فارسی (دلاورا / فرید) — رایگان و بدون کلید" },
 ];
 
@@ -258,14 +258,14 @@ export default function SettingsPage() {
                 deviceVoice === "found"
                   ? "text-tertiary bg-tertiary-fixed/40"
                   : deviceVoice === "missing"
-                    ? "text-secondary bg-secondary-fixed/40"
+                    ? "text-primary bg-primary/10"
                     : "text-outline bg-surface-container"
               }`}
             >
               {deviceVoice === "found"
                 ? "صدای فارسی دستگاه فعال"
                 : deviceVoice === "missing"
-                  ? "صدای فارسی دستگاه یافت نشد"
+                  ? "صدای آنلاین فارسی فعال"
                   : "در بررسی صدا..."}
             </span>
           </div>
@@ -335,30 +335,42 @@ export default function SettingsPage() {
 
           {/* کلید Gemini حذف شد — صدای آنلاین بدون کلید کار می‌کند */}
 
-          {/* سرعت گفتار */}
+          {/* سرعت گفتار — فقط دو حالت: عادی و تند */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label htmlFor="voice-rate" className="text-[11px] font-bold text-on-surface-variant">
-                سرعت گفتار
-              </label>
-              <span className="text-[11px] font-bold text-primary">{toFa(prefs.rate.toFixed(1))}×</span>
+            <p className="text-[11px] font-bold text-on-surface-variant">سرعت گفتار</p>
+            <div className="grid grid-cols-2 gap-1 bg-surface-container-low rounded-xl p-1">
+              <button
+                type="button"
+                onClick={() => prefs.setSpeed("normal")}
+                aria-pressed={speedOf(prefs.rate) === "normal"}
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
+                  speedOf(prefs.rate) === "normal"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-on-surface-variant"
+                }`}
+              >
+                <MI name="volume_up" size={15} />
+                عادی
+              </button>
+              <button
+                type="button"
+                onClick={() => prefs.setSpeed("fast")}
+                aria-pressed={speedOf(prefs.rate) === "fast"}
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
+                  speedOf(prefs.rate) === "fast"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-on-surface-variant"
+                }`}
+              >
+                <MI name="fast_forward" size={15} />
+                تند
+              </button>
             </div>
-            <input
-              id="voice-rate"
-              type="range"
-              min={0.6}
-              max={1.5}
-              step={0.1}
-              value={prefs.rate}
-              onChange={(e) => prefs.setRate(Number(e.target.value))}
-              className="w-full accent-primary"
-              aria-label="سرعت گفتار"
-            />
-            <div className="flex justify-between text-[9px] text-outline">
-              <span>آهسته {toFa("0.6")}×</span>
-              <span>عادی {toFa("1")}×</span>
-              <span>{toFa("1.5")}× تند</span>
-            </div>
+            <p className="text-[10px] text-outline">
+              {speedOf(prefs.rate) === "fast"
+                ? "تند — برای وقتی عجله دارید"
+                : "عادی — آرام و شفاف برای گوش دادن راحت"}
+            </p>
           </div>
 
           <button

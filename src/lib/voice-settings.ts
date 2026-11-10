@@ -12,10 +12,19 @@ import { create } from "zustand";
 export type VoiceEngine = "auto" | "device" | "cloud";
 export type VoiceGender = "female" | "male";
 
+/* سرعت گفتار فقط دو حالت دارد: عادی و تند */
+export type VoiceSpeed = "normal" | "fast";
+export const SPEED_RATE: Record<VoiceSpeed, number> = { normal: 1, fast: 1.25 };
+
 export interface VoicePrefs {
   engine: VoiceEngine;
   rate: number;
   gender: VoiceGender;
+}
+
+/** تبدیل نرخ عددی به نزدیک‌ترین حالت (عادی / تند) */
+export function speedOf(rate: number): VoiceSpeed {
+  return rate > 1.1 ? "fast" : "normal";
 }
 
 const STORAGE_KEY = "metrojo-voice";
@@ -25,7 +34,7 @@ interface VoiceStore extends VoicePrefs {
   hydrated: boolean;
   hydrate: () => void;
   setEngine: (engine: VoiceEngine) => void;
-  setRate: (rate: number) => void;
+  setSpeed: (speed: VoiceSpeed) => void;
   setGender: (gender: VoiceGender) => void;
 }
 
@@ -53,12 +62,12 @@ export const useVoicePrefs = create<VoiceStore>((set, get) => ({
             : parsed.engine === "cloud" || parsed.engine === "gemini"
               ? "cloud"
               : "auto";
+        // مهاجرت سرعت: نسخه‌های قدیمی اسلایدر داشتند → فقط عادی یا تند
+        const rate =
+          typeof parsed.rate === "number" ? SPEED_RATE[speedOf(parsed.rate)] : SPEED_RATE.normal;
         set({
           engine,
-          rate:
-            typeof parsed.rate === "number"
-              ? Math.min(1.5, Math.max(0.6, parsed.rate))
-              : 1,
+          rate,
           gender: parsed.gender === "male" ? "male" : "female",
           hydrated: true,
         });
@@ -73,7 +82,8 @@ export const useVoicePrefs = create<VoiceStore>((set, get) => ({
     set({ engine });
     persist({ engine, rate: get().rate, gender: get().gender });
   },
-  setRate: (rate) => {
+  setSpeed: (speed) => {
+    const rate = SPEED_RATE[speed];
     set({ rate });
     persist({ engine: get().engine, rate, gender: get().gender });
   },

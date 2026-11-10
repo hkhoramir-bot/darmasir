@@ -261,10 +261,10 @@ export default function HomePage() {
     const setValue = isOrigin ? setOriginText : setDestText;
     const inputRef = isOrigin ? originRef : destRef;
     return (
-      <div className="relative flex items-center gap-2.5 bg-surface-container-lowest rounded-lg px-3 py-2 border border-outline-variant/30 shadow-sm" data-station-drop>
-        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOrigin ? "bg-emerald-500" : "bg-red-600"}`} />
+      <div className="relative flex items-center gap-2 bg-surface-container-lowest rounded-lg px-2.5 py-1.5 border border-outline-variant/30 shadow-sm" data-station-drop>
+        <span className={`w-2 h-2 rounded-full shrink-0 ${isOrigin ? "bg-emerald-500" : "bg-red-600"}`} />
         <div className="flex-1 flex flex-col justify-center min-w-0">
-          <span className="text-xs text-outline leading-tight font-bold">{isOrigin ? "مبدأ" : "مقصد"}</span>
+          <span className="text-[10px] text-outline leading-tight font-bold">{isOrigin ? "مبدأ" : "مقصد"}</span>
           <input
             ref={inputRef}
             type="text"
@@ -275,7 +275,7 @@ export default function HomePage() {
             }}
             onFocus={() => setOpenDrop(field)}
             placeholder={isOrigin ? "انتخاب ایستگاه مبدأ..." : "انتخاب ایستگاه مقصد..."}
-            className="w-full bg-transparent text-sm font-bold text-on-surface focus:outline-none border-none p-0 mt-0.5"
+            className="w-full bg-transparent text-[13px] font-bold text-on-surface focus:outline-none border-none p-0 mt-0.5"
             aria-label={isOrigin ? "ایستگاه مبدأ" : "ایستگاه مقصد"}
           />
         </div>
@@ -287,9 +287,9 @@ export default function HomePage() {
             setOpenDrop(field);
             inputRef.current?.focus();
           }}
-          className="text-outline hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors shrink-0"
+          className="text-outline hover:text-on-surface p-0.5 rounded-full hover:bg-surface-container transition-colors shrink-0"
         >
-          <MI name="close" size={15} />
+          <MI name="close" size={13} />
         </button>
 
         {/* دراپ‌داون پیشنهاد ایستگاه */}
@@ -327,51 +327,51 @@ export default function HomePage() {
     <>
       <AppBar />
 
-      <main className="flex-1 w-full px-4 pt-3 pb-28 space-y-4">
+      <main className="flex-1 w-full px-4 pt-3 pb-28 space-y-3">
         {/* ================= ۱. بنر تبلیغ ================= */}
-        <section className="bg-gradient-to-l from-primary/5 via-surface-container-low to-surface-container-lowest rounded-2xl p-4 border border-primary/20 shadow-sm relative overflow-hidden group">
-          <div className="flex items-center justify-center py-2 text-center text-xs font-medium text-outline">
-            <MI name="campaign" size={16} className="ml-1.5" />
+        <section className="bg-gradient-to-l from-primary/5 via-surface-container-low to-surface-container-lowest rounded-xl p-3 border border-primary/20 shadow-sm relative overflow-hidden group">
+          <div className="flex items-center justify-center text-center text-[10px] font-medium text-outline">
+            <MI name="campaign" size={14} className="ml-1.5" />
             بخش تبلیغ
           </div>
         </section>
 
         {/* ================= ۲. دستیار صوتی ================= */}
-        <section className="bg-gradient-to-b from-surface-container-lowest to-surface-container-low rounded-2xl p-5 border border-outline-variant/40 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
+        <section className="bg-gradient-to-b from-surface-container-lowest to-surface-container-low rounded-2xl p-4 border border-outline-variant/40 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
           {/* هاله‌های محیطی */}
-          <div className="absolute -top-12 -left-12 w-44 h-44 bg-primary-fixed/40 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-10 -right-10 w-44 h-44 bg-tertiary-fixed/30 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -top-8 -left-8 w-32 h-32 bg-primary-fixed/40 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-tertiary-fixed/30 rounded-full blur-2xl pointer-events-none" />
 
           {/* حلقه‌های پالس و دکمه صوتی */}
-          <div className="relative w-28 h-28 flex items-center justify-center my-1.5">
+          <div className="relative w-20 h-20 flex items-center justify-center">
             <div
               className={`pulse-wave-1 absolute inset-0 rounded-full ${
                 listening ? "bg-error/30" : "bg-primary-fixed/60"
               }`}
             />
             <div
-              className={`pulse-wave-2 absolute inset-2 rounded-full ${
+              className={`pulse-wave-2 absolute inset-1.5 rounded-full ${
                 listening ? "bg-error/20" : "bg-primary-fixed/40"
               }`}
             />
             <button
               onClick={onMicClick}
               aria-label="دستیار صوتی"
-              className={`relative z-10 w-20 h-20 rounded-full text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 ${
+              className={`relative z-10 w-14 h-14 rounded-full text-white flex items-center justify-center shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 ${
                 listening ? "bg-error scale-105" : "bg-primary-container"
               }`}
             >
               {voice.busy ? (
-                <span className="w-6 h-6 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               ) : (
-                <MI name="mic" size={36} />
+                <MI name="mic" size={26} />
               )}
             </button>
           </div>
 
-          <div className="space-y-1.5 mt-1">
+          <div className="space-y-1 mt-1">
             <h2
-              className={`text-base font-bold text-on-surface transition-colors ${
+              className={`text-sm font-bold text-on-surface transition-colors ${
                 listening ? "text-error" : ""
               }`}
             >
@@ -383,8 +383,8 @@ export default function HomePage() {
                     ? `مسیر محاسبه شد: ${durationText}، ${transferText}`
                     : "لمس کنید و صحبت کنید"}
             </h2>
-            <p className="text-xs text-outline">نام ایستگاه مبدأ و مقصد را بگویید</p>
-            <div className="pt-1">
+            <p className="text-[11px] text-outline">نام ایستگاه مبدأ و مقصد را بگویید</p>
+            <div className="pt-0.5">
               <button
                 type="button"
                 onClick={() => {
@@ -399,9 +399,9 @@ export default function HomePage() {
                     if (p) announcer.announce(`مسیر محاسبه شد. ${toFa(Math.round(p.totalMinutes))} دقیقه`).catch(() => {});
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium cursor-pointer hover:bg-primary/20 transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium cursor-pointer hover:bg-primary/20 transition-colors"
               >
-                <MI name="chat_bubble" size={15} />
+                <MI name="chat_bubble" size={13} />
                 {voiceNoteFinal}
               </button>
             </div>
@@ -411,16 +411,16 @@ export default function HomePage() {
         {/* ================= ۳. دسترسی سریع مسافر ================= */}
         <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MI name="electric_bolt" size={20} className="text-primary" />
-              <h3 className="font-bold text-xs text-on-surface">دسترسی سریع مسافر</h3>
+            <div className="flex items-center gap-1.5">
+              <MI name="electric_bolt" size={16} className="text-primary" />
+              <h3 className="font-bold text-[11px] text-on-surface">دسترسی سریع مسافر</h3>
             </div>
-            <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               بروزرسانی زنده
             </span>
           </div>
-          <div className="grid grid-cols-5 gap-2 text-center pt-1">
+          <div className="grid grid-cols-5 gap-1.5 text-center pt-1">
             {/* به خانه */}
             <button
               type="button"
@@ -430,10 +430,10 @@ export default function HomePage() {
               }}
               className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
             >
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm">
-                <MI name="home" size={24} />
+              <div className="w-11 h-11 rounded-xl bg-primary/10 group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm">
+                <MI name="home" size={20} />
               </div>
-              <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">
+              <span className="text-[10px] font-medium text-on-surface group-hover:text-primary truncate w-full">
                 به خانه
               </span>
             </button>
@@ -446,10 +446,10 @@ export default function HomePage() {
               }}
               className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
             >
-              <div className="w-12 h-12 rounded-2xl bg-tertiary-fixed/50 group-hover:bg-tertiary-fixed text-tertiary flex items-center justify-center transition-colors shadow-sm">
-                <MI name="work" size={24} />
+              <div className="w-11 h-11 rounded-xl bg-tertiary-fixed/50 group-hover:bg-tertiary-fixed text-tertiary flex items-center justify-center transition-colors shadow-sm">
+                <MI name="work" size={20} />
               </div>
-              <span className="text-[11px] font-medium text-on-surface group-hover:text-tertiary truncate w-full">
+              <span className="text-[10px] font-medium text-on-surface group-hover:text-tertiary truncate w-full">
                 محل کار
               </span>
             </button>
@@ -459,10 +459,10 @@ export default function HomePage() {
               onClick={() => router.push("/map")}
               className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
             >
-              <div className="w-12 h-12 rounded-2xl bg-primary-fixed/50 group-hover:bg-primary-fixed text-primary flex items-center justify-center transition-colors shadow-sm">
-                <MI name="download_for_offline" size={24} />
+              <div className="w-11 h-11 rounded-xl bg-primary-fixed/50 group-hover:bg-primary-fixed text-primary flex items-center justify-center transition-colors shadow-sm">
+                <MI name="download_for_offline" size={20} />
               </div>
-              <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">
+              <span className="text-[10px] font-medium text-on-surface group-hover:text-primary truncate w-full">
                 نقشه آفلاین
               </span>
             </button>
@@ -472,10 +472,10 @@ export default function HomePage() {
               onClick={() => router.push("/stations")}
               className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
             >
-              <div className="w-12 h-12 rounded-2xl bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-colors shadow-sm">
-                <MI name="schedule" size={24} />
+              <div className="w-11 h-11 rounded-xl bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-colors shadow-sm">
+                <MI name="schedule" size={20} />
               </div>
-              <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">
+              <span className="text-[10px] font-medium text-on-surface group-hover:text-primary truncate w-full">
                 زمان‌بندی
               </span>
             </button>
@@ -485,11 +485,11 @@ export default function HomePage() {
               onClick={() => router.push("/lines")}
               className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
             >
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 group-hover:bg-blue-100 text-primary flex items-center justify-center transition-colors shadow-sm relative">
-                <MI name="groups" size={24} />
+              <div className="w-11 h-11 rounded-xl bg-blue-50 group-hover:bg-blue-100 text-primary flex items-center justify-center transition-colors shadow-sm relative">
+                <MI name="groups" size={20} />
                 <span className="absolute top-1 left-1 w-2 h-2 rounded-full bg-emerald-500" />
               </div>
-              <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">
+              <span className="text-[10px] font-medium text-on-surface group-hover:text-primary truncate w-full">
                 شلوغی سکو
               </span>
             </button>
@@ -501,12 +501,12 @@ export default function HomePage() {
           {/* هدر */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <MI name="route" size={18} className="text-primary" />
-              <h3 className="font-bold text-xs text-on-surface">محاسبه دقیق زمان سفر و ایستگاه جاری</h3>
+              <MI name="route" size={16} className="text-primary" />
+              <h3 className="font-bold text-[11px] text-on-surface">محاسبه زمان سفر</h3>
             </div>
             <span
               id="routeLineBadge"
-              className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0"
+              className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               {badgeText}
@@ -524,17 +524,17 @@ export default function HomePage() {
                 type="button"
                 aria-label="جابجایی مبدأ و مقصد"
                 onClick={swap}
-                className="w-10 h-10 rounded-full bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/40 shadow-sm flex items-center justify-center text-primary active:scale-90 transition-all duration-300 ease-in-out focus:outline-none"
+                className="w-9 h-9 rounded-full bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/40 shadow-sm flex items-center justify-center text-primary active:scale-90 transition-all duration-300 ease-in-out focus:outline-none"
                 style={{ transform: `rotate(${rotation}deg)` }}
               >
-                <MI name="swap_vert" size={20} />
+                <MI name="swap_vert" size={18} />
               </button>
             </div>
           </div>
 
           {/* قرص‌های پیشنهادی */}
           <div className="flex items-center gap-1.5 overflow-x-hidden">
-            <span className="text-xs text-outline font-medium shrink-0">پیشنهادی:</span>
+            <span className="text-[10px] text-outline font-medium shrink-0">پیشنهادی:</span>
             {[
               { label: "تجریش", name: "تجریش" },
               { label: "بهشتی", name: "شهید بهشتی" },
@@ -545,7 +545,7 @@ export default function HomePage() {
                 key={p.name}
                 type="button"
                 onClick={() => setDestText(p.name)}
-                className={`px-2.5 py-0.5 rounded-full bg-surface-container-low hover:bg-surface-container text-xs font-medium border border-outline-variant/30 transition-colors whitespace-nowrap ${
+                className={`px-2 py-1 rounded-full bg-surface-container-low hover:bg-surface-container text-[10px] font-medium border border-outline-variant/30 transition-colors whitespace-nowrap ${
                   i === 0 ? "text-primary" : "text-on-surface-variant"
                 }`}
               >
@@ -555,29 +555,29 @@ export default function HomePage() {
           </div>
 
           {/* آمار سفر */}
-          <div className="grid grid-cols-3 gap-2 text-center py-1 border-y border-outline-variant/20">
+          <div className="grid grid-cols-3 gap-2 text-center py-1.5 border-y border-outline-variant/20">
             <div className="flex flex-col items-center justify-center">
-              <span className="text-xs text-outline">مدت تقریبی</span>
-              <span className="text-base font-bold text-primary">{durationText}</span>
+              <span className="text-[10px] text-outline">مدت تقریبی</span>
+              <span className="text-sm font-bold text-primary">{durationText}</span>
             </div>
             <div className="flex flex-col items-center justify-center border-x border-outline-variant/20">
-              <span className="text-xs text-outline">تعداد ایستگاه</span>
-              <span className="text-base font-bold text-on-surface">{stationsText}</span>
+              <span className="text-[10px] text-outline">تعداد ایستگاه</span>
+              <span className="text-sm font-bold text-on-surface">{stationsText}</span>
             </div>
             <div className="flex flex-col items-center justify-center">
-              <span className="text-xs text-outline">تبادل خط</span>
-              <span className="text-base font-bold text-tertiary">{transferText}</span>
+              <span className="text-[10px] text-outline">تبادل خط</span>
+              <span className="text-sm font-bold text-tertiary">{transferText}</span>
             </div>
           </div>
 
           {/* وضعیت زنده ایستگاه */}
-          <div className="bg-surface-container-low rounded-xl px-2.5 py-1.5 flex items-center justify-between text-xs">
+          <div className="bg-surface-container-low rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px]">
             <div className="flex items-center gap-1.5 font-medium text-on-surface min-w-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-[11px] text-outline">ایستگاه جاری:</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-[10px] text-outline">ایستگاه جاری:</span>
               <span className="text-[11px] font-bold text-primary truncate">{live.current}</span>
             </div>
-            <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full shrink-0">
+            <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full shrink-0">
               {live.next}
             </span>
           </div>
@@ -587,11 +587,11 @@ export default function HomePage() {
             type="button"
             onClick={goFullPlan}
             disabled={!plan}
-            className="w-full flex items-center justify-center gap-1 py-2 rounded-xl bg-primary-container text-white text-xs font-bold shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-1 py-2 rounded-xl bg-primary-container text-white text-[11px] font-bold shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
           >
-            <MI name="route" size={16} />
+            <MI name="route" size={14} />
             مشاهده مسیر کامل و شروع سفر
-            <MI name="chevron_left" size={16} />
+            <MI name="chevron_left" size={14} />
           </button>
         </section>
 
