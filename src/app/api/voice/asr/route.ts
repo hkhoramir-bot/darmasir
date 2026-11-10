@@ -5,9 +5,10 @@ export const maxDuration = 60;
 
 /* ============================================================
    POST /api/voice/asr  { audioBase64, key? }
-   تبدیل گفتار فارسی به متن.
-   ۱) اگر کلید Gemini موجود باشد: Gemini (مدل چندوجهی) متن فارسی را استخراج می‌کند.
-   ۲) در غیر این صورت: سرویس پشتیبان داخلی.
+   تبدیل گفتار فارسی به متن — فقط موتور Gemini (دقت بالا برای فارسی).
+   تضمین: هیچ سرویس دیگری به‌عنوان fallback استفاده نمی‌شود تا
+   خروجی همیشه فارسی بماند.
+   کلید: بدنه درخواست (تنظیمات دستگاه کاربر) یا GEMINI_API_KEY سرور.
    ============================================================ */
 
 const GEMINI_ASR_MODEL = "gemini-2.5-flash";
@@ -70,34 +71,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "فایل صوتی ارسال نشده است" }, { status: 400 });
   }
 
-  // ۱) مسیر Gemini (دقیق برای فارسی)
-  if (key) {
-    const text = await geminiTranscribe(audioBase64, key);
-    if (text) return NextResponse.json({ text, engine: "gemini" });
+  // مسیرGemini — تنها موتور تشخیص (فارسی دقیق)
+  if (!key) {
+    return NextResponse.json(
+      {
+        error: "no_key",
+        message:
+          "تشخیص گفتار فارسی دقیق نیازمند کلید Gemini است — آن را در تنظیمات برنامه وارد کنید.",
+      },
+      { status: 503 }
+    );
   }
 
-  // ۲) سرویس پشتیبان
-  try {
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
-    const zai = await ZAI.create();
-    const response = await zai.audio.asr.create({ file_base64: audioBase64 });
-    const text = (response.text ?? "").trim();
-    if (text) return NextResponse.json({ text, engine: "fallback" });
-    return NextResponse.json(
-      {
-        error: "no_speech",
-        message: "گفتاری تشخیص داده نشد. نزدیک میکروفون صحبت کنید و دوباره تلاش کنید.",
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("ASR Error:", error);
-    return NextResponse.json(
-      {
-        error: "asr_failed",
-        message: "تشخیص گفتار در دسترس نیست. کلید Gemini را در تنظیمات وارد کنید تا دقت فارسی بالا برود.",
-      },
-      { status: 502 }
-    );
-  }
+  const text = await geminiTranscribe(audioBase64, key);
+  if (text) return NextResponse.json({ text, engine: "gemini" });
+
+  return NextResponse.json(
+    {
+      error: "asr_failed",
+      message: "گفتاری تشخیص داده نشد. نزدیک میکروفون و واضح صحبت کنید.",
+    },
+    { status: 502 }
+  );
 }

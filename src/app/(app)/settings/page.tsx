@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { MI, PageHeader, useInitCity, useShell, type ShellCity } from "@/components/metro/shell";
-import { useAnnouncer } from "@/components/metro/voice";
+import { useAnnouncer, findFaVoice, resetFaVoiceCache } from "@/components/metro/voice";
 import { useToast } from "@/hooks/use-toast";
 import { toFa } from "@/lib/metro-data";
+import { useVoicePrefs, type VoiceEngine } from "@/lib/voice-settings";
 
 /* ============================================================
    تنظیمات و اطلاعات برنامه — متروجو
@@ -30,6 +31,12 @@ const AVAILABLE_CITIES: { id: ShellCity; name: string }[] = [
 ];
 
 const SOON_CITIES = ["شیراز", "تبریز"];
+
+const ENGINE_OPTIONS: { id: VoiceEngine; label: string; hint: string }[] = [
+  { id: "auto", label: "خودکار", hint: "ابتدا صدای فارسی دستگاه، در نبود آن صدای ابری Gemini" },
+  { id: "device", label: "صدای دستگاه", hint: "گوگل TTS فارسی — رایگان، سریع و بدون نیاز به کلید" },
+  { id: "gemini", label: "صدای Gemini", hint: "کیفیت بالاتر — نیازمند کلید رایگان Gemini و اینترنت" },
+];
 
 /* ------------------------------ کلید تعویض ------------------------------ */
 function Toggle({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
@@ -61,6 +68,35 @@ export default function SettingsPage() {
   const announcer = useAnnouncer();
 
   const [settings, setSettings] = useState<MetrojoSettings>(DEFAULT_SETTINGS);
+
+  /* ---------- تنظیمات صوتی ---------- */
+  const prefs = useVoicePrefs();
+  const [deviceVoice, setDeviceVoice] = useState<"checking" | "found" | "missing">("checking");
+  const [showKey, setShowKey] = useState(false);
+
+  /* hydrate ترجیحات صوتی از حافظه دستگاه */
+  useEffect(() => {
+    useVoicePrefs.getState().hydrate();
+  }, []);
+
+  /* بررسی وجود صدای فارسی روی دستگاه (لیست صداها به‌صورت ناهمزمان می‌آید) */
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      const t0 = setTimeout(() => setDeviceVoice("missing"), 0);
+      return () => clearTimeout(t0);
+    }
+    const check = () => {
+      resetFaVoiceCache();
+      setDeviceVoice(findFaVoice() ? "found" : "missing");
+    };
+    check();
+    window.speechSynthesis.onvoiceschanged = check;
+    const t = window.setTimeout(check, 900);
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+      window.clearTimeout(t);
+    };
+  }, []);
 
   /* بازیابی تنظیمات ذخیره‌شده (یک‌بار، خارج از چرخه رندر) */
   useEffect(() => {
@@ -207,12 +243,116 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ---------------- دستیار صوتی ---------------- */}
+        {/* ---------------- دستیار صوتی فارسی ---------------- */}
         <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
           <div className="flex items-center gap-2">
             <MI name="graphic_eq" size={20} className="text-primary" />
-            <h3 className="font-bold text-xs text-on-surface">دستیار صوتی</h3>
+            <h3 className="font-bold text-xs text-on-surface">دستیار صوتی فارسی</h3>
+            <span
+              className={`mr-auto text-[10px] font-bold rounded-full px-2 py-0.5 ${
+                deviceVoice === "found"
+                  ? "text-tertiary bg-tertiary-fixed/40"
+                  : deviceVoice === "missing"
+                    ? "text-secondary bg-secondary-fixed/40"
+                    : "text-outline bg-surface-container"
+              }`}
+            >
+              {deviceVoice === "found"
+                ? "صدای فارسی دستگاه فعال"
+                : deviceVoice === "missing"
+                  ? "صدای فارسی دستگاه یافت نشد"
+                  : "در بررسی صدا..."}
+            </span>
           </div>
+          <p className="text-[10px] text-outline leading-relaxed">
+            اعلام «ایستگاه بعدی» و جستجوی صوتی کاملاً به زبان فارسی است. موتور گفتار را انتخاب کنید؛
+            تنظیمات فقط روی همین دستگاه ذخیره می‌شود.
+          </p>
+
+          {/* انتخاب موتور گفتار */}
+          <div className="grid grid-cols-3 gap-1 bg-surface-container-low rounded-xl p-1">
+            {ENGINE_OPTIONS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => prefs.setEngine(o.id)}
+                aria-pressed={prefs.engine === o.id}
+                className={`rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
+                  prefs.engine === o.id
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-on-surface-variant"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-on-surface-variant">
+            {ENGINE_OPTIONS.find((o) => o.id === prefs.engine)?.hint}
+          </p>
+
+          {/* کلید Gemini */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="gemini-key"
+              className="text-[11px] font-bold text-on-surface-variant flex items-center gap-1"
+            >
+              <MI name="key" size={14} />
+              کلید API جمینای (اختیاری)
+            </label>
+            <div className="flex items-center gap-1.5 bg-surface-container-low rounded-xl px-3 border border-outline-variant/30 focus-within:border-primary/60 transition-colors">
+              <input
+                id="gemini-key"
+                type={showKey ? "text" : "password"}
+                dir="ltr"
+                inputMode="text"
+                autoComplete="off"
+                value={prefs.geminiKey}
+                onChange={(e) => prefs.setGeminiKey(e.target.value.trim())}
+                placeholder="AIza..."
+                className="flex-1 min-w-0 bg-transparent py-2.5 text-xs text-on-surface outline-none placeholder:text-outline/50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey((v) => !v)}
+                aria-label={showKey ? "پنهان‌کردن کلید" : "نمایش کلید"}
+                className="shrink-0 p-1"
+              >
+                <MI name={showKey ? "visibility_off" : "visibility"} size={16} className="text-outline" />
+              </button>
+            </div>
+            <p className="text-[10px] text-outline leading-relaxed">
+              کلید رایگان از <span dir="ltr" className="font-bold text-primary">aistudio.google.com/apikey</span> —
+              با کلید جمینای، اعلام صوتی و جستجوی صوتی فارسی دقیق‌تر می‌شود.
+            </p>
+          </div>
+
+          {/* سرعت گفتار */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="voice-rate" className="text-[11px] font-bold text-on-surface-variant">
+                سرعت گفتار
+              </label>
+              <span className="text-[11px] font-bold text-primary">{toFa(prefs.rate.toFixed(1))}×</span>
+            </div>
+            <input
+              id="voice-rate"
+              type="range"
+              min={0.6}
+              max={1.5}
+              step={0.1}
+              value={prefs.rate}
+              onChange={(e) => prefs.setRate(Number(e.target.value))}
+              className="w-full accent-primary"
+              aria-label="سرعت گفتار"
+            />
+            <div className="flex justify-between text-[9px] text-outline">
+              <span>آهسته {toFa("0.6")}×</span>
+              <span>عادی {toFa("1")}×</span>
+              <span>{toFa("1.5")}× تند</span>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={testVoice}
@@ -226,19 +366,13 @@ export default function SettingsPage() {
             ) : (
               <>
                 <MI name="volume_up" size={16} />
-                آزمایش دستیار صوتی
+                آزمایش صدای فارسی
               </>
             )}
           </button>
-          <div className="bg-surface-container-low p-2.5 rounded-xl text-xs flex items-center gap-2">
-            <MI name="graphic_eq" size={18} className="text-secondary shrink-0" />
-            <span className="text-on-surface-variant">
-              دستیار هوشمند صوتی آماده دریافت فرامین است.
-            </span>
-          </div>
           {announcer.error && (
-            <p className="text-[10px] text-error font-medium flex items-center gap-1">
-              <MI name="error" size={12} />
+            <p className="text-[10px] text-error font-medium flex items-start gap-1">
+              <MI name="error" size={12} className="shrink-0 mt-0.5" />
               {announcer.error}
             </p>
           )}

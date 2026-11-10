@@ -12,6 +12,9 @@ export const maxDuration = 60;
 
 const GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts";
 const GEMINI_VOICE = "Kore"; // صدای ثابت و شفاف — مناسب اعلام ایستگاه
+/* دستور سبک: مدل TTS جمینای دستور زبان را نمی‌خواند و فقط متن پس از
+   آن را به فارسیِ روان و شمرده اجرا می‌کند (الگوی رسمی Google). */
+const PERSIAN_STYLE_PROMPT = "با صدای طبیعی، شمرده و واضح به زبان فارسی بخوان: ";
 
 let cached: { key: string; buf: Buffer } | null = null;
 
@@ -89,7 +92,7 @@ export async function POST(req: NextRequest) {
           "x-goog-api-key": key,
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text }] }],
+          contents: [{ parts: [{ text: PERSIAN_STYLE_PROMPT + text }] }],
           generationConfig: {
             responseModalities: ["AUDIO"],
             speechConfig: {
