@@ -1,0 +1,638 @@
+     1→<!DOCTYPE html><html class="light" dir="rtl" lang="fa"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+     2→  tailwind.config = {
+     3→    darkMode: "class",
+     4→    theme: {
+     5→      extend: {
+     6→        "colors": {
+     7→          "primary": "#00417f",
+     8→          "surface-dim": "#cfdaf2",
+     9→          "surface-container": "#e7eeff",
+    10→          "surface-container-low": "#f0f3ff",
+    11→          "secondary-container": "#e32220",
+    12→          "outline": "#727782",
+    13→          "primary-fixed": "#d5e3ff",
+    14→          "secondary": "#bc000c",
+    15→          "on-primary": "#ffffff",
+    16→          "tertiary": "#004c28",
+    17→          "on-tertiary-fixed-variant": "#00522c",
+    18→          "inverse-surface": "#263143",
+    19→          "inverse-on-surface": "#ecf1ff",
+    20→          "primary-container": "#0d58a6",
+    21→          "on-primary-fixed-variant": "#004689",
+    22→          "on-surface-variant": "#424751",
+    23→          "surface-container-high": "#dee8ff",
+    24→          "surface-tint": "#1a5eac",
+    25→          "surface-variant": "#d8e3fb",
+    26→          "surface-bright": "#f9f9ff",
+    27→          "tertiary-fixed-dim": "#61de92",
+    28→          "on-error": "#ffffff",
+    29→          "secondary-fixed": "#ffdad5",
+    30→          "tertiary-container": "#006638",
+    31→          "surface": "#f9f9ff",
+    32→          "on-tertiary-container": "#6ae79a",
+    33→          "on-error-container": "#93000a",
+    34→          "on-secondary-container": "#fffbff",
+    35→          "on-tertiary-fixed": "#00210e",
+    36→          "on-primary-container": "#b6d0ff",
+    37→          "primary-fixed-dim": "#a8c8ff",
+    38→          "error-container": "#ffdad6",
+    39→          "secondary-fixed-dim": "#ffb4aa",
+    40→          "on-tertiary": "#ffffff",
+    41→          "on-secondary": "#ffffff",
+    42→          "on-secondary-fixed-variant": "#930007",
+    43→          "on-background": "#111c2d",
+    44→          "background": "#f9f9ff",
+    45→          "surface-container-lowest": "#ffffff",
+    46→          "tertiary-fixed": "#7efbac",
+    47→          "on-primary-fixed": "#001b3c",
+    48→          "on-secondary-fixed": "#410001",
+    49→          "error": "#ba1a1a",
+    50→          "outline-variant": "#c2c6d3",
+    51→          "surface-container-highest": "#d8e3fb",
+    52→          "on-surface": "#111c2d",
+    53→          "inverse-primary": "#a8c8ff"
+    54→        },
+    55→        "borderRadius": {
+    56→          "DEFAULT": "0.25rem",
+    57→          "lg": "0.5rem",
+    58→          "xl": "0.75rem",
+    59→          "full": "9999px"
+    60→        },
+    61→        "fontFamily": {
+    62→          "vazir": ["Vazirmatn", "sans-serif"]
+    63→        }
+    64→      }
+    65→    }
+    66→  }
+    67→}catch(_e){}</script></head><body class="bg-background text-on-surface antialiased min-h-screen flex flex-col justify-between selection:bg-primary-fixed selection:text-on-primary-fixed">
+    68→<!-- ================= TOP APP BAR ================= -->
+    69→<header class="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-4 transition-colors bg-surface">
+    70→<!-- Right side: Menu Icon & App Title -->
+    71→<div class="flex items-center gap-3"><button aria-label="منو" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container active:scale-95 transition-transform text-on-surface" id="openMenuBtn"><span class="material-symbols-outlined text-[24px]">menu</span></button><div class="flex items-center gap-2"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwpToE5Gd8DzHf73q0kk1BpD47GEEB0Cn3wAgKsqgHf4PFiDE7aI4VyVEKYWy6_aRJy9mPYBD4oxrYa9QCJxrd-Nxxy3vEL3868Y5KoM6cwouJKOd_Z_NGInqxOVEe-AAvDh9YEWG9et7urjnzJ3VVQpf1xeKszY2Ve24Xrm6Che7Wgl1-mYCDXGUAJ5RmmRZx3Q9dJlHpSkimDMzKFQCy0_xCUqYYdGC8Px3bnaS6wjt1z1ZM5FE" alt="لوگوی متروجو" class="w-8 h-8 rounded-full object-contain shrink-0 shadow-sm"><div class="flex flex-col"><h1 class="text-base font-bold text-primary tracking-tight leading-tight">متروجو</h1><span class="text-xs text-outline">دستیار صوتی و ناوبری</span></div></div></div>
+    72→<!-- Left side: City Switcher Chip & Voice Quick Mic -->
+    73→<div class="flex items-center gap-2 relative">
+    74→<button class="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-3 py-1 rounded-full border border-outline-variant/50 text-primary active:scale-95 transition-all text-xs font-bold" id="cityToggleBtn">
+    75→<span class="material-symbols-outlined text-[16px] text-primary" data-original-icon="location_on">location_on</span>
+    76→<span id="currentCityText">تهران</span>
+    77→<span class="material-symbols-outlined text-[15px] text-outline" data-original-icon="expand_more">expand_more</span>
+    78→</button>
+    79→<!-- City Dropdown Menu -->
+    80→<div class="absolute top-10 left-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1.5 w-32 z-50 text-xs text-on-surface font-medium hidden" id="cityDropdown">
+    81→<button class="city-option w-full text-right px-3 py-1.5 hover:bg-surface-container text-primary font-bold" data-city="تهران">تهران</button>
+    82→<button class="city-option w-full text-right px-3 py-1.5 hover:bg-surface-container" data-city="مشهد">مشهد</button>
+    83→<button class="city-option w-full text-right px-3 py-1.5 hover:bg-surface-container" data-city="شیراز">شیراز</button>
+    84→<button class="city-option w-full text-right px-3 py-1.5 hover:bg-surface-container" data-city="اصفهان">اصفهان</button>
+    85→<button class="city-option w-full text-right px-3 py-1.5 hover:bg-surface-container" data-city="تبریز">تبریز</button>
+    86→</div>
+    87→</div>
+    88→</header>
+    89→<!-- ================= DRAWER MENU MODAL ================= -->
+    90→<div class="fixed inset-0 z-50 transition-all duration-300 pointer-events-none" id="menuDrawer">
+    91→<!-- Backdrop -->
+    92→<div class="absolute inset-0 bg-black/40 transition-opacity duration-300 opacity-0" id="drawerOverlay"></div>
+    93→<!-- Drawer Panel -->
+    94→<aside class="absolute top-0 right-0 h-full w-72 bg-surface-container-lowest shadow-2xl p-5 transform transition-transform duration-300 flex flex-col justify-between z-10 translate-x-full" id="drawerPanel">
+    95→<div class="space-y-4">
+    96→<div class="flex items-center justify-between border-b border-outline-variant/30 pb-3">
+    97→<div class="flex items-center gap-2.5">
+    98→<div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white shadow-sm">
+    99→<span class="material-symbols-outlined text-[20px]">subway</span>
+   100→</div>
+   101→<div>
+   102→<h2 class="font-bold text-sm text-primary">متروجو هوشمند</h2>
+   103→<span class="text-[10px] text-tertiary font-bold bg-tertiary-fixed/40 px-1.5 py-0.5 rounded">نسخه ۴.۸.۲ آنلاین</span>
+   104→</div>
+   105→</div>
+   106→<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-outline" id="closeDrawerBtn">
+   107→<span class="material-symbols-outlined text-[20px]">close</span>
+   108→</button>
+   109→</div>
+   110→<!-- Drawer Nav Links -->
+   111→
+   112→<div class="pt-4 border-t border-outline-variant/30 space-y-2">
+   113→<p class="text-[11px] font-bold text-outline">دسترسی سریع صوتی</p>
+   114→<div class="bg-surface-container-low p-2.5 rounded-xl text-xs text-on-surface-variant flex items-center gap-2">
+   115→<span class="material-symbols-outlined text-secondary text-[18px]">graphic_eq</span>
+   116→<span>دستیار هوشمند صوتی آماده دریافت فرامین است.</span>
+   117→</div>
+   118→</div>
+   119→</div>
+   120→<div class="text-[11px] text-outline text-center border-t border-outline-variant/30 pt-3">
+   121→      طراحی شده برای ناوبری صوتی و سریع مسافران
+   122→    </div>
+   123→</aside>
+   124→</div>
+   125→<!-- ================= MAIN CONTAINER CANVAS ================= -->
+   126→<main class="flex-1 w-full max-w-md mx-auto px-4 pt-3 pb-28">
+   127→<!-- ================= TAB: HOME ================= -->
+   128→<div class="tab-content space-y-4" id="tab-home">
+   129→<!-- 1. Voice Assistant Hero Section -->
+   130→<section class="bg-gradient-to-l from-primary/5 via-surface-container-low to-surface-container-lowest rounded-2xl p-4 border border-primary/20 shadow-sm relative overflow-hidden group"><div class="flex items-center justify-center py-2 text-center text-xs font-medium text-outline"><span class="material-symbols-outlined text-[16px] ml-1.5">campaign</span>بخش تبلیغ</div></section><section class="bg-gradient-to-b from-surface-container-lowest to-surface-container-low rounded-2xl p-5 border border-outline-variant/40 shadow-sm flex flex-col items-center text-center relative overflow-hidden"><!-- Glow ambient ring -->
+   131→<div class="absolute -top-12 -left-12 w-44 h-44 bg-primary-fixed/40 rounded-full blur-2xl pointer-events-none"></div>
+   132→<div class="absolute -bottom-10 -right-10 w-44 h-44 bg-tertiary-fixed/30 rounded-full blur-2xl pointer-events-none"></div>
+   133→<!-- Pulse Container and Voice Button -->
+   134→<div class="relative w-28 h-28 flex items-center justify-center my-1.5">
+   135→<div class="pulse-wave-1 absolute inset-0 rounded-full bg-primary-fixed/60" id="pulseRing1"></div>
+   136→<div class="pulse-wave-2 absolute inset-2 rounded-full bg-primary-fixed/40" id="pulseRing2"></div>
+   137→<button class="relative z-10 w-20 h-20 rounded-full bg-primary-container text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300" id="voiceBtn">
+   138→<span class="material-symbols-outlined text-[36px]" id="voiceMicIcon">mic</span>
+   139→</button>
+   140→</div>
+   141→<div class="space-y-1.5 mt-1"><h2 class="text-base font-bold text-on-surface transition-colors" id="voiceStatusText">لمس کنید و صحبت کنید</h2><p class="text-xs text-outline">نام ایستگاه مبدأ و مقصد را بگویید</p><div class="pt-1"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium cursor-pointer hover:bg-primary/20 transition-colors" id="voiceSampleText"><span class="material-symbols-outlined text-[15px]">chat_bubble</span>«از اینجا تا تجریش چقدر راهه؟»</span></div></div>
+   142→
+   143→<!-- Speech Bubble Prompt -->
+   144→</section>
+   145→<!-- 4. Quick Access Category (دسترسی سریع مسافر) -->
+   146→<section class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   147→<div class="flex items-center justify-between">
+   148→<div class="flex items-center gap-2">
+   149→<span class="material-symbols-outlined text-primary text-[20px]">electric_bolt</span>
+   150→<h3 class="font-bold text-xs text-on-surface">دسترسی سریع مسافر</h3>
+   151→</div>
+   152→<span class="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+   153→<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>بروزرسانی زنده
+   154→        </span>
+   155→</div>
+   156→<div class="grid grid-cols-5 gap-2 text-center pt-1">
+   157→<!-- Home Shortcut -->
+   158→<button class="flex flex-col items-center gap-1.5 group active:scale-95 transition-all" onclick="const o=document.getElementById('inputOrigin'),d=document.getElementById('inputDestination');if(o&amp;&amp;d){o.value='میدان انقلاب اسلامی';d.value='صادقیه (تهران)';updateRouteStats();}" type="button">
+   159→<div class="w-12 h-12 rounded-2xl bg-primary/10 group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm">
+   160→<span class="material-symbols-outlined text-[24px]">home</span>
+   161→</div>
+   162→<span class="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">به خانه</span>
+   163→</button>
+   164→<!-- Work Shortcut -->
+   165→<button class="flex flex-col items-center gap-1.5 group active:scale-95 transition-all" onclick="const o=document.getElementById('inputOrigin'),d=document.getElementById('inputDestination');if(o&amp;&amp;d){o.value='میدان انقلاب اسلامی';d.value='شهید بهشتی';updateRouteStats();}" type="button">
+   166→<div class="w-12 h-12 rounded-2xl bg-tertiary-fixed/50 group-hover:bg-tertiary-fixed text-tertiary flex items-center justify-center transition-colors shadow-sm">
+   167→<span class="material-symbols-outlined text-[24px]">work</span>
+   168→</div>
+   169→<span class="text-[11px] font-medium text-on-surface group-hover:text-tertiary truncate w-full">محل کار</span>
+   170→</button>
+   171→<!-- Offline Map Shortcut -->
+   172→<button class="flex flex-col items-center gap-1.5 group active:scale-95 transition-all" onclick="switchTab('tab-lines')" type="button">
+   173→<div class="w-12 h-12 rounded-2xl bg-primary-fixed/50 group-hover:bg-primary-fixed text-primary flex items-center justify-center transition-colors shadow-sm">
+   174→<span class="material-symbols-outlined text-[24px]">download_for_offline</span>
+   175→</div>
+   176→<span class="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">نقشه آفلاین</span>
+   177→</button>
+   178→<!-- Schedules Shortcut -->
+   179→<button class="flex flex-col items-center gap-1.5 group active:scale-95 transition-all" onclick="switchTab('tab-stations')" type="button">
+   180→<div class="w-12 h-12 rounded-2xl bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-colors shadow-sm">
+   181→<span class="material-symbols-outlined text-[24px]">schedule</span>
+   182→</div>
+   183→<span class="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">زمان‌بندی</span>
+   184→</button>
+   185→<!-- Platform Crowdedness Shortcut -->
+   186→<button class="flex flex-col items-center gap-1.5 group active:scale-95 transition-all" onclick="switchTab('tab-lines')" type="button">
+   187→<div class="w-12 h-12 rounded-2xl bg-blue-50 group-hover:bg-blue-100 text-primary flex items-center justify-center transition-colors shadow-sm relative">
+   188→<span class="material-symbols-outlined text-[24px]">groups</span>
+   189→<span class="absolute top-1 left-1 w-2 h-2 rounded-full bg-emerald-500"></span>
+   190→</div>
+   191→<span class="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">شلوغی سکو</span>
+   192→</button>
+   193→</div>
+   194→</section>
+   195→<!-- 2. Fast Daily Route & Trip Planning Card -->
+   196→<section class="bg-surface-container-lowest rounded-2xl p-3.5 border border-outline-variant/40 shadow-sm space-y-3">
+   197→<!-- Header -->
+   198→<div class="flex items-center justify-between">
+   199→<div class="flex items-center gap-1.5">
+   200→<span class="material-symbols-outlined text-primary text-[18px]">route</span>
+   201→<h3 class="font-bold text-xs text-on-surface">محاسبه دقیق زمان سفر و ایستگاه جاری</h3>
+   202→</div>
+   203→<span class="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1" id="routeLineBadge">
+   204→<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>خط ۴ به ۱
+   205→        </span>
+   206→</div>
+   207→<!-- Compact Dual Input Block with Swap Button -->
+   208→<div class="relative bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/30 flex items-center gap-2">
+   209→<!-- Inputs Column -->
+   210→<div class="flex-1 space-y-2 min-w-0">
+   211→<!-- Origin Input Row -->
+   212→<div class="relative flex items-center gap-2.5 bg-surface-container-lowest rounded-lg px-3 py-2 border border-outline-variant/30 shadow-sm">
+   213→<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+   214→<div class="flex-1 flex flex-col justify-center min-w-0"><span class="text-xs text-outline leading-tight font-bold">مبدأ</span><input class="w-full bg-transparent text-sm font-bold text-on-surface focus:outline-none border-none p-0 mt-0.5" id="inputOrigin" onfocus="openStationSuggestions('origin')" oninput="filterStationSuggestions('origin', this.value)" placeholder="انتخاب ایستگاه مبدأ..." type="text" value="میدان انقلاب اسلامی"></div>
+   215→<button class="text-outline hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors shrink-0" onclick="clearStationInput('origin')" type="button">
+   216→<span class="material-symbols-outlined text-[15px]">close</span>
+   217→</button>
+   218→<div class="absolute top-full left-0 right-0 mt-1.5 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1 z-50 text-xs hidden" id="originDropdown">
+   219→<button class="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between" onclick="selectStation('origin', 'میدان انقلاب اسلامی')" type="button">
+   220→<span>میدان انقلاب اسلامی</span>
+   221→<span class="text-[10px] text-yellow-800 font-bold bg-yellow-50 px-1.5 py-0.5 rounded">خط ۴</span>
+   222→</button>
+   223→<button class="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between" onclick="selectStation('origin', 'تئاتر شهر')" type="button">
+   224→<span>تئاتر شهر</span>
+   225→<span class="text-[10px] text-cyan-800 font-bold bg-cyan-50 px-1.5 py-0.5 rounded">تقاطع ۳ و ۴</span>
+   226→</button>
+   227→<button class="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between" onclick="selectStation('origin', 'تجریش')" type="button">
+   228→<span>تجریش</span>
+   229→<span class="text-[10px] text-red-800 font-bold bg-red-50 px-1.5 py-0.5 rounded">خط ۱</span>
+   230→</button>
+   231→</div>
+   232→</div>
+   233→<!-- Destination Input Row -->
+   234→<div class="relative flex items-center gap-2.5 bg-surface-container-lowest rounded-lg px-3 py-2 border border-outline-variant/30 shadow-sm">
+   235→<span class="w-2.5 h-2.5 rounded-full bg-red-600 shrink-0"></span>
+   236→<div class="flex-1 flex flex-col justify-center min-w-0"><span class="text-xs text-outline leading-tight font-bold">مقصد</span><input class="w-full bg-transparent text-sm font-bold text-on-surface focus:outline-none border-none p-0 mt-0.5" id="inputDestination" onfocus="openStationSuggestions('destination')" oninput="filterStationSuggestions('destination', this.value)" placeholder="انتخاب ایستگاه مقصد..." type="text" value="تجریش"></div>
+   237→<button class="text-outline hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors shrink-0" onclick="clearStationInput('destination')" type="button">
+   238→<span class="material-symbols-outlined text-[15px]">close</span>
+   239→</button>
+   240→<div class="absolute top-full left-0 right-0 mt-1.5 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1 z-50 text-xs hidden" id="destinationDropdown">
+   241→<button class="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between" onclick="selectStation('destination', 'تجریش')" type="button">
+   242→<span>تجریش</span>
+   243→<span class="text-[10px] text-red-800 font-bold bg-red-50 px-1.5 py-0.5 rounded">خط ۱</span>
+   244→</button>
+   245→<button class="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between" onclick="selectStation('destination', 'میدان انقلاب اسلامی')" type="button">
+   246→<span>میدان انقلاب اسلامی</span>
+   247→<span class="text-[10px] text-yellow-800 font-bold bg-yellow-50 px-1.5 py-0.5 rounded">خط ۴</span>
+   248→</button>
+   249→<button class="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between" onclick="selectStation('destination', 'صادقیه (تهران)')" type="button">
+   250→<span>صادقیه (تهران)</span>
+   251→<span class="text-[10px] text-blue-800 font-bold bg-blue-50 px-1.5 py-0.5 rounded">خط ۲</span>
+   252→</button>
+   253→</div>
+   254→</div>
+   255→</div>
+   256→<!-- Swap Action Button Beside Inputs (Never Overlaps X Buttons) -->
+   257→<div class="flex items-center justify-center shrink-0">
+   258→<button aria-label="جابجایی مبدأ و مقصد" class="w-10 h-10 rounded-full bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/40 shadow-sm flex items-center justify-center text-primary active:scale-90 transition-all duration-300 ease-in-out focus:outline-none" id="swap-route-btn" onclick="handleSwapStations()" type="button">
+   259→<span class="material-symbols-outlined text-[20px]">swap_vert</span>
+   260→</button>
+   261→</div>
+   262→</div>
+   263→<!-- Quick Pills -->
+   264→<div class="flex items-center gap-1.5 overflow-x-hidden"><span class="text-xs text-outline font-medium shrink-0">پیشنهادی:</span><button class="px-2.5 py-0.5 rounded-full bg-surface-container-low hover:bg-surface-container text-xs font-medium text-primary border border-outline-variant/30 transition-colors" onclick="selectStation('destination', 'تجریش')" type="button">تجریش</button><button class="px-2.5 py-0.5 rounded-full bg-surface-container-low hover:bg-surface-container text-xs font-medium text-on-surface-variant border border-outline-variant/30 transition-colors" onclick="selectStation('destination', 'شهید بهشتی')" type="button">بهشتی</button><button class="px-2.5 py-0.5 rounded-full bg-surface-container-low hover:bg-surface-container text-xs font-medium text-on-surface-variant border border-outline-variant/30 transition-colors" onclick="selectStation('destination', 'دروازه دولت')" type="button">دروازه دولت</button><button class="px-2.5 py-0.5 rounded-full bg-surface-container-low hover:bg-surface-container text-xs font-medium text-on-surface-variant border border-outline-variant/30 transition-colors" onclick="selectStation('destination', 'صادقیه (تهران)')" type="button">صادقیه</button></div>
+   265→<!-- Travel Micro Stats Row -->
+   266→<div class="grid grid-cols-3 gap-2 text-center py-1 border-y border-outline-variant/20"><div class="flex flex-col items-center justify-center"><span class="text-xs text-outline">مدت تقریبی</span><span class="text-base font-bold text-primary" id="routeDuration">۲۴ دقیقه</span></div><div class="flex flex-col items-center justify-center border-x border-outline-variant/20"><span class="text-xs text-outline">تعداد ایستگاه</span><span class="text-base font-bold text-on-surface" id="routeStationsCount">۹ ایستگاه</span></div><div class="flex flex-col items-center justify-center"><span class="text-xs text-outline">تبادل خط</span><span class="text-base font-bold text-tertiary" id="routeTransferInfo">۱ تعویض (دولت)</span></div></div>
+   267→<!-- Live Station Status & Progress -->
+   268→<div class="bg-surface-container-low rounded-xl px-2.5 py-1.5 flex items-center justify-between text-xs">
+   269→<div class="flex items-center gap-1.5 font-medium text-on-surface">
+   270→<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+   271→<span class="text-[11px] text-outline">ایستگاه جاری:</span>
+   272→<span class="text-[11px] font-bold text-primary" id="currentStationName">دروازه دولت</span>
+   273→</div>
+   274→<span class="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full" id="nextStationInfo">
+   275→          ایستگاه بعدی: طالقانی (۲ دقیقه)
+   276→        </span>
+   277→</div>
+   278→</section>
+   279→</div>
+   280→<!-- ================= TAB: LINES & MAP (Placeholder view) ================= -->
+   281→<div class="tab-content space-y-4 hidden" id="tab-lines">
+   282→<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/40 shadow-sm text-center space-y-3">
+   283→<div class="w-12 h-12 rounded-full bg-primary-fixed mx-auto flex items-center justify-center text-primary">
+   284→<span class="material-symbols-outlined text-[28px]">map</span>
+   285→</div>
+   286→<h3 class="font-bold text-base text-on-surface">نقشه تعاملی خطوط مترو</h3>
+   287→<p class="text-xs text-outline leading-relaxed">مشاهده تمامی خطوط ۷ گانه تهران، ایستگاه‌های تقاطعی و زمان‌بندی تردد قطارها</p>
+   288→<div class="grid grid-cols-2 gap-2 pt-2 text-right">
+   289→<div class="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-800 flex items-center gap-2">
+   290→<span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> خط ۱: تجریش - کهریزک
+   291→        </div>
+   292→<div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs font-bold text-blue-800 flex items-center gap-2">
+   293→<span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> خط ۲: صادقیه - فرهنگسرا
+   294→        </div>
+   295→<div class="p-2.5 rounded-xl bg-cyan-50 border border-cyan-200 text-xs font-bold text-cyan-800 flex items-center gap-2">
+   296→<span class="w-2.5 h-2.5 rounded-full bg-cyan-600"></span> خط ۳: قائم - آزادگان
+   297→        </div>
+   298→<div class="p-2.5 rounded-xl bg-yellow-50 border border-yellow-200 text-xs font-bold text-yellow-800 flex items-center gap-2">
+   299→<span class="w-2.5 h-2.5 rounded-full bg-yellow-600"></span> خط ۴: ارم سبز - کلاهدوز
+   300→        </div>
+   301→</div>
+   302→</div>
+   303→</div>
+   304→<!-- ================= TAB: STATIONS (Placeholder view) ================= -->
+   305→<div class="tab-content space-y-4 hidden" id="tab-stations">
+   306→<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/40 shadow-sm text-center space-y-3">
+   307→<div class="w-12 h-12 rounded-full bg-primary-fixed mx-auto flex items-center justify-center text-primary">
+   308→<span class="material-symbols-outlined text-[28px]">directions_subway</span>
+   309→</div>
+   310→<h3 class="font-bold text-base text-on-surface">ایستگاه‌های منتخب و نزدیک</h3>
+   311→<p class="text-xs text-outline leading-relaxed">فهرست نزدیک‌ترین ایستگاه‌ها بر پایه مکان‌یابی GPS به همراه امکانات جانبی</p>
+   312→<div class="space-y-2 pt-2 text-right">
+   313→<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between text-xs">
+   314→<div class="flex items-center gap-2 font-bold text-on-surface">
+   315→<span class="material-symbols-outlined text-primary text-[18px]">train</span>
+   316→            ایستگاه میدان انقلاب اسلامی
+   317→          </div>
+   318→<span class="text-[11px] text-tertiary font-bold bg-tertiary-fixed/40 px-2 py-0.5 rounded">۴۰۰ متر فاصله</span>
+   319→</div>
+   320→<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between text-xs">
+   321→<div class="flex items-center gap-2 font-bold text-on-surface">
+   322→<span class="material-symbols-outlined text-primary text-[18px]">train</span>
+   323→            ایستگاه تئاتر شهر (تقاطعی ۳ و ۴)
+   324→          </div>
+   325→<span class="text-[11px] text-outline font-medium">۸۵۰ متر فاصله</span>
+   326→</div>
+   327→</div>
+   328→</div>
+   329→</div>
+   330→<!-- ================= TAB: SETTINGS ================= -->
+   331→<div class="tab-content hidden space-y-4" id="tab-settings">
+   332→<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/40 shadow-sm space-y-3">
+   333→<h3 class="font-bold text-base text-on-surface">تنظیمات و اطلاعات برنامه</h3>
+   334→<div class="space-y-2 text-xs text-on-surface-variant">
+   335→<div class="flex items-center justify-between py-2 border-b border-outline-variant/20">
+   336→<span>اعلان‌های حرکت قطار</span>
+   337→<span class="text-primary font-bold">فعال</span>
+   338→</div>
+   339→<div class="flex items-center justify-between py-2 border-b border-outline-variant/20">
+   340→<span>نسخه نرم‌افزار</span>
+   341→<span class="font-bold">۴.۸.۲ (پایدار)</span>
+   342→</div>
+   343→</div>
+   344→</div>
+   345→</div>
+   346→</main>
+   347→<!-- ================= BOTTOM NAVIGATION BAR ================= -->
+   348→<nav class="fixed bottom-6 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between z-50 rtl" dir="rtl"><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-home')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg><span>خانه</span></button><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-lines')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg><span>خطوط و نقشه</span></button><button class="flex items-center gap-2 bg-[#0d58a6] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all" onclick="switchTab('tab-stations')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="13" rx="2"></rect><path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6"></path></svg><span>ایستگاه‌ها</span></button></nav>
+   349→<!-- ================= INTERACTIVE JAVASCRIPT ================= -->
+   350→<script>
+   351→  // --- 1. Tab Switching System (SPA) ---
+   352→  function switchTab(tabId) {
+   353→    document.querySelectorAll('.tab-content').forEach(tab => {
+   354→      tab.classList.add('hidden');
+   355→    });
+   356→    const activeTab = document.getElementById(tabId);
+   357→    if (activeTab) {
+   358→      activeTab.classList.remove('hidden');
+   359→    }
+   360→
+   361→    // Reset bottom nav buttons
+   362→    document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+   363→      btn.classList.remove('nav-active', 'bg-primary-fixed', 'text-primary', 'font-bold', 'shadow-sm');
+   364→      btn.classList.add('text-on-surface-variant');
+   365→      const icon = btn.querySelector('span[data-icon]');
+   366→      if (icon) {
+   367→        icon.style.fontVariationSettings = "'FILL' 0";
+   368→      }
+   369→    });
+   370→
+   371→    const activeNavBtn = document.getElementById('nav-' + tabId);
+   372→    if (activeNavBtn) {
+   373→      activeNavBtn.classList.add('nav-active', 'text-primary', 'font-bold');
+   374→      activeNavBtn.classList.remove('text-on-surface-variant');
+   375→      const icon = activeNavBtn.querySelector('span[data-icon]');
+   376→      if (icon) {
+   377→        icon.style.fontVariationSettings = "'FILL' 1";
+   378→      }
+   379→    }
+   380→
+   381→    window.scrollTo({ top: 0, behavior: 'smooth' });
+   382→    closeDrawer();
+   383→  }
+   384→
+   385→  // --- 2. Voice Assistant Interaction ---
+   386→  const voiceBtn = document.getElementById('voiceBtn');
+   387→  const voiceStatusText = document.getElementById('voiceStatusText');
+   388→  const voiceSampleText = document.getElementById('voiceSampleText');
+   389→  const pulseRing1 = document.getElementById('pulseRing1');
+   390→  const pulseRing2 = document.getElementById('pulseRing2');
+   391→  let isListening = false;
+   392→
+   393→  function toggleVoiceAssistant() {
+   394→    isListening = !isListening;
+   395→    if (isListening) {
+   396→      voiceBtn.classList.remove('bg-primary-container');
+   397→      voiceBtn.classList.add('bg-error', 'scale-105');
+   398→      voiceStatusText.innerText = 'در حال شنیدن صدای شما...';
+   399→      voiceStatusText.classList.add('text-error');
+   400→      voiceSampleText.innerText = '«گفتید: از میدان انقلاب به تجریش»';
+   401→      pulseRing1.classList.remove('bg-primary-fixed/60');
+   402→      pulseRing1.classList.add('bg-error/30');
+   403→      pulseRing2.classList.remove('bg-primary-fixed/40');
+   404→      pulseRing2.classList.add('bg-error/20');
+   405→
+   406→      setTimeout(() => {
+   407→        if (isListening) {
+   408→          isListening = false;
+   409→          voiceBtn.classList.remove('bg-error', 'scale-105');
+   410→          voiceBtn.classList.add('bg-primary-container');
+   411→          voiceStatusText.innerText = 'مسیر محاسبه شد: ۲۴ دقیقه، ۱ تعویض خط';
+   412→          voiceStatusText.classList.remove('text-error');
+   413→          voiceSampleText.innerText = '«ایستگاه بعدی: تئاتر شهر»';
+   414→          pulseRing1.classList.add('bg-primary-fixed/60');
+   415→          pulseRing1.classList.remove('bg-error/30');
+   416→          pulseRing2.classList.add('bg-primary-fixed/40');
+   417→          pulseRing2.classList.remove('bg-error/20');
+   418→        }
+   419→      }, 3500);
+   420→    } else {
+   421→      voiceBtn.classList.remove('bg-error', 'scale-105');
+   422→      voiceBtn.classList.add('bg-primary-container');
+   423→      voiceStatusText.innerText = 'لمس کنید و صحبت کنید';
+   424→      voiceStatusText.classList.remove('text-error');
+   425→      voiceSampleText.innerText = '«از اینجا تا تجریش چقدر راهه؟»';
+   426→      pulseRing1.classList.add('bg-primary-fixed/60');
+   427→      pulseRing1.classList.remove('bg-error/30');
+   428→      pulseRing2.classList.add('bg-primary-fixed/40');
+   429→      pulseRing2.classList.remove('bg-error/20');
+   430→    }
+   431→  }
+   432→
+   433→  if (voiceBtn) voiceBtn.addEventListener('click', toggleVoiceAssistant);
+   434→
+   435→  // --- 3. Route Calculation and Swap Management ---
+   436→  const swapBtn = document.getElementById('swap-route-btn');
+   437→  const inputOrigin = document.getElementById('inputOrigin');
+   438→  const inputDestination = document.getElementById('inputDestination');
+   439→  const routeLineBadge = document.getElementById('routeLineBadge');
+   440→  const routeDuration = document.getElementById('routeDuration');
+   441→  const routeStationsCount = document.getElementById('routeStationsCount');
+   442→  const routeTransferInfo = document.getElementById('routeTransferInfo');
+   443→  const currentStationName = document.getElementById('currentStationName');
+   444→  const nextStationInfo = document.getElementById('nextStationInfo');
+   445→
+   446→  let swapRotationDegrees = 0;
+   447→
+   448→  function updateRouteStats() {
+   449→    const orig = (inputOrigin.value || '').trim();
+   450→    const dest = (inputDestination.value || '').trim();
+   451→
+   452→    if (orig.includes('تجریش') && orig.includes('انقلاب') === false) {
+   453→      if (routeLineBadge) routeLineBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>خط ۱ به ۴';
+   454→      if (routeDuration) routeDuration.innerText = '۲۴ دقیقه';
+   455→      if (routeStationsCount) routeStationsCount.innerText = '۹ ایستگاه';
+   456→      if (routeTransferInfo) routeTransferInfo.innerText = '۱ تعویض (دولت)';
+   457→      if (currentStationName) currentStationName.innerText = 'قیطریه';
+   458→      if (nextStationInfo) nextStationInfo.innerText = 'ایستگاه بعدی: شهید صدر (۳ دقیقه)';
+   459→    } else if (dest.includes('صادقیه')) {
+   460→      if (routeLineBadge) routeLineBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>خط ۴ مستقیم';
+   461→      if (routeDuration) routeDuration.innerText = '۱۸ دقیقه';
+   462→      if (routeStationsCount) routeStationsCount.innerText = '۷ ایستگاه';
+   463→      if (routeTransferInfo) routeTransferInfo.innerText = 'بدون تعویض';
+   464→      if (currentStationName) currentStationName.innerText = 'میدان انقلاب';
+   465→      if (nextStationInfo) nextStationInfo.innerText = 'ایستگاه بعدی: توحید (۲ دقیقه)';
+   466→    } else if (dest.includes('بهشتی')) {
+   467→      if (routeLineBadge) routeLineBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>خط ۴ به ۱ / ۳';
+   468→      if (routeDuration) routeDuration.innerText = '۱۶ دقیقه';
+   469→      if (routeStationsCount) routeStationsCount.innerText = '۶ ایستگاه';
+   470→      if (routeTransferInfo) routeTransferInfo.innerText = '۱ تعویض (تئاتر شهر)';
+   471→      if (currentStationName) currentStationName.innerText = 'میدان ولیعصر';
+   472→      if (nextStationInfo) nextStationInfo.innerText = 'ایستگاه بعدی: میدان جهاد (۲ دقیقه)';
+   473→    } else {
+   474→      if (routeLineBadge) routeLineBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>خط ۴ به ۱';
+   475→      if (routeDuration) routeDuration.innerText = '۲۴ دقیقه';
+   476→      if (routeStationsCount) routeStationsCount.innerText = '۹ ایستگاه';
+   477→      if (routeTransferInfo) routeTransferInfo.innerText = '۱ تعویض (دولت)';
+   478→      if (currentStationName) currentStationName.innerText = 'دروازه دولت';
+   479→      if (nextStationInfo) nextStationInfo.innerText = 'ایستگاه بعدی: طالقانی (۲ دقیقه)';
+   480→    }
+   481→  }
+   482→
+   483→  function handleSwapStations() {
+   484→    if (!inputOrigin || !inputDestination) return;
+   485→
+   486→    // Swap input values
+   487→    const temp = inputOrigin.value;
+   488→    inputOrigin.value = inputDestination.value;
+   489→    inputDestination.value = temp;
+   490→
+   491→    // Rotate animation with 180 degrees cumulative rotation
+   492→    swapRotationDegrees += 180;
+   493→    if (swapBtn) {
+   494→      swapBtn.style.transform = `rotate(${swapRotationDegrees}deg)`;
+   495→    }
+   496→
+   497→    // Refresh route metrics
+   498→    updateRouteStats();
+   499→  }
+   500→
+   501→  if (swapBtn) {
+   502→    swapBtn.addEventListener('click', handleSwapStations);
+   503→  }
+   504→
+   505→  // --- 4. Suggestions Dropdown Handlers ---
+   506→  function openStationSuggestions(type) {
+   507→    const dropdown = document.getElementById(type + 'Dropdown');
+   508→    const otherDropdown = document.getElementById(type === 'origin' ? 'destinationDropdown' : 'originDropdown');
+   509→    if (otherDropdown) otherDropdown.classList.add('hidden');
+   510→    if (dropdown) dropdown.classList.remove('hidden');
+   511→  }
+   512→
+   513→  function selectStation(type, stationName) {
+   514→    const input = document.getElementById(type === 'origin' ? 'inputOrigin' : 'inputDestination');
+   515→    if (input) input.value = stationName;
+   516→    const dropdown = document.getElementById(type + 'Dropdown');
+   517→    if (dropdown) dropdown.classList.add('hidden');
+   518→    updateRouteStats();
+   519→  }
+   520→
+   521→  function clearStationInput(type) {
+   522→    const input = document.getElementById(type === 'origin' ? 'inputOrigin' : 'inputDestination');
+   523→    if (input) {
+   524→      input.value = '';
+   525→      input.focus();
+   526→    }
+   527→    openStationSuggestions(type);
+   528→  }
+   529→
+   530→  function filterStationSuggestions(type, query) {
+   531→    const dropdown = document.getElementById(type + 'Dropdown');
+   532→    if (!dropdown) return;
+   533→    dropdown.classList.remove('hidden');
+   534→    const buttons = dropdown.querySelectorAll('button');
+   535→    const cleanQuery = (query || '').trim();
+   536→    buttons.forEach(btn => {
+   537→      const text = btn.innerText;
+   538→      if (!cleanQuery || text.includes(cleanQuery)) {
+   539→        btn.style.display = 'flex';
+   540→      } else {
+   541→        btn.style.display = 'none';
+   542→      }
+   543→    });
+   544→    updateRouteStats();
+   545→  }
+   546→
+   547→  document.addEventListener('click', (e) => {
+   548→    const originDrop = document.getElementById('originDropdown');
+   549→    const destDrop = document.getElementById('destinationDropdown');
+   550→    const originInput = document.getElementById('inputOrigin');
+   551→    const destInput = document.getElementById('inputDestination');
+   552→    if (originDrop && originInput && !originDrop.contains(e.target) && !originInput.contains(e.target)) {
+   553→      originDrop.classList.add('hidden');
+   554→    }
+   555→    if (destDrop && destInput && !destDrop.contains(e.target) && !destInput.contains(e.target)) {
+   556→      destDrop.classList.add('hidden');
+   557→    }
+   558→  });
+   559→
+   560→  // --- 5. City Dropdown Picker ---
+   561→  const cityToggleBtn = document.getElementById('cityToggleBtn');
+   562→  const cityDropdown = document.getElementById('cityDropdown');
+   563→  const currentCityText = document.getElementById('currentCityText');
+   564→
+   565→  if (cityToggleBtn && cityDropdown && currentCityText) {
+   566→    cityToggleBtn.addEventListener('click', (e) => {
+   567→      e.stopPropagation();
+   568→      cityDropdown.classList.toggle('hidden');
+   569→    });
+   570→
+   571→    document.querySelectorAll('.city-option').forEach(option => {
+   572→      option.addEventListener('click', () => {
+   573→        currentCityText.innerText = option.getAttribute('data-city');
+   574→        cityDropdown.classList.add('hidden');
+   575→      });
+   576→    });
+   577→
+   578→    document.addEventListener('click', (e) => {
+   579→      if (!cityDropdown.contains(e.target) && !cityToggleBtn.contains(e.target)) {
+   580→        cityDropdown.classList.add('hidden');
+   581→      }
+   582→    });
+   583→  }
+   584→
+   585→  // --- 6. Drawer Navigation ---
+   586→  const openMenuBtn = document.getElementById('openMenuBtn');
+   587→  const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+   588→  const menuDrawer = document.getElementById('menuDrawer');
+   589→  const drawerOverlay = document.getElementById('drawerOverlay');
+   590→  const drawerPanel = document.getElementById('drawerPanel');
+   591→
+   592→  function openDrawer() {
+   593→    if (!menuDrawer) return;
+   594→    menuDrawer.classList.remove('pointer-events-none');
+   595→    drawerOverlay.classList.remove('opacity-0');
+   596→    drawerOverlay.classList.add('opacity-100');
+   597→    drawerPanel.classList.remove('translate-x-full');
+   598→  }
+   599→
+   600→  function closeDrawer() {
+   601→    if (!menuDrawer) return;
+   602→    drawerOverlay.classList.remove('opacity-100');
+   603→    drawerOverlay.classList.add('opacity-0');
+   604→    drawerPanel.classList.add('translate-x-full');
+   605→    setTimeout(() => {
+   606→      menuDrawer.classList.add('pointer-events-none');
+   607→    }, 300);
+   608→  }
+   609→
+   610→  if (openMenuBtn) openMenuBtn.addEventListener('click', openDrawer);
+   611→  if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeDrawer);
+   612→  if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
+   613→</script>
+   614→
+   615→
+   616→
+   617→
+   618→
+   619→
+   620→
+   621→
+   622→
+   623→
+   624→
+   625→
+   626→
+   627→
+   628→
+   629→
+   630→
+   631→
+   632→
+   633→
+   634→
+   635→
+   636→
+   637→
+   638→</body></html>

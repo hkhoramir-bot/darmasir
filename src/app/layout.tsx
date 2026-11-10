@@ -4,9 +4,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/metro/pwa";
 
 export const metadata: Metadata = {
-  title: "متروجو | سامانه هوشمند مترو",
+  title: "متروجو | دستیار صوتی و ناوبری مترو",
   description:
-    "متروجو — دستیار هوشمند سفر با مترو: نقشه خطوط، مسیریاب، زمان‌بندی قطارها، هشدار مقصد و وضعیت شلوغی",
+    "متروجو — دستیار هوشمند سفر با مترو: مسیریاب، دستیار صوتی، نقشه خطوط، زمان‌بندی قطارها و وضعیت شلوغی",
   applicationName: "متروجو",
   manifest: "/manifest.json",
   icons: {
@@ -48,7 +48,16 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased bg-metro-bg text-metro-onsurface">{children}<Toaster /><PwaRegister /></body>
+      {/* بدنه: بوم موبایل — روی دسکتاپ هم اپ در ستون موبایل (max-w-md) وسط چین می‌ماند */}
+      <body className="antialiased">
+        <div className="min-h-dvh w-full bg-metro-surface-dim/70 flex justify-center">
+          <div className="relative w-full max-w-md min-h-dvh flex flex-col bg-surface shadow-[0_0_60px_rgba(13,88,166,0.14)] sm:border-x sm:border-outline-variant/40 selection:bg-primary-fixed selection:text-on-primary-fixed">
+            {children}
+          </div>
+        </div>
+        <Toaster />
+        <PwaRegister />
+      </body>
     </html>
   );
 }

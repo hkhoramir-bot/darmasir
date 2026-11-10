@@ -3,108 +3,86 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ================= Metro Yar Design System (متروجو) ================= */
-@theme inline {
-  /* shadcn/ui compatibility mapping */
-  --font-sans: "Vazirmatn", Tahoma, ui-sans-serif, system-ui, sans-serif;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+/* ============================================================
+   متروجو — پالت تاییدشده code.html (مقادیر لفظی برای Tailwind v4)
+   ============================================================ */
+@theme {
+  /* ---- palette from approved design ---- */
+  --color-primary: #00417f;
+  --color-primary-container: #0d58a6;
+  --color-primary-fixed: #d5e3ff;
+  --color-primary-fixed-dim: #a8c8ff;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #b6d0ff;
+  --color-on-primary-fixed: #001b3c;
+  --color-on-primary-fixed-variant: #004689;
+  --color-surface: #f9f9ff;
+  --color-surface-dim: #cfdaf2;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-variant: #d8e3fb;
+  --color-surface-tint: #1a5eac;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f3ff;
+  --color-surface-container: #e7eeff;
+  --color-surface-container-high: #dee8ff;
+  --color-surface-container-highest: #d8e3fb;
+  --color-on-surface: #111c2d;
+  --color-on-surface-variant: #424751;
+  --color-outline: #727782;
+  --color-outline-variant: #c2c6d3;
+  --color-inverse-surface: #263143;
+  --color-inverse-on-surface: #ecf1ff;
+  --color-inverse-primary: #a8c8ff;
+  --color-secondary: #bc000c;
+  --color-secondary-container: #e32220;
+  --color-secondary-fixed: #ffdad5;
+  --color-secondary-fixed-dim: #ffb4aa;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #fffbff;
+  --color-on-secondary-fixed: #410001;
+  --color-on-secondary-fixed-variant: #930007;
+  --color-tertiary: #004c28;
+  --color-tertiary-container: #006638;
+  --color-tertiary-fixed: #7efbac;
+  --color-tertiary-fixed-dim: #61de92;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #6ae79a;
+  --color-on-tertiary-fixed: #00210e;
+  --color-on-tertiary-fixed-variant: #00522c;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
 
-  /* Metro Yar Material palette (var-based for dark mode) */
-  --color-metro-bg: var(--mq-bg);
-  --color-metro-surface: var(--mq-surface);
-  --color-metro-surface-dim: var(--mq-surface-dim);
-  --color-metro-card: var(--mq-card);
-  --color-metro-c-low: var(--mq-c-low);
-  --color-metro-c: var(--mq-c);
-  --color-metro-c-high: var(--mq-c-high);
-  --color-metro-c-highest: var(--mq-c-highest);
-  --color-metro-onsurface: var(--mq-onsurface);
-  --color-metro-onvar: var(--mq-onvar);
-  --color-metro-outline: var(--mq-outline);
-  --color-metro-outline-var: var(--mq-outline-var);
-  --color-metro-primary: var(--mq-primary);
-  --color-metro-onprimary: #ffffff;
-  --color-metro-primary-c: var(--mq-primary-c);
-  --color-metro-onprimary-c: var(--mq-onprimary-c);
-  --color-metro-invprimary: #a8c8ff;
-  --color-metro-fixed: var(--mq-fixed);
-  --color-metro-fixed-dim: #a8c8ff;
-  --color-metro-secondary: #bc000c;
-  --color-metro-secondary-c: #e32220;
-  --color-metro-tertiary: var(--mq-tertiary);
-  --color-metro-tertiary-c: var(--mq-tertiary-c);
-  --color-metro-tertiary-fixed: #7efbac;
-  --color-metro-error: #ba1a1a;
-  --color-metro-error-c: var(--mq-error-c);
-  --color-metro-onerr-c: #93000a;
-  --color-metro-ink: var(--mq-ink);
-  --color-metro-map-bg: var(--mq-map-bg);
-  --color-metro-map-grid: var(--mq-map-grid);
+  /* ---- shadcn/ui compatibility (literal, light) ---- */
+  --color-background: #f9f9ff;
+  --color-foreground: #111c2d;
+  --color-card: #ffffff;
+  --color-card-foreground: #111c2d;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #111c2d;
+  --color-primary-foreground: #ffffff;
+  --color-secondary-foreground: #00417f;
+  --color-muted: #f0f3ff;
+  --color-muted-foreground: #424751;
+  --color-accent: #dee8ff;
+  --color-accent-foreground: #00417f;
+  --color-destructive: #ba1a1a;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #c2c6d3;
+  --color-input: #e2e8f0;
+  --color-ring: #0d58a6;
 
-  /* Transit line palette */
-  --color-line-1: #e52421;
-  --color-line-2: #15397a;
-  --color-line-3: #00a3e0;
-  --color-line-4: #f6b400;
-  --color-line-5: #009640;
-  --color-line-6: #d82572;
-  --color-line-7: #7d2382;
-
-  /* Neutrals from wireframe */
-  --color-slate-canvas: #f8fafc;
-  --color-ink: #0f172a;
-  --color-ink-2: #475569;
-  --color-ink-3: #94a3b8;
-  --color-hairline: #e2e8f0;
-
-  /* Radius scale */
-  --radius-card: 1rem;
-  --radius-tile: 0.75rem;
+  /* ---- radius ---- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
 }
 
+/* ============ توکن‌های متغیر (مپ/اجزای داخلی، پشتیبانی دارک) ============ */
 :root {
-  --radius: 0.625rem;
-  --background: #f9f9ff;
-  --foreground: #111c2d;
-  --card: #ffffff;
-  --card-foreground: #111c2d;
-  --popover: #ffffff;
-  --popover-foreground: #111c2d;
-  --primary: #0d58a6;
-  --primary-foreground: #ffffff;
-  --secondary: #e7eeff;
-  --secondary-foreground: #00417f;
-  --muted: #f0f3ff;
-  --muted-foreground: #424751;
-  --accent: #dee8ff;
-  --accent-foreground: #00417f;
-  --destructive: #ba1a1a;
-  --border: #c2c6d3;
-  --input: #e2e8f0;
-  --ring: #0d58a6;
-
-  /* Metro Yar light palette */
   --mq-bg: #f9f9ff;
   --mq-surface: #f9f9ff;
   --mq-surface-dim: #cfdaf2;
@@ -130,27 +108,6 @@
 }
 
 .dark {
-  --radius: 0.625rem;
-  --background: #0f1522;
-  --foreground: #e2e8f8;
-  --card: #182033;
-  --card-foreground: #e2e8f8;
-  --popover: #182033;
-  --popover-foreground: #e2e8f8;
-  --primary: #a8c8ff;
-  --primary-foreground: #0f1522;
-  --secondary: #1d2739;
-  --secondary-foreground: #e2e8f8;
-  --muted: #151d2e;
-  --muted-foreground: #a9b3c9;
-  --accent: #232e45;
-  --accent-foreground: #e2e8f8;
-  --destructive: #ff5449;
-  --border: #36415c;
-  --input: #232e45;
-  --ring: #2e6cb4;
-
-  /* Metro Yar dark palette */
   --mq-bg: #0f1522;
   --mq-surface: #131a29;
   --mq-surface-dim: #0b101a;
@@ -175,15 +132,62 @@
   --mq-tertiary-c: #6ee7a0;
 }
 
+@theme inline {
+  --color-metro-bg: var(--mq-bg);
+  --color-metro-surface: var(--mq-surface);
+  --color-metro-surface-dim: var(--mq-surface-dim);
+  --color-metro-card: var(--mq-card);
+  --color-metro-c-low: var(--mq-c-low);
+  --color-metro-c: var(--mq-c);
+  --color-metro-c-high: var(--mq-c-high);
+  --color-metro-c-highest: var(--mq-c-highest);
+  --color-metro-onsurface: var(--mq-onsurface);
+  --color-metro-onvar: var(--mq-onvar);
+  --color-metro-outline: var(--mq-outline);
+  --color-metro-outline-var: var(--mq-outline-var);
+  --color-metro-primary: var(--mq-primary);
+  --color-metro-onprimary: #ffffff;
+  --color-metro-primary-c: var(--mq-primary-c);
+  --color-metro-onprimary-c: var(--mq-onprimary-c);
+  --color-metro-fixed: var(--mq-fixed);
+  --color-metro-tertiary: var(--mq-tertiary);
+  --color-metro-tertiary-c: var(--mq-tertiary-c);
+  --color-metro-tertiary-fixed: #7efbac;
+  --color-metro-error: #ba1a1a;
+  --color-metro-error-c: var(--mq-error-c);
+  --color-metro-ink: var(--mq-ink);
+  --color-metro-map-bg: var(--mq-map-bg);
+  --color-metro-map-grid: var(--mq-map-grid);
+
+  /* Transit line palette */
+  --color-line-1: #e52421;
+  --color-line-2: #15397a;
+  --color-line-3: #00a3e0;
+  --color-line-4: #f6b400;
+  --color-line-5: #009640;
+  --color-line-6: #d82572;
+  --color-line-7: #7d2382;
+
+  /* Wireframe neutrals */
+  --color-slate-canvas: #f8fafc;
+  --color-ink: #0f172a;
+  --color-ink-2: #475569;
+  --color-ink-3: #94a3b8;
+  --color-hairline: #e2e8f0;
+}
+
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
   }
   html {
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-background text-foreground;
+    background: var(--color-background);
+    color: var(--color-foreground);
     font-family: "Vazirmatn", Tahoma, ui-sans-serif, system-ui, sans-serif;
     user-select: none;
     -webkit-font-smoothing: antialiased;
@@ -308,6 +312,24 @@
 }
 .pulse-dot {
   animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+/* ---- Voice assistant pulse rings (from approved code.html) ---- */
+@keyframes pulse-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+.pulse-wave-1 {
+  animation: pulse-wave 2.2s ease-out infinite;
+}
+.pulse-wave-2 {
+  animation: pulse-wave 2.2s ease-out 0.7s infinite;
 }
 
 /* Splash animation */

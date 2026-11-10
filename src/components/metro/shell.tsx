@@ -1,0 +1,360 @@
+"use client";
+
+import { create } from "zustand";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { toFa } from "@/lib/metro-data";
+
+/* ============================================================
+   کروم اپ متروجو — دقیقاً بر اساس code.html تاییدشده
+   (AppBar + Drawer منو + ناوبری شناور قرصی)
+   ============================================================ */
+
+/* ------------------------- استور پوسته ------------------------- */
+export type ShellCity = "tehran" | "mashhad" | "isfahan";
+
+interface ShellState {
+  drawerOpen: boolean;
+  setDrawer: (v: boolean) => void;
+  city: ShellCity;
+  setCity: (c: ShellCity) => void;
+}
+
+export const useShell = create<ShellState>((set, get) => ({
+  drawerOpen: false,
+  setDrawer: (v) => set({ drawerOpen: v }),
+  city: "tehran",
+  setCity: (c) => {
+    set({ city: c });
+    try {
+      localStorage.setItem("metrojo-city", c);
+    } catch {}
+  },
+}));
+
+/** مقداردهی اولیه شهر از حافظه (سمت کلاینت) */
+export function useInitCity() {
+  useEffect(() => {
+    try {
+      const c = localStorage.getItem("metrojo-city");
+      if (c === "mashhad" || c === "isfahan" || c === "tehran") {
+        if (useShell.getState().city !== c) useShell.setState({ city: c });
+      }
+    } catch {}
+  }, []);
+}
+
+/* ------------------------- آیکون متریال ------------------------- */
+export function MI({
+  name,
+  size = 24,
+  fill = false,
+  className = "",
+}: {
+  name: string;
+  size?: number;
+  fill?: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`material-symbols-outlined ${fill ? "ms-fill" : ""} ${className}`}
+      style={{ fontSize: size }}
+      aria-hidden
+    >
+      {name}
+    </span>
+  );
+}
+
+/* ------------------------- هدر اصلی (دقیقاً code.html) ------------------------- */
+const CITY_OPTIONS: { id: ShellCity | "shiraz" | "tabriz"; name: string; soon?: boolean }[] = [
+  { id: "tehran", name: "تهران" },
+  { id: "mashhad", name: "مشهد" },
+  { id: "shiraz", name: "شیراز", soon: true },
+  { id: "isfahan", name: "اصفهان" },
+  { id: "tabriz", name: "تبریز", soon: true },
+];
+
+export function AppBar() {
+  const router = useRouter();
+  const city = useShell((s) => s.city);
+  const setCity = useShell((s) => s.setCity);
+  const setDrawer = useShell((s) => s.setDrawer);
+  const [cityOpen, setCityOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  const cityName = city === "tehran" ? "تهران" : city === "mashhad" ? "مشهد" : "اصفهان";
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setCityOpen(false);
+    };
+    document.addEventListener("click", onDoc);
+    return () => document.removeEventListener("click", onDoc);
+  }, []);
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-4 transition-colors bg-surface">
+      {/* راست: منو + لوگو + عنوان */}
+      <div className="flex items-center gap-3">
+        <button
+          aria-label="منو"
+          onClick={() => setDrawer(true)}
+          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container active:scale-95 transition-transform text-on-surface"
+        >
+          <MI name="menu" size={24} />
+        </button>
+        <div className="flex items-center gap-2">
+          <img
+            src="/metrojo-symbol.png"
+            alt="لوگوی متروجو"
+            className="w-8 h-8 rounded-full object-contain shrink-0 shadow-sm"
+          />
+          <div className="flex flex-col">
+            <h1 className="text-base font-bold text-primary tracking-tight leading-tight">متروجو</h1>
+            <span className="text-xs text-outline">دستیار صوتی و ناوبری</span>
+          </div>
+        </div>
+      </div>
+
+      {/* چپ: انتخاب شهر */}
+      <div className="flex items-center gap-2 relative" ref={dropRef}>
+        <button
+          id="cityToggleBtn"
+          onClick={() => setCityOpen((v) => !v)}
+          className="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-3 py-1 rounded-full border border-outline-variant/50 text-primary active:scale-95 transition-all text-xs font-bold"
+        >
+          <MI name="location_on" size={16} className="text-primary" />
+          <span>{cityName}</span>
+          <MI name="expand_more" size={15} className="text-outline" />
+        </button>
+        {cityOpen && (
+          <div
+            id="cityDropdown"
+            className="absolute top-10 left-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1.5 w-32 z-50 text-xs text-on-surface font-medium"
+          >
+            {CITY_OPTIONS.map((o) => (
+              <button
+                key={o.id}
+                disabled={o.soon}
+                onClick={() => {
+                  if (o.soon) return;
+                  if (o.id !== "shiraz" && o.id !== "tabriz") setCity(o.id as ShellCity);
+                  setCityOpen(false);
+                }}
+                className={`w-full text-right px-3 py-1.5 flex items-center justify-between ${
+                  o.soon
+                    ? "text-outline/60 cursor-not-allowed"
+                    : "hover:bg-surface-container"
+                } ${!o.soon && o.id === city ? "text-primary font-bold" : ""}`}
+              >
+                <span>{o.name}</span>
+                {o.soon && <span className="text-[9px] text-outline bg-surface-container px-1 rounded">به‌زودی</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+/* ------------------------- دراور منو (دقیقاً code.html) ------------------------- */
+const DRAWER_LINKS: { label: string; icon: string; href: string }[] = [
+  { label: "خانه", icon: "home", href: "/" },
+  { label: "خطوط و نقشه", icon: "route", href: "/lines" },
+  { label: "ایستگاه‌ها", icon: "directions_subway", href: "/stations" },
+  { label: "نقشه تعاملی شبکه", icon: "map", href: "/map" },
+  { label: "تاریخچه سفر", icon: "history", href: "/history" },
+  { label: "تنظیمات", icon: "settings", href: "/settings" },
+];
+
+export function MenuDrawer() {
+  const open = useShell((s) => s.drawerOpen);
+  const setDrawer = useShell((s) => s.setDrawer);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 transition-all duration-300 ${open ? "" : "pointer-events-none"}`}
+      aria-hidden={!open}
+    >
+      {/* پس‌زمینه */}
+      <div
+        onClick={() => setDrawer(false)}
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      {/* پنل */}
+      <aside
+        className={`absolute top-0 right-0 h-full w-72 bg-surface-container-lowest shadow-2xl p-5 transform transition-transform duration-300 flex flex-col justify-between z-10 ${
+          open ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white shadow-sm">
+                <MI name="subway" size={20} />
+              </div>
+              <div>
+                <h2 className="font-bold text-sm text-primary">متروجو هوشمند</h2>
+                <span className="text-[10px] text-tertiary font-bold bg-tertiary-fixed/40 px-1.5 py-0.5 rounded">
+                  نسخه {toFa("4.8.2")} آنلاین
+                </span>
+              </div>
+            </div>
+            <button
+              aria-label="بستن منو"
+              onClick={() => setDrawer(false)}
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-outline"
+            >
+              <MI name="close" size={20} />
+            </button>
+          </div>
+
+          {/* لینک‌های ناوبری */}
+          <nav className="pt-2 space-y-1">
+            {DRAWER_LINKS.map((l) => {
+              const active = pathname === l.href;
+              return (
+                <button
+                  key={l.href}
+                  onClick={() => {
+                    setDrawer(false);
+                    router.push(l.href);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all active:scale-[0.98] ${
+                    active
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-on-surface-variant hover:bg-surface-container font-medium"
+                  }`}
+                >
+                  <MI name={l.icon} size={20} className={active ? "text-primary" : "text-outline"} />
+                  {l.label}
+                  <MI name="chevron_left" size={16} className="mr-auto text-outline-variant" />
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="pt-4 border-t border-outline-variant/30 space-y-2">
+            <p className="text-[11px] font-bold text-outline">دسترسی سریع صوتی</p>
+            <div className="bg-surface-container-low p-2.5 rounded-xl text-xs text-on-surface-variant flex items-center gap-2">
+              <MI name="graphic_eq" size={18} className="text-secondary" />
+              <span>دستیار هوشمند صوتی آماده دریافت فرامین است.</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-[11px] text-outline text-center border-t border-outline-variant/30 pt-3">
+          طراحی شده برای ناوبری صوتی و سریع مسافران
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+/* ------------------- هدر صفحه‌های داخلی (بازگشت) ------------------- */
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
+}) {
+  const router = useRouter();
+  return (
+    <header className="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-2 transition-colors bg-surface">
+      <button
+        aria-label="بازگشت"
+        onClick={() => router.back()}
+        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container active:scale-95 transition-transform text-primary"
+      >
+        <MI name="arrow_forward" size={24} />
+      </button>
+      <div className="flex flex-col items-center flex-1 min-w-0 px-1">
+        <h1 className="text-base font-bold text-primary tracking-tight truncate w-full text-center leading-tight">
+          {title}
+        </h1>
+        {subtitle && <span className="text-[11px] text-outline truncate w-full text-center">{subtitle}</span>}
+      </div>
+      <div className="flex items-center gap-1 min-w-10 justify-end px-1">{actions}</div>
+    </header>
+  );
+}
+
+/* ------------------- ناوبری پایین شناور (دقیقاً code.html) ------------------- */
+function HomeIconSvg() {
+  return (
+    <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+      />
+    </svg>
+  );
+}
+function MapIconSvg() {
+  return (
+    <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+      />
+    </svg>
+  );
+}
+function TrainIconSvg() {
+  return (
+    <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden>
+      <rect x="4" y="3" width="16" height="13" rx="2" />
+      <path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6" />
+    </svg>
+  );
+}
+
+const NAV_ITEMS = [
+  { href: "/", label: "خانه", Icon: HomeIconSvg },
+  { href: "/lines", label: "خطوط و نقشه", Icon: MapIconSvg },
+  { href: "/stations", label: "ایستگاه‌ها", Icon: TrainIconSvg },
+];
+
+export function BottomNav() {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  return (
+    <nav
+      className="fixed z-50 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between"
+      style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+      dir="rtl"
+      aria-label="ناوبری اصلی"
+    >
+      {NAV_ITEMS.map(({ href, label, Icon }) => {
+        const active = pathname === href;
+        return (
+          <button
+            key={href}
+            onClick={() => router.push(href)}
+            aria-current={active ? "page" : undefined}
+            className={`flex items-center gap-1.5 rounded-full transition-all active:scale-95 ${
+              active
+                ? "bg-[#0d58a6] text-white px-5 py-2.5 font-bold text-sm shadow-sm"
+                : "text-slate-600 px-3 py-2 font-medium text-sm hover:text-slate-900"
+            }`}
+          >
+            <Icon />
+            <span>{label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
