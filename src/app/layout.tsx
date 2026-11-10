@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/metro/pwa";
+import { NativeApiBridge } from "@/components/metro/native-bridge";
 
 export const metadata: Metadata = {
   title: "متروجو | دستیار صوتی و ناوبری مترو",
@@ -48,6 +49,7 @@ export default function RootLayout({
         </div>
         <Toaster />
         <PwaRegister />
+        <NativeApiBridge />
       </body>
     </html>
   );

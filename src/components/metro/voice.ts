@@ -19,7 +19,44 @@ export const VOICE_ERRORS = {
   micDenied: "دسترسی به میکروفون داده نشد",
 };
 
+/** آیا اپ داخل WebView اندروید (Capacitor) اجرا می‌شود؟ */
+function isNative(): boolean {
+  if (typeof window === "undefined") return false;
+  const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+  return w.Capacitor?.isNativePlatform?.() === true;
+}
+
 /* ---------------- موتور گفتار فارسی دستگاه ---------------- */
+
+/** پخش با موتور گفتار نیتیو اندروید (پلاگین) — true یعنی پخش شد */
+async function nativeSpeak(text: string, rate: number, gender: VoiceGender): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const { TextToSpeech } = await import("@capacitor-community/text-to-speech");
+    await TextToSpeech.speak({
+      text,
+      lang: "fa-IR",
+      rate,
+      pitch: gender === "male" ? 0.65 : 1.05,
+      volume: 1.0,
+      category: "assistant",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** توقف صدای نیتیو */
+async function nativeStop(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const { TextToSpeech } = await import("@capacitor-community/text-to-speech");
+    await TextToSpeech.stop();
+  } catch {
+    /* فعال نبود */
+  }
+}
 
 let faVoices: SpeechSynthesisVoice[] | null | undefined; // undefined = هنوز بررسی نشده
 
@@ -136,6 +173,7 @@ export function useAnnouncer() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
+    void nativeStop();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -151,8 +189,14 @@ export function useAnnouncer() {
       const finish = () => setSpeaking(false);
       const prefs = getVoicePrefs();
 
-      const playOnDevice = () =>
-        deviceSpeak(text, prefs.rate, prefs.gender, finish);
+      // اندروید: اول موتور نیتیو، بعد موتور مرورگر
+      const playOnDevice = async (): Promise<boolean> => {
+        if (await nativeSpeak(text, prefs.rate, prefs.gender)) {
+          finish();
+          return true;
+        }
+        return deviceSpeak(text, prefs.rate, prefs.gender, finish);
+      };
 
       const playInCloud = async () => {
         if (!audioRef.current) audioRef.current = new Audio();
@@ -397,14 +441,53 @@ export function useVoiceSearch(onResult: (text: string) => void) {
     }
   }, [startRecorder]);
 
+  /** موتور تشخیص گفتار نیتیو اندروید (پلاگین — fa-IR) */
+  const startNativePlugin = useCallback(async () => {
+    try {
+      const SR = (
+        await import("@capacitor-community/speech-recognition")
+      ).SpeechRecognition;
+      await SR.requestPermissions();
+      setListening(true);
+      const timeout = window.setTimeout(() => {
+        void SR.stop();
+      }, 7000);
+      const { matches } = await SR.start({
+        language: "fa-IR",
+        maxResults: 1,
+        partialResults: false,
+        popup: false,
+      });
+      window.clearTimeout(timeout);
+      const text = (matches?.[0] ?? "").trim();
+      if (text) {
+        gotRef.current = true;
+        setError(null);
+        onResultRef.current(text);
+      } else {
+        setError(VOICE_ERRORS.asrFail);
+      }
+    } catch (e) {
+      const msg = String((e as { message?: string })?.message ?? "");
+      if (/denied|permission/i.test(msg)) setError(VOICE_ERRORS.micDenied);
+      else setError(VOICE_ERRORS.asrFail);
+    } finally {
+      setListening(false);
+    }
+  }, []);
+
   const start = useCallback(() => {
     setError(null);
     manualStopRef.current = false;
     gotRef.current = false;
+    if (isNative()) {
+      void startNativePlugin();
+      return;
+    }
     if (!startNative()) {
       void startRecorder();
     }
-  }, [startNative, startRecorder]);
+  }, [startNativePlugin, startNative, startRecorder]);
 
   const stop = useCallback(() => {
     manualStopRef.current = true;

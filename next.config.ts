@@ -1,8 +1,11 @@
 import type { NextConfig } from "next";
 
+// NEXT_EXPORT=1 → خروجی استاتیک برای ساخت APK اندروید (Capacitor)
+const isExport = process.env.NEXT_EXPORT === "1";
+
 const nextConfig: NextConfig = {
-  output: "standalone",
-  /* config options here */
+  output: isExport ? "export" : "standalone",
+  trailingSlash: isExport,
   typescript: {
     ignoreBuildErrors: true,
   },
