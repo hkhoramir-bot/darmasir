@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ایستگاه‌های نشان‌شده (علاقه‌مندی)
+model Favorite {
+  id        String   @id @default(cuid())
+  stationId String
+  createdAt DateTime @default(now())
+
+  @@unique([stationId])
+}
+
+// مسیرهای روزمره (خانه / محل کار / سفارشی)
+model DailyRoute {
+  id            String   @id @default(cuid())
+  kind          String // home | work | custom
+  label         String
+  fromStationId String
+  toStationId   String
+  fromName      String
+  toName        String
+  createdAt     DateTime @default(now())
+}
+
+// تاریخچه سفرها
+model TripHistory {
+  id            String   @id @default(cuid())
+  fromStationId String
+  fromName      String
+  toStationId   String
+  toName        String
+  minutes       Int
+  transfers     Int
+  fare          Int
+  pref          String   @default("fastest")
+  createdAt     DateTime @default(now())
+}
+
+// گزارش لحظه‌ای وضعیت تجهیزات ایستگاه‌ها از سوی مسافران
+model StationReport {
+  id            String   @id @default(cuid())
+  stationId     String
+  equipmentType String // escalator | elevator | ramp
+  exitLabel     String
+  status        String // working | malfunction | under_maintenance
+  note          String?
+  createdAt     DateTime @default(now())
+}

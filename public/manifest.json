@@ -1,0 +1,26 @@
+{
+  "name": "متروجو | سامانه هوشمند مترو",
+  "short_name": "متروجو",
+  "description": "دستیار هوشمند سفر با مترو: نقشه خطوط، مسیریاب، زمان‌بندی و هشدار مقصد",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f9f9ff",
+  "theme_color": "#0d58a6",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/metrojo-app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/metrojo-symbol.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

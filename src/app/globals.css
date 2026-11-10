@@ -1,0 +1,277 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ================= Metro Yar Design System (متروجو) ================= */
+@theme inline {
+  /* shadcn/ui compatibility mapping */
+  --font-sans: "Vazirmatn", Tahoma, ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Metro Yar Material palette */
+  --color-metro-bg: #f9f9ff;
+  --color-metro-surface: #f9f9ff;
+  --color-metro-surface-dim: #cfdaf2;
+  --color-metro-card: #ffffff;
+  --color-metro-c-low: #f0f3ff;
+  --color-metro-c: #e7eeff;
+  --color-metro-c-high: #dee8ff;
+  --color-metro-c-highest: #d8e3fb;
+  --color-metro-onsurface: #111c2d;
+  --color-metro-onvar: #424751;
+  --color-metro-outline: #727782;
+  --color-metro-outline-var: #c2c6d3;
+  --color-metro-primary: #00417f;
+  --color-metro-onprimary: #ffffff;
+  --color-metro-primary-c: #0d58a6;
+  --color-metro-onprimary-c: #b6d0ff;
+  --color-metro-invprimary: #a8c8ff;
+  --color-metro-fixed: #d5e3ff;
+  --color-metro-fixed-dim: #a8c8ff;
+  --color-metro-secondary: #bc000c;
+  --color-metro-secondary-c: #e32220;
+  --color-metro-tertiary: #004c28;
+  --color-metro-tertiary-c: #006638;
+  --color-metro-tertiary-fixed: #7efbac;
+  --color-metro-error: #ba1a1a;
+  --color-metro-error-c: #ffdad6;
+  --color-metro-onerr-c: #93000a;
+
+  /* Transit line palette */
+  --color-line-1: #e52421;
+  --color-line-2: #15397a;
+  --color-line-3: #00a3e0;
+  --color-line-4: #f6b400;
+  --color-line-5: #009640;
+  --color-line-6: #d82572;
+  --color-line-7: #7d2382;
+
+  /* Neutrals from wireframe */
+  --color-slate-canvas: #f8fafc;
+  --color-ink: #0f172a;
+  --color-ink-2: #475569;
+  --color-ink-3: #94a3b8;
+  --color-hairline: #e2e8f0;
+
+  /* Radius scale */
+  --radius-card: 1rem;
+  --radius-tile: 0.75rem;
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: #f9f9ff;
+  --foreground: #111c2d;
+  --card: #ffffff;
+  --card-foreground: #111c2d;
+  --popover: #ffffff;
+  --popover-foreground: #111c2d;
+  --primary: #0d58a6;
+  --primary-foreground: #ffffff;
+  --secondary: #e7eeff;
+  --secondary-foreground: #00417f;
+  --muted: #f0f3ff;
+  --muted-foreground: #424751;
+  --accent: #dee8ff;
+  --accent-foreground: #00417f;
+  --destructive: #ba1a1a;
+  --border: #c2c6d3;
+  --input: #e2e8f0;
+  --ring: #0d58a6;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Vazirmatn", Tahoma, ui-sans-serif, system-ui, sans-serif;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+  input,
+  textarea {
+    user-select: text;
+  }
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+  font-size: 24px;
+  user-select: none;
+}
+.ms-fill {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+/* Hide scrollbars for native app feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom pretty scrollbar (for long lists) */
+.pretty-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.pretty-scroll::-webkit-scrollbar-thumb {
+  background: #c2c6d3;
+  border-radius: 999px;
+}
+.pretty-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Safe area helpers for Android/iOS notches */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+}
+
+/* Metro line dashed connector */
+.line-dashed {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--tw-line-color, #c2c6d3) 0,
+    var(--tw-line-color, #c2c6d3) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+/* Shimmer for skeletons */
+@keyframes metro-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.shimmer {
+  background: linear-gradient(90deg, #eef2ff 25%, #e2e8f0 50%, #eef2ff 75%);
+  background-size: 200% 100%;
+  animation: metro-shimmer 1.4s infinite;
+}
+
+/* Slide-up sheet animation */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.sheet-in {
+  animation: sheet-in 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.screen-in {
+  animation: screen-in 0.24s ease-out;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+/* Splash animation */
+@keyframes splash-logo {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.splash-logo {
+  animation: splash-logo 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes splash-bar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+.splash-bar {
+  animation: splash-bar 1.5s ease-out both;
+}
+
+/* Map pan container */
+.map-viewport {
+  touch-action: none;
+  cursor: grab;
+}
+.map-viewport:active {
+  cursor: grabbing;
+}
