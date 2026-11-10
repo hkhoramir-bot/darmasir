@@ -1,0 +1,876 @@
+     1→     1→/* ============================================================
+     2→     2→   متروجو — هسته داده شبکه مترو
+     3→     3→   Data core for the Metrojo transit network (Tehran + regional)
+     4→     4→   ============================================================ */
+     5→     5→
+     6→     6→export type CityId = "tehran" | "karaj" | "mashhad" | "isfahan";
+     7→     7→
+     8→     8→export interface City {
+     9→     9→  id: CityId;
+    10→    10→  name: string;
+    11→    11→  subtitle: string;
+    12→    12→  lineIds: string[];
+    13→    13→}
+    14→    14→
+    15→    15→export interface LineDef {
+    16→    16→  id: string;
+    17→    17→  cityId: CityId;
+    18→    18→  number: number;
+    19→    19→  name: string; // خط ۱
+    20→    20→  color: string;
+    21→    21→  textOnColor: string;
+    22→    22→  terminals: [string, string]; // [south/west side, north/east side] by array order
+    23→    23→  direction: string; // شمال - جنوب
+    24→    24→  headway: number; // minutes
+    25→    25→  firstTrain: string; // 05:30
+    26→    26→  lastTrain: string; // 23:00
+    27→    27→  segmentMinutes: number; // avg travel time per adjacent hop
+    28→    28→  badges?: string[]; // e.g. فرودگاه
+    29→    29→  status?: "normal" | "crowded" | "delay" | "closed";
+    30→    30→  statusNote?: string;
+    31→    31→}
+    32→    32→
+    33→    33→export interface StationDef {
+    34→    34→  id: string;
+    35→    35→  name: string;
+    36→    36→  cityId: CityId;
+    37→    37→  lines: { lineId: string; order: number }[]; // order: index along the line array
+    38→    38→  amenities: AmenityKey[];
+    39→    39→  featured?: boolean;
+    40→    40→}
+    41→    41→
+    42→    42→export type AmenityKey =
+    43→    43→  | "elevator"
+    44→    44→  | "escalator"
+    45→    45→  | "wc"
+    46→    46→  | "atm"
+    47→    47→  | "baby"
+    48→    48→  | "parking"
+    49→    49→  | "bus"
+    50→    50→  | "taxi"
+    51→    51→  | "bike"
+    52→    52→  | "wifi";
+    53→    53→
+    54→    54→export const AMENITIES: Record<
+    55→    55→  AmenityKey,
+    56→    56→  { label: string; icon: string }
+    57→    57→> = {
+    58→    58→  elevator: { label: "آسانسور", icon: "elevator" },
+    59→    59→  escalator: { label: "پله‌برقی", icon: "escalator" },
+    60→    60→  wc: { label: "سرویس بهداشتی", icon: "wc" },
+    61→    61→  atm: { label: "خودپرداز", icon: "local_atm" },
+    62→    62→  baby: { label: "اتاق مادر و کودک", icon: "child_care" },
+    63→    63→  parking: { label: "پارکینگ", icon: "local_parking" },
+    64→    64→  bus: { label: "اتوبوس تندرو", icon: "directions_bus" },
+    65→    65→  taxi: { label: "تاکسی درون‌شهری", icon: "local_taxi" },
+    66→    66→  bike: { label: "دوچرخه عمومی", icon: "pedal_bike" },
+    67→    67→  wifi: { label: "اینترنت رایگان", icon: "wifi" },
+    68→    68→};
+    69→    69→
+    70→    70→/* ------------------------------ Cities ------------------------------ */
+    71→    71→
+    72→    72→export const CITIES: City[] = [
+    73→    73→  {
+    74→    74→    id: "tehran",
+    75→    75→    name: "تهران",
+    76→    76→    subtitle: "شبکه مترو پایتخت",
+    77→    77→    lineIds: ["l1", "l2", "l3", "l4", "l5", "l6", "l7"],
+    78→    78→  },
+    79→    79→  {
+    80→    80→    id: "karaj",
+    81→    81→    name: "کرج",
+    82→    82→    subtitle: "شبکه ریلی کلان‌شهر کرج",
+    83→    83→    lineIds: ["l5", "k1"],
+    84→    84→  },
+    85→    85→  {
+    86→    86→    id: "mashhad",
+    87→    87→    name: "مشهد",
+    88→    88→    subtitle: "قطار شهری مشهد مقدس",
+    89→    89→    lineIds: ["m1", "m2"],
+    90→    90→  },
+    91→    91→  {
+    92→    92→    id: "isfahan",
+    93→    93→    name: "اصفهان",
+    94→    94→    subtitle: "قطار شهری نصف جهان",
+    95→    95→    lineIds: ["e1"],
+    96→    96→  },
+    97→    97→];
+    98→    98→
+    99→    99→/* ------------------------------ Lines ------------------------------ */
+   100→   100→
+   101→   101→export const LINES: LineDef[] = [
+   102→   102→  {
+   103→   103→    id: "l1",
+   104→   104→    cityId: "tehran",
+   105→   105→    number: 1,
+   106→   106→    name: "خط ۱",
+   107→   107→    color: "#e52421",
+   108→   108→    textOnColor: "#ffffff",
+   109→   109→    terminals: ["کهریزک", "تجریش"],
+   110→   110→    direction: "شمال - جنوب",
+   111→   111→    headway: 4,
+   112→   112→    firstTrain: "05:30",
+   113→   113→    lastTrain: "23:00",
+   114→   114→    segmentMinutes: 2.4,
+   115→   115→    status: "normal",
+   116→   116→  },
+   117→   117→  {
+   118→   118→    id: "l2",
+   119→   119→    cityId: "tehran",
+   120→   120→    number: 2,
+   121→   121→    name: "خط ۲",
+   122→   122→    color: "#15397a",
+   123→   123→    textOnColor: "#ffffff",
+   124→   124→    terminals: ["صادقیه", "فرهنگسرا"],
+   125→   125→    direction: "غرب - شرق",
+   126→   126→    headway: 3.5,
+   127→   127→    firstTrain: "05:45",
+   128→   128→    lastTrain: "22:45",
+   129→   129→    segmentMinutes: 2.2,
+   130→   130→    status: "normal",
+   131→   131→  },
+   132→   132→  {
+   133→   133→    id: "l3",
+   134→   134→    cityId: "tehran",
+   135→   135→    number: 3,
+   136→   136→    name: "خط ۳",
+   137→   137→    color: "#00a3e0",
+   138→   138→    textOnColor: "#ffffff",
+   139→   139→    terminals: ["آزادگان", "قائم"],
+   140→   140→    direction: "شمال‌شرق - جنوب‌غرب",
+   141→   141→    headway: 5,
+   142→   142→    firstTrain: "06:00",
+   143→   143→    lastTrain: "22:30",
+   144→   144→    segmentMinutes: 2.5,
+   145→   145→    status: "crowded",
+   146→   146→    statusNote: "ازدحام بالا در ساعات اوج",
+   147→   147→  },
+   148→   148→  {
+   149→   149→    id: "l4",
+   150→   150→    cityId: "tehran",
+   151→   151→    number: 4,
+   152→   152→    name: "خط ۴",
+   153→   153→    color: "#f6b400",
+   154→   154→    textOnColor: "#1a1a1a",
+   155→   155→    terminals: ["ارم سبز", "شهید کلاهدوز"],
+   156→   156→    direction: "شرق - غرب",
+   157→   157→    headway: 4.5,
+   158→   158→    firstTrain: "05:40",
+   159→   159→    lastTrain: "22:50",
+   160→   160→    segmentMinutes: 2.3,
+   161→   161→    badges: ["فرودگاه"],
+   162→   162→    status: "normal",
+   163→   163→  },
+   164→   164→  {
+   165→   165→    id: "l5",
+   166→   166→    cityId: "tehran",
+   167→   167→    number: 5,
+   168→   168→    name: "خط ۵",
+   169→   169→    color: "#009640",
+   170→   170→    textOnColor: "#ffffff",
+   171→   171→    terminals: ["صادقیه", "گلشهر (کرج)"],
+   172→   172→    direction: "تهران - کرج",
+   173→   173→    headway: 10,
+   174→   174→    firstTrain: "06:15",
+   175→   175→    lastTrain: "22:15",
+   176→   176→    segmentMinutes: 4.5,
+   177→   177→    status: "delay",
+   178→   178→    statusNote: "تأخیر ۸ دقیقه‌ای در حرکت قطارها",
+   179→   179→  },
+   180→   180→  {
+   181→   181→    id: "l6",
+   182→   182→    cityId: "tehran",
+   183→   183→    number: 6,
+   184→   184→    name: "خط ۶",
+   185→   185→    color: "#d82572",
+   186→   186→    textOnColor: "#ffffff",
+   187→   187→    terminals: ["دولت‌آباد", "شهید آرمان علی‌وردی"],
+   188→   188→    direction: "جنوب‌شرق - شمال‌غرب",
+   189→   189→    headway: 7,
+   190→   190→    firstTrain: "06:00",
+   191→   191→    lastTrain: "22:30",
+   192→   192→    segmentMinutes: 2.6,
+   193→   193→    status: "normal",
+   194→   194→  },
+   195→   195→  {
+   196→   196→    id: "l7",
+   197→   197→    cityId: "tehran",
+   198→   198→    number: 7,
+   199→   199→    name: "خط ۷",
+   200→   200→    color: "#7d2382",
+   201→   201→    textOnColor: "#ffffff",
+   202→   202→    terminals: ["میدان کتاب", "بسیج"],
+   203→   203→    direction: "شمال‌غرب - جنوب‌شرق",
+   204→   204→    headway: 6,
+   205→   205→    firstTrain: "06:00",
+   206→   206→    lastTrain: "22:30",
+   207→   207→    segmentMinutes: 2.4,
+   208→   208→    status: "normal",
+   209→   209→  },
+   210→   210→  {
+   211→   211→    id: "k1",
+   212→   212→    cityId: "karaj",
+   213→   213→    number: 1,
+   214→   214→    name: "مترو کرج",
+   215→   215→    color: "#009640",
+   216→   216→    textOnColor: "#ffffff",
+   217→   217→    terminals: ["محمدشهر", "گلشهر"],
+   218→   218→    direction: "غرب - شرق",
+   219→   219→    headway: 12,
+   220→   220→    firstTrain: "06:30",
+   221→   221→    lastTrain: "21:30",
+   222→   222→    segmentMinutes: 4,
+   223→   223→    status: "normal",
+   224→   224→  },
+   225→   225→  {
+   226→   226→    id: "m1",
+   227→   227→    cityId: "mashhad",
+   228→   228→    number: 1,
+   229→   229→    name: "خط ۱ مشهد",
+   230→   230→    color: "#e52421",
+   231→   231→    textOnColor: "#ffffff",
+   232→   232→    terminals: ["وکیل‌آباد", "نواب"],
+   233→   233→    direction: "جنوب‌غرب - شمال‌شرق",
+   234→   234→    headway: 8,
+   235→   235→    firstTrain: "06:00",
+   236→   236→    lastTrain: "22:00",
+   237→   237→    segmentMinutes: 2.6,
+   238→   238→    status: "normal",
+   239→   239→  },
+   240→   240→  {
+   241→   241→    id: "m2",
+   242→   242→    cityId: "mashhad",
+   243→   243→    number: 2,
+   244→   244→    name: "خط ۲ مشهد",
+   245→   245→    color: "#15397a",
+   246→   246→    textOnColor: "#ffffff",
+   247→   247→    terminals: ["شهرک غدیر", "طوریه"],
+   248→   248→    direction: "غرب - شرق",
+   249→   249→    headway: 10,
+   250→   250→    firstTrain: "06:15",
+   251→   251→    lastTrain: "21:45",
+   252→   252→    segmentMinutes: 2.8,
+   253→   253→    status: "normal",
+   254→   254→  },
+   255→   255→  {
+   256→   256→    id: "e1",
+   257→   257→    cityId: "isfahan",
+   258→   258→    number: 1,
+   259→   259→    name: "خط ۱ اصفهان",
+   260→   260→    color: "#15397a",
+   261→   261→    textOnColor: "#ffffff",
+   262→   262→    terminals: ["شازینک", "صدره"],
+   263→   263→    direction: "شمال - جنوب",
+   264→   264→    headway: 12,
+   265→   265→    firstTrain: "06:30",
+   266→   266→    lastTrain: "21:30",
+   267→   267→    segmentMinutes: 3.2,
+   268→   268→    status: "normal",
+   269→   269→  },
+   270→   270→];
+   271→   271→
+   272→   272→/* ------------------------------ Stations ------------------------------ */
+   273→   273→/* order = index along line array (direction of terminals[0] -> terminals[1]) */
+   274→   274→
+   275→   275→type RawStation = { id: string; name: string; line: string; order: number; amenities?: AmenityKey[]; featured?: boolean };
+   276→   276→
+   277→   277→const RAW: RawStation[] = [
+   278→   278→  // ---------- Tehran Line 1 (کهریزک -> تجریش) ----------
+   279→   279→  { id: "kahrizak", name: "کهریزک", line: "l1", order: 0, featured: true },
+   280→   280→  { id: "haram", name: "حرم مطهر امام خمینی", line: "l1", order: 1, featured: true },
+   281→   281→  { id: "shahrerey", name: "شهر ری", line: "l1", order: 2 },
+   282→   282→  { id: "javanmard", name: "جوانمرد قصاب", line: "l1", order: 3 },
+   283→   283→  { id: "nabard", name: "نبرد", line: "l1", order: 4 },
+   284→   284→  { id: "khorasan-l1", name: "خراسان", line: "l1", order: 5 },
+   285→   285→  { id: "molavi", name: "مولوی", line: "l1", order: 6 },
+   286→   286→  { id: "mohammadieh", name: "میدان محمدیه", line: "l1", order: 7, featured: true },
+   287→   287→  { id: "panzdah", name: "پانزده خرداد", line: "l1", order: 8, featured: true },
+   288→   288→  { id: "bazaar", name: "بازار بزرگ", line: "l1", order: 9, featured: true },
+   289→   289→  { id: "emam-khomeini-sq", name: "میدان امام خمینی", line: "l1", order: 10, featured: true },
+   290→   290→  { id: "dowlat", name: "دروازه دولت", line: "l1", order: 11, featured: true },
+   291→   291→  { id: "taleghani", name: "طالقانی", line: "l1", order: 12 },
+   292→   292→  { id: "beheshti", name: "شهید بهشتی", line: "l1", order: 13, featured: true },
+   293→   293→  { id: "dr-shariati", name: "دکتر شریعتی", line: "l1", order: 14 },
+   294→   294→  { id: "vanak-sq", name: "میدان ونک", line: "l1", order: 15, featured: true },
+   295→   295→  { id: "saba", name: "میدان صبا", line: "l1", order: 16 },
+   296→   296→  { id: "hemmat-l1", name: "همت", line: "l1", order: 17 },
+   297→   297→  { id: "mirdamad", name: "میرداماد", line: "l1", order: 18, featured: true },
+   298→   298→  { id: "gholhak", name: "قلهک", line: "l1", order: 19 },
+   299→   299→  { id: "nobonyad", name: "نوبنیاد", line: "l1", order: 20, featured: true },
+   300→   300→  { id: "shahid-sadr", name: "شهید صدر", line: "l1", order: 21 },
+   301→   301→  { id: "tajrish", name: "تجریش", line: "l1", order: 22, featured: true },
+   302→   302→
+   303→   303→  // ---------- Tehran Line 2 (صادقیه -> فرهنگسرا) ----------
+   304→   304→  { id: "sadeghieh", name: "صادقیه", line: "l2", order: 0, featured: true },
+   305→   305→  { id: "almahdi", name: "المهدی", line: "l2", order: 1 },
+   306→   306→  { id: "shadman", name: "شادمان", line: "l2", order: 2 },
+   307→   307→  { id: "enghelab-sq", name: "میدان انقلاب", line: "l2", order: 3, featured: true },
+   308→   308→  { id: "emam-khomeini-sq", name: "میدان امام خمینی", line: "l2", order: 4, featured: true },
+   309→   309→  { id: "hasanabad", name: "میدان حسن‌آباد", line: "l2", order: 5 },
+   310→   310→  { id: "khorasan-sq", name: "میدان خراسان", line: "l2", order: 6, featured: true },
+   311→   311→  { id: "resalat-sq", name: "میدان رسالت", line: "l2", order: 7 },
+   312→   312→  { id: "shahid-kaveh", name: "شهید کاوه", line: "l2", order: 8 },
+   313→   313→  { id: "farhangsara", name: "فرهنگسرا", line: "l2", order: 9, featured: true },
+   314→   314→
+   315→   315→  // ---------- Tehran Line 3 (آزادگان -> قائم) ----------
+   316→   316→  { id: "azadegan", name: "آزادگان", line: "l3", order: 0 },
+   317→   317→  { id: "naziabad", name: "نازی‌آباد", line: "l3", order: 1 },
+   318→   318→  { id: "theater-shahr", name: "تئاتر شهر (چهارراه ولیعصر)", line: "l3", order: 2, featured: true },
+   319→   319→  { id: "haft-tir", name: "میدان هفت تیر", line: "l3", order: 3, featured: true },
+   320→   320→  { id: "beheshti", name: "شهید بهشتی", line: "l3", order: 4, featured: true },
+   321→   321→  { id: "baharestan", name: "بهارستان", line: "l3", order: 5 },
+   322→   322→  { id: "emam-hossein-sq", name: "میدان امام حسین", line: "l3", order: 6, featured: true },
+   323→   323→  { id: "zeynoddin", name: "شهید زین‌الدین", line: "l3", order: 7 },
+   324→   324→  { id: "qaem", name: "قائم", line: "l3", order: 8, featured: true },
+   325→   325→
+   326→   326→  // ---------- Tehran Line 4 (ارم سبز -> شهید کلاهدوز) ----------
+   327→   327→  { id: "erm-sabz", name: "ارم سبز", line: "l4", order: 0, featured: true },
+   328→   328→  { id: "mehrabad", name: "مهرآباد", line: "l4", order: 1 },
+   329→   329→  { id: "towhid", name: "توحید", line: "l4", order: 2, featured: true },
+   330→   330→  { id: "enghelab-sq", name: "میدان انقلاب", line: "l4", order: 3, featured: true },
+   331→   331→  { id: "theater-shahr", name: "تئاتر شهر (چهارراه ولیعصر)", line: "l4", order: 4, featured: true },
+   332→   332→  { id: "ferdowsi", name: "فردوسی", line: "l4", order: 5 },
+   333→   333→  { id: "dowlat", name: "دروازه دولت", line: "l4", order: 6, featured: true },
+   334→   334→  { id: "shohada-sq", name: "میدان شهدا", line: "l4", order: 7, featured: true },
+   335→   335→  { id: "piroozi-sq", name: "میدان پیروزی", line: "l4", order: 8 },
+   336→   336→  { id: "babaei", name: "شهید بابایی", line: "l4", order: 9 },
+   337→   337→  { id: "kolahdouz", name: "شهید کلاهدوز", line: "l4", order: 10, featured: true },
+   338→   338→
+   339→   339→  // ---------- Tehran Line 5 (صادقیه -> گلشهر) ----------
+   340→   340→  { id: "sadeghieh", name: "صادقیه", line: "l5", order: 0, featured: true },
+   341→   341→  { id: "chitgar", name: "چیتگر", line: "l5", order: 1 },
+   342→   342→  { id: "vardavard", name: "وردآورد", line: "l5", order: 2 },
+   343→   343→  { id: "mahdasht", name: "ماهداشت", line: "l5", order: 3 },
+   344→   344→  { id: "andisheh", name: "اندیشه", line: "l5", order: 4 },
+   345→   345→  { id: "golshahr", name: "گلشهر", line: "l5", order: 5, featured: true },
+   346→   346→
+   347→   347→  // ---------- Tehran Line 6 (دولت‌آباد -> آرمان علی‌وردی) ----------
+   348→   348→  { id: "dolatabad", name: "دولت‌آباد", line: "l6", order: 0 },
+   349→   349→  { id: "khorasan-sq", name: "میدان خراسان", line: "l6", order: 1, featured: true },
+   350→   350→  { id: "solh", name: "صلح", line: "l6", order: 2 },
+   351→   351→  { id: "emam-hossein-sq", name: "میدان امام حسین", line: "l6", order: 3, featured: true },
+   352→   352→  { id: "mahdieh", name: "مهدیه", line: "l6", order: 4, featured: true },
+   353→   353→  { id: "valiasr-sq", name: "میدان ولیعصر", line: "l6", order: 5 },
+   354→   354→  { id: "aliardi", name: "شهید آرمان علی‌وردی", line: "l6", order: 6 },
+   355→   355→
+   356→   356→  // ---------- Tehran Line 7 (میدان کتاب -> بسیج) ----------
+   357→   357→  { id: "ketab-sq", name: "میدان کتاب", line: "l7", order: 0, featured: true },
+   358→   358→  { id: "towhid", name: "توحید", line: "l7", order: 1, featured: true },
+   359→   359→  { id: "sanat-sq", name: "میدان صنعت", line: "l7", order: 2, featured: true },
+   360→   360→  { id: "mahdieh", name: "مهدیه", line: "l7", order: 3, featured: true },
+   361→   361→  { id: "mohammadieh", name: "میدان محمدیه", line: "l7", order: 4, featured: true },
+   362→   362→  { id: "basij", name: "بسیج", line: "l7", order: 5, featured: true },
+   363→   363→
+   364→   364→  // ---------- Karaj ----------
+   365→   365→  { id: "kr-mohammadshahr", name: "محمدشهر", line: "k1", order: 0 },
+   366→   366→  { id: "kr-mehrshahr", name: "مهرشهر", line: "k1", order: 1 },
+   367→   367→  { id: "kr-karaj", name: "کرج (میدان آزادگان)", line: "k1", order: 2, featured: true },
+   368→   368→  { id: "kr-azimieh", name: "عظیمیه", line: "k1", order: 3 },
+   369→   369→  { id: "kr-golshahr", name: "گلشهر کرج", line: "k1", order: 4, featured: true },
+   370→   370→
+   371→   371→  // ---------- Mashhad ----------
+   372→   372→  { id: "mh-vakilabad", name: "وکیل‌آباد", line: "m1", order: 0, featured: true },
+   373→   373→  { id: "mh-kuhsangi", name: "کوهسنگی", line: "m1", order: 1 },
+   374→   374→  { id: "mh-shohada", name: "میدان شهدا", line: "m1", order: 2 },
+   375→   375→  { id: "mh-haram", name: "حرم مطهر امام رضا (ع)", line: "m1", order: 3, featured: true },
+   376→   376→  { id: "mh-navab", name: "نواب", line: "m1", order: 4, featured: true },
+   377→   377→  { id: "mh-ghadir", name: "شهرک غدیر", line: "m2", order: 0 },
+   378→   378→  { id: "mh-mosalla", name: "مصلی", line: "m2", order: 1 },
+   379→   379→  { id: "mh-taqiabad", name: "تقی‌آباد", line: "m2", order: 2 },
+   380→   380→  { id: "mh-torghabeh", name: "طوریه", line: "m2", order: 3 },
+   381→   381→
+   382→   382→  // ---------- Isfahan ----------
+   383→   383→  { id: "es-sadre", name: "صدره", line: "e1", order: 0, featured: true },
+   384→   384→  { id: "es-azadi-sq", name: "میدان آزادی", line: "e1", order: 1 },
+   385→   385→  { id: "es-chaharbagh", name: "چهارباغ", line: "e1", order: 2, featured: true },
+   386→   386→  { id: "es-siosopol", name: "سی‌وسه‌پل", line: "e1", order: 3 },
+   387→   387→  { id: "es-kaveh", name: "کاوه", line: "e1", order: 4 },
+   388→   388→  { id: "es-shazand", name: "شازینک", line: "e1", order: 5 },
+   389→   389→];
+   390→   390→
+   391→   391→/* derive stations: merge same-id entries across lines (interchanges are separate ids) */
+   392→   392→function hash(s: string): number {
+   393→   393→  let h = 0;
+   394→   394→  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+   395→   395→  return h;
+   396→   396→}
+   397→   397→
+   398→   398→const AMENITY_POOL: AmenityKey[] = [
+   399→   399→  "escalator", "elevator", "wc", "atm", "bus", "taxi", "parking", "baby", "bike", "wifi",
+   400→   400→];
+   401→   401→
+   402→   402→export const STATIONS: StationDef[] = RAW.map((r) => {
+   403→   403→  const h = hash(r.id);
+   404→   404→  const pool = AMENITY_POOL.filter((_, i) => (h >> i) % 3 !== 0);
+   405→   405→  const amenities = r.amenities ?? (pool.length >= 3 ? pool.slice(0, 3 + (h % 3)) : ["escalator" as AmenityKey]);
+   406→   406→  return {
+   407→   407→    id: r.id,
+   408→   408→    name: r.name,
+   409→   409→    cityId: LINES.find((l) => l.id === r.line)!.cityId,
+   410→   410→    lines: [{ lineId: r.line, order: r.order }],
+   411→   411→    amenities,
+   412→   412→    featured: r.featured,
+   413→   413→  };
+   414→   414→}).reduce<StationDef[]>((acc, s) => {
+   415→   415→  const found = acc.find((x) => x.id === s.id);
+   416→   416→  if (found) found.lines.push(...s.lines);
+   417→   417→  else acc.push(s);
+   418→   418→  return acc;
+   419→   419→}, []);
+   420→   420→
+   421→   421→/* ------------------------------ Lookup helpers ------------------------------ */
+   422→   422→
+   423→   423→export function getCity(id: CityId): City {
+   424→   424→  return CITIES.find((c) => c.id === id) ?? CITIES[0];
+   425→   425→}
+   426→   426→export function getLine(id: string): LineDef {
+   427→   427→  return LINES.find((l) => l.id === id) ?? LINES[0];
+   428→   428→}
+   429→   429→export function getStation(id: string): StationDef | undefined {
+   430→   430→  return STATIONS.find((s) => s.id === id);
+   431→   431→}
+   432→   432→export function stationsOfLine(lineId: string): StationDef[] {
+   433→   433→  const line = getLine(lineId);
+   434→   434→  return STATIONS.filter((s) => s.lines.some((l) => l.lineId === lineId)).sort(
+   435→   435→    (a, b) =>
+   436→   436→      a.lines.find((l) => l.lineId === lineId)!.order -
+   437→   437→      b.lines.find((l) => l.lineId === lineId)!.order
+   438→   438→  );
+   439→   439→}
+   440→   440→export function interchangeLinesOf(stationId: string): string[] {
+   441→   441→  const s = getStation(stationId);
+   442→   442→  return s ? s.lines.map((l) => l.lineId) : [];
+   443→   443→}
+   444→   444→export function lineInterchanges(lineId: string): string[] {
+   445→   445→  return STATIONS.filter((s) => s.lines.length > 1 && s.lines.some((l) => l.lineId === lineId))
+   446→   446→    .map((s) => s.id);
+   447→   447→}
+   448→   448→
+   449→   449→/* ------------------------------ Persian formatting ------------------------------ */
+   450→   450→
+   451→   451→const FA_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+   452→   452→export function toFa(n: number | string): string {
+   453→   453→  return String(n).replace(/\d/g, (d) => FA_DIGITS[Number(d)]);
+   454→   454→}
+   455→   455→export function toEnDigits(s: string): string {
+   456→   456→  return s
+   457→   457→    .replace(/[۰-۹]/g, (d) => String(FA_DIGITS.indexOf(d)))
+   458→   458→    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+   459→   459→}
+   460→   460→export function faMoney(n: number): string {
+   461→   461→  return toFa(n.toLocaleString("en-US"));
+   462→   462→}
+   463→   463→
+   464→   464→/* ------------------------------ Simulated live ops ------------------------------ */
+   465→   465→
+   466→   466→/** آیا الان داخل ساعات سرویس‌دهی خط هستیم؟ */
+   467→   467→export function isWithinService(line: { firstTrain: string; lastTrain: string }, d = new Date()): boolean {
+   468→   468→  const [fh, fm] = line.firstTrain.split(":").map(Number);
+   469→   469→  const [lh, lm] = line.lastTrain.split(":").map(Number);
+   470→   470→  const mins = d.getHours() * 60 + d.getMinutes();
+   471→   471→  return mins >= fh * 60 + fm && mins <= lh * 60 + lm;
+   472→   472→}
+   473→   473→
+   474→   474→export function nextArrivals(lineId: string, stationId: string, now = Date.now()): number[] {
+   475→   475→  const line = getLine(lineId);
+   476→   476→  const headwaySec = Math.round(line.headway * 60);
+   477→   477→  const phase = hash(stationId + lineId + new Date(now).getHours()) % headwaySec;
+   478→   478→  const elapsed = Math.floor(now / 1000) % headwaySec;
+   479→   479→  let next = phase - elapsed;
+   480→   480→  while (next <= 0) next += headwaySec;
+   481→   481→  const late = line.status === "delay" ? 8 * 60 : 0;
+   482→   482→  return [next + late, next + headwaySec + late];
+   483→   483→}
+   484→   484→
+   485→   485→export type CrowdLevel = "quiet" | "moderate" | "busy";
+   486→   486→
+   487→   487→export function crowdingNow(lineId: string, now = new Date()): CrowdLevel {
+   488→   488→  const h = now.getHours();
+   489→   489→  const peak = (h >= 7 && h <= 9) || (h >= 16.5 && h <= 19);
+   490→   490→  const mid = (h >= 10 && h <= 16) || (h >= 19.5 && h <= 22);
+   491→   491→  const line = getLine(lineId);
+   492→   492→  if (line.status === "crowded") return peak ? "busy" : mid ? "busy" : "moderate";
+   493→   493→  if (peak) return hash(lineId + h) % 4 === 0 ? "quiet" : "busy";
+   494→   494→  if (mid) return hash(lineId + h) % 3 === 0 ? "busy" : "moderate";
+   495→   495→  return hash(lineId + h) % 3 === 0 ? "moderate" : "quiet";
+   496→   496→}
+   497→   497→
+   498→   498→export const CROWD_LABEL: Record<CrowdLevel, string> = {
+   499→   499→  quiet: "خلوت",
+   500→   500→  moderate: "ازدحام متوسط",
+   501→   501→  busy: "شلوغ",
+   502→   502→};
+   503→   503→export const CROWD_COLOR: Record<CrowdLevel, string> = {
+   504→   504→  quiet: "#006638",
+   505→   505→  moderate: "#b45309",
+   506→   506→  busy: "#bc000c",
+   507→   507→};
+   508→   508→
+   509→   509→/* ------------------------------ Timetable ------------------------------ */
+   510→   510→
+   511→   511→export interface TimetableRow {
+   512→   512→  direction: string;
+   513→   513→  first: string;
+   514→   514→  last: string;
+   515→   515→  headwayPeak: string;
+   516→   516→  headwayOff: string;
+   517→   517→}
+   518→   518→
+   519→   519→export function timetableFor(lineId: string): TimetableRow[] {
+   520→   520→  const line = getLine(lineId);
+   521→   521→  const fmt = (t: string, add = 0) => {
+   522→   522→    const [h, m] = t.split(":").map(Number);
+   523→   523→    const mm = m + add;
+   524→   524→    return toFa(`${String(h + Math.floor(mm / 60)).padStart(2, "0")}:${String(mm % 60).padStart(2, "0")}`);
+   525→   525→  };
+   526→   526→  return [
+   527→   527→    {
+   528→   528→      direction: `به سمت ${line.terminals[1]}`,
+   529→   529→      first: fmt(line.firstTrain),
+   530→   530→      last: fmt(line.lastTrain),
+   531→   531→      headwayPeak: toFa(`${line.headway} دقیقه`),
+   532→   532→      headwayOff: toFa(`${Math.round(line.headway * 1.6 * 2) / 2} دقیقه`),
+   533→   533→    },
+   534→   534→    {
+   535→   535→      direction: `به سمت ${line.terminals[0]}`,
+   536→   536→      first: fmt(line.firstTrain, 5),
+   537→   537→      last: fmt(line.lastTrain, -6),
+   538→   538→      headwayPeak: toFa(`${Math.round(line.headway * 1.15 * 2) / 2} دقیقه`),
+   539→   539→      headwayOff: toFa(`${Math.round(line.headway * 1.8 * 2) / 2} دقیقه`),
+   540→   540→    },
+   541→   541→  ];
+   542→   542→}
+   543→   543→
+   544→   544→/* ------------------------------ Exits, equipment, landmarks ------------------------------ */
+   545→   545→
+   546→   546→export interface ExitDef {
+   547→   547→  label: string;
+   548→   548→  direction: string;
+   549→   549→  accessibility: string;
+   550→   550→  landmarks: string[];
+   551→   551→}
+   552→   552→
+   553→   553→const FEATURED_EXITS: Record<string, ExitDef[]> = {
+   554→   554→  dowlat: [
+   555→   555→    { label: "خروجی ۱", direction: "شمال شرقی", accessibility: "پله‌برقی + رمپ", landmarks: ["میدان انقلاب اسلامی", "پارک ملت"] },
+   556→   556→    { label: "خروجی ۲", direction: "شمال غربی", accessibility: "آسانسور فعال", landmarks: ["موزه ملی ایران", "سازمان اسناد"] },
+   557→   557→    { label: "خروجی ۳", direction: "جنوب شرقی", accessibility: "پله‌برقی", landmarks: ["دانشگاه امیرکبیر", "خیابان طالقانی"] },
+   558→   558→    { label: "خروجی ۴", direction: "جنوب غربی", accessibility: "رمپ", landmarks: ["بازار فرش", "تالار فردوسی"] },
+   559→   559→  ],
+   560→   560→  "theater-shahr": [
+   561→   561→    { label: "خروجی ۱", direction: "شمال شرقی", accessibility: "پله برقی + رمپ", landmarks: ["مجموعه تئاتر شهر (۵۰ متر)", "پارک دانشجو"] },
+   562→   562→    { label: "خروجی ۲", direction: "شمال غربی", accessibility: "آسانسور فعال", landmarks: ["دانشگاه تهران (۷ دقیقه پیاده)", "راسته ناشران و کتاب‌فروشی‌ها"] },
+   563→   563→    { label: "خروجی ۳", direction: "جنوب شرقی", accessibility: "پله‌برقی", landmarks: ["تالار وحدت (۴۰۰ متر)", "پارکینگ طبقاتی رازی"] },
+   564→   564→    { label: "خروجی ۴", direction: "جنوب غربی", accessibility: "رمپ", landmarks: ["چهارراه ولیعصر", "ایستگاه BRT ولیعصر"] },
+   565→   565→  ],
+   566→   566→  tajrish: [
+   567→   567→    { label: "خروجی ۱", direction: "شمال", accessibility: "پله‌برقی + آسانسور", landmarks: ["میدان تجریش", "بازار تجریش"] },
+   568→   568→    { label: "خروجی ۲", direction: "شرق", accessibility: "پله‌برقی", landmarks: ["موزه ابگر", "پارک ساعی"] },
+   569→   569→    { label: "خروجی ۳", direction: "غرب", accessibility: "رمپ", landmarks: ["درکه (۱۵ دقیقه پیاده)", "پیست دوچرخه‌سواری"] },
+   570→   570→  ],
+   571→   571→  "enghelab-sq": [
+   572→   572→    { label: "خروجی ۱", direction: "شمال", accessibility: "آسانسور فعال", landmarks: ["دانشگاه تهران", "پیاده‌راه انقلاب"] },
+   573→   573→    { label: "خروجی ۲", direction: "جنوب", accessibility: "پله‌برقی", landmarks: ["دانشگاه صنعتی امیرکبیر", "خیابان ۱۶ آذر"] },
+   574→   574→    { label: "خروجی ۳", direction: "شرق", accessibility: "پله‌برقی", landmarks: ["میدان فردوسی", "هتل فردوسی"] },
+   575→   575→    { label: "خروجی ۴", direction: "غرب", accessibility: "رمپ", landmarks: ["خیابان آزادی", "پارک لاله"] },
+   576→   576→  ],
+   577→   577→  "emam-khomeini-sq": [
+   578→   578→    { label: "خروجی ۱", direction: "شمال", accessibility: "پله‌برقی", landmarks: ["میدان توپخانه", "ساختمان شهرداری"] },
+   579→   579→    { label: "خروجی ۲", direction: "جنوب", accessibility: "آسانسور فعال", landmarks: ["بازار تهران (دروازه)", "کاخ گلستان (۱۰ دقیقه)"] },
+   580→   580→  ],
+   581→   581→};
+   582→   582→
+   583→   583→export function exitsFor(stationId: string): ExitDef[] {
+   584→   584→  if (FEATURED_EXITS[stationId]) return FEATURED_EXITS[stationId];
+   585→   585→  const h = hash(stationId);
+   586→   586→  const dirs = ["شمال شرقی", "شمال غربی", "جنوب شرقی", "جنوب غربی"];
+   587→   587→  const acc = ["پله‌برقی", "آسانسور فعال", "رمپ ویژه ویلچر", "پله ثابت"];
+   588→   588→  const n = 2 + (h % 3);
+   589→   589→  return Array.from({ length: n }, (_, i) => ({
+   590→   590→    label: `خروجی ${toFa(i + 1)}`,
+   591→   591→    direction: dirs[(h + i) % 4],
+   592→   592→    accessibility: acc[(h + i) % 4],
+   593→   593→    landmarks: [],
+   594→   594→  }));
+   595→   595→}
+   596→   596→
+   597→   597→export interface EquipmentStatus {
+   598→   598→  type: "escalator" | "elevator" | "ramp";
+   599→   599→  typeLabel: string;
+   600→   600→  exits: string[];
+   601→   601→  total: number;
+   602→   602→  active: number;
+   603→   603→  note?: string;
+   604→   604→}
+   605→   605→
+   606→   606→export function equipmentFor(stationId: string): EquipmentStatus[] {
+   607→   607→  const h = hash("eq" + stationId);
+   608→   608→  const escT = 6 + (h % 8);
+   609→   609→  const escA = escT - (h % 3);
+   610→   610→  const elT = 2 + (h % 3);
+   611→   611→  const elA = h % 5 === 0 ? elT - 1 : elT;
+   612→   612→  return [
+   613→   613→    {
+   614→   614→      type: "escalator",
+   615→   615→      typeLabel: "پله‌برقی",
+   616→   616→      exits: ["خروجی ۱", "خروجی ۲", "سکوی اصلی"],
+   617→   617→      total: escT,
+   618→   618→      active: escA,
+   619→   619→      note: escA < escT ? `${toFa(escT - escA)} دستگاه در حال سرویس` : undefined,
+   620→   620→    },
+   621→   621→    {
+   622→   622→      type: "elevator",
+   623→   623→      typeLabel: "آسانسور",
+   624→   624→      exits: ["خروجی ۱", "سکوی خط"],
+   625→   625→      total: elT,
+   626→   626→      active: elA,
+   627→   627→      note: elA < elT ? `${toFa(elT - elA)} دستگاه در دست بهسازی` : undefined,
+   628→   628→    },
+   629→   629→    {
+   630→   630→      type: "ramp",
+   631→   631→      typeLabel: "رمپ متحرک",
+   632→   632→      exits: ["ورودی اصلی"],
+   633→   633→      total: 2,
+   634→   634→      active: 2,
+   635→   635→    },
+   636→   636→  ];
+   637→   637→}
+   638→   638→
+   639→   639→const LANDMARKS: Record<string, string[]> = {
+   640→   640→  tajrish: ["بازار تجریش", "موزه ابگر", "کاخ سعدآباد", "پارک ملت"],
+   641→   641→  dowlat: ["موزه ملی ایران", "دانشگاه امیرکبیر", "تالار فردوسی"],
+   642→   642→  "theater-shahr": ["تئاتر شهر", "دانشگاه تهران", "تالار وحدت", "پارک دانشجو"],
+   643→   643→  "enghelab-sq": ["دانشگاه تهران", "دانشگاه امیرکبیر", "پارک لاله"],
+   644→   644→  bazaar: ["بازار بزرگ تهران", "مسجد شاه", "کاخ گلستان"],
+   645→   645→  "emam-khomeini-sq": ["کاخ گلستان", "موزه ملی", "بازار تهران"],
+   646→   646→  "haram": ["حرم مطهر امام خمینی", "بهشت زهرا"],
+   647→   647→  "farhangsara": ["بوستان نهر آب", "بازار مبل هفت حوض"],
+   648→   648→  "vanak-sq": ["میدان ونک", "برج نگین ایران", "پارک ونک"],
+   649→   649→  "qaem": ["بازار قائم", "بوستان لویزان"],
+   650→   650→  "kolahdouz": ["پایانه شرق", "بزرگراه بابایی"],
+   651→   651→  "sadeghieh": ["پایانه غرب", "بازار صادقیه"],
+   652→   652→  "mirdamad": ["بازار میرداماد", "پارک طالقانی"],
+   653→   653→  "nobonyad": ["بوستان گفتگو", "مجتمع نیلوفر"],
+   654→   654→  "mh-haram": ["حرم مطهر امام رضا (ع)", "بازار رضا", "موزه آستان قدس"],
+   655→   655→  "es-chaharbagh": ["میدان نقش جهان", "سی‌وسه‌پل", "کاخ چهلستون"],
+   656→   656→  "kr-karaj": ["دریاچه کرج", "میدان آزادگان", "بازار کرج"],
+   657→   657→};
+   658→   658→
+   659→   659→export function landmarksFor(stationId: string): string[] {
+   660→   660→  return LANDMARKS[stationId] ?? [];
+   661→   661→}
+   662→   662→
+   663→   663→/* ------------------------------ Route engine ------------------------------ */
+   664→   664→
+   665→   665→export interface RouteLeg {
+   666→   666→  lineId: string;
+   667→   667→  lineName: string;
+   668→   668→  color: string;
+   669→   669→  textOnColor: string;
+   670→   670→  fromId: string;
+   671→   671→  fromName: string;
+   672→   672→  toId: string;
+   673→   673→  toName: string;
+   674→   674→  stationIds: string[];
+   675→   675→  stationNames: string[];
+   676→   676→  stops: number;
+   677→   677→  minutes: number;
+   678→   678→}
+   679→   679→
+   680→   680→export interface RoutePlan {
+   681→   681→  legs: RouteLeg[];
+   682→   682→  totalMinutes: number;
+   683→   683→  totalStations: number;
+   684→   684→  transfers: number;
+   685→   685→  transferStations: string[];
+   686→   686→  fare: number;
+   687→   687→  pref: "fastest" | "least_transfers" | "quietest";
+   688→   688→  crowdNote: string;
+   689→   689→}
+   690→   690→
+   691→   691→const TRANSFER_MIN = 4.5;
+   692→   692→const BOARDING_MIN = 1.5;
+   693→   693→
+   694→   694→export function fareFor(stops: number): number {
+   695→   695→  if (stops <= 6) return 2800;
+   696→   696→  if (stops <= 12) return 3200;
+   697→   697→  if (stops <= 20) return 3800;
+   698→   698→  return 4500;
+   699→   699→}
+   700→   700→
+   701→   701→interface State {
+   702→   702→  station: string;
+   703→   703→  line: string | null;
+   704→   704→  time: number;
+   705→   705→  transfers: number;
+   706→   706→  path: { station: string; line: string | null }[];
+   707→   707→}
+   708→   708→
+   709→   709→/** Dijkstra over (station, line) states. */
+   710→   710→export function computeRoute(
+   711→   711→  fromId: string,
+   712→   712→  toId: string,
+   713→   713→  pref: "fastest" | "least_transfers" | "quietest" = "fastest",
+   714→   714→  now = new Date()
+   715→   715→): RoutePlan | null {
+   716→   716→  const from = getStation(fromId);
+   717→   717→  const to = getStation(toId);
+   718→   718→  if (!from || !to || fromId === toId) return null;
+   719→   719→
+   720→   720→  const seg = (lineId: string) => {
+   721→   721→    const base = getLine(lineId).segmentMinutes;
+   722→   722→    const crowd = crowdingNow(lineId, now);
+   723→   723→    const factor = pref === "quietest" ? (crowd === "busy" ? 1.35 : crowd === "moderate" ? 1.1 : 0.95) : 1;
+   724→   724→    return base * factor;
+   725→   725→  };
+   726→   726→
+   727→   727→  const start: State = { station: fromId, line: null, time: 0, transfers: 0, path: [{ station: fromId, line: null }] };
+   728→   728→  const best = new Map<string, number>();
+   729→   729→  const key = (s: State) => `${s.station}|${s.line ?? "*"}`;
+   730→   730→  const queue: State[] = [start];
+   731→   731→  best.set(key(start), 0);
+   732→   732→
+   733→   733→  let done: State | null = null;
+   734→   734→  const visited = new Set<string>();
+   735→   735→
+   736→   736→  while (queue.length) {
+   737→   737→    // pick min
+   738→   738→    let idx = 0;
+   739→   739→    for (let i = 1; i < queue.length; i++) {
+   740→   740→      if (queue[i].time < queue[idx].time) idx = i;
+   741→   741→    }
+   742→   742→    const cur = queue.splice(idx, 1)[0];
+   743→   743→    if (visited.has(key(cur))) continue;
+   744→   744→    visited.add(key(cur));
+   745→   745→
+   746→   746→    if (cur.station === toId) {
+   747→   747→      done = cur;
+   748→   748→      break;
+   749→   749→    }
+   750→   750→
+   751→   751→    const st = getStation(cur.station)!;
+   752→   752→    for (const ls of st.lines) {
+   753→   753→      // board / continue on line ls.lineId
+   754→   754→      const isTransfer = cur.line !== null && cur.line !== ls.lineId;
+   755→   755→      const penalty = cur.line === null ? BOARDING_MIN : isTransfer ? TRANSFER_MIN : 0;
+   756→   756→      const transferCost =
+   757→   757→        pref === "least_transfers" ? (isTransfer ? 40 : 0) : 0;
+   758→   758→
+   759→   759→      // neighbors along the line
+   760→   760→      const list = stationsOfLine(ls.lineId);
+   761→   761→      const myIdx = list.findIndex((x) => x.id === cur.station);
+   762→   762→      for (const delta of [-1, 1]) {
+   763→   763→        const nIdx = myIdx + delta;
+   764→   764→        if (nIdx < 0 || nIdx >= list.length) continue;
+   765→   765→        const nb = list[nIdx];
+   766→   766→        const t = cur.time + seg(ls.lineId) + penalty + transferCost;
+   767→   767→        const ns: State = {
+   768→   768→          station: nb.id,
+   769→   769→          line: ls.lineId,
+   770→   770→          time: t,
+   771→   771→          transfers: cur.transfers + (isTransfer ? 1 : 0),
+   772→   772→          path: [...cur.path, { station: nb.id, line: ls.lineId }],
+   773→   773→        };
+   774→   774→        const k = key(ns);
+   775→   775→        if (!best.has(k) || t < best.get(k)! - 1e-9) {
+   776→   776→          best.set(k, t);
+   777→   777→          queue.push(ns);
+   778→   778→        }
+   779→   779→      }
+   780→   780→    }
+   781→   781→  }
+   782→   782→
+   783→   783→  if (!done) return null;
+   784→   784→
+   785→   785→  // compress path into legs
+   786→   786→  const legs: RouteLeg[] = [];
+   787→   787→  const path = done.path.slice(1);
+   788→   788→  let curLine: string | null = null;
+   789→   789→  let legStart = path[0].station;
+   790→   790→  let prev = fromId;
+   791→   791→
+   792→   792→  const flush = (endStation: string) => {
+   793→   793→    if (!curLine) return;
+   794→   794→    const line = getLine(curLine);
+   795→   795→    const ids = stationsOfLine(curLine).map((s) => s.id);
+   796→   796→    const i1 = ids.indexOf(legStart);
+   797→   797→    const i2 = ids.indexOf(endStation);
+   798→   798→    const slice = i1 <= i2 ? ids.slice(i1, i2 + 1) : ids.slice(i2, i1 + 1).reverse();
+   799→   799→    const names = slice.map((id) => getStation(id)!.name);
+   800→   800→    legs.push({
+   801→   801→      lineId: curLine,
+   802→   802→      lineName: line.name,
+   803→   803→      color: line.color,
+   804→   804→      textOnColor: line.textOnColor,
+   805→   805→      fromId: slice[0],
+   806→   806→      fromName: names[0],
+   807→   807→      toId: slice[slice.length - 1],
+   808→   808→      toName: names[names.length - 1],
+   809→   809→      stationIds: slice,
+   810→   810→      stationNames: names,
+   811→   811→      stops: slice.length - 1,
+   812→   812→      minutes: Math.max(1, Math.round((slice.length - 1) * line.segmentMinutes)),
+   813→   813→    });
+   814→   814→  };
+   815→   815→
+   816→   816→  for (const step of path) {
+   817→   817→    if (curLine === null) {
+   818→   818→      curLine = step.line;
+   819→   819→      legStart = prev;
+   820→   820→    } else if (step.line !== curLine) {
+   821→   821→      flush(prev);
+   822→   822→      curLine = step.line;
+   823→   823→      legStart = prev;
+   824→   824→    }
+   825→   825→    prev = step.station;
+   826→   826→  }
+   827→   827→  flush(prev);
+   828→   828→
+   829→   829→  const totalStops = legs.reduce((a, l) => a + l.stops, 0);
+   830→   830→  // زمان نمایشی واقعی = جمع زمان لگ‌ها + هزینه تعویض خط + سوار شدن (بدون وزن بهینه‌سازی)
+   831→   831→  const totalMinutes = Math.round(
+   832→   832→    legs.reduce((a, l) => a + l.minutes, 0) + (legs.length - 1) * TRANSFER_MIN + BOARDING_MIN
+   833→   833→  );
+   834→   834→  const transferStations = legs.slice(0, -1).map((l) => l.toName);
+   835→   835→  const busyLeg = legs.find((l) => crowdingNow(l.lineId, now) === "busy");
+   836→   836→
+   837→   837→  return {
+   838→   838→    legs,
+   839→   839→    totalMinutes,
+   840→   840→    totalStations: totalStops + 1,
+   841→   841→    transfers: legs.length - 1,
+   842→   842→    transferStations,
+   843→   843→    fare: fareFor(totalStops),
+   844→   844→    pref,
+   845→   845→    crowdNote: busyLeg
+   846→   846→      ? `ازدحام بالا روی ${busyLeg.lineName} در ساعات اوج`
+   847→   847→      : "سرویس‌دهی همه خطوط مسیر عادی و روان است",
+   848→   848→  };
+   849→   849→}
+   850→   850→
+   851→   851→/* ------------------------------ Search ------------------------------ */
+   852→   852→
+   853→   853→export function amenitiesLabels(keys: AmenityKey[]): { key: AmenityKey; label: string; icon: string }[] {
+   854→   854→  return keys.map((k) => ({ key: k, label: AMENITIES[k].label, icon: AMENITIES[k].icon }));
+   855→   855→}
+   856→   856→
+   857→   857→export function searchStations(opts: {
+   858→   858→  q?: string;
+   859→   859→  lineId?: string;
+   860→   860→  facility?: AmenityKey;
+   861→   861→  cityId?: CityId;
+   862→   862→}): StationDef[] {
+   863→   863→  const q = opts.q?.trim();
+   864→   864→  let res = STATIONS;
+   865→   865→  if (opts.cityId) res = res.filter((s) => s.cityId === opts.cityId);
+   866→   866→  if (opts.lineId) res = res.filter((s) => s.lines.some((l) => l.lineId === opts.lineId));
+   867→   867→  if (opts.facility) res = res.filter((s) => s.amenities.includes(opts.facility!));
+   868→   868→  if (q) {
+   869→   869→    const nq = toEnDigits(q).toLowerCase();
+   870→   870→    res = res.filter(
+   871→   871→      (s) => s.name.toLowerCase().includes(nq) || s.name.replace(/ /g, "").includes(nq.replace(/ /g, ""))
+   872→   872→    );
+   873→   873→  }
+   874→   874→  return res;
+   875→   875→}
+   876→   876→

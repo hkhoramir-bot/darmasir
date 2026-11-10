@@ -136,7 +136,13 @@ export default function SettingsPage() {
       announcer.stop();
       return;
     }
-    announcer.announce("دستیار صوتی متروجو آماده است").catch(() => {});
+    announcer
+      .announce(
+        prefs.gender === "male"
+          ? "سلام! دستیار صوتی متروجو با صدای مرد آماده است"
+          : "سلام! دستیار صوتی متروجو با صدای زن آماده است"
+      )
+      .catch(() => {});
   };
 
   const cityName = city === "tehran" ? "تهران" : city === "mashhad" ? "مشهد" : "اصفهان";
@@ -264,8 +270,7 @@ export default function SettingsPage() {
             </span>
           </div>
           <p className="text-[10px] text-outline leading-relaxed">
-            اعلام «ایستگاه بعدی» و جستجوی صوتی کاملاً به زبان فارسی است و به هیچ کلید یا API نیاز ندارد —
-            همه‌چیز آماده است.
+            اعلام «ایستگاه بعدی» و جستجوی صوتی کاملاً به زبان فارسی است؛ با صدای زن یا مرد و به هیچ کلید یا API نیاز ندارد.
           </p>
 
           {/* انتخاب موتور گفتار */}
@@ -289,6 +294,39 @@ export default function SettingsPage() {
           <p className="text-[10px] text-on-surface-variant">
             {ENGINE_OPTIONS.find((o) => o.id === prefs.engine)?.hint}
           </p>
+
+          {/* انتخاب صدای زن / مرد */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-bold text-on-surface-variant">نوع صدا</p>
+            <div className="grid grid-cols-2 gap-1 bg-surface-container-low rounded-xl p-1">
+              {(
+                [
+                  { id: "female", label: "صدای زن", icon: "woman", hint: "گوینندگان زن فارسی" },
+                  { id: "male", label: "صدای مرد", icon: "man", hint: "گوینندگان مرد فارسی" },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => prefs.setGender(o.id)}
+                  aria-pressed={prefs.gender === o.id}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-[11px] font-bold transition-all active:scale-95 ${
+                    prefs.gender === o.id
+                      ? "bg-primary text-white shadow-sm"
+                      : "text-on-surface-variant"
+                  }`}
+                >
+                  <MI name={o.icon} size={16} />
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-outline">
+              {prefs.gender === "male"
+                ? "صدای مرد: فرید (آنلاین) یا بم‌کردن صدای دستگاه"
+                : "صدای زن: دلاورا (آنلاین) یا صدای فارسی دستگاه"}
+            </p>
+          </div>
 
           {/* کلید Gemini حذف شد — صدای آنلاین بدون کلید کار می‌کند */}
 

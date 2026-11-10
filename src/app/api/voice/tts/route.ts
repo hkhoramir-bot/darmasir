@@ -5,13 +5,15 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /* ============================================================
-   POST /api/voice/tts  { text, rate? }
-   صدای نورال فارسی مایکروسافت — fa-IR-DilaraNeural
+   POST /api/voice/tts  { text, rate?, gender? }
+   صدای فارسی مایکروسافت — زن: fa-IR-DilaraNeural، مرد: fa-IR-FaridNeural
    رایگان و بدون نیاز به هیچ کلید/API (توکن عمومی خود Edge).
    خروجی: audio/mpeg
    ============================================================ */
 
-const FA_VOICE = "fa-IR-DilaraNeural";
+function faVoiceFor(gender: string | undefined): string {
+  return gender === "male" ? "fa-IR-FaridNeural" : "fa-IR-DilaraNeural";
+}
 
 let cached: { key: string; buf: Buffer } | null = null;
 
@@ -41,12 +43,14 @@ export async function POST(req: NextRequest) {
   const rateRaw = Number(body?.rate ?? 1);
   // نرخ نسبی SSML — محدوده مجاز 0.5 تا 1.5
   const rate = Number.isFinite(rateRaw) ? Math.min(1.5, Math.max(0.6, rateRaw)) : 1;
+  const gender: "female" | "male" = body?.gender === "male" ? "male" : "female";
+  const voice = faVoiceFor(gender);
 
   if (!text) {
     return NextResponse.json({ error: "متن خالی است" }, { status: 400 });
   }
 
-  const cacheKey = `${text}|${rate}`;
+  const cacheKey = `${text}|${rate}|${gender}`;
   if (cached && cached.key === cacheKey) {
     return mp3Response(cached.buf);
   }
@@ -54,7 +58,7 @@ export async function POST(req: NextRequest) {
   try {
     // هر بار اتصال تازه — ساده و مطمئن، بدون تداخل درخواست‌ها
     const tts = new MsEdgeTTS();
-    await tts.setMetadata(FA_VOICE, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
     const { audioStream } = tts.toStream(text, { rate });
     const buf = await streamToBuffer(audioStream);
     tts.close();

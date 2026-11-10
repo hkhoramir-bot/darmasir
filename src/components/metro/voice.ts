@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { getVoicePrefs } from "@/lib/voice-settings";
+import { getVoicePrefs, type VoiceGender } from "@/lib/voice-settings";
 
 /* ============================================================
    دستیار صوتی متروجو — کاملاً فارسی و بدون نیاز به هیچ کلید/API
    TTS:  ۱) موتور گفتار فارسیِ دستگاه (Google TTS — fa-IR، آفلاین)
-         ۲) صدای نورال فارسی سرور (رایگان و بدون کلید)
+         ۲) صدای فارسی سرور (رایگان و بدون کلید) — زن/مرد
    ASR:  تشخیص گفتار فارسی مرورگر/اندروید (fa-IR)
    ============================================================ */
 
@@ -21,27 +21,45 @@ export const VOICE_ERRORS = {
 
 /* ---------------- موتور گفتار فارسی دستگاه ---------------- */
 
-let faVoice: SpeechSynthesisVoice | null | undefined; // undefined = هنوز بررسی نشده
+let faVoices: SpeechSynthesisVoice[] | null | undefined; // undefined = هنوز بررسی نشده
 
-/** یافتن صدای فارسی دستگاه (fa / fa-IR) */
-export function findFaVoice(): SpeechSynthesisVoice | null {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-  if (faVoice !== null && faVoice !== undefined) return faVoice;
+/** همه صداهای فارسی دستگاه (fa / fa-IR) */
+export function findFaVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return [];
+  if (faVoices !== null && faVoices !== undefined) return faVoices;
   const voices = window.speechSynthesis.getVoices();
-  faVoice =
-    voices.find((v) => v.lang?.toLowerCase().replace("_", "-") === "fa-ir") ??
-    voices.find((v) => v.lang?.toLowerCase().replace("_", "-").startsWith("fa")) ??
-    null;
-  return faVoice;
+  faVoices = voices.filter((v) =>
+    v.lang?.toLowerCase().replace("_", "-").startsWith("fa")
+  );
+  return faVoices;
+}
+
+/** یافتن صدای فارسی دستگاه متناسب با جنسیت انتخابی */
+export function findFaVoice(gender: VoiceGender = "female"): SpeechSynthesisVoice | null {
+  const list = findFaVoices();
+  if (!list.length) return null;
+  if (list.length === 1) return list[0];
+
+  const isFemaleName = (n: string) => /female|dilara|zan|زن|woman/i.test(n);
+  const isMaleName = (n: string) =>
+    !isFemaleName(n) && (/male|hamed|farid|dariush|mard|مرد/i.test(n));
+
+  const wanted = gender === "male" ? isMaleName : isFemaleName;
+  return list.find((v) => wanted(v.name)) ?? list[0];
 }
 
 /** بازنشانی کش صدای دستگاه (پس از نصب صدای جدید) */
 export function resetFaVoiceCache() {
-  faVoice = undefined;
+  faVoices = undefined;
 }
 
 /** پخش با موتور گفتار دستگاه — true یعنی شروع شد */
-function deviceSpeak(text: string, rate: number, onEnd?: () => void): Promise<boolean> {
+function deviceSpeak(
+  text: string,
+  rate: number,
+  gender: VoiceGender,
+  onEnd?: () => void
+): Promise<boolean> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       resolve(false);
@@ -50,14 +68,15 @@ function deviceSpeak(text: string, rate: number, onEnd?: () => void): Promise<bo
     const synth = window.speechSynthesis;
 
     const trySpeak = (): boolean => {
-      const voice = findFaVoice();
+      const voice = findFaVoice(gender);
       if (!voice) return false;
       synth.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.voice = voice;
       u.lang = voice.lang || "fa-IR";
       u.rate = Math.min(1.5, Math.max(0.6, rate));
-      u.pitch = 1;
+      // صدای مرد: زیرتر و بم‌تر — وقتی فقط یک صدای فارسی نصب باشد هم تفاوت محسوس است
+      u.pitch = gender === "male" ? 0.65 : 1.05;
       u.onend = () => onEnd?.();
       u.onerror = () => onEnd?.();
       synth.speak(u);
@@ -83,12 +102,17 @@ function deviceSpeak(text: string, rate: number, onEnd?: () => void): Promise<bo
   });
 }
 
-/** پخش با صدای نورال فارسی سرور (بدون کلید) */
-async function serverSpeak(text: string, rate: number, audio: HTMLAudioElement): Promise<void> {
+/** پخش با صدای فارسی سرور (بدون کلید) — زن: دلاورا، مرد: فرید */
+async function serverSpeak(
+  text: string,
+  rate: number,
+  gender: VoiceGender,
+  audio: HTMLAudioElement
+): Promise<void> {
   const res = await fetch("/api/voice/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, rate }),
+    body: JSON.stringify({ text, rate, gender }),
   });
   if (!res.ok) {
     throw new Error(VOICE_ERRORS.cloudFail);
@@ -128,14 +152,14 @@ export function useAnnouncer() {
       const prefs = getVoicePrefs();
 
       const playOnDevice = () =>
-        deviceSpeak(text, prefs.rate, finish);
+        deviceSpeak(text, prefs.rate, prefs.gender, finish);
 
       const playInCloud = async () => {
         if (!audioRef.current) audioRef.current = new Audio();
         const a = audioRef.current;
         a.onended = finish;
         a.onerror = finish;
-        await serverSpeak(text, prefs.rate, a);
+        await serverSpeak(text, prefs.rate, prefs.gender, a);
       };
 
       try {
