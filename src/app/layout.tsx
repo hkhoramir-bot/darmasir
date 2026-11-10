@@ -48,35 +48,14 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      {/* بدنه: اپ موبایل — روی گوشی تمام‌صفحه، روی دسکتاپ داخل قاب دستگاه اندروید */}
+      {/* بدنه: بوم موبایل — روی دسکتاپ هم اپ در ستون موبایل (max-w-md) وسط چین می‌ماند */}
       <body className="antialiased">
-        <div className="desktop-ambient min-h-dvh w-full flex items-center justify-center md:p-10">
-          <div className="relative">
-            {/* دکمه‌های جانبی دستگاه — فقط دسکتاپ */}
-            <div aria-hidden className="hidden md:block absolute -left-[12px] top-40 w-[3px] h-11 rounded-full bg-[#0b1220]" />
-            <div aria-hidden className="hidden md:block absolute -left-[12px] top-56 w-[3px] h-16 rounded-full bg-[#0b1220]" />
-            <div aria-hidden className="hidden md:block absolute -right-[12px] top-48 w-[3px] h-20 rounded-full bg-[#0b1220]" />
-
-            {/* قاب گوشی: transform اپ‌های fixed داخل را به خود گوشی محدود می‌کند */}
-            <div className="phone-frame relative w-full max-w-md h-dvh md:h-[min(880px,calc(100dvh_-_5rem))] md:rounded-[2.6rem] md:border-[9px] md:border-[#0b1220] md:shadow-[0_50px_120px_-30px_rgba(10,35,80,0.55)] bg-surface overflow-hidden flex flex-col">
-              {/* دوربین پانچ‌هول — فقط دسکتاپ */}
-              <div
-                aria-hidden
-                className="hidden md:block absolute top-2 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-[#0b1220] ring-1 ring-white/10 z-[70] pointer-events-none"
-              />
-              {children}
-              <Toaster />
-            </div>
-
-            {/* برچسب محیط دسکتاپ */}
-            <p className="hidden md:flex absolute -bottom-9 inset-x-0 items-center justify-center gap-1.5 text-xs font-bold text-[#0d58a6]/70 select-none">
-              <span className="material-symbols-outlined" style={{ fontSize: 15 }} aria-hidden>
-                smartphone
-              </span>
-              اپ موبایل متروجو — نمای دستگاه اندروید
-            </p>
+        <div className="min-h-dvh w-full bg-metro-surface-dim/70 flex justify-center">
+          <div className="relative w-full max-w-md min-h-dvh flex flex-col bg-surface shadow-[0_0_60px_rgba(13,88,166,0.14)] sm:border-x sm:border-outline-variant/40 selection:bg-primary-fixed selection:text-on-primary-fixed">
+            {children}
           </div>
         </div>
+        <Toaster />
         <PwaRegister />
       </body>
     </html>

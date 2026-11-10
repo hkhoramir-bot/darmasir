@@ -33,9 +33,9 @@ const AVAILABLE_CITIES: { id: ShellCity; name: string }[] = [
 const SOON_CITIES = ["شیراز", "تبریز"];
 
 const ENGINE_OPTIONS: { id: VoiceEngine; label: string; hint: string }[] = [
-  { id: "auto", label: "خودکار", hint: "ابتدا صدای فارسی دستگاه، در نبود آن صدای ابری Gemini" },
-  { id: "device", label: "صدای دستگاه", hint: "گوگل TTS فارسی — رایگان، سریع و بدون نیاز به کلید" },
-  { id: "gemini", label: "صدای Gemini", hint: "کیفیت بالاتر — نیازمند کلید رایگان Gemini و اینترنت" },
+  { id: "auto", label: "خودکار", hint: "اول صدای فارسی دستگاه، در نبودش صدای آنلاین رایگان" },
+  { id: "device", label: "صدای دستگاه", hint: "گوگل TTS فارسی — آفلاین و بدون اینترنت" },
+  { id: "cloud", label: "صدای آنلاین", hint: "صدای نورال فارسی سرور — کیفیت بالا، رایگان و بدون کلید" },
 ];
 
 /* ------------------------------ کلید تعویض ------------------------------ */
@@ -72,7 +72,6 @@ export default function SettingsPage() {
   /* ---------- تنظیمات صوتی ---------- */
   const prefs = useVoicePrefs();
   const [deviceVoice, setDeviceVoice] = useState<"checking" | "found" | "missing">("checking");
-  const [showKey, setShowKey] = useState(false);
 
   /* hydrate ترجیحات صوتی از حافظه دستگاه */
   useEffect(() => {
@@ -265,8 +264,8 @@ export default function SettingsPage() {
             </span>
           </div>
           <p className="text-[10px] text-outline leading-relaxed">
-            اعلام «ایستگاه بعدی» و جستجوی صوتی کاملاً به زبان فارسی است. موتور گفتار را انتخاب کنید؛
-            تنظیمات فقط روی همین دستگاه ذخیره می‌شود.
+            اعلام «ایستگاه بعدی» و جستجوی صوتی کاملاً به زبان فارسی است و به هیچ کلید یا API نیاز ندارد —
+            همه‌چیز آماده است.
           </p>
 
           {/* انتخاب موتور گفتار */}
@@ -291,41 +290,7 @@ export default function SettingsPage() {
             {ENGINE_OPTIONS.find((o) => o.id === prefs.engine)?.hint}
           </p>
 
-          {/* کلید Gemini */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="gemini-key"
-              className="text-[11px] font-bold text-on-surface-variant flex items-center gap-1"
-            >
-              <MI name="key" size={14} />
-              کلید API جمینای (اختیاری)
-            </label>
-            <div className="flex items-center gap-1.5 bg-surface-container-low rounded-xl px-3 border border-outline-variant/30 focus-within:border-primary/60 transition-colors">
-              <input
-                id="gemini-key"
-                type={showKey ? "text" : "password"}
-                dir="ltr"
-                inputMode="text"
-                autoComplete="off"
-                value={prefs.geminiKey}
-                onChange={(e) => prefs.setGeminiKey(e.target.value.trim())}
-                placeholder="AIza..."
-                className="flex-1 min-w-0 bg-transparent py-2.5 text-xs text-on-surface outline-none placeholder:text-outline/50"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey((v) => !v)}
-                aria-label={showKey ? "پنهان‌کردن کلید" : "نمایش کلید"}
-                className="shrink-0 p-1"
-              >
-                <MI name={showKey ? "visibility_off" : "visibility"} size={16} className="text-outline" />
-              </button>
-            </div>
-            <p className="text-[10px] text-outline leading-relaxed">
-              کلید رایگان از <span dir="ltr" className="font-bold text-primary">aistudio.google.com/apikey</span> —
-              با کلید جمینای، اعلام صوتی و جستجوی صوتی فارسی دقیق‌تر می‌شود.
-            </p>
-          </div>
+          {/* کلید Gemini حذف شد — صدای آنلاین بدون کلید کار می‌کند */}
 
           {/* سرعت گفتار */}
           <div className="space-y-1.5">

@@ -4,19 +4,18 @@ import { useCallback, useRef, useState } from "react";
 import { getVoicePrefs } from "@/lib/voice-settings";
 
 /* ============================================================
-   دستیار صوتی متروجو — کاملاً فارسی
-   TTS:  ۱) موتور گفتار فارسیِ دستگاه (Google TTS — fa-IR)
-         ۲) صدای ابری Gemini (اختیاری؛ کلید در تنظیمات)
-   ASR:  ۱) تشخیص گفتار فارسی مرورگر/اندروید (fa-IR)
-         ۲) ضبط و ارسال به سرور (Gemini یا سرویس پشتیبان)
+   دستیار صوتی متروجو — کاملاً فارسی و بدون نیاز به هیچ کلید/API
+   TTS:  ۱) موتور گفتار فارسیِ دستگاه (Google TTS — fa-IR، آفلاین)
+         ۲) صدای نورال فارسی سرور (رایگان و بدون کلید)
+   ASR:  تشخیص گفتار فارسی مرورگر/اندروید (fa-IR)
    ============================================================ */
 
 export const VOICE_ERRORS = {
   noDeviceVoice:
-    "صدای فارسی روی این دستگاه یافت نشد. صدای فارسی گوگل را نصب کنید یا کلید Gemini را در تنظیمات وارد کنید.",
-  noKey: "برای صدای ابری، کلید Gemini را در تنظیمات برنامه وارد کنید.",
+    "صدای فارسی روی این دستگاه نصب نیست. در تنظیمات، موتور «صدای آنلاین» را انتخاب کنید.",
+  cloudFail: "اتصال به سرویس صدای فارسی برقرار نشد. اینترنت را بررسی کنید.",
   asrFail: "صدا واضح نبود، دوباره تلاش کنید",
-  asrUnsupported: "جستجوی صوتی در این مرورگر پشتیبانی نمی‌شود",
+  asrUnsupported: "جستجوی صوتی در این مرورگر پشتیبانی نمی‌شود — لطفاً عبارت را تایپ کنید",
   micDenied: "دسترسی به میکروفون داده نشد",
 };
 
@@ -84,28 +83,19 @@ function deviceSpeak(text: string, rate: number, onEnd?: () => void): Promise<bo
   });
 }
 
-/** پخش با صدای ابری (Gemini از طریق سرور) */
+/** پخش با صدای نورال فارسی سرور (بدون کلید) */
 async function serverSpeak(text: string, rate: number, audio: HTMLAudioElement): Promise<void> {
-  const { geminiKey } = getVoicePrefs();
   const res = await fetch("/api/voice/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, key: geminiKey || undefined }),
+    body: JSON.stringify({ text, rate }),
   });
   if (!res.ok) {
-    let message = VOICE_ERRORS.noKey;
-    try {
-      const j = (await res.json()) as { message?: string };
-      if (j?.message) message = j.message;
-    } catch {
-      /* پاسخ JSON نبود */
-    }
-    throw new Error(message);
+    throw new Error(VOICE_ERRORS.cloudFail);
   }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   audio.src = url;
-  audio.playbackRate = Math.min(1.5, Math.max(0.6, rate));
   const cleanup = () => URL.revokeObjectURL(url);
   audio.onended = () => cleanup();
   await audio.play();
@@ -158,30 +148,28 @@ export function useAnnouncer() {
           return;
         }
 
-        if (prefs.engine === "gemini") {
+        if (prefs.engine === "cloud") {
           try {
             await playInCloud();
           } catch (e) {
             setSpeaking(false);
-            setError(e instanceof Error ? e.message : VOICE_ERRORS.noKey);
+            setError(e instanceof Error ? e.message : VOICE_ERRORS.cloudFail);
           }
           return;
         }
 
-        // auto: اول دستگاه، بعد ابر
+        // auto: اول دستگاه، بعد سرور — هر دو رایگان و بدون کلید
         const ok = await playOnDevice();
         if (ok) return;
         try {
           await playInCloud();
         } catch (e) {
           setSpeaking(false);
-          setError(
-            e instanceof Error ? e.message : VOICE_ERRORS.noDeviceVoice
-          );
+          setError(e instanceof Error ? e.message : VOICE_ERRORS.cloudFail);
         }
       } catch {
         setSpeaking(false);
-        setError(VOICE_ERRORS.noDeviceVoice);
+        setError(VOICE_ERRORS.cloudFail);
       }
     },
     [stop]
@@ -261,11 +249,10 @@ export function useVoiceSearch(onResult: (text: string) => void) {
         try {
           const blob = new Blob(chunksRef.current, { type: "audio/webm" });
           const base64 = bufToBase64(await blob.arrayBuffer());
-          const { geminiKey } = getVoicePrefs();
           const res = await fetch("/api/voice/asr", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ audioBase64: base64, key: geminiKey || undefined }),
+            body: JSON.stringify({ audioBase64: base64 }),
           });
           const data = (await res.json().catch(() => null)) as
             | { text?: string; message?: string }
