@@ -411,7 +411,7 @@ export default function SettingsPage() {
           <div className="divide-y divide-outline-variant/30">
             <div className="flex items-center justify-between py-2.5">
               <span className="text-xs text-on-surface-variant">نسخه نرم‌افزار</span>
-              <span className="text-xs font-bold text-on-surface">{toFa("4.8.2")} (پایدار)</span>
+              <span className="text-xs font-bold text-on-surface">{toFa("4.8.3")} (پایدار)</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
               <span className="text-xs text-on-surface-variant">وضعیت سرویس</span>

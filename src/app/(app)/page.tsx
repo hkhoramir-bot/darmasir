@@ -613,7 +613,7 @@ export default function HomePage() {
         <ApkDownloadCard />
 
         <p className="text-center text-[10px] text-outline-variant pt-1">
-          متروجو نسخه {toFa("4.8.2")} • طراحی شده برای ناوبری صوتی و سریع مسافران
+          متروجو نسخه {toFa("4.8.3")} • طراحی شده برای ناوبری صوتی و سریع مسافران
         </p>
       </main>
     </>

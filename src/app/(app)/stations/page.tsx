@@ -419,7 +419,7 @@ export default function StationsPage() {
         </section>
 
         <p className="text-center text-[10px] text-outline-variant pt-1">
-          متروجو نسخه {toFa("4.8.2")} • ایستگاه‌ها و امکانات شبکه ریلی
+          متروجو نسخه {toFa("4.8.3")} • ایستگاه‌ها و امکانات شبکه ریلی
         </p>
       </main>
     </>

@@ -19,8 +19,8 @@ export function ApkDownloadCard() {
 
   return (
     <a
-      href="/metrojo-4.8.2.apk"
-      download="metrojo-4.8.2.apk"
+      href="/metrojo-4.8.3.apk"
+      download="metrojo-4.8.3.apk"
       className="flex items-center gap-3 bg-primary text-white rounded-2xl px-4 py-3 shadow-md active:scale-[0.98] transition-transform"
       aria-label="دانلود نسخه اندروید متروجو"
     >
@@ -32,7 +32,7 @@ export function ApkDownloadCard() {
       <span className="flex flex-col items-start min-w-0">
         <span className="text-xs font-bold">دانلود نسخه اندروید</span>
         <span className="text-[10px] text-white/80">
-          فایل APK — {toFa("12")} مگابایت • نصب مستقیم روی گوشی
+          فایل APK — {toFa("32")} مگابایت • نصب مستقیم روی گوشی
         </span>
       </span>
       <svg className="w-4 h-4 mr-auto shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
