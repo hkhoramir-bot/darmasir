@@ -215,6 +215,9 @@ async function doSynthesis(ssml, offsetMs) {
 
   const ws = resp.webSocket;
   ws.accept();
+  // چند میلی‌ثانیه صبر تا سوکت کاملاً باز شود — وگرنه پیام‌های اول در بعضی
+  // رانتایم‌ها بی‌صدا می‌افتند و مایکروسافت هیچ صدایی برنمی‌گرداند (empty_audio)
+  await sleep(120);
 
   const chunks = [];
   let settled = false;
@@ -248,8 +251,16 @@ async function doSynthesis(ssml, offsetMs) {
           return;
         }
         const u8 = new Uint8Array(data);
-        // سرپیچ پیام همیشه ASCII است — بررسی ۱۰۲۴ بایت اول کافی است
-        const head = headerDecoder.decode(u8.subarray(0, Math.min(u8.length, 1024)));
+        if (u8.length < 2) return;
+
+        // قالب رسمی فریم باینری Edge: [۲ بایت طول هدر][هدر][داده صوتی]
+        const headerLen = (u8[0] << 8) | u8[1];
+        if (headerLen >= 2 && u8.length > headerLen + 2) {
+          chunks.push(u8.subarray(headerLen + 2));
+          return;
+        }
+        // مسیر پشتیبان: جستجوی جداکننده Path:audio در سرپیچ
+        const head = headerDecoder.decode(u8.subarray(0, Math.min(u8.length, 2048)));
         const idx = head.indexOf(AUDIO_DELIM);
         if (idx >= 0 && u8.length > idx + AUDIO_DELIM.length) {
           chunks.push(u8.subarray(idx + AUDIO_DELIM.length));
@@ -268,7 +279,7 @@ async function doSynthesis(ssml, offsetMs) {
   return done;
 }
 
-/** همگام‌سازی با یک تلاش دوباره — در صورت 403 اختلاف ساعت اصلاح می‌شود */
+/** همگام‌سازی با دو تلاش — 403: اصلاح اختلاف ساعت، خطای دیگر: یک اتصال تازه */
 async function synthesize(text, rate, gender) {
   const voice = VOICES[gender] ?? VOICES.female;
   const locale = "fa-IR";
@@ -283,7 +294,9 @@ async function synthesize(text, rate, gender) {
         return doSynthesis(ssml, clockOffsetMs);
       }
     }
-    throw e;
+    // تلاش دوم با اتصال کاملاً تازه — برای خطاهای گذرا/سوکت
+    await sleep(300);
+    return doSynthesis(ssml, clockOffsetMs);
   }
 }
 
