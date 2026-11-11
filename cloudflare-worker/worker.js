@@ -343,14 +343,15 @@ const handler = {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    // صفحه وضعیت — برای تست استقرار
+    // صفحه وضعیت — برای تست استقرار (نسخه ۲ برای اطمینان از جایگزینی کد جدید)
     if (url.pathname === "/" || url.pathname === "") {
       return json({
         ok: true,
         service: "metrojo-voice",
-        version: "1.0",
+        version: "2.0",
         voices: { female: "fa-IR-DilaraNeural", male: "fa-IR-FaridNeural" },
         usage: 'POST /tts  {"text":"سلام","rate":1,"gender":"female"}',
+        time: new Date().toISOString(),
       });
     }
 
