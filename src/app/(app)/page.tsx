@@ -322,7 +322,8 @@ export default function HomePage() {
   };
 
   const listening = voice.listening;
-  const voiceNoteFinal = voice.error ? "«میکروفون در دسترس نیست — دوباره تلاش کنید»" : voiceNote;
+  // نمایش پیام خطای واقعی (میکروفن/شبکه/تشخیص گفتار) به‌جای متن ثابت
+  const voiceNoteFinal = voice.error ? `«${voice.error}»` : voiceNote;
 
   return (
     <>

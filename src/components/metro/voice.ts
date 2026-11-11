@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { getVoicePrefs, type VoiceGender } from "@/lib/voice-settings";
+import { CLOUD_TTS_BASE } from "@/lib/cloud-config";
 
 /* ============================================================
    دستیار صوتی متروجو — کاملاً فارسی و بدون نیاز به هیچ کلید/API
@@ -16,8 +17,21 @@ export const VOICE_ERRORS = {
   cloudFail: "اتصال به سرویس صدای فارسی برقرار نشد. اینترنت را بررسی کنید.",
   asrFail: "صدا واضح نبود، دوباره تلاش کنید",
   asrUnsupported: "جستجوی صوتی در این مرورگر پشتیبانی نمی‌شود — لطفاً عبارت را تایپ کنید",
-  micDenied: "دسترسی به میکروفون داده نشد",
+  micDenied: "دسترسی به میکروفون داده نشد — اجازه دسترسی را در تنظیمات مرورگر بررسی کنید",
+  micBlocked:
+    "میکروفن در این محیط مرورگر در دسترس نیست — برنامه را در تب جدید مرورگر باز کنید یا از نسخه اندروید استفاده کنید",
+  micNotFound: "میکروفنی روی این دستگاه پیدا نشد",
 };
+
+/** آیا صفحه داخل iframe نمایش داده می‌شود؟ (مثلاً پنل پیش‌نمایش — میکروفن مسدود است) */
+function inIframe(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
 
 /** آیا اپ داخل WebView اندروید (Capacitor) اجرا می‌شود؟ */
 function isNative(): boolean {
@@ -146,9 +160,10 @@ async function serverSpeak(
   gender: VoiceGender,
   audio: HTMLAudioElement
 ): Promise<void> {
-  // اگر آدرس ورکر کلودفلر ذخیره شده باشد از آن استفاده می‌شود (نسخه اندروید)
-  const serverUrl = (getVoicePrefs().serverUrl ?? "").trim().replace(/\/+$/, "");
-  const endpoint = serverUrl ? `${serverUrl}/tts` : "/api/voice/tts";
+  // اولویت: ورکر اختصاصی کاربر (در صورت ثبت) → ورکر اصلی متروجو (ثابت بیلد) → سرور خود وب
+  const prefUrl = (getVoicePrefs().serverUrl ?? "").trim().replace(/\/+$/, "");
+  const base = prefUrl || CLOUD_TTS_BASE.trim().replace(/\/+$/, "");
+  const endpoint = base ? `${base}/tts` : "/api/voice/tts";
   const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -336,7 +351,7 @@ export function useVoiceSearch(onResult: (text: string) => void) {
   /** مسیر پشتیبان: ضبط و ارسال به سرور */
   const startRecorder = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError(VOICE_ERRORS.asrUnsupported);
+      setError(!window.isSecureContext || inIframe() ? VOICE_ERRORS.micBlocked : VOICE_ERRORS.asrUnsupported);
       return;
     }
     try {
@@ -376,8 +391,16 @@ export function useVoiceSearch(onResult: (text: string) => void) {
       window.setTimeout(() => {
         if (rec.state === "recording") rec.stop();
       }, 7000);
-    } catch {
-      setError(VOICE_ERRORS.micDenied);
+    } catch (e) {
+      const name = (e as DOMException)?.name ?? "";
+      if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        setError(VOICE_ERRORS.micNotFound);
+      } else if (inIframe()) {
+        // داخل iframe حتی با اجازه کاربر، سیاست دسترسی مرورگر میکروفن را می‌بندد
+        setError(VOICE_ERRORS.micBlocked);
+      } else {
+        setError(VOICE_ERRORS.micDenied);
+      }
       setListening(false);
     }
   }, []);
@@ -418,12 +441,9 @@ export function useVoiceSearch(onResult: (text: string) => void) {
           }
         }
       };
-      rec.onerror = (e) => {
-        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-          setError(VOICE_ERRORS.micDenied);
-          setListening(false);
-        }
-        // خطاهای دیگر (no-speech و...) در onend به مسیر سرور می‌روند
+      rec.onerror = () => {
+        // هر خطای موتور مرورگر (شبکه/سرویس و…) — به مسیر ضبط مستقیم با میکروفون می‌رویم؛
+        // پیام خطای واقعی آنجا بر اساس خطای getUserMedia نمایش داده می‌شود
       };
       rec.onend = () => {
         if (gotRef.current || manualStopRef.current) {

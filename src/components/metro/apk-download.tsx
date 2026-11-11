@@ -8,8 +8,11 @@ export function ApkDownloadCard() {
   const [isNative, setIsNative] = useState(false);
 
   useEffect(() => {
-    const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
-    setIsNative(w.Capacitor?.isNativePlatform?.() === true);
+    const id = window.setTimeout(() => {
+      const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+      setIsNative(w.Capacitor?.isNativePlatform?.() === true);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   if (isNative) return null;

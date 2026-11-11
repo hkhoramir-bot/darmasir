@@ -170,6 +170,12 @@ const DRAWER_LINKS: { label: string; icon: string; href: string }[] = [
   { label: "تنظیمات", icon: "settings", href: "/settings" },
 ];
 
+/** تطبیق مسیر فعال — با اسلش انتهایی و زیرصفحه‌ها هم کار می‌کند */
+export function isNavActive(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith(`${href}?`);
+}
+
 export function MenuDrawer() {
   const open = useShell((s) => s.drawerOpen);
   const setDrawer = useShell((s) => s.setDrawer);
@@ -178,7 +184,7 @@ export function MenuDrawer() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 transition-all duration-300 ${open ? "" : "pointer-events-none"}`}
+      className={`fixed inset-0 z-[70] transition-all duration-300 ${open ? "" : "pointer-events-none"}`}
       aria-hidden={!open}
     >
       {/* پس‌زمینه */}
@@ -219,7 +225,7 @@ export function MenuDrawer() {
           {/* لینک‌های ناوبری */}
           <nav className="pt-2 space-y-1">
             {DRAWER_LINKS.map((l) => {
-              const active = pathname === l.href;
+              const active = isNavActive(pathname, l.href);
               return (
                 <button
                   key={l.href}
@@ -332,13 +338,13 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed z-50 inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 px-1.5 py-1.5 flex items-center justify-between flex-nowrap"
+      className="fixed z-40 inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 px-1.5 py-1.5 flex items-center justify-between flex-nowrap"
       style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
       dir="rtl"
       aria-label="ناوبری اصلی"
     >
       {NAV_ITEMS.map(({ href, label, Icon }) => {
-        const active = pathname === href;
+        const active = isNavActive(pathname, href);
         return (
           <button
             key={href}

@@ -77,8 +77,11 @@ export default function SettingsPage() {
 
   /* hydrate ترجیحات صوتی از حافظه دستگاه */
   useEffect(() => {
-    useVoicePrefs.getState().hydrate();
-    setServerInput(useVoicePrefs.getState().serverUrl ?? "");
+    const id = window.setTimeout(() => {
+      useVoicePrefs.getState().hydrate();
+      setServerInput(useVoicePrefs.getState().serverUrl ?? "");
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   /** ذخیره آدرس ورکر صدای ابری */
