@@ -13,7 +13,7 @@ import {
 } from "@/lib/metro-data";
 import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
 import { ApkDownloadCard } from "@/components/metro/apk-download";
-import { useAnnouncer, useVoiceSearch } from "@/components/metro/voice";
+import { useAnnouncer, useVoiceSearch, openStandaloneTab } from "@/components/metro/voice";
 
 /* ============================================================
    صفحه اصلی — بازسازی دقیق code.html تاییدشده + موتور واقعی مسیریابی
@@ -407,6 +407,19 @@ export default function HomePage() {
                 {voiceNoteFinal}
               </button>
             </div>
+            {/* میکروفن در این پنجره (پیش‌نمایش داخل iframe) مسدود است → راهکار یک‌کلیکی */}
+            {voice.errorKind === "blocked" && (
+              <div className="pt-1.5">
+                <button
+                  type="button"
+                  onClick={openStandaloneTab}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0d58a6] text-white text-[11px] font-bold shadow-sm hover:bg-[#0a4a8c] active:scale-95 transition-all"
+                >
+                  <MI name="open_in_new" size={14} />
+                  باز کردن متروجو در تب جدید (برای میکروفن)
+                </button>
+              </div>
+            )}
           </div>
         </section>
 

@@ -19,17 +19,39 @@ export const VOICE_ERRORS = {
   asrUnsupported: "جستجوی صوتی در این مرورگر پشتیبانی نمی‌شود — لطفاً عبارت را تایپ کنید",
   micDenied: "دسترسی به میکروفون داده نشد — اجازه دسترسی را در تنظیمات مرورگر بررسی کنید",
   micBlocked:
-    "میکروفن در این محیط مرورگر در دسترس نیست — برنامه را در تب جدید مرورگر باز کنید یا از نسخه اندروید استفاده کنید",
+    "میکروفن در این پنجره مسدود است — متروجو را در تب جدید مرورگر باز کنید (دکمه زیر) یا از نسخه اندروید استفاده کنید",
   micNotFound: "میکروفنی روی این دستگاه پیدا نشد",
 };
 
+/** نوع خطا برای نمایش راهکار درست در رابط کاربری */
+export type VoiceErrorKind = "blocked" | "denied" | "notfound" | "unsupported" | "asr" | null;
+
 /** آیا صفحه داخل iframe نمایش داده می‌شود؟ (مثلاً پنل پیش‌نمایش — میکروفن مسدود است) */
-function inIframe(): boolean {
+export function isInIframe(): boolean {
   if (typeof window === "undefined") return false;
   try {
     return window.self !== window.top;
   } catch {
     return true;
+  }
+}
+
+/** باز کردن متروجو در تب جدید (خارج از iframe) تا میکروفن فعال شود */
+export function openStandaloneTab(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const w = window.open(window.location.href, "_blank", "noopener");
+    if (!w) {
+      const a = document.createElement("a");
+      a.href = window.location.href;
+      a.target = "_blank";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  } catch {
+    /* باز نشد */
   }
 }
 
@@ -340,6 +362,7 @@ export function useVoiceSearch(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<VoiceErrorKind>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
@@ -351,7 +374,9 @@ export function useVoiceSearch(onResult: (text: string) => void) {
   /** مسیر پشتیبان: ضبط و ارسال به سرور */
   const startRecorder = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError(!window.isSecureContext || inIframe() ? VOICE_ERRORS.micBlocked : VOICE_ERRORS.asrUnsupported);
+      const kind: VoiceErrorKind = !window.isSecureContext || isInIframe() ? "blocked" : "unsupported";
+      setError(kind === "blocked" ? VOICE_ERRORS.micBlocked : VOICE_ERRORS.asrUnsupported);
+      setErrorKind(kind);
       return;
     }
     try {
@@ -376,9 +401,13 @@ export function useVoiceSearch(onResult: (text: string) => void) {
             | { text?: string; message?: string }
             | null;
           if (data?.text) onResultRef.current(data.text);
-          else setError(data?.message || VOICE_ERRORS.asrFail);
+          else {
+            setError(data?.message || VOICE_ERRORS.asrFail);
+            setErrorKind("asr");
+          }
         } catch {
           setError(VOICE_ERRORS.asrFail);
+          setErrorKind("asr");
         } finally {
           setBusy(false);
           setListening(false);
@@ -395,11 +424,14 @@ export function useVoiceSearch(onResult: (text: string) => void) {
       const name = (e as DOMException)?.name ?? "";
       if (name === "NotFoundError" || name === "DevicesNotFoundError") {
         setError(VOICE_ERRORS.micNotFound);
-      } else if (inIframe()) {
+        setErrorKind("notfound");
+      } else if (isInIframe()) {
         // داخل iframe حتی با اجازه کاربر، سیاست دسترسی مرورگر میکروفن را می‌بندد
         setError(VOICE_ERRORS.micBlocked);
+        setErrorKind("blocked");
       } else {
         setError(VOICE_ERRORS.micDenied);
+        setErrorKind("denied");
       }
       setListening(false);
     }
@@ -491,14 +523,21 @@ export function useVoiceSearch(onResult: (text: string) => void) {
       if (text) {
         gotRef.current = true;
         setError(null);
+        setErrorKind(null);
         onResultRef.current(text);
       } else {
         setError(VOICE_ERRORS.asrFail);
+        setErrorKind("asr");
       }
     } catch (e) {
       const msg = String((e as { message?: string })?.message ?? "");
-      if (/denied|permission/i.test(msg)) setError(VOICE_ERRORS.micDenied);
-      else setError(VOICE_ERRORS.asrFail);
+      if (/denied|permission/i.test(msg)) {
+        setError(VOICE_ERRORS.micDenied);
+        setErrorKind("denied");
+      } else {
+        setError(VOICE_ERRORS.asrFail);
+        setErrorKind("asr");
+      }
     } finally {
       setListening(false);
     }
@@ -506,6 +545,7 @@ export function useVoiceSearch(onResult: (text: string) => void) {
 
   const start = useCallback(() => {
     setError(null);
+    setErrorKind(null);
     manualStopRef.current = false;
     gotRef.current = false;
     if (isNative()) {
@@ -528,5 +568,5 @@ export function useVoiceSearch(onResult: (text: string) => void) {
     setListening(false);
   }, []);
 
-  return { start, stop, listening, busy, error, clearError: () => setError(null) };
+  return { start, stop, listening, busy, error, errorKind, clearError: () => { setError(null); setErrorKind(null); } };
 }

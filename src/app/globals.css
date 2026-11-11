@@ -46,8 +46,8 @@ html {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  /* نسخه ۲ — زیرمجموعه بازسازی‌شده با همه آیکون‌های استفاده‌شده در اپ */
-  src: url("/fonts/material-symbols-subset.woff2?v=2") format("woff2");
+  /* نسخه ۳ — زیرمجموعه بازسازی‌شده با همه آیکون‌های استفاده‌شده در اپ */
+  src: url("/fonts/material-symbols-subset.woff2?v=3") format("woff2");
 }
 
 /* ============================================================

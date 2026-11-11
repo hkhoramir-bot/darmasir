@@ -17,7 +17,7 @@ import {
   type StationDef,
 } from "@/lib/metro-data";
 import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
-import { useVoiceSearch } from "@/components/metro/voice";
+import { useVoiceSearch, openStandaloneTab } from "@/components/metro/voice";
 import { useToast } from "@/hooks/use-toast";
 
 /* ============================================================
@@ -115,8 +115,11 @@ export default function StationsPage() {
     voice.start();
   };
   useEffect(() => {
-    if (voice.error) toast({ title: "جستجوی صوتی", description: voice.error });
-  }, [voice.error, toast]);
+    // پیام «میکروفن مسدود» به‌صورت جعبه راهنما زیر جستجو نمایش داده می‌شود، نه توست
+    if (voice.error && voice.errorKind !== "blocked") {
+      toast({ title: "جستجوی صوتی", description: voice.error });
+    }
+  }, [voice.error, voice.errorKind, toast]);
 
   /* ---------- نشان‌ها ---------- */
   useEffect(() => {
@@ -211,6 +214,23 @@ export default function StationsPage() {
               <MI name="graphic_eq" size={13} />
               {voice.listening ? "در حال شنیدن... نام ایستگاه را بگویید" : "در حال پردازش گفتار شما..."}
             </p>
+          )}
+
+          {/* میکروفن در این پنجره مسدود است → جعبه راهنما با دکمه تب جدید */}
+          {voice.errorKind === "blocked" && (
+            <div className="flex items-center justify-between gap-2 bg-error/10 rounded-lg px-3 py-2 border border-error/20">
+              <span className="text-[10px] font-medium text-error leading-snug">
+                میکروفن در این پنجره (پیش‌نمایش) مسدود است — برای گفتار صوتی، متروجو را در تب جدید باز کنید.
+              </span>
+              <button
+                type="button"
+                onClick={openStandaloneTab}
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-[#0d58a6] text-white text-[10px] font-bold active:scale-95 transition-all"
+              >
+                <MI name="open_in_new" size={12} />
+                تب جدید
+              </button>
+            </div>
           )}
         </section>
 

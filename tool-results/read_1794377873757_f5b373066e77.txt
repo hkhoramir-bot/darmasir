@@ -1,0 +1,606 @@
+     1→"use strict";
+     2→var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+     3→    if (k2 === undefined) k2 = k;
+     4→    var desc = Object.getOwnPropertyDescriptor(m, k);
+     5→    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+     6→      desc = { enumerable: true, get: function() { return m[k]; } };
+     7→    }
+     8→    Object.defineProperty(o, k2, desc);
+     9→}) : (function(o, m, k, k2) {
+    10→    if (k2 === undefined) k2 = k;
+    11→    o[k2] = m[k];
+    12→}));
+    13→var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    14→    Object.defineProperty(o, "default", { enumerable: true, value: v });
+    15→}) : function(o, v) {
+    16→    o["default"] = v;
+    17→});
+    18→var __importStar = (this && this.__importStar) || function (mod) {
+    19→    if (mod && mod.__esModule) return mod;
+    20→    var result = {};
+    21→    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    22→    __setModuleDefault(result, mod);
+    23→    return result;
+    24→};
+    25→var __importDefault = (this && this.__importDefault) || function (mod) {
+    26→    return (mod && mod.__esModule) ? mod : { "default": mod };
+    27→};
+    28→Object.defineProperty(exports, "__esModule", { value: true });
+    29→exports.MsEdgeTTS = exports.MetadataOptions = void 0;
+    30→const axios_1 = __importDefault(require("axios"));
+    31→const isomorphic_ws_1 = __importDefault(require("isomorphic-ws"));
+    32→const index_1 = require("buffer/index"); // /index is important for browser compatibility
+    33→const Output_1 = require("./Output");
+    34→const stream_1 = require("stream");
+    35→const fs = __importStar(require("fs"));
+    36→const Prosody_1 = require("./Prosody");
+    37→const utils_1 = require("./utils");
+    38→const SecMsGec_1 = require("./SecMsGec");
+    39→class MetadataOptions {
+    40→    /**
+    41→     * (optional) any voice locale that is supported by the voice. See the list of all voices for compatibility. If not provided, the locale will be inferred from the `voiceName`.
+    42→     * Changing the voiceName will reset the voiceLocale.
+    43→     */
+    44→    voiceLocale;
+    45→    /**
+    46→     * (optional) whether to enable sentence boundary metadata. Default is `false`
+    47→     */
+    48→    sentenceBoundaryEnabled = false;
+    49→    /**
+    50→     * (optional) whether to enable word boundary metadata. Default is `false`
+    51→     */
+    52→    wordBoundaryEnabled = false;
+    53→}
+    54→exports.MetadataOptions = MetadataOptions;
+    55→var messageTypes;
+    56→(function (messageTypes) {
+    57→    messageTypes["TURN_START"] = "turn.start";
+    58→    messageTypes["TURN_END"] = "turn.end";
+    59→    messageTypes["RESPONSE"] = "response";
+    60→    messageTypes["SPEECH_CONFIG"] = "speech.config";
+    61→    messageTypes["AUDIO_METADATA"] = "audio.metadata";
+    62→    messageTypes["AUDIO"] = "audio";
+    63→    messageTypes["SSML"] = "ssml";
+    64→})(messageTypes || (messageTypes = {}));
+    65→class MsEdgeTTS {
+    66→    static TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+    67→    static VOICES_URL = `https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=${MsEdgeTTS.TRUSTED_CLIENT_TOKEN}`;
+    68→    static WSS_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1";
+    69→    static JSON_XML_DELIM = "\r\n\r\n";
+    70→    static AUDIO_DELIM = "Path:audio\r\n";
+    71→    static VOICE_LANG_REGEX = /\b[a-z]{2,}-[A-Z]{2}\b/;
+    72→    static _clockOffsetMs = 0;
+    73→    _enableLogger;
+    74→    _isBrowser;
+    75→    _ws;
+    76→    _clientInit;
+    77→    _clientGeneration = 0;
+    78→    _voice;
+    79→    _outputFormat;
+    80→    _metadataOptions = new MetadataOptions();
+    81→    _streams = {};
+    82→    _retiredSockets = [];
+    83→    _startTime = 0;
+    84→    _agent;
+    85→    _connectionTimeoutMs;
+    86→    _synthesisTimeoutMs;
+    87→    _log(...o) {
+    88→        if (this._enableLogger) {
+    89→            console.log(...o);
+    90→        }
+    91→    }
+    92→    /**
+    93→     * Create a new `MsEdgeTTS` instance.
+    94→     *
+    95→     * @param options (optional) {@link Options}
+    96→     */
+    97→    constructor(options) {
+    98→        this._agent = options?.agent || undefined;
+    99→        this._enableLogger = options?.enableLogger || false;
+   100→        this._isBrowser = typeof window !== "undefined" && typeof window.document !== "undefined";
+   101→        this._connectionTimeoutMs = options?.connectionTimeoutMs === undefined ? 10000 : options.connectionTimeoutMs;
+   102→        this._synthesisTimeoutMs = options?.synthesisTimeoutMs === undefined ? 60000 : options.synthesisTimeoutMs;
+   103→        for (const [name, value] of Object.entries({ connectionTimeoutMs: this._connectionTimeoutMs, synthesisTimeoutMs: this._synthesisTimeoutMs })) {
+   104→            if (!Number.isInteger(value) || value < 0 || value > 2147483647) {
+   105→                throw new Error(`${name} must be an integer between 0 and 2147483647 milliseconds.`);
+   106→            }
+   107→        }
+   108→    }
+   109→    static async getSynthUrl() {
+   110→        const req_id = MsEdgeTTS.generateUUID(); // Generate the request ID
+   111→        const secMsGEC = await MsEdgeTTS.generateSecMsGec(this.TRUSTED_CLIENT_TOKEN);
+   112→        return `${this.WSS_URL}?TrustedClientToken=${this.TRUSTED_CLIENT_TOKEN}&Sec-MS-GEC=${secMsGEC}&Sec-MS-GEC-Version=2-143.0.3650.96&ConnectionId=${req_id}`;
+   113→    }
+   114→    _initClient() {
+   115→        if (this._clientInit)
+   116→            return this._clientInit;
+   117→        const init = this._createClient();
+   118→        const tracked = init.finally(() => {
+   119→            if (this._clientInit === tracked)
+   120→                this._clientInit = undefined;
+   121→        });
+   122→        this._clientInit = tracked;
+   123→        return tracked;
+   124→    }
+   125→    async _createClient(retryClock = true, deadline = this._connectionTimeoutMs ? Date.now() + this._connectionTimeoutMs : 0, generation = this._clientGeneration) {
+   126→        const previous = this._ws;
+   127→        if (previous) {
+   128→            if (previous.readyState === previous.OPEN
+   129→                && Object.values(this._streams).some(stream => stream.socket === previous && !stream.turnEnded)) {
+   130→                if (!this._retiredSockets.includes(previous))
+   131→                    this._retiredSockets.push(previous);
+   132→            }
+   133→            else {
+   134→                this._closeSocket(previous);
+   135→            }
+   136→        }
+   137→        const synthUrl = await MsEdgeTTS.getSynthUrl();
+   138→        if (generation !== this._clientGeneration)
+   139→            throw new Error("Edge TTS connection closed before initialization completed.");
+   140→        const remaining = deadline ? deadline - Date.now() : 0;
+   141→        if (deadline && remaining <= 0)
+   142→            throw new Error(`Edge TTS connection timed out after ${this._connectionTimeoutMs} milliseconds.`);
+   143→        const options = {
+   144→            headers: {
+   145→                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+   146→                "Origin": "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold"
+   147→            }
+   148→        };
+   149→        const ws = this._ws = this._isBrowser
+   150→            ? new isomorphic_ws_1.default(synthUrl)
+   151→            : new isomorphic_ws_1.default(synthUrl, { ...options, agent: this._agent });
+   152→        ws.binaryType = "arraybuffer";
+   153→        return new Promise((resolve, reject) => {
+   154→            let connecting = true;
+   155→            const connectionTimeout = this._connectionTimeoutMs ? setTimeout(() => {
+   156→                connecting = false;
+   157→                reject(new Error(`Edge TTS connection timed out after ${this._connectionTimeoutMs} milliseconds.`));
+   158→                this._closeSocket(ws);
+   159→            }, remaining) : undefined;
+   160→            if (!this._isBrowser) {
+   161→                ws.once("unexpected-response", (request, response) => {
+   162→                    if (!connecting || ws.readyState !== ws.CONNECTING || generation !== this._clientGeneration) {
+   163→                        request.destroy();
+   164→                        response.destroy();
+   165→                        return;
+   166→                    }
+   167→                    const error = Object.assign(new Error(`Unexpected server response: ${response.statusCode}`), {
+   168→                        statusCode: response.statusCode,
+   169→                        serverDate: response.headers.date,
+   170→                    });
+   171→                    // This listener suppresses ws's default handshake abort, so close both HTTP objects.
+   172→                    request.destroy(error);
+   173→                    response.destroy();
+   174→                });
+   175→            }
+   176→            ws.onopen = () => {
+   177→                if (!connecting)
+   178→                    return;
+   179→                connecting = false;
+   180→                clearTimeout(connectionTimeout);
+   181→                this._log("Connected in", (Date.now() - this._startTime) / 1000, "seconds");
+   182→                this._send(`Content-Type:application/json; charset=utf-8\r\nPath:${messageTypes.SPEECH_CONFIG}${MsEdgeTTS.JSON_XML_DELIM}
+   183→                    {
+   184→                        "context": {
+   185→                            "synthesis": {
+   186→                                "audio": {
+   187→                                    "metadataoptions": {
+   188→                                        "sentenceBoundaryEnabled": "${this._metadataOptions.sentenceBoundaryEnabled}",
+   189→                                        "wordBoundaryEnabled": "${this._metadataOptions.wordBoundaryEnabled}"
+   190→                                    },
+   191→                                    "outputFormat": "${this._outputFormat}" 
+   192→                                }
+   193→                            }
+   194→                        }
+   195→                    }
+   196→                `, undefined, ws).then(resolve, error => {
+   197→                    this._closeSocket(ws);
+   198→                    reject(error);
+   199→                });
+   200→            };
+   201→            ws.onmessage = (m) => {
+   202→                const buffer = index_1.Buffer.from(m.data);
+   203→                const message = buffer.toString();
+   204→                const requestId = /X-RequestId:(.*?)\r\n/.exec(message)?.[1];
+   205→                const stream = requestId && this._streams[requestId];
+   206→                if (!stream || stream.audio.destroyed || stream.turnEnded || stream.socket !== ws)
+   207→                    return;
+   208→                if (message.includes(`Path:${messageTypes.TURN_START}`)) {
+   209→                    // start of turn, ignore
+   210→                    this._log("->", message);
+   211→                    this._resetSynthesisTimeout(requestId);
+   212→                }
+   213→                else if (message.includes(`Path:${messageTypes.TURN_END}`)) {
+   214→                    // end of turn, close stream
+   215→                    this._log("->", message);
+   216→                    clearTimeout(stream.timeout);
+   217→                    stream.timeout = undefined;
+   218→                    stream.turnEnded = true;
+   219→                    stream.audio.push(null);
+   220→                    this._closeRetiredSockets();
+   221→                }
+   222→                else if (message.includes(`Path:${messageTypes.RESPONSE}`)) {
+   223→                    // context response, ignore
+   224→                    this._log("->", message);
+   225→                    this._resetSynthesisTimeout(requestId);
+   226→                }
+   227→                else if (message.includes(`Path:${messageTypes.AUDIO_METADATA}`)) {
+   228→                    // audio metadata, wordboundary/sentenceboundary
+   229→                    const dataStartIndex = buffer.indexOf(MsEdgeTTS.JSON_XML_DELIM) + MsEdgeTTS.JSON_XML_DELIM.length;
+   230→                    const data = buffer.subarray(dataStartIndex);
+   231→                    this._log("->", message);
+   232→                    this._resetSynthesisTimeout(requestId);
+   233→                    this._pushMetadata(data, requestId);
+   234→                }
+   235→                else if (message.includes(`Path:${messageTypes.AUDIO}`) && m.data instanceof ArrayBuffer) {
+   236→                    const dataStartIndex = buffer.indexOf(MsEdgeTTS.AUDIO_DELIM) + MsEdgeTTS.AUDIO_DELIM.length;
+   237→                    const headers = buffer.subarray(0, dataStartIndex).toString();
+   238→                    const data = buffer.subarray(dataStartIndex);
+   239→                    this._log("->", headers);
+   240→                    this._resetSynthesisTimeout(requestId);
+   241→                    this._pushAudioData(data, requestId);
+   242→                }
+   243→                else {
+   244→                    this._log("->", "UNKNOWN MESSAGE", message);
+   245→                }
+   246→            };
+   247→            ws.onclose = () => {
+   248→                connecting = false;
+   249→                clearTimeout(connectionTimeout);
+   250→                reject(new Error("Edge TTS connection closed before initialization completed."));
+   251→                this._log("disconnected after:", (Date.now() - this._startTime) / 1000, "seconds");
+   252→                for (const requestId in this._streams) {
+   253→                    const stream = this._streams[requestId];
+   254→                    if (stream.socket !== ws)
+   255→                        continue;
+   256→                    clearTimeout(stream.timeout);
+   257→                    if (stream.turnEnded) {
+   258→                        // synthesis finished normally, just close the stream
+   259→                        stream.audio.push(null);
+   260→                    }
+   261→                    else {
+   262→                        // socket closed before turn.end: the audio is truncated, so surface it as an
+   263→                        // error instead of silently ending the stream as if it were complete
+   264→                        stream.audio.destroy(new Error("Stream closed before the synthesis completed (no turn.end received). The audio is likely truncated."));
+   265→                    }
+   266→                }
+   267→            };
+   268→            ws.onerror = (event) => {
+   269→                connecting = false;
+   270→                clearTimeout(connectionTimeout);
+   271→                // Node's `ws` library fires either a native Error or an ErrorEvent wrapping one.
+   272→                const underlying = event?.error ?? event;
+   273→                const message = underlying?.message ?? String(underlying);
+   274→                const code = underlying?.code ?? event?.code;
+   275→                const wrapped = new Error(`Edge TTS WebSocket error: ${message}${code ? ` (code=${code})` : ""}`);
+   276→                wrapped.cause = underlying;
+   277→                reject(wrapped);
+   278→                for (const stream of Object.values(this._streams)) {
+   279→                    if (stream.socket === ws && !stream.turnEnded)
+   280→                        stream.audio.destroy(wrapped);
+   281→                }
+   282→                this._closeSocket(ws);
+   283→            };
+   284→        }).catch(error => {
+   285→            const underlying = error.cause;
+   286→            const serverTime = typeof underlying?.serverDate === "string" ? Date.parse(underlying.serverDate) : NaN;
+   287→            if (retryClock && underlying?.statusCode === 403 && Number.isFinite(serverTime)
+   288→                && generation === this._clientGeneration && (!deadline || Date.now() < deadline)) {
+   289→                MsEdgeTTS._clockOffsetMs = serverTime - Date.now();
+   290→                return this._createClient(false, deadline, generation);
+   291→            }
+   292→            throw error;
+   293→        });
+   294→    }
+   295→    _closeSocket(socket) {
+   296→        if (socket.readyState === socket.CLOSED)
+   297→            return;
+   298→        const terminate = socket.terminate;
+   299→        if (socket.readyState !== socket.OPEN && terminate)
+   300→            terminate.call(socket);
+   301→        else
+   302→            socket.close();
+   303→    }
+   304→    _closeRetiredSockets() {
+   305→        // ponytail: scans active streams on drain; per-socket counters if this becomes hot at high concurrency.
+   306→        this._retiredSockets = this._retiredSockets.filter(socket => {
+   307→            if (Object.values(this._streams).some(stream => stream.socket === socket && !stream.turnEnded)) {
+   308→                return true;
+   309→            }
+   310→            socket.close();
+   311→            return false;
+   312→        });
+   313→    }
+   314→    static generateUUID() {
+   315→        return 'xxxxxxxx-xxxx-xxxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+   316→            const r = Math.random() * 16 | 0;
+   317→            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+   318→            return v.toString(16);
+   319→        });
+   320→    }
+   321→    static async generateSecMsGec(trustedClientToken) {
+   322→        const ticks = Math.floor((Date.now() + MsEdgeTTS._clockOffsetMs) / 1000) + 11644473600;
+   323→        const rounded = ticks - (ticks % 300);
+   324→        const windowsTicks = rounded * 10000000;
+   325→        return (0, SecMsGec_1.hashSecMsGecV2)(`${windowsTicks}${trustedClientToken}`);
+   326→    }
+   327→    async _send(message, requestId, initialSocket) {
+   328→        let socket = initialSocket ?? this._ws;
+   329→        for (let i = 1; !initialSocket && i <= 3 && socket.readyState !== socket.OPEN; i++) {
+   330→            if (requestId && !this._streams[requestId])
+   331→                return;
+   332→            if (i == 1) {
+   333→                this._startTime = Date.now();
+   334→            }
+   335→            this._log("connecting: ", i);
+   336→            await this._initClient();
+   337→            socket = this._ws;
+   338→        }
+   339→        if (requestId) {
+   340→            const stream = this._streams[requestId];
+   341→            if (!stream || stream.audio.destroyed || stream.turnEnded)
+   342→                return;
+   343→            stream.socket = socket;
+   344→        }
+   345→        if (socket.readyState !== socket.OPEN)
+   346→            throw new Error("Edge TTS WebSocket is not open.");
+   347→        if (requestId)
+   348→            this._resetSynthesisTimeout(requestId);
+   349→        if (this._isBrowser) {
+   350→            socket.send(message);
+   351→            this._log("<-", message);
+   352→            return;
+   353→        }
+   354→        await new Promise((resolve, reject) => {
+   355→            socket.send(message, (error) => {
+   356→                if (error)
+   357→                    return reject(error);
+   358→                this._log("<-", message);
+   359→                resolve();
+   360→            });
+   361→        });
+   362→    }
+   363→    _resetSynthesisTimeout(requestId) {
+   364→        const stream = this._streams[requestId];
+   365→        if (!stream || stream.audio.destroyed || stream.turnEnded)
+   366→            return;
+   367→        clearTimeout(stream.timeout);
+   368→        if (this._synthesisTimeoutMs) {
+   369→            stream.timeout = setTimeout(() => {
+   370→                stream.audio.destroy(new Error(`Edge TTS synthesis timed out after ${this._synthesisTimeoutMs} milliseconds without activity.`));
+   371→            }, this._synthesisTimeoutMs);
+   372→        }
+   373→    }
+   374→    _pushAudioData(data, requestId) {
+   375→        this._streams[requestId]?.audio.push(data);
+   376→    }
+   377→    _pushMetadata(data, requestId) {
+   378→        this._streams[requestId]?.metadata?.push(data);
+   379→    }
+   380→    _SSMLTemplate(input, options = {}) {
+   381→        // in case future updates to the edge API block these elements, we'll be concatenating strings.
+   382→        options = { ...new Prosody_1.ProsodyOptions(), ...options };
+   383→        return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="${this._metadataOptions.voiceLocale}">
+   384→                <voice name="${this._voice}">
+   385→                    <prosody pitch="${options.pitch}" rate="${options.rate}" volume="${options.volume}">
+   386→                        ${input}
+   387→                    </prosody> 
+   388→                </voice>
+   389→            </speak>`;
+   390→    }
+   391→    /**
+   392→     * Fetch the list of voices available in Microsoft Edge.
+   393→     * These, however, are not all. The complete list of voices supported by this module [can be found here](https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support) (neural, standard, and preview).
+   394→     */
+   395→    getVoices() {
+   396→        return new Promise((resolve, reject) => {
+   397→            axios_1.default.get(MsEdgeTTS.VOICES_URL)
+   398→                .then((res) => resolve(res.data))
+   399→                .catch(reject);
+   400→        });
+   401→    }
+   402→    /**
+   403→     * Sets the required information for the speech to be synthesised and inits a new WebSocket connection.
+   404→     * Must be called at least once before text can be synthesised.
+   405→     * Saved in this instance. Can be called at any time times to update the metadata.
+   406→     * Merges specified values into previously provided values.
+   407→     *
+   408→     * @param voiceName a string with any `ShortName`. A list of all available neural voices can be found [here](https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support#neural-voices). However, it is not limited to neural voices: standard voices can also be used. A list of standard voices can be found [here](https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support#standard-voices). Changing the voiceName will reset the voiceLocale.
+   409→     * @param outputFormat any {@link OUTPUT_FORMAT}
+   410→     * @param metadataOptions (optional) {@link MetadataOptions}
+   411→     */
+   412→    async setMetadata(voiceName, outputFormat, metadataOptions) {
+   413→        const oldVoice = this._voice;
+   414→        const oldOutputFormat = this._outputFormat;
+   415→        const oldOptions = JSON.stringify(this._metadataOptions);
+   416→        this._voice = voiceName;
+   417→        Object.assign(this._metadataOptions, metadataOptions);
+   418→        if (!metadataOptions?.voiceLocale && (!this._metadataOptions.voiceLocale || oldVoice !== this._voice)) {
+   419→            const voiceLangMatch = MsEdgeTTS.VOICE_LANG_REGEX.exec(this._voice);
+   420→            if (!voiceLangMatch)
+   421→                throw new Error("Could not infer voiceLocale from voiceName, and no voiceLocale was specified!");
+   422→            this._metadataOptions.voiceLocale = voiceLangMatch[0];
+   423→        }
+   424→        this._outputFormat = outputFormat;
+   425→        const changed = oldVoice !== this._voice
+   426→            || oldOutputFormat !== this._outputFormat
+   427→            || oldOptions !== JSON.stringify(this._metadataOptions);
+   428→        if (!changed && !this._clientInit && this._ws?.readyState === isomorphic_ws_1.default.OPEN
+   429→            && !this._retiredSockets.includes(this._ws)) {
+   430→            return;
+   431→        }
+   432→        // create new client
+   433→        this._startTime = Date.now();
+   434→        await this._initClient();
+   435→    }
+   436→    _metadataCheck() {
+   437→        if (!this._ws)
+   438→            throw new Error("Speech synthesis not configured yet. Run setMetadata before calling toStream or toFile.");
+   439→    }
+   440→    /**
+   441→     * Close the WebSocket connection.
+   442→     */
+   443→    close() {
+   444→        this._clientGeneration++;
+   445→        const sockets = new Set(this._retiredSockets);
+   446→        if (this._ws)
+   447→            sockets.add(this._ws);
+   448→        this._retiredSockets = [];
+   449→        for (const stream of Object.values(this._streams)) {
+   450→            clearTimeout(stream.timeout);
+   451→            if (!stream.turnEnded) {
+   452→                stream.audio.destroy(new Error("Stream closed before the synthesis completed (no turn.end received). The audio is likely truncated."));
+   453→            }
+   454→        }
+   455→        sockets.forEach(socket => this._closeSocket(socket));
+   456→    }
+   457→    /**
+   458→     * Writes raw audio synthesised from text to a file. Uses a basic {@link _SSMLTemplate SML template}.
+   459→     *
+   460→     * @param dirPath a valid output directory path
+   461→     * @param input the input to synthesise
+   462→     * @param options (optional) {@link ProsodyOptions}
+   463→     @returns {Promise<{audioFilePath: string, metadataFilePath: string | null}>} - a `Promise` with the full filepaths
+   464→     */
+   465→    toFile(dirPath, input, options) {
+   466→        return this._rawSSMLRequestToFile(dirPath, this._SSMLTemplate(input, options));
+   467→    }
+   468→    /**
+   469→     * Writes raw audio synthesised from text in real-time to a {@link Readable}. Uses a basic {@link _SSMLTemplate SML template}.
+   470→     *
+   471→     * @param input the text to synthesise. Can include SSML elements.
+   472→     * @param options (optional) {@link ProsodyOptions}
+   473→     @returns {Promise<{audioStream: Readable, metadataStream: Readable | null}>} - a `Promise` with the streams
+   474→     */
+   475→    toStream(input, options) {
+   476→        return this._rawSSMLRequest(this._SSMLTemplate(input, options));
+   477→    }
+   478→    /**
+   479→     * Writes raw audio synthesised from text to a file. Has no SSML template. Basic SSML should be provided in the request.
+   480→     *
+   481→     * @param dirPath a valid output directory path.
+   482→     * @param requestSSML the SSML to send. SSML elements required in order to work.
+   483→     * @returns {Promise<{audioFilePath: string, metadataFilePath: string | null}>} - a `Promise` with the full filepaths
+   484→     */
+   485→    rawToFile(dirPath, requestSSML) {
+   486→        return this._rawSSMLRequestToFile(dirPath, requestSSML);
+   487→    }
+   488→    /**
+   489→     * Writes raw audio synthesised from a request in real-time to a {@link Readable}. Has no SSML template. Basic SSML should be provided in the request.
+   490→     *
+   491→     * @param requestSSML the SSML to send. SSML elements required in order to work.
+   492→     @returns {Promise<{audioStream: Readable, metadataStream: Readable | null}>} - a `Promise` with the streams
+   493→     */
+   494→    rawToStream(requestSSML) {
+   495→        return this._rawSSMLRequest(requestSSML);
+   496→    }
+   497→    _hasMetadataBoundaries() {
+   498→        return this._metadataOptions.sentenceBoundaryEnabled
+   499→            || this._metadataOptions.wordBoundaryEnabled;
+   500→    }
+   501→    async _rawSSMLRequestToFile(dirPath, requestSSML) {
+   502→        const { audioStream, metadataStream, requestId } = this._rawSSMLRequest(requestSSML);
+   503→        const audioFilePath = (0, utils_1.joinPath)(dirPath, "audio." + Output_1.OUTPUT_EXTENSIONS[this._outputFormat]);
+   504→        const metadataFilePath = !!metadataStream ? (0, utils_1.joinPath)(dirPath, "metadata.json") : null;
+   505→        try {
+   506→            await Promise.all([
+   507→                new Promise((resolve, reject) => {
+   508→                    const writableAudioFile = audioStream.pipe(fs.createWriteStream(audioFilePath));
+   509→                    // .pipe() doesn't forward source errors to the writable, so a truncated stream
+   510→                    // would hang here — watch the audio stream directly and reject on its error
+   511→                    audioStream.once("error", (e) => {
+   512→                        writableAudioFile.destroy();
+   513→                        reject(e);
+   514→                    });
+   515→                    writableAudioFile.once("close", async () => {
+   516→                        if (writableAudioFile.bytesWritten > 0) {
+   517→                            resolve(audioFilePath);
+   518→                        }
+   519→                        else {
+   520→                            reject(new Error("No audio data received"));
+   521→                            fs.rmSync(audioFilePath, { force: true });
+   522→                        }
+   523→                    });
+   524→                    writableAudioFile.once("error", reject);
+   525→                }),
+   526→                new Promise((resolve, reject) => {
+   527→                    if (!metadataFilePath) {
+   528→                        return resolve(null);
+   529→                    }
+   530→                    // get metadata from buffer and combine all MetaData root elements
+   531→                    const metadataItems = { Metadata: [] };
+   532→                    metadataStream.on("data", (chunk) => {
+   533→                        const chunkObj = JSON.parse(chunk.toString());
+   534→                        // .Metadata is an array of objects, just combine them
+   535→                        metadataItems.Metadata.push(...chunkObj["Metadata"]);
+   536→                    });
+   537→                    metadataStream.once("close", () => {
+   538→                        if (metadataItems.Metadata.length > 0) {
+   539→                            // create file if not exists
+   540→                            fs.writeFileSync(metadataFilePath, JSON.stringify(metadataItems, null, 2));
+   541→                            resolve(metadataFilePath);
+   542→                        }
+   543→                        else {
+   544→                            reject(new Error("No metadata received"));
+   545→                            fs.rmSync(metadataFilePath, { force: true });
+   546→                        }
+   547→                    });
+   548→                    metadataStream.once("error", reject);
+   549→                }),
+   550→            ]);
+   551→            return { audioFilePath, metadataFilePath, requestId };
+   552→        }
+   553→        catch (e) {
+   554→            audioStream.destroy();
+   555→            metadataStream?.destroy();
+   556→            throw e;
+   557→        }
+   558→    }
+   559→    static randomHex(bytes) {
+   560→        const arr = new Uint8Array(bytes);
+   561→        crypto.getRandomValues(arr);
+   562→        return Array.from(arr, b => b.toString(16).padStart(2, "0")).join("");
+   563→    }
+   564→    _rawSSMLRequest(requestSSML) {
+   565→        this._metadataCheck();
+   566→        const requestId = MsEdgeTTS.randomHex(16);
+   567→        const request = `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:${messageTypes.SSML}${MsEdgeTTS.JSON_XML_DELIM}` + requestSSML.trim();
+   568→        // https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/speech-synthesis-markup
+   569→        const self = this;
+   570→        const audioStream = new stream_1.Readable({
+   571→            read() {
+   572→            },
+   573→            destroy(error, callback) {
+   574→                clearTimeout(self._streams[requestId]?.timeout);
+   575→                delete self._streams[requestId];
+   576→                self._closeRetiredSockets();
+   577→                callback(error);
+   578→            },
+   579→        });
+   580→        const metadataStream = this._hasMetadataBoundaries() ? new stream_1.Readable({
+   581→            read() {
+   582→            },
+   583→        }) : null;
+   584→        audioStream.on("error", (e) => {
+   585→            audioStream.destroy();
+   586→            metadataStream?.destroy();
+   587→        });
+   588→        audioStream.once("close", () => {
+   589→            audioStream.destroy();
+   590→            metadataStream?.destroy();
+   591→        });
+   592→        this._streams[requestId] = {
+   593→            audio: audioStream,
+   594→            metadata: metadataStream,
+   595→            turnEnded: false,
+   596→        };
+   597→        this._send(request, requestId).catch((error) => {
+   598→            // Surface _send/reconnect failures on the audio stream (consistent with #35)
+   599→            // instead of an unhandled rejection that crashes the host process.
+   600→            this._streams[requestId]?.audio.destroy(error);
+   601→        });
+   602→        return { audioStream, metadataStream, requestId };
+   603→    }
+   604→}
+   605→exports.MsEdgeTTS = MsEdgeTTS;
+   606→

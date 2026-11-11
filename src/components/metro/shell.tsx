@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toFa } from "@/lib/metro-data";
+import { isInIframe, openStandaloneTab } from "@/components/metro/voice";
 
 /* ============================================================
    کروم اپ متروجو — دقیقاً بر اساس code.html تاییدشده
@@ -171,9 +172,49 @@ const DRAWER_LINKS: { label: string; icon: string; href: string }[] = [
 ];
 
 /** تطبیق مسیر فعال — با اسلش انتهایی و زیرصفحه‌ها هم کار می‌کند */
-export function isNavActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`) || pathname.startsWith(`${href}?`);
+export function isNavActive(pathname: string | undefined, href: string): boolean {
+  const p = (pathname ?? "").replace(/\/+$/, "") || "/";
+  if (href === "/") return p === "/";
+  return p === href || p.startsWith(`${href}/`);
+}
+
+/* وضعیت زنده میکروفن برای جعبه «دسترسی سریع صوتی» دراور */
+type MicState = "checking" | "ok" | "blocked" | "denied";
+
+function useMicStatus(active: boolean): MicState {
+  const [state, setState] = useState<MicState>("checking");
+  useEffect(() => {
+    if (!active) return;
+    let alive = true;
+    const check = async () => {
+      const w = window as unknown as {
+        SpeechRecognition?: unknown;
+        webkitSpeechRecognition?: unknown;
+      };
+      const supported =
+        !!navigator.mediaDevices?.getUserMedia &&
+        (typeof MediaRecorder !== "undefined" || !!w.SpeechRecognition || !!w.webkitSpeechRecognition);
+      if (!supported) {
+        if (alive) setState("blocked");
+        return;
+      }
+      try {
+        const st = await navigator.permissions.query({ name: "microphone" as PermissionName });
+        if (alive) {
+          // داخل iframe (پیش‌نمایش) «denied» یعنی سیاست مرورگر پنجره را بسته — راهکار همان تب جدید است
+          setState(st.state === "denied" ? (isInIframe() ? "blocked" : "denied") : "ok");
+        }
+      } catch {
+        // برخی مرورگرها query نمی‌پذیرند — با فرض قابل‌دسترس بودن ادامه می‌دهیم
+        if (alive) setState("ok");
+      }
+    };
+    void check();
+    return () => {
+      alive = false;
+    };
+  }, [active]);
+  return state;
 }
 
 export function MenuDrawer() {
@@ -181,6 +222,8 @@ export function MenuDrawer() {
   const setDrawer = useShell((s) => s.setDrawer);
   const router = useRouter();
   const pathname = usePathname();
+  const micState = useMicStatus(open);
+  const iframed = isInIframe();
 
   return (
     <div
@@ -249,10 +292,42 @@ export function MenuDrawer() {
 
           <div className="pt-4 border-t border-outline-variant/30 space-y-2">
             <p className="text-[11px] font-bold text-outline">دسترسی سریع صوتی</p>
-            <div className="bg-surface-container-low p-2.5 rounded-xl text-xs text-on-surface-variant flex items-center gap-2">
-              <MI name="graphic_eq" size={18} className="text-secondary" />
-              <span>دستیار هوشمند صوتی آماده دریافت فرامین است.</span>
-            </div>
+            {micState === "ok" || micState === "checking" ? (
+              <div className="bg-surface-container-low p-2.5 rounded-xl text-xs text-on-surface-variant flex items-center gap-2">
+                <MI name="graphic_eq" size={18} className="text-secondary" />
+                <span>
+                  {micState === "checking"
+                    ? "بررسی دسترسی میکروفن..."
+                    : "دستیار هوشمند صوتی آماده دریافت فرامین است."}
+                </span>
+              </div>
+            ) : micState === "denied" ? (
+              <div className="bg-error/10 p-2.5 rounded-xl text-xs text-error flex items-center gap-2">
+                <MI name="mic_off" size={18} className="shrink-0" />
+                <span>اجازه میکروفن داده نشده — از تنظیمات مرورگر یا آیکون قفل کنار آدرس، اجازه بدهید.</span>
+              </div>
+            ) : (
+              <div className="bg-error/10 p-2.5 rounded-xl text-xs text-error flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <MI name="mic_off" size={18} className="shrink-0" />
+                  <span>
+                    {iframed
+                      ? "میکروفن در این پنجره (پیش‌نمایش) مسدود است — متروجو را در تب جدید باز کنید."
+                      : "میکروفن در این مرورگر در دسترس نیست — از کروم یا نسخه اندروید استفاده کنید."}
+                  </span>
+                </div>
+                {iframed && (
+                  <button
+                    type="button"
+                    onClick={openStandaloneTab}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0d58a6] text-white text-[11px] font-bold active:scale-95 transition-all"
+                  >
+                    <MI name="open_in_new" size={14} />
+                    باز کردن در تب جدید
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div className="text-[11px] text-outline text-center border-t border-outline-variant/30 pt-3">
@@ -335,13 +410,19 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const drawerOpen = useShell((s) => s.drawerOpen);
 
   return (
     <nav
-      className="fixed z-40 inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 px-1.5 py-1.5 flex items-center justify-between flex-nowrap"
+      className={`fixed z-40 inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 px-1.5 py-1.5 flex items-center justify-between flex-nowrap transition-all duration-300 ${
+        drawerOpen
+          ? "opacity-0 pointer-events-none translate-y-6"
+          : "opacity-100 translate-y-0"
+      }`}
       style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
       dir="rtl"
       aria-label="ناوبری اصلی"
+      aria-hidden={drawerOpen}
     >
       {NAV_ITEMS.map(({ href, label, Icon }) => {
         const active = isNavActive(pathname, href);
@@ -353,7 +434,7 @@ export function BottomNav() {
             className={`flex items-center gap-1 rounded-full transition-all active:scale-95 shrink-0 ${
               active
                 ? "bg-[#0d58a6] text-white px-3.5 py-2 font-bold text-xs shadow-sm"
-                : "text-slate-600 px-2 py-2 font-medium text-xs hover:text-slate-900"
+                : "text-slate-600 px-2 py-2 font-medium text-xs hover:bg-slate-100 hover:text-slate-900"
             }`}
           >
             <Icon />
