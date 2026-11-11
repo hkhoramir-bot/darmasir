@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MI, PageHeader, useInitCity, useShell, type ShellCity } from "@/components/metro/shell";
+import { ApkDownloadCard } from "@/components/metro/apk-download";
 import { useAnnouncer, findFaVoice, resetFaVoiceCache } from "@/components/metro/voice";
 import { useToast } from "@/hooks/use-toast";
 import { toFa } from "@/lib/metro-data";
@@ -72,11 +73,31 @@ export default function SettingsPage() {
   /* ---------- تنظیمات صوتی ---------- */
   const prefs = useVoicePrefs();
   const [deviceVoice, setDeviceVoice] = useState<"checking" | "found" | "missing">("checking");
+  const [serverInput, setServerInput] = useState("");
 
   /* hydrate ترجیحات صوتی از حافظه دستگاه */
   useEffect(() => {
     useVoicePrefs.getState().hydrate();
+    setServerInput(useVoicePrefs.getState().serverUrl ?? "");
   }, []);
+
+  /** ذخیره آدرس ورکر صدای ابری */
+  const saveServerUrl = () => {
+    const url = serverInput.trim();
+    if (url && !/^https?:\/\//i.test(url)) {
+      toast({
+        title: "آدرس نامعتبر است",
+        description: "آدرس باید با https:// شروع شود",
+        variant: "destructive",
+      });
+      return;
+    }
+    prefs.setServerUrl(url);
+    toast({
+      title: "آدرس سرور صدا ذخیره شد",
+      description: url ? "صدای ابری دلاورا/فرید فعال است" : "حالت پیش‌فرض (سرور خود اپ) فعال است",
+    });
+  };
 
   /* بررسی وجود صدای فارسی روی دستگاه (لیست صداها به‌صورت ناهمزمان می‌آید) */
   useEffect(() => {
@@ -398,6 +419,64 @@ export default function SettingsPage() {
           )}
         </section>
 
+        {/* ---------------- سرور صدای ابری (ورکر کلودفلر) ---------------- */}
+        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-2.5">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 19a4.5 4.5 0 00-.42-8.98 6 6 0 0111.7-1.6A4.5 4.5 0 0018.5 19H6z" />
+            </svg>
+            <h3 className="font-bold text-xs text-on-surface">سرور صدای ابری (اختیاری)</h3>
+          </div>
+          <p className="text-[10px] text-outline leading-relaxed">
+            برای صدای دلاورا و فرید روی نسخه اندروید، آدرس ورکر کلودفلر رایگان خود را وارد کنید.
+            اگر خالی باشد از سرور خود برنامه استفاده می‌شود.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              dir="ltr"
+              value={serverInput}
+              onChange={(e) => setServerInput(e.target.value)}
+              placeholder="https://metrojo-tts.yourname.workers.dev"
+              aria-label="آدرس سرور صدای ابری"
+              className="flex-1 min-w-0 rounded-xl border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-[11px] text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <button
+              type="button"
+              onClick={saveServerUrl}
+              className="shrink-0 bg-primary text-white rounded-xl px-3.5 py-2 text-[11px] font-bold shadow-sm active:scale-95 transition-transform"
+            >
+              ذخیره
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            {prefs.serverUrl ? (
+              <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                ورکر اختصاصی فعال
+              </span>
+            ) : (
+              <span className="text-[10px] text-outline">سرور پیش‌فرض برنامه</span>
+            )}
+            {prefs.serverUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  prefs.setServerUrl("");
+                  setServerInput("");
+                  toast({ title: "سرور ابری حذف شد", description: "به سرور پیش‌فرض برگشتید" });
+                }}
+                className="text-[10px] text-secondary font-bold flex items-center gap-1"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
+                </svg>
+                حذف
+              </button>
+            )}
+          </div>
+        </section>
+
         {/* ---------------- درباره برنامه ---------------- */}
         <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
@@ -422,6 +501,9 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* دانلود نسخه اندروید */}
+        <ApkDownloadCard />
 
         <p className="text-center text-[10px] text-outline-variant pt-1">
           متروجو — دستیار صوتی و ناوبری مترو

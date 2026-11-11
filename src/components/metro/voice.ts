@@ -146,12 +146,20 @@ async function serverSpeak(
   gender: VoiceGender,
   audio: HTMLAudioElement
 ): Promise<void> {
-  const res = await fetch("/api/voice/tts", {
+  // اگر آدرس ورکر کلودفلر ذخیره شده باشد از آن استفاده می‌شود (نسخه اندروید)
+  const serverUrl = (getVoicePrefs().serverUrl ?? "").trim().replace(/\/+$/, "");
+  const endpoint = serverUrl ? `${serverUrl}/tts` : "/api/voice/tts";
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, rate, gender }),
   });
   if (!res.ok) {
+    throw new Error(VOICE_ERRORS.cloudFail);
+  }
+  // پاسخ خطای JSON از ورکر → مسیر پشتیبان
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
     throw new Error(VOICE_ERRORS.cloudFail);
   }
   const blob = await res.blob();

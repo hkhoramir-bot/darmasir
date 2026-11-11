@@ -12,6 +12,7 @@ import {
   type StationDef,
 } from "@/lib/metro-data";
 import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
+import { ApkDownloadCard } from "@/components/metro/apk-download";
 import { useAnnouncer, useVoiceSearch } from "@/components/metro/voice";
 
 /* ============================================================
@@ -594,6 +595,8 @@ export default function HomePage() {
             <MI name="chevron_left" size={14} />
           </button>
         </section>
+
+        <ApkDownloadCard />
 
         <p className="text-center text-[10px] text-outline-variant pt-1">
           متروجو نسخه {toFa("4.8.2")} • طراحی شده برای ناوبری صوتی و سریع مسافران
