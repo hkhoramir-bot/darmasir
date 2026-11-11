@@ -142,8 +142,10 @@ function buildSsml(text, rate, voice, locale) {
   );
 }
 
+const ts = () => new Date().toUTCString();
+
 const speechConfigMsg = () =>
-  "Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n" +
+  `X-Timestamp:${ts()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n` +
   JSON.stringify({
     context: {
       synthesis: {
@@ -156,7 +158,7 @@ const speechConfigMsg = () =>
   });
 
 const ssmlMsg = (requestId, ssml) =>
-  `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n` + ssml.trim();
+  `X-RequestId:${requestId}\r\nX-Timestamp:${ts()}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n` + ssml.trim();
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -222,6 +224,9 @@ async function doSynthesis(ssml, offsetMs) {
   const chunks = [];
   let settled = false;
 
+  /* تشخیص — در پاسخ خطا برمی‌گردد تا اگر در پروداکشن هم مشکل بود، دقیق بدانیم */
+  const diag = { frames: 0, kinds: {}, audioFrames: 0, bytes: 0, firstHeaderLen: null };
+
   const done = new Promise((resolve, reject) => {
     const finish = () => {
       if (settled) return;
@@ -230,8 +235,11 @@ async function doSynthesis(ssml, offsetMs) {
         ws.close(1000, "done");
       } catch {}
       const audio = concatAudio(chunks);
-      if (!audio.length) reject(new Error("هیچ داده صدایی دریافت نشد"));
-      else resolve(audio);
+      if (!audio.length) {
+        const err = new Error("هیچ داده صدایی دریافت نشد");
+        err.diag = diag;
+        reject(err);
+      } else resolve(audio);
     };
     const fail = (msg) => {
       if (settled) return;
@@ -242,32 +250,68 @@ async function doSynthesis(ssml, offsetMs) {
       reject(new Error(msg));
     };
 
+    // پیام‌ها به‌ترتیب صف می‌شوند تا فریم‌های صوتی همیشه قبل از turn.end
+    // پردازش شوند (تبدیل Blob به ArrayBuffer ناهمزمان است)
+    let chain = Promise.resolve();
+    const enqueue = (task) => {
+      chain = chain.then(task, task);
+    };
+
     ws.addEventListener("message", (ev) => {
       if (settled) return;
-      try {
-        const data = ev.data;
-        if (typeof data === "string") {
-          if (data.includes("Path:turn.end")) finish();
-          return;
-        }
-        const u8 = new Uint8Array(data);
-        if (u8.length < 2) return;
+      enqueue(async () => {
+        if (settled) return;
+        try {
+          const data = ev.data;
 
-        // قالب رسمی فریم باینری Edge: [۲ بایت طول هدر][هدر][داده صوتی]
-        const headerLen = (u8[0] << 8) | u8[1];
-        if (headerLen >= 2 && u8.length > headerLen + 2) {
-          chunks.push(u8.subarray(headerLen + 2));
-          return;
+          /* پیام متنی — پایان همگام‌سازی */
+          if (typeof data === "string") {
+            if (data.includes("Path:turn.end")) finish();
+            return;
+          }
+
+          /* فریم باینری — در رانتایم‌های مختلف انواع متفاوتی دارد:
+             ArrayBuffer / TypedArray / Blob — همه پشتیبانی می‌شوند */
+          let u8 = null;
+          if (data instanceof ArrayBuffer) u8 = new Uint8Array(data);
+          else if (ArrayBuffer.isView(data))
+            u8 = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+          else if (data && typeof data.arrayBuffer === "function")
+            u8 = new Uint8Array(await data.arrayBuffer()); // Blob و مشابه
+          if (!u8 || u8.length < 2) return;
+
+          diag.frames++;
+          diag.bytes += u8.length;
+          const kind = data instanceof ArrayBuffer
+            ? "arraybuffer"
+            : ArrayBuffer.isView(data)
+              ? "typedarray"
+              : "blob";
+          diag.kinds[kind] = (diag.kinds[kind] ?? 0) + 1;
+
+          // قالب رسمی فریم باینری Edge: [۲ بایت طول هدر][هدر][داده]
+          const headerLen = (u8[0] << 8) | u8[1];
+          if (diag.firstHeaderLen === null) diag.firstHeaderLen = headerLen;
+          if (headerLen >= 2 && headerLen <= 2048 && u8.length > headerLen + 2) {
+            const hdr = headerDecoder.decode(u8.subarray(2, headerLen + 2));
+            if (hdr.includes("Path:audio\r\n")) {
+              diag.audioFrames++;
+              chunks.push(u8.subarray(headerLen + 2));
+            }
+            return;
+          }
+
+          // مسیر پشتیبان: جستجوی جداکننده Path:audio در سرپیچ
+          const head = headerDecoder.decode(u8.subarray(0, Math.min(u8.length, 2048)));
+          const idx = head.indexOf(AUDIO_DELIM);
+          if (idx >= 0 && u8.length > idx + AUDIO_DELIM.length) {
+            diag.audioFrames++;
+            chunks.push(u8.subarray(idx + AUDIO_DELIM.length));
+          }
+        } catch {
+          /* فریم ناقص — نادیده گرفته می‌شود */
         }
-        // مسیر پشتیبان: جستجوی جداکننده Path:audio در سرپیچ
-        const head = headerDecoder.decode(u8.subarray(0, Math.min(u8.length, 2048)));
-        const idx = head.indexOf(AUDIO_DELIM);
-        if (idx >= 0 && u8.length > idx + AUDIO_DELIM.length) {
-          chunks.push(u8.subarray(idx + AUDIO_DELIM.length));
-        }
-      } catch {
-        /* فریم ناقص — نادیده گرفته می‌شود */
-      }
+      });
     });
     ws.addEventListener("close", () => fail("اتصال پیش از پایان همگام‌سازی بسته شد"));
     ws.addEventListener("error", () => fail("خطای سوکت صدا"));
@@ -361,7 +405,7 @@ const handler = {
       return json({
         ok: true,
         service: "metrojo-voice",
-        version: "2.0",
+        version: "2.1",
         voices: { female: "fa-IR-DilaraNeural", male: "fa-IR-FaridNeural" },
         usage: 'POST /tts  {"text":"سلام","rate":1,"gender":"female"}',
         time: new Date().toISOString(),
@@ -411,6 +455,7 @@ const handler = {
             error: "tts_failed",
             message: "تولید صدای فارسی با خطا مواجه شد. چند لحظه بعد دوباره تلاش کنید.",
             detail: String(e?.message ?? e),
+            diag: e?.diag ?? null,
           },
           502
         );
