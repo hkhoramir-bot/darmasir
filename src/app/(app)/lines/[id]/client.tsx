@@ -310,7 +310,7 @@ export default function LineDetailPage() {
             aria-label={announcer.speaking ? "توقف پخش صوتی" : "اعلام صوتی اطلاعات خط"}
             className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 active:scale-95 transition-all shadow-sm ${
               announcer.speaking
-                ? "bg-error text-white"
+                ? "bg-error text-on-error"
                 : "bg-primary/10 text-primary hover:bg-primary/20"
             }`}
           >

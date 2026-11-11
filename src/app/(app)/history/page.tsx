@@ -138,7 +138,7 @@ export default function HistoryPage() {
                 type="button"
                 onClick={deleteAll}
                 disabled={deleting}
-                className="px-3 py-1.5 rounded-lg bg-error text-white text-[11px] font-bold active:scale-95 transition-all disabled:opacity-60"
+                className="px-3 py-1.5 rounded-lg bg-error text-on-error text-[11px] font-bold active:scale-95 transition-all disabled:opacity-60"
               >
                 {deleting ? "..." : "بله"}
               </button>

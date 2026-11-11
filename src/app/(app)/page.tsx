@@ -535,8 +535,8 @@ export default function HomePage() {
             <button
               onClick={onMicClick}
               aria-label="دستیار صوتی"
-              className={`relative z-10 w-14 h-14 rounded-full text-white flex items-center justify-center shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 ${
-                listening ? "bg-error scale-105" : "bg-primary-container"
+              className={`relative z-10 w-14 h-14 rounded-full flex items-center justify-center shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 ${
+                listening ? "bg-error text-on-error scale-105" : "bg-primary-container text-white"
               }`}
             >
               {voice.busy ? (

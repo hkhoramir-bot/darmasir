@@ -46,8 +46,8 @@ html {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  /* نسخه ۴ — زیرمجموعه بازسازی‌شده با همه آیکون‌های استفاده‌شده در اپ */
-  src: url("/fonts/material-symbols-subset.woff2?v=5") format("woff2");
+  /* نسخه ۶ — زیرمجموعه بازسازی‌شده با همه آیکون‌های استفاده‌شده در اپ */
+  src: url("/fonts/material-symbols-subset.woff2?v=6") format("woff2");
 }
 
 /* ============================================================
@@ -177,6 +177,70 @@ html {
   --mq-map-grid: #1f2941;
   --mq-tertiary: #4ade80;
   --mq-tertiary-c: #6ee7a0;
+}
+
+/* ============================================================
+   پالت اصلی برنامه در حالت تاریک (Material 3 — متروجو)
+   utilitiesهای Tailwind به var(--color-*) ارجاع می‌دهند؛ با این
+   override کل اپ (سطح، کارت، متن، خطوط، منو و...) تیره می‌شود.
+   primary/primary-container عمداً آبی برند با روشنایی کافی برای
+   متن سفید حفظ شده‌اند تا ظاهر دکمه‌ها به‌هم نریزد.
+   ============================================================ */
+.dark {
+  /* سطوح و کانتینرها */
+  --color-surface: #131a29;
+  --color-surface-dim: #0b101a;
+  --color-surface-bright: #1a2334;
+  --color-surface-variant: #293450;
+  --color-surface-tint: #a8c8ff;
+  --color-surface-container-lowest: #101725;
+  --color-surface-container-low: #151d2e;
+  --color-surface-container: #1d2739;
+  --color-surface-container-high: #232e45;
+  --color-surface-container-highest: #293450;
+
+  /* متن و خطوط */
+  --color-on-surface: #e2e8f8;
+  --color-on-surface-variant: #a9b3c9;
+  --color-outline: #8b93a7;
+  --color-outline-variant: #36415c;
+  --color-inverse-surface: #ecf1ff;
+  --color-inverse-on-surface: #263143;
+  --color-inverse-primary: #3579d1;
+
+  /* آبی برند — برای حفظ متن سفید روی دکمه‌ها */
+  --color-primary: #3579d1;
+  --color-primary-container: #1565c7;
+
+  /* قرمز / سبز — به‌صورت متنِ خوانا روی زمینه تیره */
+  --color-secondary: #ff5449;
+  --color-tertiary: #6ee7a0;
+  --color-tertiary-container: #00532c;
+
+  /* خطا — الگوی M3 تاریک: متن/زمین قرمز روشن + on-error تیره */
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #3d1518;
+  --color-on-error-container: #ffdad6;
+
+  /* سازگاری shadcn */
+  --color-background: #0f1522;
+  --color-foreground: #e2e8f8;
+  --color-card: #182033;
+  --color-card-foreground: #e2e8f8;
+  --color-popover: #182033;
+  --color-popover-foreground: #e2e8f8;
+  --color-muted: #1d2739;
+  --color-muted-foreground: #a9b3c9;
+  --color-accent: #232e45;
+  --color-accent-foreground: #d5e3ff;
+  --color-destructive: #e0413a;
+  --color-border: #36415c;
+  --color-input: #232e45;
+  --color-ring: #3f82d6;
+
+  /* رنگ خطای نقشه */
+  --color-metro-error: #ff8a80;
 }
 
 @theme inline {
@@ -456,5 +520,8 @@ html {
 @supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
   .mj-nav-frost {
     background-color: rgba(255, 255, 255, 0.97);
+  }
+  .dark .mj-nav-frost {
+    background-color: rgba(16, 23, 37, 0.97);
   }
 }

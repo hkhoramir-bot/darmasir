@@ -448,7 +448,7 @@ export function BottomNav() {
       aria-hidden={drawerOpen}
     >
       <nav
-        className="mj-nav-frost pointer-events-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white/80 backdrop-blur-lg rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/60 px-1.5 py-1.5 flex items-center justify-between flex-nowrap"
+        className="mj-nav-frost pointer-events-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-surface-container-lowest/85 backdrop-blur-lg rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-outline-variant/50 px-1.5 py-1.5 flex items-center justify-between flex-nowrap"
         dir="rtl"
         aria-label="ناوبری اصلی"
       >
@@ -462,7 +462,7 @@ export function BottomNav() {
               className={`flex items-center gap-1 rounded-full transition-all active:scale-95 shrink-0 ${
                 active
                   ? "bg-[#0d58a6] text-white px-3.5 py-2 font-bold text-xs shadow-sm"
-                  : "text-slate-600 px-2 py-2 font-medium text-xs hover:bg-slate-100 hover:text-slate-900"
+                  : "text-on-surface-variant px-2 py-2 font-medium text-xs hover:bg-surface-container hover:text-on-surface"
               }`}
             >
               <Icon />

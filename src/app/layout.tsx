@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/metro/pwa";
 import { NativeApiBridge } from "@/components/metro/native-bridge";
+import { ThemeProvider } from "@/components/metro/theme-provider";
 
 export const metadata: Metadata = {
   title: "متروجو | دستیار صوتی و ناوبری مترو",
@@ -42,14 +43,16 @@ export default function RootLayout({
       </head>
       {/* بدنه: بوم موبایل — روی دسکتاپ هم اپ در ستون موبایل (max-w-md) وسط چین می‌ماند */}
       <body className="antialiased">
-        <div className="min-h-dvh w-full bg-metro-surface-dim/70 flex justify-center">
-          <div className="relative w-full max-w-md min-h-dvh flex flex-col bg-surface shadow-[0_0_60px_rgba(13,88,166,0.14)] sm:border-x sm:border-outline-variant/40 selection:bg-primary-fixed selection:text-on-primary-fixed">
-            {children}
+        <ThemeProvider>
+          <div className="min-h-dvh w-full bg-metro-surface-dim/70 flex justify-center">
+            <div className="relative w-full max-w-md min-h-dvh flex flex-col bg-surface shadow-[0_0_60px_rgba(13,88,166,0.14)] sm:border-x sm:border-outline-variant/40 selection:bg-primary-fixed selection:text-on-primary-fixed">
+              {children}
+            </div>
           </div>
-        </div>
-        <Toaster />
-        <PwaRegister />
-        <NativeApiBridge />
+          <Toaster />
+          <PwaRegister />
+          <NativeApiBridge />
+        </ThemeProvider>
       </body>
     </html>
   );

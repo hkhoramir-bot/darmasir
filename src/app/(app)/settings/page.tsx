@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { useTheme } from "next-themes";
 import { MI, PageHeader, useInitCity, useShell, type ShellCity } from "@/components/metro/shell";
 import { ApkDownloadCard } from "@/components/metro/apk-download";
 import { useAnnouncer, findFaVoice, resetFaVoiceCache } from "@/components/metro/voice";
@@ -39,6 +40,17 @@ const ENGINE_OPTIONS: { id: VoiceEngine; label: string; hint: string }[] = [
   { id: "cloud", label: "صدای آنلاین", hint: "گویندگان نئورال فارسی (دلاورا / فرید) — رایگان و بدون کلید" },
 ];
 
+/* ------------------------------ تم برنامه ------------------------------ */
+type ThemeChoice = "light" | "dark" | "system";
+
+const subscribeNoop = () => () => {};
+
+const THEME_OPTIONS: { id: ThemeChoice; label: string; icon: string; hint: string }[] = [
+  { id: "light", label: "روشن", icon: "light_mode", hint: "روشن — مناسب محیط پرنور و مصرف روز" },
+  { id: "dark", label: "تاریک", icon: "dark_mode", hint: "تاریک — مناسب شب و صرفه‌جویی در باتری صفحه‌نمایش OLED" },
+  { id: "system", label: "دستگاه", icon: "brightness_auto", hint: "دستگاه — هماهنگ با تنظیم روشن/تاریک گوشی شما" },
+];
+
 /* ------------------------------ کلید تعویض ------------------------------ */
 function Toggle({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
   return (
@@ -67,6 +79,17 @@ export default function SettingsPage() {
   const setCity = useShell((s) => s.setCity);
   useInitCity();
   const announcer = useAnnouncer();
+
+  /* ---------- تم برنامه (روشن/تاریک/دستگاه) ---------- */
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  /* تشخیص hydrate شدن بدون setState داخل اثر (الگوی استاندارد React) */
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
+  const activeTheme: ThemeChoice = mounted && theme ? (theme as ThemeChoice) : "system";
+  const activeThemeHint = THEME_OPTIONS.find((o) => o.id === activeTheme)?.hint ?? "";
 
   const [settings, setSettings] = useState<MetrojoSettings>(DEFAULT_SETTINGS);
 
@@ -156,6 +179,40 @@ export default function SettingsPage() {
       <PageHeader title="تنظیمات و اطلاعات برنامه" />
 
       <main className="flex-1 w-full px-4 pt-3 pb-28 space-y-4">
+        {/* ---------------- تم برنامه ---------------- */}
+        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+          <div className="flex items-center gap-2">
+            <MI name="dark_mode" size={20} className="text-primary" />
+            <h3 className="font-bold text-xs text-on-surface">تم برنامه</h3>
+            <span className="mr-auto text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">
+              {!mounted
+                ? "—"
+                : resolvedTheme === "dark"
+                  ? "تاریک فعال"
+                  : "روشن فعال"}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1 bg-surface-container-low rounded-xl p-1">
+            {THEME_OPTIONS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setTheme(o.id)}
+                aria-pressed={activeTheme === o.id}
+                className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
+                  activeTheme === o.id
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-on-surface-variant"
+                }`}
+              >
+                <MI name={o.icon} size={17} />
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-outline">{activeThemeHint}</p>
+        </section>
+
         {/* ---------------- شهر پیش‌فرض ---------------- */}
         <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
           <div className="flex items-center gap-2">
