@@ -20,8 +20,6 @@ export interface VoicePrefs {
   engine: VoiceEngine;
   rate: number;
   gender: VoiceGender;
-  /** آدرس ورکر کلودفلر اختصاصی (اختیاری) — برای صدای ابری روی گوشی */
-  serverUrl?: string;
 }
 
 /** تبدیل نرخ عددی به نزدیک‌ترین حالت (عادی / تند) */
@@ -30,7 +28,7 @@ export function speedOf(rate: number): VoiceSpeed {
 }
 
 const STORAGE_KEY = "metrojo-voice";
-const DEFAULTS: VoicePrefs = { engine: "auto", rate: 1, gender: "female", serverUrl: "" };
+const DEFAULTS: VoicePrefs = { engine: "auto", rate: 1, gender: "female" };
 
 interface VoiceStore extends VoicePrefs {
   hydrated: boolean;
@@ -38,7 +36,6 @@ interface VoiceStore extends VoicePrefs {
   setEngine: (engine: VoiceEngine) => void;
   setSpeed: (speed: VoiceSpeed) => void;
   setGender: (gender: VoiceGender) => void;
-  setServerUrl: (url: string) => void;
 }
 
 function persist(p: VoicePrefs) {
@@ -61,7 +58,6 @@ export const useVoicePrefs = create<VoiceStore>((set, get) => ({
           engine?: string;
           rate?: number;
           gender?: string;
-          serverUrl?: string;
         };
         // مهاجرت: نسخه‌های قدیمی engine: "gemini" داشتند → آنلاین
         const engine =
@@ -77,7 +73,6 @@ export const useVoicePrefs = create<VoiceStore>((set, get) => ({
           engine,
           rate,
           gender: parsed.gender === "male" ? "male" : "female",
-          serverUrl: typeof parsed.serverUrl === "string" ? parsed.serverUrl : "",
           hydrated: true,
         });
         return;
@@ -89,21 +84,16 @@ export const useVoicePrefs = create<VoiceStore>((set, get) => ({
   },
   setEngine: (engine) => {
     set({ engine });
-    persist({ engine, rate: get().rate, gender: get().gender, serverUrl: get().serverUrl });
+    persist({ engine, rate: get().rate, gender: get().gender });
   },
   setSpeed: (speed) => {
     const rate = SPEED_RATE[speed];
     set({ rate });
-    persist({ engine: get().engine, rate, gender: get().gender, serverUrl: get().serverUrl });
+    persist({ engine: get().engine, rate, gender: get().gender });
   },
   setGender: (gender) => {
     set({ gender });
-    persist({ engine: get().engine, rate: get().rate, gender, serverUrl: get().serverUrl });
-  },
-  setServerUrl: (url) => {
-    const serverUrl = url.trim();
-    set({ serverUrl });
-    persist({ engine: get().engine, rate: get().rate, gender: get().gender, serverUrl });
+    persist({ engine: get().engine, rate: get().rate, gender });
   },
 }));
 
@@ -111,6 +101,6 @@ export const useVoicePrefs = create<VoiceStore>((set, get) => ({
 export function getVoicePrefs(): VoicePrefs {
   const s = useVoicePrefs.getState();
   if (!s.hydrated) s.hydrate();
-  const { engine, rate, gender, serverUrl } = useVoicePrefs.getState();
-  return { engine, rate, gender, serverUrl };
+  const { engine, rate, gender } = useVoicePrefs.getState();
+  return { engine, rate, gender };
 }

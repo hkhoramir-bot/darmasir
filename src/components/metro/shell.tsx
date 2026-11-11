@@ -179,7 +179,7 @@ export function isNavActive(pathname: string | undefined, href: string): boolean
 }
 
 /* وضعیت زنده میکروفن برای جعبه «دسترسی سریع صوتی» دراور */
-type MicState = "checking" | "ok" | "blocked" | "denied";
+type MicState = "checking" | "ok" | "blocked" | "denied" | "insecure";
 
 function useMicStatus(active: boolean): MicState {
   const [state, setState] = useState<MicState>("checking");
@@ -191,10 +191,21 @@ function useMicStatus(active: boolean): MicState {
         SpeechRecognition?: unknown;
         webkitSpeechRecognition?: unknown;
       };
-      const supported =
-        !!navigator.mediaDevices?.getUserMedia &&
-        (typeof MediaRecorder !== "undefined" || !!w.SpeechRecognition || !!w.webkitSpeechRecognition);
-      if (!supported) {
+      const hasSR = !!w.SpeechRecognition || !!w.webkitSpeechRecognition;
+      const hasGetUserMedia = !!navigator.mediaDevices?.getUserMedia;
+
+      // آدرس‌های http (بدون https) — مرورگر میکروفن را کلاً می‌بندد حتی با اجازه ثبت‌شده
+      if (typeof window.isSecureContext === "boolean" && !window.isSecureContext) {
+        if (alive) setState("insecure");
+        return;
+      }
+      // جستجوی صوتی مرورگر (SpeechRecognition) به getUserMedia نیاز ندارد
+      // و خودش اجازه میکروفن را مستقیم می‌پرسد
+      if (!hasGetUserMedia && hasSR) {
+        if (alive) setState("ok");
+        return;
+      }
+      if (!hasGetUserMedia) {
         if (alive) setState("blocked");
         return;
       }
@@ -305,6 +316,15 @@ export function MenuDrawer() {
               <div className="bg-error/10 p-2.5 rounded-xl text-xs text-error flex items-center gap-2">
                 <MI name="mic_off" size={18} className="shrink-0" />
                 <span>اجازه میکروفن داده نشده — از تنظیمات مرورگر یا آیکون قفل کنار آدرس، اجازه بدهید.</span>
+              </div>
+            ) : micState === "insecure" ? (
+              <div className="bg-error/10 p-2.5 rounded-xl text-xs text-error flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <MI name="mic_off" size={18} className="shrink-0" />
+                  <span>
+                    میکروفن فقط روی آدرس‌های https فعال می‌شود — اگر آدرس با http شروع می‌شود، نسخه اندروید متروجو را نصب کنید یا سایت را با لینک https باز کنید.
+                  </span>
+                </div>
               </div>
             ) : (
               <div className="bg-error/10 p-2.5 rounded-xl text-xs text-error flex flex-col gap-2">

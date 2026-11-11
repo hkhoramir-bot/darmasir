@@ -182,9 +182,8 @@ async function serverSpeak(
   gender: VoiceGender,
   audio: HTMLAudioElement
 ): Promise<void> {
-  // اولویت: ورکر اختصاصی کاربر (در صورت ثبت) → ورکر اصلی متروجو (ثابت بیلد) → سرور خود وب
-  const prefUrl = (getVoicePrefs().serverUrl ?? "").trim().replace(/\/+$/, "");
-  const base = prefUrl || CLOUD_TTS_BASE.trim().replace(/\/+$/, "");
+  // ورکر اصلی متروجو — ثابت بیلد؛ کاربر هیچ تنظیمی لازم ندارد
+  const base = CLOUD_TTS_BASE.trim().replace(/\/+$/, "");
   const endpoint = base ? `${base}/tts` : "/api/voice/tts";
   const res = await fetch(endpoint, {
     method: "POST",
