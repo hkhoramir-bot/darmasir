@@ -1,0 +1,7 @@
+{
+  "name": "metrojo-voice-node",
+  "version": "2.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "سرور صدای فارسی متروجو — بدون هیچ وابستگی، فقط Node 16+"
+}

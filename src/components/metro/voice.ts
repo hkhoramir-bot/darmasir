@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { getVoicePrefs, type VoiceGender } from "@/lib/voice-settings";
-import { CLOUD_TTS_BASE } from "@/lib/cloud-config";
+import { CLOUD_TTS_BASES, CLOUD_TTS_TIMEOUT_MS } from "@/lib/cloud-config";
 
 /* ============================================================
    دستیار صوتی متروجو — کاملاً فارسی و بدون نیاز به هیچ کلید/API
@@ -182,23 +182,39 @@ async function serverSpeak(
   gender: VoiceGender,
   audio: HTMLAudioElement
 ): Promise<void> {
-  // ورکر اصلی متروجو — ثابت بیلد؛ کاربر هیچ تنظیمی لازم ندارد
-  const base = CLOUD_TTS_BASE.trim().replace(/\/+$/, "");
-  const endpoint = base ? `${base}/tts` : "/api/voice/tts";
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, rate, gender }),
-  });
-  if (!res.ok) {
-    throw new Error(VOICE_ERRORS.cloudFail);
+  // چند سرور به ترتیب امتحان می‌شوند (ثابت بیلد؛ کاربر هیچ تنظیمی لازم ندارد)
+  const bases = CLOUD_TTS_BASES.map((b) => b.trim().replace(/\/+$/, "")).filter(Boolean);
+  const endpoints = bases.length ? bases.map((b) => `${b}/tts`) : ["/api/voice/tts"];
+
+  let blob: Blob | null = null;
+  for (const endpoint of endpoints) {
+    try {
+      // مهلت مشخص — وگرنه در شبکه‌های فیلترشده درخواست معلق می‌ماند
+      const ctrl = new AbortController();
+      const timer = window.setTimeout(() => ctrl.abort(), CLOUD_TTS_TIMEOUT_MS);
+      let res: Response;
+      try {
+        res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, rate, gender }),
+          signal: ctrl.signal,
+        });
+      } finally {
+        window.clearTimeout(timer);
+      }
+      if (!res.ok) throw new Error(`http_${res.status}`);
+      // پاسخ خطای JSON از سرور → سرور بعدی
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) throw new Error("json_error");
+      blob = await res.blob();
+      break;
+    } catch {
+      /* سرور بعدی امتحان می‌شود */
+    }
   }
-  // پاسخ خطای JSON از ورکر → مسیر پشتیبان
-  const contentType = res.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    throw new Error(VOICE_ERRORS.cloudFail);
-  }
-  const blob = await res.blob();
+  if (!blob) throw new Error(VOICE_ERRORS.cloudFail);
+
   const url = URL.createObjectURL(blob);
   audio.src = url;
   const cleanup = () => URL.revokeObjectURL(url);
