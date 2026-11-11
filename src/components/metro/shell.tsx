@@ -389,7 +389,14 @@ export function PageHeader({
   );
 }
 
-/* ------------------- ناوبری پایین شناور (دقیقاً code.html) ------------------- */
+/* ---------------------------------
+   ناوبری پایین شناور (دقیقاً code.html)
+   نکته مهم: عنصر دارای backdrop-filter نباید خودش transition/transform
+   داشته باشد — در WebView اندروید این ترکیب هنگام اسکرول باعث تار شدن
+   «کل صفحه» می‌شود. به همین دلیل:
+   - انیمیشن نمایش/مخفی‌سازی (همراه دراور) روی wrapper انجام می‌شود
+   - قرص شیشه‌ای خودش کاملاً ثابت است و فقط ناحیه پشت خودش را تار می‌کند
+   --------------------------------- */
 function HomeIconSvg() {
   return (
     <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden>
@@ -433,35 +440,37 @@ export function BottomNav() {
   const drawerOpen = useShell((s) => s.drawerOpen);
 
   return (
-    <nav
-      className={`fixed z-40 inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white/85 backdrop-blur-2xl backdrop-saturate-150 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/60 px-1.5 py-1.5 flex items-center justify-between flex-nowrap transition-all duration-300 ${
-        drawerOpen
-          ? "opacity-0 pointer-events-none translate-y-6"
-          : "opacity-100 translate-y-0"
+    <div
+      className={`fixed inset-x-0 bottom-0 z-40 flex justify-center pointer-events-none transition-[opacity,visibility] duration-300 ${
+        drawerOpen ? "opacity-0 invisible" : "opacity-100 visible"
       }`}
-      style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
-      dir="rtl"
-      aria-label="ناوبری اصلی"
+      style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
       aria-hidden={drawerOpen}
     >
-      {NAV_ITEMS.map(({ href, label, Icon }) => {
-        const active = isNavActive(pathname, href);
-        return (
-          <button
-            key={href}
-            onClick={() => router.push(href)}
-            aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-1 rounded-full transition-all active:scale-95 shrink-0 ${
-              active
-                ? "bg-[#0d58a6] text-white px-3.5 py-2 font-bold text-xs shadow-sm"
-                : "text-slate-600 px-2 py-2 font-medium text-xs hover:bg-slate-100 hover:text-slate-900"
-            }`}
-          >
-            <Icon />
-            <span className="whitespace-nowrap leading-none">{label}</span>
-          </button>
-        );
-      })}
-    </nav>
+      <nav
+        className="mj-nav-frost pointer-events-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white/80 backdrop-blur-lg rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/60 px-1.5 py-1.5 flex items-center justify-between flex-nowrap"
+        dir="rtl"
+        aria-label="ناوبری اصلی"
+      >
+        {NAV_ITEMS.map(({ href, label, Icon }) => {
+          const active = isNavActive(pathname, href);
+          return (
+            <button
+              key={href}
+              onClick={() => router.push(href)}
+              aria-current={active ? "page" : undefined}
+              className={`flex items-center gap-1 rounded-full transition-all active:scale-95 shrink-0 ${
+                active
+                  ? "bg-[#0d58a6] text-white px-3.5 py-2 font-bold text-xs shadow-sm"
+                  : "text-slate-600 px-2 py-2 font-medium text-xs hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              <Icon />
+              <span className="whitespace-nowrap leading-none">{label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
   );
 }

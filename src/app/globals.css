@@ -449,3 +449,12 @@ html {
   transform-origin: center;
   transform-box: fill-box;
 }
+
+/* پشتیبان ناوبری شناور — اگر WebView از backdrop-filter پشتیبانی نکند،
+   به‌جای شیشه تار، پس‌زمینه تقریباً مات نشان داده می‌شود تا محتوای
+   پشت ناوبری هرگز واضح و برنده دیده نشود */
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .mj-nav-frost {
+    background-color: rgba(255, 255, 255, 0.97);
+  }
+}
