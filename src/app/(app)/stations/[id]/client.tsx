@@ -9,7 +9,9 @@ import {
   exitsFor,
   getLine,
   getStation,
+  headwayAt,
   landmarksFor,
+  nextArrivalsBoth,
   toFa,
   type CrowdLevel,
   type StationDef,
@@ -31,8 +33,11 @@ interface ArrivalRow {
   headwayLabel: string;
   directions: {
     to: string;
-    nextMin: number;
-    next2Min: number;
+    nextMin: number | null;
+    next2Min: number | null;
+    nextAt: string | null;
+    next2At: string | null;
+    outOfService: boolean;
     crowd: CrowdLevel;
     crowdLabel: string;
   }[];
@@ -149,7 +154,6 @@ function StationDetail({ station }: { station: StationDef }) {
   const [isFav, setIsFav] = useState(false);
   const [favPending, setFavPending] = useState(false);
   const [arrivals, setArrivals] = useState<ArrivalRow[] | null>(null);
-  const [arrError, setArrError] = useState(false);
   const [beforeStations, setBeforeStations] = useState<BeforeStations>(2);
   const [alertOn, setAlertOn] = useState(false);
 
@@ -170,29 +174,46 @@ function StationDetail({ station }: { station: StationDef }) {
   const landmarks = useMemo(() => landmarksFor(station.id), [station.id]);
   const equipment = useMemo(() => equipmentFor(station.id), [station.id]);
 
-  /* ---------- تابلو زنده قطارها (با بروزرسانی دوره‌ای) ---------- */
+  /* ---------- تابلوی قطارهای بعدی — محاسبه محلی بر اساس جدول حرکت رسمی ----------
+     (با ساعت خودِ دستگاه کاربر محاسبه می‌شود تا دقیق باشد؛ هر ۳۰ ثانیه بروزرسانی) */
   useEffect(() => {
     let alive = true;
-    const load = async () => {
-      try {
-        const res = await fetch(`/api/arrivals?station=${id}`);
-        if (!res.ok) throw new Error();
-        const d = (await res.json()) as { arrivals?: ArrivalRow[] };
-        if (alive && d.arrivals) {
-          setArrivals(d.arrivals);
-          setArrError(false);
-        }
-      } catch {
-        if (alive) setArrError(true);
-      }
+    const build = () => {
+      const now = Date.now();
+      const d = new Date(now);
+      const nowMin = d.getHours() * 60 + d.getMinutes();
+      const rows = station.lines.map((ls) => {
+        const line = getLine(ls.lineId);
+        return {
+          lineId: line.id,
+          lineName: line.name,
+          lineNumber: line.number,
+          color: line.color,
+          textOnColor: line.textOnColor,
+          headwayLabel: toFa(headwayAt(line, nowMin)),
+          directions: nextArrivalsBoth(ls.lineId, station.id, now).map((dir) => ({
+            to: dir.to,
+            nextMin: dir.minutes[0] ?? null,
+            next2Min: dir.minutes[1] ?? null,
+            nextAt: dir.at[0] ?? null,
+            next2At: dir.at[1] ?? null,
+            outOfService: dir.outOfService,
+            crowd: dir.crowd,
+            crowdLabel: dir.crowdLabel,
+          })),
+          firstTrain: line.firstTrain,
+          lastTrain: line.lastTrain,
+        };
+      });
+      if (alive) setArrivals(rows);
     };
-    load();
-    const t = setInterval(load, 45000);
+    build();
+    const t = setInterval(build, 30000);
     return () => {
       alive = false;
       clearInterval(t);
     };
-  }, [id]);
+  }, [station]);
 
   /* ---------- وضعیت نشان ---------- */
   useEffect(() => {
@@ -238,13 +259,13 @@ function StationDetail({ station }: { station: StationDef }) {
   /* ---------- اعلام صوتی ---------- */
   const speak = useCallback(() => {
     const first = arrivals?.[0]?.directions?.[0];
-    const mins = first ? toFa(first.nextMin) : null;
-    if (!first || mins === null) {
-      announcer.announce(`ایستگاه ${station.name}`).catch(() => {});
+    if (!first || first.outOfService || first.nextMin === null) {
+      announcer.announce(`ایستگاه ${station.name}. در حال حاضر قطاری در سرویس نیست`).catch(() => {});
       return;
     }
+    const mins = first.nextMin > 90 ? `ساعت ${first.nextAt ?? ""}` : `${toFa(first.nextMin)} دقیقه`;
     announcer
-      .announce(`ایستگاه ${station.name}. قطار بعدی به سمت ${first.to}، ${mins} دقیقه`)
+      .announce(`ایستگاه ${station.name}. قطار بعدی به سمت ${first.to}، ${mins}`)
       .catch(() => {});
   }, [arrivals, announcer, station.name]);
 
@@ -389,27 +410,23 @@ function StationDetail({ station }: { station: StationDef }) {
             </button>
           </div>
 
-          {/* تابلوی لحظه‌ای */}
+          {/* تابلوی قطارهای بعدی — بر اساس جدول حرکت رسمی */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MI name="departure_board" size={20} className="text-primary" />
               <h3 className="font-bold text-xs text-on-surface">قطارهای بعدی</h3>
             </div>
             <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              بروزرسانی زنده
+              <MI name="schedule" size={12} />
+              بر اساس جدول حرکت
             </span>
           </div>
 
           {arrivals === null ? (
-            arrError ? (
-              <p className="text-[11px] text-outline py-2 text-center">دریافت اطلاعات لحظه‌ای ناموفق بود</p>
-            ) : (
-              <div className="space-y-2" aria-hidden>
-                <div className="bg-surface-container-low rounded-xl h-12 animate-pulse" />
-                <div className="bg-surface-container-low rounded-xl h-12 animate-pulse" />
-              </div>
-            )
+            <div className="space-y-2" aria-hidden>
+              <div className="bg-surface-container-low rounded-xl h-12 animate-pulse" />
+              <div className="bg-surface-container-low rounded-xl h-12 animate-pulse" />
+            </div>
           ) : (
             <div className="divide-y divide-outline-variant/30">
               {arrivals.map((a) =>
@@ -437,15 +454,23 @@ function StationDetail({ station }: { station: StationDef }) {
                           {d.crowdLabel}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-primary">
-                          {toFa(d.nextMin)} دقیقه
-                        </span>
-                        <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-on-surface-variant">
-                          {toFa(d.next2Min)} دقیقه
-                        </span>
-                        <span className="text-[9px] text-outline ms-auto">هر {toFa(a.headwayLabel)} دقیقه یک قطار</span>
-                      </div>
+                      {d.outOfService || d.nextMin === null ? (
+                        <p className="text-[10px] text-outline font-medium">
+                          سرویس امروز پایان یافته — اولین قطار فردا ساعت {toFa(a.firstTrain)}
+                        </p>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-primary">
+                            {d.nextMin > 90 ? `ساعت ${toFa(d.nextAt ?? "")}` : `${toFa(d.nextMin)} دقیقه`}
+                          </span>
+                          {d.next2Min !== null && (
+                            <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-on-surface-variant">
+                              {d.next2Min > 90 ? `ساعت ${toFa(d.next2At ?? "")}` : `${toFa(d.next2Min)} دقیقه`}
+                            </span>
+                          )}
+                          <span className="text-[9px] text-outline ms-auto">هر {toFa(a.headwayLabel)} دقیقه یک قطار</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })

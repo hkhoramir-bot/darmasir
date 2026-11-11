@@ -21,9 +21,11 @@ export interface LineDef {
   textOnColor: string;
   terminals: [string, string]; // [south/west side, north/east side] by array order
   direction: string; // شمال - جنوب
-  headway: number; // minutes
-  firstTrain: string; // 05:30
-  lastTrain: string; // 23:00
+  headway: number; // minutes — فاصله پیش‌فرض (fallback)
+  headwayPeak?: number; // فاصله حرکت در ساعات اوج — جدول رسمی ۱۴۰۴
+  headwayOff?: number; // فاصله حرکت در ساعات غیراوج — جدول رسمی ۱۴۰۴
+  firstTrain: string; // 04:30
+  lastTrain: string; // 22:30
   segmentMinutes: number; // avg travel time per adjacent hop
   badges?: string[]; // e.g. فرودگاه
   status?: "normal" | "crowded" | "delay" | "closed";
@@ -108,9 +110,11 @@ export const LINES: LineDef[] = [
     textOnColor: "#ffffff",
     terminals: ["کهریزک", "تجریش"],
     direction: "شمال - جنوب",
-    headway: 4,
-    firstTrain: "05:30",
-    lastTrain: "23:00",
+    headway: 5,
+    headwayPeak: 5,
+    headwayOff: 15,
+    firstTrain: "04:30",
+    lastTrain: "22:30",
     segmentMinutes: 2.6,
     status: "normal",
   },
@@ -123,9 +127,11 @@ export const LINES: LineDef[] = [
     textOnColor: "#ffffff",
     terminals: ["صادقیه", "فرهنگسرا"],
     direction: "غرب - شرق",
-    headway: 3.5,
-    firstTrain: "05:45",
-    lastTrain: "22:45",
+    headway: 5,
+    headwayPeak: 5,
+    headwayOff: 15,
+    firstTrain: "04:30",
+    lastTrain: "22:30",
     segmentMinutes: 2.1,
     status: "normal",
   },
@@ -139,7 +145,9 @@ export const LINES: LineDef[] = [
     terminals: ["آزادگان", "قائم"],
     direction: "شمال‌شرق - جنوب‌غرب",
     headway: 5,
-    firstTrain: "06:00",
+    headwayPeak: 5,
+    headwayOff: 10,
+    firstTrain: "04:30",
     lastTrain: "22:30",
     segmentMinutes: 2.1,
     status: "crowded",
@@ -154,9 +162,11 @@ export const LINES: LineDef[] = [
     textOnColor: "#1a1a1a",
     terminals: ["علامه جعفری", "شهید کلاهدوز"],
     direction: "غرب - شرق",
-    headway: 4.5,
-    firstTrain: "05:40",
-    lastTrain: "22:50",
+    headway: 5,
+    headwayPeak: 5,
+    headwayOff: 15,
+    firstTrain: "04:30",
+    lastTrain: "22:30",
     segmentMinutes: 2,
     badges: ["فرودگاه"],
     status: "normal",
@@ -171,8 +181,10 @@ export const LINES: LineDef[] = [
     terminals: ["صادقیه", "شهید قاسم سلیمانی"],
     direction: "تهران - کرج",
     headway: 10,
-    firstTrain: "06:15",
-    lastTrain: "22:15",
+    headwayPeak: 10,
+    headwayOff: 15,
+    firstTrain: "04:30",
+    lastTrain: "22:30",
     segmentMinutes: 4,
     status: "delay",
     statusNote: "تأخیر ۸ دقیقه‌ای در حرکت قطارها",
@@ -186,8 +198,10 @@ export const LINES: LineDef[] = [
     textOnColor: "#ffffff",
     terminals: ["شهدای دولت‌آباد", "شهید آرمان علی‌وردی"],
     direction: "جنوب‌شرق - شمال‌غرب",
-    headway: 7,
-    firstTrain: "06:00",
+    headway: 10,
+    headwayPeak: 10,
+    headwayOff: 15,
+    firstTrain: "04:30",
     lastTrain: "22:30",
     segmentMinutes: 2,
     status: "normal",
@@ -201,9 +215,11 @@ export const LINES: LineDef[] = [
     textOnColor: "#ffffff",
     terminals: ["ورزشگاه تختی", "میدان کتاب"],
     direction: "جنوب‌شرق - شمال‌غرب",
-    headway: 6,
-    firstTrain: "06:00",
-    lastTrain: "22:30",
+    headway: 10,
+    headwayPeak: 10,
+    headwayOff: 15,
+    firstTrain: "04:30",
+    lastTrain: "22:00",
     segmentMinutes: 2,
     status: "normal",
   },
@@ -217,6 +233,8 @@ export const LINES: LineDef[] = [
     terminals: ["آیت‌الله طالقانی", "چهل‌وپنج متری گلشهر"],
     direction: "شمال - جنوب",
     headway: 15,
+    headwayPeak: 15,
+    headwayOff: 15,
     firstTrain: "06:30",
     lastTrain: "21:30",
     segmentMinutes: 3.5,
@@ -232,6 +250,8 @@ export const LINES: LineDef[] = [
     terminals: ["وکیل‌آباد", "فرودگاه شهید هاشمی‌نژاد"],
     direction: "جنوب‌غرب - شمال‌شرق",
     headway: 6,
+    headwayPeak: 6,
+    headwayOff: 10,
     firstTrain: "06:00",
     lastTrain: "22:00",
     segmentMinutes: 2,
@@ -247,6 +267,8 @@ export const LINES: LineDef[] = [
     terminals: ["طبرسی", "شهید فکوری"],
     direction: "شمال‌غرب - جنوب‌شرق",
     headway: 10,
+    headwayPeak: 10,
+    headwayOff: 15,
     firstTrain: "06:15",
     lastTrain: "21:45",
     segmentMinutes: 2,
@@ -262,6 +284,8 @@ export const LINES: LineDef[] = [
     terminals: ["قدس", "دفاع مقدس"],
     direction: "شمال - جنوب",
     headway: 12,
+    headwayPeak: 12,
+    headwayOff: 15,
     firstTrain: "06:30",
     lastTrain: "21:30",
     segmentMinutes: 2.2,
@@ -588,31 +612,111 @@ export function faMoney(n: number): string {
   return toFa(n.toLocaleString("en-US"));
 }
 
-/* ------------------------------ Simulated live ops ------------------------------ */
+/* ------------------------------ موتور جدول حرکت رسمی (۱۴۰۴) ------------------------------ */
+/**
+ * مترو تهران فید لحظه‌ای عمومی ندارد؛ زمان ورود قطارها بر اساس
+ * جدول حرکت رسمی (ساعت شروع/پایان سرویس + فاصله حرکت اوج/غیراوج)
+ * و زمان رفت‌وآمد بین ایستگاه‌ها به‌صورت قطعی محاسبه می‌شود.
+ */
+
+/** بازه‌های ساعات اوج (دقیقه از نیمه‌شب) — صبح و عصر */
+const PEAK_WINDOWS: [number, number][] = [
+  [420, 570], // ۷:۰۰ تا ۹:۳۰
+  [990, 1140], // ۱۶:۳۰ تا ۱۹:۰۰
+];
+
+/** فاصله حرکت قطارها در یک لحظه از روز — اوج / غیراوج */
+export function headwayAt(line: LineDef, mins: number): number {
+  const peak = PEAK_WINDOWS.some(([a, b]) => mins >= a && mins < b);
+  return peak ? (line.headwayPeak ?? line.headway) : (line.headwayOff ?? line.headway);
+}
+
+/**
+ * ساعت شروع سرویس بر اساس روز هفته (الگوی رسمی ۱۴۰۴):
+ * شنبه تا چهارشنبه: ساعت پایه خط | پنجشنبه: ۶۰ دقیقه دیرتر | جمعه: ۹۰ دقیقه دیرتر
+ */
+export function serviceStartMin(line: LineDef, d = new Date()): number {
+  const [fh, fm] = line.firstTrain.split(":").map(Number);
+  let start = fh * 60 + fm;
+  const day = d.getDay(); // ۰ یکشنبه … ۳ چهارشنبه، ۴ پنجشنبه، ۵ جمعه، ۶ شنبه
+  if (day === 4) start += 60;
+  else if (day === 5) start += 90;
+  return start;
+}
+
+/** ساعت حرکت آخرین قطار از سرخط */
+export function serviceEndMin(line: LineDef): number {
+  const [lh, lm] = line.lastTrain.split(":").map(Number);
+  return lh * 60 + lm;
+}
 
 /** آیا الان داخل ساعات سرویس‌دهی خط هستیم؟ */
 export function isWithinService(line: { firstTrain: string; lastTrain: string }, d = new Date()): boolean {
-  const [fh, fm] = line.firstTrain.split(":").map(Number);
-  const [lh, lm] = line.lastTrain.split(":").map(Number);
   const mins = d.getHours() * 60 + d.getMinutes();
-  return mins >= fh * 60 + fm && mins <= lh * 60 + lm;
+  return mins >= serviceStartMin(line as LineDef, d) && mins <= serviceEndMin(line as LineDef);
 }
 
-/** محاسبه دقایق تا دو قطار بعدی در یک جهت مشخص */
-function nextArrivalsDir(lineId: string, stationId: string, salt: string, now: number): number[] {
+/** زمان‌های حرکت قطارها از سرخط با فاصله اوج/غیراوج */
+function departureGrid(line: LineDef, fromMin: number, toMin: number): number[] {
+  const out: number[] = [];
+  let t = fromMin;
+  while (t <= toMin + 1e-9) {
+    out.push(t);
+    t += headwayAt(line, t);
+  }
+  return out;
+}
+
+const fmtClock = (m: number) => {
+  const mm = Math.round(m) % 1440;
+  return `${String(Math.floor(mm / 60)).padStart(2, "0")}:${String(mm % 60).padStart(2, "0")}`;
+};
+
+export interface ArrivalDirDetail {
+  /** دقایق تا قطار بعدی و پس از آن */
+  minutes: number[];
+  /** ساعت رسیدن دو قطار بعدی (HH:MM) */
+  at: string[];
+  /** خارج از ساعات سرویس */
+  outOfService: boolean;
+}
+
+/** دو قطار بعدی یک ایستگاه در یک جهت مشخص — محاسبه قطعی از جدول حرکت */
+function scheduleArrivalsDir(
+  lineId: string,
+  stationId: string,
+  dir: 0 | 1,
+  now: number
+): ArrivalDirDetail {
   const line = getLine(lineId);
-  const headwaySec = Math.round(line.headway * 60);
-  const phase = hash(stationId + lineId + salt + new Date(now).getHours()) % headwaySec;
-  const elapsed = Math.floor(now / 1000) % headwaySec;
-  let next = phase - elapsed;
-  while (next <= 0) next += headwaySec;
-  const late = line.status === "delay" ? 8 * 60 : 0;
-  return [next + late, next + headwaySec + late];
+  const list = stationsOfLine(lineId);
+  const idx = list.findIndex((s) => s.id === stationId);
+  if (idx < 0) return { minutes: [], at: [], outOfService: true };
+
+  const d = new Date(now);
+  const nowMin = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+  const start = serviceStartMin(line, d);
+  const end = serviceEndMin(line);
+  // تا ۴۵ دقیقه پس از پایان، رسیدن آخرین قطارها به ایستگاه‌های انتهایی ادامه دارد
+  if (nowMin < start || nowMin > end + 45) {
+    return { minutes: [], at: [], outOfService: true };
+  }
+
+  const hops = dir === 0 ? idx : list.length - 1 - idx;
+  const travel = hops * line.segmentMinutes;
+  // ۴۰ ثانیه توقف در ایستگاه برای سوار و پیاده شدن
+  const deps = departureGrid(line, start, end).filter((dep) => dep + travel >= nowMin + 0.6);
+  const next2 = deps.slice(0, 2);
+  return {
+    minutes: next2.map((dep) => Math.max(1, Math.round(dep + travel - nowMin))),
+    at: next2.map((dep) => fmtClock(dep + travel)),
+    outOfService: false,
+  };
 }
 
 /** ورودهای بعدی به سمت terminals[1] — سازگاری با نسخه قبل */
 export function nextArrivals(lineId: string, stationId: string, now = Date.now()): number[] {
-  return nextArrivalsDir(lineId, stationId, "", now);
+  return scheduleArrivalsDir(lineId, stationId, 0, now).minutes;
 }
 
 export interface DirectionalArrival {
@@ -620,12 +724,16 @@ export interface DirectionalArrival {
   to: string;
   /** دقایق تا قطار بعدی و قطار پس از آن */
   minutes: number[];
+  /** ساعت رسیدن دو قطار بعدی (HH:MM) */
+  at: string[];
+  /** خارج از ساعات سرویس */
+  outOfService: boolean;
   crowd: CrowdLevel;
   crowdLabel: string;
 }
 
 /**
- * ورودهای بعدی به هر دو جهت — با نام درستِ مقصد هر جهت.
+ * ورودهای بعدی به هر دو جهت — با نام درستِ مقصد هر جهت و بر اساس جدول حرکت رسمی.
  * ایستگاه سرخط فقط یک جهت دارد؛ ایستگاه میانی هر دو جهت.
  */
 export function nextArrivalsBoth(
@@ -639,16 +747,23 @@ export function nextArrivalsBoth(
   if (idx < 0) return [];
 
   const out: DirectionalArrival[] = [];
-  const mk = (to: string, salt: string): DirectionalArrival => {
-    const minutes = nextArrivalsDir(lineId, stationId, salt, now);
+  const mk = (to: string, dir: 0 | 1): DirectionalArrival => {
+    const r = scheduleArrivalsDir(lineId, stationId, dir, now);
     const crowd = crowdingNow(lineId, new Date(now));
-    return { to, minutes, crowd, crowdLabel: CROWD_LABEL[crowd] };
+    return {
+      to,
+      minutes: r.minutes,
+      at: r.at,
+      outOfService: r.outOfService,
+      crowd,
+      crowdLabel: CROWD_LABEL[crowd],
+    };
   };
 
   // به سمت terminals[1] — مگر این ایستگاه خودش همان سرخط باشد
-  if (idx < list.length - 1) out.push(mk(line.terminals[1], ""));
+  if (idx < list.length - 1) out.push(mk(line.terminals[1], 0));
   // به سمت terminals[0] — مگر این ایستگاه خودش همان سرخط باشد
-  if (idx > 0) out.push(mk(line.terminals[0], "b"));
+  if (idx > 0) out.push(mk(line.terminals[0], 1));
   return out;
 }
 
@@ -686,27 +801,26 @@ export interface TimetableRow {
   headwayOff: string;
 }
 
-export function timetableFor(lineId: string): TimetableRow[] {
+export function timetableFor(lineId: string, d = new Date()): TimetableRow[] {
   const line = getLine(lineId);
-  const fmt = (t: string, add = 0) => {
-    const [h, m] = t.split(":").map(Number);
-    const mm = m + add;
-    return toFa(`${String(h + Math.floor(mm / 60)).padStart(2, "0")}:${String(mm % 60).padStart(2, "0")}`);
-  };
+  const start = serviceStartMin(line, d);
+  const fmtM = (m: number) => toFa(fmtClock(m));
+  const peak = line.headwayPeak ?? line.headway;
+  const off = line.headwayOff ?? line.headway;
   return [
     {
       direction: `به سمت ${line.terminals[1]}`,
-      first: fmt(line.firstTrain),
-      last: fmt(line.lastTrain),
-      headwayPeak: toFa(`${line.headway} دقیقه`),
-      headwayOff: toFa(`${Math.round(line.headway * 1.6 * 2) / 2} دقیقه`),
+      first: fmtM(start),
+      last: toFa(line.lastTrain),
+      headwayPeak: toFa(`${peak} دقیقه`),
+      headwayOff: toFa(`${off} دقیقه`),
     },
     {
       direction: `به سمت ${line.terminals[0]}`,
-      first: fmt(line.firstTrain, 5),
-      last: fmt(line.lastTrain, -6),
-      headwayPeak: toFa(`${Math.round(line.headway * 1.15 * 2) / 2} دقیقه`),
-      headwayOff: toFa(`${Math.round(line.headway * 1.8 * 2) / 2} دقیقه`),
+      first: fmtM(start + 5),
+      last: fmtM(serviceEndMin(line) - 6),
+      headwayPeak: toFa(`${peak} دقیقه`),
+      headwayOff: toFa(`${off} دقیقه`),
     },
   ];
 }

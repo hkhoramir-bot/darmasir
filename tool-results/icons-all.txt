@@ -1,6 +1,7 @@
 accessible
 accessible_forward
 add
+add_circle
 alarm
 alt_route
 arrow_back
@@ -13,6 +14,7 @@ bookmarks
 calendar_month
 campaign
 chat_bubble
+check
 check_circle
 chevron_left
 child_care
@@ -77,6 +79,7 @@ timeline
 touch_app
 train
 transfer_within_a_station
+travel_explore
 trending_up
 trip_origin
 tune

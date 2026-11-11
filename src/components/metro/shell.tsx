@@ -96,7 +96,7 @@ export function AppBar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-4 transition-colors bg-surface">
+    <header className="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-4 transition-colors bg-surface/85 backdrop-blur-xl backdrop-saturate-150">
       {/* راست: منو + لوگو + عنوان */}
       <div className="flex items-center gap-3">
         <button
@@ -167,6 +167,7 @@ const DRAWER_LINKS: { label: string; icon: string; href: string }[] = [
   { label: "خطوط و نقشه", icon: "route", href: "/lines" },
   { label: "ایستگاه‌ها", icon: "directions_subway", href: "/stations" },
   { label: "نقشه تعاملی شبکه", icon: "map", href: "/map" },
+  { label: "اشیای گمشده و پیدا شده", icon: "travel_explore", href: "/lost" },
   { label: "تاریخچه سفر", icon: "history", href: "/history" },
   { label: "تنظیمات", icon: "settings", href: "/settings" },
 ];
@@ -250,7 +251,7 @@ export function MenuDrawer() {
       />
       {/* پنل */}
       <aside
-        className={`absolute top-0 right-0 h-full w-[min(18rem,85vw)] bg-surface-container-lowest shadow-2xl p-5 transform transition-transform duration-300 flex flex-col justify-between z-10 ${
+        className={`absolute top-0 right-0 h-full w-[min(18rem,85vw)] bg-surface-container-lowest/95 backdrop-blur-2xl shadow-2xl p-5 transform transition-transform duration-300 flex flex-col justify-between z-10 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -370,7 +371,7 @@ export function PageHeader({
 }) {
   const router = useRouter();
   return (
-    <header className="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-2 transition-colors bg-surface">
+    <header className="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-2 transition-colors bg-surface/85 backdrop-blur-xl backdrop-saturate-150">
       <button
         aria-label="بازگشت"
         onClick={() => router.back()}
@@ -434,7 +435,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className={`fixed z-40 inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 px-1.5 py-1.5 flex items-center justify-between flex-nowrap transition-all duration-300 ${
+      className={`fixed z-40 inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-white/85 backdrop-blur-2xl backdrop-saturate-150 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-200/60 px-1.5 py-1.5 flex items-center justify-between flex-nowrap transition-all duration-300 ${
         drawerOpen
           ? "opacity-0 pointer-events-none translate-y-6"
           : "opacity-100 translate-y-0"

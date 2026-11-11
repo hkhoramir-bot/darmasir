@@ -52,3 +52,14 @@ model StationReport {
   note          String?
   createdAt     DateTime @default(now())
 }
+
+// اشیای گمشده و پیدا شده
+model LostItem {
+  id          String   @id @default(cuid())
+  kind        String // lost | found
+  title       String
+  description String?
+  stationId   String
+  contact     String?
+  createdAt   DateTime @default(now())
+}
