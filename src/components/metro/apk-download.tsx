@@ -32,7 +32,7 @@ export function ApkDownloadCard() {
       <span className="flex flex-col items-start min-w-0">
         <span className="text-xs font-bold">دانلود نسخه اندروید</span>
         <span className="text-[10px] text-white/80">
-          فایل APK — {toFa("32")} مگابایت • نصب مستقیم روی گوشی
+          فایل APK — {toFa("12")} مگابایت • نصب مستقیم روی گوشی
         </span>
       </span>
       <svg className="w-4 h-4 mr-auto shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
