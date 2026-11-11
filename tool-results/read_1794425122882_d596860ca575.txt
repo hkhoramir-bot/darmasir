@@ -1,0 +1,772 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useMemo, useState } from "react";
+     4→import { useParams, useRouter } from "next/navigation";
+     5→import {
+     6→  amenitiesLabels,
+     7→  CROWD_COLOR,
+     8→  equipmentFor,
+     9→  exitsFor,
+    10→  getLine,
+    11→  getStation,
+    12→  headwayAt,
+    13→  landmarksFor,
+    14→  nextArrivalsBoth,
+    15→  toFa,
+    16→  type CrowdLevel,
+    17→  type StationDef,
+    18→} from "@/lib/metro-data";
+    19→import { MI, PageHeader } from "@/components/metro/shell";
+    20→import { useAnnouncer } from "@/components/metro/voice";
+    21→import { useToast } from "@/hooks/use-toast";
+    22→
+    23→/* ============================================================
+    24→   جزئیات ایستگاه — امکانات، خروجی‌ها، هشدار مقصد و گزارش تجهیزات
+    25→   ============================================================ */
+    26→
+    27→interface ArrivalRow {
+    28→  lineId: string;
+    29→  lineName: string;
+    30→  lineNumber: number;
+    31→  color: string;
+    32→  textOnColor: string;
+    33→  headwayLabel: string;
+    34→  directions: {
+    35→    to: string;
+    36→    nextMin: number | null;
+    37→    next2Min: number | null;
+    38→    nextAt: string | null;
+    39→    next2At: string | null;
+    40→    outOfService: boolean;
+    41→    crowd: CrowdLevel;
+    42→    crowdLabel: string;
+    43→  }[];
+    44→  firstTrain: string;
+    45→  lastTrain: string;
+    46→}
+    47→
+    48→interface ReportRow {
+    49→  id: string;
+    50→  stationId: string;
+    51→  equipmentType: string;
+    52→  exitLabel: string;
+    53→  status: string;
+    54→  note: string | null;
+    55→  createdAt: string;
+    56→}
+    57→
+    58→type TabKey = "amenities" | "exits" | "alert" | "report";
+    59→type EquipmentType = "escalator" | "elevator" | "ramp";
+    60→type ReportStatus = "working" | "malfunction" | "under_maintenance";
+    61→type BeforeStations = 2 | 3 | 4;
+    62→
+    63→const TABS: { key: TabKey; label: string }[] = [
+    64→  { key: "amenities", label: "امکانات" },
+    65→  { key: "exits", label: "خروجی‌ها" },
+    66→  { key: "alert", label: "هشدار مقصد" },
+    67→  { key: "report", label: "گزارش" },
+    68→];
+    69→
+    70→const EQ_OPTIONS: { key: EquipmentType; label: string; icon: string }[] = [
+    71→  { key: "escalator", label: "پله‌برقی", icon: "escalator" },
+    72→  { key: "elevator", label: "آسانسور", icon: "elevator" },
+    73→  { key: "ramp", label: "رمپ متحرک", icon: "accessible_forward" },
+    74→];
+    75→
+    76→const STATUS_OPTIONS: {
+    77→  key: ReportStatus;
+    78→  label: string;
+    79→  dot: string;
+    80→  active: string;
+    81→}[] = [
+    82→  { key: "working", label: "سالم", dot: "bg-emerald-500", active: "bg-emerald-50 text-emerald-800 border-emerald-300" },
+    83→  { key: "malfunction", label: "خراب", dot: "bg-red-500", active: "bg-red-50 text-red-800 border-red-300" },
+    84→  {
+    85→    key: "under_maintenance",
+    86→    label: "در حال تعمیر",
+    87→    dot: "bg-amber-500",
+    88→    active: "bg-amber-50 text-amber-800 border-amber-300",
+    89→  },
+    90→];
+    91→
+    92→/* برچسب گزارش‌های ذخیره‌شده */
+    93→const SAVED_TYPE_LABEL: Record<string, string> = {
+    94→  escalator: "پله‌برقی",
+    95→  elevator: "آسانسور",
+    96→  ramp: "رمپ متحرک",
+    97→};
+    98→const SAVED_STATUS_LABEL: Record<string, string> = {
+    99→  working: "سالم",
+   100→  malfunction: "خراب",
+   101→  under_maintenance: "در حال تعمیر",
+   102→};
+   103→const SAVED_STATUS_DOT: Record<string, string> = {
+   104→  working: "bg-emerald-500",
+   105→  malfunction: "bg-red-500",
+   106→  under_maintenance: "bg-amber-500",
+   107→};
+   108→
+   109→/* ------------------------- ایستگاه یافت نشد ------------------------- */
+   110→function NotFound() {
+   111→  const router = useRouter();
+   112→  return (
+   113→    <>
+   114→      <PageHeader title="ایستگاه یافت نشد" />
+   115→      <main className="flex-1 w-full px-4 pt-3 pb-28">
+   116→        <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/40 shadow-sm flex flex-col items-center text-center gap-3 mt-10">
+   117→          <div className="w-14 h-14 rounded-full bg-error-container flex items-center justify-center text-error shrink-0">
+   118→            <MI name="search_off" size={28} />
+   119→          </div>
+   120→          <h2 className="font-bold text-sm text-on-surface">ایستگاه یافت نشد</h2>
+   121→          <p className="text-xs text-outline leading-6">
+   122→            ایستگاه مورد نظر در شبکه مترو وجود ندارد یا آدرس وارد شده اشتباه است.
+   123→          </p>
+   124→          <button
+   125→            type="button"
+   126→            onClick={() => router.push("/stations")}
+   127→            className="bg-primary-container text-white rounded-xl font-bold text-xs py-2.5 px-6 shadow-sm active:scale-[0.98] transition-all"
+   128→          >
+   129→            مشاهده همه ایستگاه‌ها
+   130→          </button>
+   131→        </div>
+   132→      </main>
+   133→    </>
+   134→  );
+   135→}
+   136→
+   137→/* ------------------------- صفحه اصلی ------------------------- */
+   138→export default function StationDetailPage() {
+   139→  const params = useParams<{ id: string }>();
+   140→  const id = params.id;
+   141→  const station = useMemo(() => getStation(id), [id]);
+   142→
+   143→  if (!station) return <NotFound />;
+   144→  return <StationDetail key={id} station={station} />;
+   145→}
+   146→
+   147→function StationDetail({ station }: { station: StationDef }) {
+   148→  const router = useRouter();
+   149→  const { toast } = useToast();
+   150→  const announcer = useAnnouncer();
+   151→  const id = station.id;
+   152→
+   153→  const [tab, setTab] = useState<TabKey>("amenities");
+   154→  const [isFav, setIsFav] = useState(false);
+   155→  const [favPending, setFavPending] = useState(false);
+   156→  const [arrivals, setArrivals] = useState<ArrivalRow[] | null>(null);
+   157→  const [beforeStations, setBeforeStations] = useState<BeforeStations>(2);
+   158→  const [alertOn, setAlertOn] = useState(false);
+   159→
+   160→  /* فرم گزارش */
+   161→  const [eqType, setEqType] = useState<EquipmentType | null>(null);
+   162→  const [status, setStatus] = useState<ReportStatus | null>(null);
+   163→  const [note, setNote] = useState("");
+   164→  const [submitting, setSubmitting] = useState(false);
+   165→  const [reports, setReports] = useState<ReportRow[]>([]);
+   166→
+   167→  const subtitle =
+   168→    station.lines.length > 1
+   169→      ? `تقاطع ${station.lines.map((l) => toFa(getLine(l.lineId).number)).join(" و ")}`
+   170→      : `خط ${toFa(getLine(station.lines[0].lineId).number)}`;
+   171→
+   172→  const amenities = useMemo(() => amenitiesLabels(station.amenities), [station.amenities]);
+   173→  const exits = useMemo(() => exitsFor(station.id), [station.id]);
+   174→  const landmarks = useMemo(() => landmarksFor(station.id), [station.id]);
+   175→  const equipment = useMemo(() => equipmentFor(station.id), [station.id]);
+   176→
+   177→  /* ---------- تابلوی قطارهای بعدی — محاسبه محلی بر اساس جدول حرکت رسمی ----------
+   178→     (با ساعت خودِ دستگاه کاربر محاسبه می‌شود تا دقیق باشد؛ هر ۳۰ ثانیه بروزرسانی) */
+   179→  useEffect(() => {
+   180→    let alive = true;
+   181→    const build = () => {
+   182→      const now = Date.now();
+   183→      const d = new Date(now);
+   184→      const nowMin = d.getHours() * 60 + d.getMinutes();
+   185→      const rows = station.lines.map((ls) => {
+   186→        const line = getLine(ls.lineId);
+   187→        return {
+   188→          lineId: line.id,
+   189→          lineName: line.name,
+   190→          lineNumber: line.number,
+   191→          color: line.color,
+   192→          textOnColor: line.textOnColor,
+   193→          headwayLabel: toFa(headwayAt(line, nowMin)),
+   194→          directions: nextArrivalsBoth(ls.lineId, station.id, now).map((dir) => ({
+   195→            to: dir.to,
+   196→            nextMin: dir.minutes[0] ?? null,
+   197→            next2Min: dir.minutes[1] ?? null,
+   198→            nextAt: dir.at[0] ?? null,
+   199→            next2At: dir.at[1] ?? null,
+   200→            outOfService: dir.outOfService,
+   201→            crowd: dir.crowd,
+   202→            crowdLabel: dir.crowdLabel,
+   203→          })),
+   204→          firstTrain: line.firstTrain,
+   205→          lastTrain: line.lastTrain,
+   206→        };
+   207→      });
+   208→      if (alive) setArrivals(rows);
+   209→    };
+   210→    build();
+   211→    const t = setInterval(build, 30000);
+   212→    return () => {
+   213→      alive = false;
+   214→      clearInterval(t);
+   215→    };
+   216→  }, [station]);
+   217→
+   218→  /* ---------- وضعیت نشان ---------- */
+   219→  useEffect(() => {
+   220→    let alive = true;
+   221→    fetch("/api/favorites")
+   222→      .then((r) => r.json())
+   223→      .then((d: { ids?: string[] }) => {
+   224→        if (alive) setIsFav(!!d.ids?.includes(id));
+   225→      })
+   226→      .catch(() => {});
+   227→    return () => {
+   228→      alive = false;
+   229→    };
+   230→  }, [id]);
+   231→
+   232→  const toggleFav = async () => {
+   233→    if (favPending) return;
+   234→    setFavPending(true);
+   235→    const next = !isFav;
+   236→    setIsFav(next);
+   237→    try {
+   238→      if (next) {
+   239→        const res = await fetch("/api/favorites", {
+   240→          method: "POST",
+   241→          headers: { "Content-Type": "application/json" },
+   242→          body: JSON.stringify({ stationId: id }),
+   243→        });
+   244→        if (!res.ok) throw new Error();
+   245→        toast({ title: "به نشان‌ها اضافه شد", description: `${station.name} به فهرست نشان‌شده‌ها اضافه شد` });
+   246→      } else {
+   247→        const res = await fetch(`/api/favorites?stationId=${id}`, { method: "DELETE" });
+   248→        if (!res.ok) throw new Error();
+   249→        toast({ title: "از نشان‌ها حذف شد", description: `${station.name} از فهرست نشان‌شده‌ها حذف شد` });
+   250→      }
+   251→    } catch {
+   252→      setIsFav(!next);
+   253→      toast({ title: "خطا در ارتباط با سرور", description: "لطفاً دوباره تلاش کنید" });
+   254→    } finally {
+   255→      setFavPending(false);
+   256→    }
+   257→  };
+   258→
+   259→  /* ---------- اعلام صوتی ---------- */
+   260→  const speak = useCallback(() => {
+   261→    const first = arrivals?.[0]?.directions?.[0];
+   262→    if (!first || first.outOfService || first.nextMin === null) {
+   263→      announcer.announce(`ایستگاه ${station.name}. در حال حاضر قطاری در سرویس نیست`).catch(() => {});
+   264→      return;
+   265→    }
+   266→    const mins = first.nextMin > 90 ? `ساعت ${first.nextAt ?? ""}` : `${toFa(first.nextMin)} دقیقه`;
+   267→    announcer
+   268→      .announce(`ایستگاه ${station.name}. قطار بعدی به سمت ${first.to}، ${mins}`)
+   269→      .catch(() => {});
+   270→  }, [arrivals, announcer, station.name]);
+   271→
+   272→  /* ---------- هشدار مقصد (بیدارباش هوشمند) ---------- */
+   273→  useEffect(() => {
+   274→    try {
+   275→      const raw = localStorage.getItem("metrojo-alert");
+   276→      if (!raw) return;
+   277→      const a = JSON.parse(raw) as { stationId?: string; beforeStations?: number };
+   278→      if (a.stationId === id) {
+   279→        setAlertOn(true);
+   280→        if (a.beforeStations === 2 || a.beforeStations === 3 || a.beforeStations === 4) {
+   281→          setBeforeStations(a.beforeStations);
+   282→        }
+   283→      }
+   284→    } catch {}
+   285→  }, [id]);
+   286→
+   287→  const saveAlert = (on: boolean, before: BeforeStations) => {
+   288→    try {
+   289→      if (on) {
+   290→        localStorage.setItem(
+   291→          "metrojo-alert",
+   292→          JSON.stringify({ stationId: id, stationName: station.name, beforeStations: before })
+   293→        );
+   294→      } else {
+   295→        localStorage.removeItem("metrojo-alert");
+   296→      }
+   297→    } catch {}
+   298→  };
+   299→
+   300→  const pickBefore = (n: BeforeStations) => {
+   301→    setBeforeStations(n);
+   302→    if (alertOn) {
+   303→      saveAlert(true, n);
+   304→      toast({ title: "تنظیم هشدار بروزرسانی شد", description: `${toFa(n)} ایستگاه مانده به مقصد بیدار می‌شوید` });
+   305→    }
+   306→  };
+   307→
+   308→  const toggleAlert = () => {
+   309→    const next = !alertOn;
+   310→    setAlertOn(next);
+   311→    saveAlert(next, beforeStations);
+   312→    if (next) {
+   313→      toast({ title: "هشدار مقصد فعال شد", description: `${toFa(beforeStations)} ایستگاه مانده به ${station.name} بیدار می‌شوید` });
+   314→      announcer
+   315→        .announce(`هشدار مقصد فعال شد. ${toFa(beforeStations)} ایستگاه مانده به مقصد بیدار می‌شوید.`)
+   316→        .catch(() => {});
+   317→    } else {
+   318→      toast({ title: "هشدار مقصد غیرفعال شد", description: "می‌توانید هر زمان دوباره فعال کنید" });
+   319→    }
+   320→  };
+   321→
+   322→  /* ---------- گزارش تجهیزات ---------- */
+   323→  useEffect(() => {
+   324→    let alive = true;
+   325→    fetch(`/api/reports?station=${id}`)
+   326→      .then((r) => r.json())
+   327→      .then((d: { reports?: ReportRow[] }) => {
+   328→        if (alive) setReports(d.reports ?? []);
+   329→      })
+   330→      .catch(() => {});
+   331→    return () => {
+   332→      alive = false;
+   333→    };
+   334→  }, [id]);
+   335→
+   336→  const submitReport = async () => {
+   337→    if (!eqType || !status || submitting) return;
+   338→    setSubmitting(true);
+   339→    try {
+   340→      const res = await fetch("/api/reports", {
+   341→        method: "POST",
+   342→        headers: { "Content-Type": "application/json" },
+   343→        body: JSON.stringify({
+   344→          stationId: id,
+   345→          equipmentType: eqType,
+   346→          status,
+   347→          note: note.trim() ? note.trim() : undefined,
+   348→        }),
+   349→      });
+   350→      if (!res.ok) throw new Error();
+   351→      toast({ title: "گزارش شما ثبت شد. سپاس از همکاری" });
+   352→      setEqType(null);
+   353→      setStatus(null);
+   354→      setNote("");
+   355→      const r = await fetch(`/api/reports?station=${id}`);
+   356→      const d = (await r.json()) as { reports?: ReportRow[] };
+   357→      setReports(d.reports ?? []);
+   358→    } catch {
+   359→      toast({ title: "ثبت گزارش ناموفق بود", description: "اتصال اینترنت را بررسی و دوباره تلاش کنید" });
+   360→    } finally {
+   361→      setSubmitting(false);
+   362→    }
+   363→  };
+   364→
+   365→  return (
+   366→    <>
+   367→      <PageHeader
+   368→        title={station.name}
+   369→        subtitle={subtitle}
+   370→        actions={
+   371→          <button
+   372→            type="button"
+   373→            aria-label={isFav ? "حذف از نشان‌ها" : "افزودن به نشان‌ها"}
+   374→            aria-pressed={isFav}
+   375→            onClick={toggleFav}
+   376→            className={`w-10 h-10 flex items-center justify-center rounded-full active:scale-95 transition-all ${
+   377→              isFav ? "text-amber-500" : "text-outline"
+   378→            }`}
+   379→          >
+   380→            <MI name="star" size={22} fill={isFav} />
+   381→          </button>
+   382→        }
+   383→      />
+   384→
+   385→      <main className="flex-1 w-full px-4 pt-3 pb-28 space-y-4">
+   386→        {/* ================= کارت اطلاعات و تابلوی زنده ================= */}
+   387→        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   388→          <div className="flex items-center justify-between gap-2">
+   389→            <div className="flex flex-wrap items-center gap-1.5">
+   390→              {station.lines.map((ls) => {
+   391→                const line = getLine(ls.lineId);
+   392→                return (
+   393→                  <span
+   394→                    key={ls.lineId}
+   395→                    className="rounded-lg px-1.5 py-1 text-[10px] font-bold shadow-sm"
+   396→                    style={{ backgroundColor: line.color, color: line.textOnColor }}
+   397→                  >
+   398→                    خط {toFa(line.number)}
+   399→                  </span>
+   400→                );
+   401→              })}
+   402→            </div>
+   403→            <button
+   404→              type="button"
+   405→              onClick={speak}
+   406→              aria-label="اعلام صوتی اطلاعات ایستگاه"
+   407→              className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center active:scale-95 transition-all shrink-0"
+   408→            >
+   409→              <MI name="volume_up" size={18} />
+   410→            </button>
+   411→          </div>
+   412→
+   413→          {/* تابلوی قطارهای بعدی — بر اساس جدول حرکت رسمی */}
+   414→          <div className="flex items-center justify-between">
+   415→            <div className="flex items-center gap-2">
+   416→              <MI name="departure_board" size={20} className="text-primary" />
+   417→              <h3 className="font-bold text-xs text-on-surface">قطارهای بعدی</h3>
+   418→            </div>
+   419→            <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+   420→              <MI name="schedule" size={12} />
+   421→              بر اساس جدول حرکت
+   422→            </span>
+   423→          </div>
+   424→
+   425→          {arrivals === null ? (
+   426→            <div className="space-y-2" aria-hidden>
+   427→              <div className="bg-surface-container-low rounded-xl h-12 animate-pulse" />
+   428→              <div className="bg-surface-container-low rounded-xl h-12 animate-pulse" />
+   429→            </div>
+   430→          ) : (
+   431→            <div className="divide-y divide-outline-variant/30">
+   432→              {arrivals.map((a) =>
+   433→                a.directions.map((d) => {
+   434→                  const c = CROWD_COLOR[d.crowd];
+   435→                  return (
+   436→                    <div key={`${a.lineId}-${d.to}`} className="py-2.5 space-y-1.5 first:pt-0 last:pb-0">
+   437→                      <div className="flex items-center justify-between gap-2">
+   438→                        <div className="flex items-center gap-1.5 min-w-0">
+   439→                          <span
+   440→                            className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0"
+   441→                            style={{ backgroundColor: a.color, color: a.textOnColor }}
+   442→                          >
+   443→                            {toFa(a.lineNumber)}
+   444→                          </span>
+   445→                          <span className="text-[11px] font-bold text-on-surface truncate">
+   446→                            به سمت {d.to}
+   447→                          </span>
+   448→                        </div>
+   449→                        <span
+   450→                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 shrink-0"
+   451→                          style={{ color: c, backgroundColor: `${c}14` }}
+   452→                        >
+   453→                          <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: c }} />
+   454→                          {d.crowdLabel}
+   455→                        </span>
+   456→                      </div>
+   457→                      {d.outOfService || d.nextMin === null ? (
+   458→                        <p className="text-[10px] text-outline font-medium">
+   459→                          سرویس امروز پایان یافته — اولین قطار فردا ساعت {toFa(a.firstTrain)}
+   460→                        </p>
+   461→                      ) : (
+   462→                        <div className="flex items-center gap-1.5">
+   463→                          <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-primary">
+   464→                            {d.nextMin > 90 ? `ساعت ${toFa(d.nextAt ?? "")}` : `${toFa(d.nextMin)} دقیقه`}
+   465→                          </span>
+   466→                          {d.next2Min !== null && (
+   467→                            <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-on-surface-variant">
+   468→                              {d.next2Min > 90 ? `ساعت ${toFa(d.next2At ?? "")}` : `${toFa(d.next2Min)} دقیقه`}
+   469→                            </span>
+   470→                          )}
+   471→                          <span className="text-[9px] text-outline ms-auto">هر {toFa(a.headwayLabel)} دقیقه یک قطار</span>
+   472→                        </div>
+   473→                      )}
+   474→                    </div>
+   475→                  );
+   476→                })
+   477→              )}
+   478→            </div>
+   479→          )}
+   480→        </section>
+   481→
+   482→        {/* ================= تب‌ها ================= */}
+   483→        <div className="bg-surface-container-low p-1 rounded-full flex items-center" role="tablist" aria-label="بخش‌های ایستگاه">
+   484→          {TABS.map((t) => (
+   485→            <button
+   486→              key={t.key}
+   487→              type="button"
+   488→              role="tab"
+   489→              aria-selected={tab === t.key}
+   490→              onClick={() => setTab(t.key)}
+   491→              className={`flex-1 text-center py-1.5 rounded-full text-[11px] active:scale-95 transition-all ${
+   492→                tab === t.key
+   493→                  ? "bg-surface-container-lowest shadow-sm text-primary font-bold"
+   494→                  : "text-on-surface-variant"
+   495→              }`}
+   496→            >
+   497→              {t.label}
+   498→            </button>
+   499→          ))}
+   500→        </div>
+   501→
+   502→        {/* ================= محتوای تب امکانات ================= */}
+   503→        {tab === "amenities" && (
+   504→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   505→            <div className="flex items-center gap-2">
+   506→              <MI name="widgets" size={20} className="text-primary" />
+   507→              <h3 className="font-bold text-xs text-on-surface">امکانات ایستگاه</h3>
+   508→            </div>
+   509→
+   510→            <div className="grid grid-cols-4 gap-2">
+   511→              {amenities.map((a) => (
+   512→                <div
+   513→                  key={a.key}
+   514→                  className="bg-surface-container-low rounded-xl p-2 flex flex-col items-center gap-1 text-center"
+   515→                >
+   516→                  <MI name={a.icon} size={20} className="text-primary" />
+   517→                  <span className="text-[9px] font-medium text-on-surface-variant leading-tight">{a.label}</span>
+   518→                </div>
+   519→              ))}
+   520→            </div>
+   521→
+   522→            <div className="flex items-center gap-2 pt-1">
+   523→              <MI name="place" size={20} className="text-primary" />
+   524→              <h3 className="font-bold text-xs text-on-surface">نقاط شاخص اطراف</h3>
+   525→            </div>
+   526→
+   527→            {landmarks.length > 0 ? (
+   528→              <ul className="space-y-1.5">
+   529→                {landmarks.map((lm) => (
+   530→                  <li key={lm} className="flex items-center gap-2 text-xs text-on-surface-variant">
+   531→                    <MI name="place" size={14} className="text-primary shrink-0" />
+   532→                    {lm}
+   533→                  </li>
+   534→                ))}
+   535→              </ul>
+   536→            ) : (
+   537→              <p className="text-[11px] text-outline">نقطه شاخصی برای این ایستگاه ثبت نشده است</p>
+   538→            )}
+   539→          </section>
+   540→        )}
+   541→
+   542→        {/* ================= محتوای تب خروجی‌ها ================= */}
+   543→        {tab === "exits" && (
+   544→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-2.5">
+   545→            <div className="flex items-center gap-2 pb-1">
+   546→              <MI name="door_open" size={20} className="text-primary" />
+   547→              <h3 className="font-bold text-xs text-on-surface">خروجی‌های ایستگاه</h3>
+   548→            </div>
+   549→
+   550→            {exits.map((ex) => (
+   551→              <div key={ex.label} className="bg-surface-container-low rounded-xl p-3 space-y-1.5">
+   552→                <div className="flex items-center justify-between gap-2">
+   553→                  <span className="text-xs font-bold text-on-surface">{ex.label}</span>
+   554→                  <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
+   555→                    {ex.direction}
+   556→                  </span>
+   557→                </div>
+   558→                <div className="flex items-center gap-1 text-[10px] text-outline">
+   559→                  <MI name="accessible" size={13} className="shrink-0" />
+   560→                  {ex.accessibility}
+   561→                </div>
+   562→                {ex.landmarks.length > 0 && (
+   563→                  <div className="flex items-start gap-1 text-[10px] text-on-surface-variant">
+   564→                    <MI name="place" size={13} className="text-primary mt-0.5 shrink-0" />
+   565→                    <span>{ex.landmarks.join(" • ")}</span>
+   566→                  </div>
+   567→                )}
+   568→              </div>
+   569→            ))}
+   570→          </section>
+   571→        )}
+   572→
+   573→        {/* ================= محتوای تب هشدار مقصد ================= */}
+   574→        {tab === "alert" && (
+   575→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   576→            <div className="flex items-center gap-2">
+   577→              <MI name="alarm" size={20} className="text-primary" />
+   578→              <h3 className="font-bold text-xs text-on-surface">بیدارباش هوشمند</h3>
+   579→              {alertOn && (
+   580→                <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full ms-auto">
+   581→                  فعال
+   582→                </span>
+   583→              )}
+   584→            </div>
+   585→
+   586→            <p className="text-[11px] text-on-surface-variant leading-6">
+   587→              با فعال‌سازی این قابلیت، چند ایستگاه مانده به رسیدن به {station.name} با اعلان صوتی بیدار می‌شوید تا با
+   588→              خیال راحت آماده پیاده شدن باشید.
+   589→            </p>
+   590→
+   591→            <div className="space-y-1.5">
+   592→              <p className="text-[11px] font-bold text-outline">چند ایستگاه مانده به مقصد؟</p>
+   593→              <div className="flex items-center gap-1.5">
+   594→                {([2, 3, 4] as BeforeStations[]).map((n) => (
+   595→                  <button
+   596→                    key={n}
+   597→                    type="button"
+   598→                    onClick={() => pickBefore(n)}
+   599→                    aria-pressed={beforeStations === n}
+   600→                    className={`flex-1 py-2 rounded-xl text-xs font-bold border active:scale-95 transition-all ${
+   601→                      beforeStations === n
+   602→                        ? "bg-primary text-white border-primary shadow-sm"
+   603→                        : "bg-surface-container-lowest border-outline-variant/30 text-on-surface-variant"
+   604→                    }`}
+   605→                  >
+   606→                    {toFa(n)} ایستگاه
+   607→                  </button>
+   608→                ))}
+   609→              </div>
+   610→            </div>
+   611→
+   612→            <div className="flex items-center justify-between bg-surface-container-low rounded-xl p-3">
+   613→              <div className="flex flex-col">
+   614→                <span className="text-xs font-bold text-on-surface">فعال‌سازی هشدار</span>
+   615→                <span className="text-[10px] text-outline mt-0.5">
+   616→                  {alertOn ? "هشدار برای این ایستگاه فعال است" : "هشدار در حالت خاموش است"}
+   617→                </span>
+   618→              </div>
+   619→              <button
+   620→                type="button"
+   621→                role="switch"
+   622→                aria-checked={alertOn}
+   623→                aria-label="فعال‌سازی هشدار مقصد"
+   624→                onClick={toggleAlert}
+   625→                className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${
+   626→                  alertOn ? "bg-primary-container" : "bg-surface-container-high border border-outline-variant/40"
+   627→                }`}
+   628→              >
+   629→                <span
+   630→                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
+   631→                    alertOn ? "right-[22px]" : "right-0.5"
+   632→                  }`}
+   633→                />
+   634→              </button>
+   635→            </div>
+   636→          </section>
+   637→        )}
+   638→
+   639→        {/* ================= محتوای تب گزارش ================= */}
+   640→        {tab === "report" && (
+   641→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   642→            <div className="flex items-center gap-2">
+   643→              <MI name="flag" size={20} className="text-primary" />
+   644→              <h3 className="font-bold text-xs text-on-surface">گزارش وضعیت تجهیزات</h3>
+   645→            </div>
+   646→
+   647→            {/* نوع تجهیزات */}
+   648→            <div className="space-y-1.5">
+   649→              <p className="text-[11px] font-bold text-outline">نوع تجهیزات</p>
+   650→              <div className="grid grid-cols-3 gap-1.5">
+   651→                {EQ_OPTIONS.map((o) => (
+   652→                  <button
+   653→                    key={o.key}
+   654→                    type="button"
+   655→                    onClick={() => setEqType(o.key)}
+   656→                    aria-pressed={eqType === o.key}
+   657→                    className={`py-2 rounded-xl border flex flex-col items-center gap-1 text-[10px] font-bold active:scale-95 transition-all ${
+   658→                      eqType === o.key
+   659→                        ? "bg-primary text-white border-primary shadow-sm"
+   660→                        : "bg-surface-container-lowest border-outline-variant/30 text-on-surface-variant"
+   661→                    }`}
+   662→                  >
+   663→                    <MI name={o.icon} size={18} />
+   664→                    {o.label}
+   665→                  </button>
+   666→                ))}
+   667→              </div>
+   668→            </div>
+   669→
+   670→            {/* وضعیت */}
+   671→            <div className="space-y-1.5">
+   672→              <p className="text-[11px] font-bold text-outline">وضعیت فعلی</p>
+   673→              <div className="grid grid-cols-3 gap-1.5">
+   674→                {STATUS_OPTIONS.map((o) => (
+   675→                  <button
+   676→                    key={o.key}
+   677→                    type="button"
+   678→                    onClick={() => setStatus(o.key)}
+   679→                    aria-pressed={status === o.key}
+   680→                    className={`py-2 rounded-xl border flex items-center justify-center gap-1 text-[10px] font-bold active:scale-95 transition-all ${
+   681→                      status === o.key ? o.active : "bg-surface-container-lowest border-outline-variant/30 text-on-surface-variant"
+   682→                    }`}
+   683→                  >
+   684→                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${o.dot}`} />
+   685→                    {o.label}
+   686→                  </button>
+   687→                ))}
+   688→              </div>
+   689→            </div>
+   690→
+   691→            {/* توضیح */}
+   692→            <textarea
+   693→              value={note}
+   694→              onChange={(e) => setNote(e.target.value)}
+   695→              rows={2}
+   696→              aria-label="توضیح دلخواه گزارش"
+   697→              placeholder="توضیح دلخواه (اختیاری) — مثلاً پله‌برقی خروجی ۲ خاموش است"
+   698→              className="w-full bg-surface-container-low rounded-xl p-2.5 text-xs text-on-surface placeholder:text-outline border border-outline-variant/30 focus:outline-none focus:border-primary resize-none"
+   699→            />
+   700→
+   701→            <button
+   702→              type="button"
+   703→              onClick={submitReport}
+   704→              disabled={!eqType || !status || submitting}
+   705→              className="w-full flex items-center justify-center gap-1.5 bg-primary-container text-white rounded-xl font-bold text-xs py-2.5 shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
+   706→            >
+   707→              {submitting ? (
+   708→                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+   709→              ) : (
+   710→                <MI name="send" size={15} />
+   711→              )}
+   712→              ثبت گزارش
+   713→            </button>
+   714→
+   715→            {/* وضعیت تجهیزات خط */}
+   716→            <div className="space-y-1.5 pt-1">
+   717→              <p className="text-[11px] font-bold text-outline">وضعیت رسمی تجهیزات</p>
+   718→              {equipment.map((eq) => {
+   719→                const dot = eq.active >= eq.total ? "bg-emerald-500" : eq.active === 0 ? "bg-red-500" : "bg-amber-500";
+   720→                return (
+   721→                  <div key={eq.type} className="flex items-center gap-2 bg-surface-container-low rounded-xl p-2.5">
+   722→                    <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+   723→                    <div className="flex-1 min-w-0">
+   724→                      <div className="flex items-center justify-between gap-2">
+   725→                        <span className="text-xs font-bold text-on-surface">{eq.typeLabel}</span>
+   726→                        <span className="text-[10px] font-bold text-primary whitespace-nowrap">
+   727→                          {toFa(eq.active)} از {toFa(eq.total)} فعال
+   728→                        </span>
+   729→                      </div>
+   730→                      {eq.note && <p className="text-[10px] text-outline mt-0.5">{eq.note}</p>}
+   731→                    </div>
+   732→                  </div>
+   733→                );
+   734→              })}
+   735→            </div>
+   736→
+   737→            {/* گزارش‌های اخیر مسافران */}
+   738→            {reports.length > 0 && (
+   739→              <div className="space-y-1.5 pt-2 border-t border-outline-variant/30">
+   740→                <div className="flex items-center gap-1.5">
+   741→                  <MI name="history" size={14} className="text-outline" />
+   742→                  <span className="text-[10px] font-bold text-outline">گزارش‌های اخیر مسافران</span>
+   743→                </div>
+   744→                {reports.map((r) => (
+   745→                  <div key={r.id} className="text-[10px] text-on-surface-variant flex items-center gap-1.5 min-w-0">
+   746→                    <span
+   747→                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${SAVED_STATUS_DOT[r.status] ?? "bg-outline"}`}
+   748→                    />
+   749→                    <span className="font-bold shrink-0">{SAVED_TYPE_LABEL[r.equipmentType] ?? r.equipmentType}</span>
+   750→                    <span className="shrink-0">{SAVED_STATUS_LABEL[r.status] ?? r.status}</span>
+   751→                    {r.note && <span className="text-outline truncate">— {r.note}</span>}
+   752→                  </div>
+   753→                ))}
+   754→              </div>
+   755→            )}
+   756→          </section>
+   757→        )}
+   758→
+   759→        {/* دکمه بازگشت به فهرست */}
+   760→        <button
+   761→          type="button"
+   762→          onClick={() => router.push("/stations")}
+   763→          className="w-full flex items-center justify-center gap-1.5 bg-primary-container text-white rounded-xl font-bold text-xs py-2.5 shadow-sm active:scale-[0.98] transition-all"
+   764→        >
+   765→          <MI name="arrow_forward" size={15} />
+   766→          بازگشت به فهرست ایستگاه‌ها
+   767→        </button>
+   768→      </main>
+   769→    </>
+   770→  );
+   771→}
+   772→

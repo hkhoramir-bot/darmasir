@@ -19,7 +19,6 @@ const LS = {
   trips: "metrojo-native-trips",
   daily: "metrojo-native-daily",
   favs: "metrojo-native-favs",
-  reports: "metrojo-native-reports",
 };
 
 function lsGet<T>(key: string, fallback: T): T {
@@ -201,55 +200,6 @@ function deleteFavorite(stationId: string | null): Response {
   return json({ ok: true });
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  escalator: "پله‌برقی",
-  elevator: "آسانسور",
-  ramp: "رمپ متحرک",
-};
-const STATUS_LABEL: Record<string, string> = {
-  working: "فعال و روان",
-  malfunction: "متوقف و خاموش",
-  under_maintenance: "در حال سرویس فنی",
-};
-
-function getReports(stationId: string | null): Response {
-  const all = lsGet<Json[]>(LS.reports, []);
-  const reports = stationId ? all.filter((r) => r.stationId === stationId) : all;
-  return json({ reports: reports.slice(0, 30) });
-}
-
-function postReport(body: Json): Response {
-  const stationId = String(body?.stationId ?? "");
-  if (!stationId || !getStation(stationId)) {
-    return json({ error: "ایستگاه نامعتبر است" }, 400);
-  }
-  const equipmentType = String(body?.equipmentType ?? "");
-  const status = String(body?.status ?? "");
-  if (!TYPE_LABEL[equipmentType] || !STATUS_LABEL[status]) {
-    return json({ error: "نوع تجهیزات یا وضعیت نامعتبر است" }, 400);
-  }
-  const report = {
-    id: uid(),
-    stationId,
-    equipmentType,
-    exitLabel: (body?.exitLabel as string) ?? "ورودی اصلی",
-    status,
-    note: (body?.note as string) ?? null,
-    createdAt: new Date().toISOString(),
-  };
-  const reports = lsGet<Json[]>(LS.reports, []);
-  reports.unshift(report);
-  lsSet(LS.reports, reports);
-  return json({
-    ok: true,
-    report: {
-      ...report,
-      equipmentLabel: TYPE_LABEL[equipmentType],
-      statusLabel: STATUS_LABEL[status],
-    },
-  });
-}
-
 function getArrivals(stationId: string | null): Response {
   const station = stationId ? getStation(stationId) : undefined;
   if (!station) return json({ error: "ایستگاه یافت نشد" }, 404);
@@ -300,11 +250,6 @@ async function handle(pathname: string, search: URLSearchParams, method: string,
       if (method === "GET") return getFavorites();
       if (method === "POST") return postFavorite(body ?? {});
       if (method === "DELETE") return deleteFavorite(search.get("stationId"));
-      return null;
-    }
-    case "/api/reports": {
-      if (method === "GET") return getReports(search.get("station"));
-      if (method === "POST") return postReport(body ?? {});
       return null;
     }
     case "/api/arrivals": {

@@ -46,8 +46,8 @@ html {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  /* نسخه ۳ — زیرمجموعه بازسازی‌شده با همه آیکون‌های استفاده‌شده در اپ */
-  src: url("/fonts/material-symbols-subset.woff2?v=4") format("woff2");
+  /* نسخه ۴ — زیرمجموعه بازسازی‌شده با همه آیکون‌های استفاده‌شده در اپ */
+  src: url("/fonts/material-symbols-subset.woff2?v=5") format("woff2");
 }
 
 /* ============================================================
@@ -427,4 +427,25 @@ html {
 }
 .map-viewport:active {
   cursor: grabbing;
+}
+
+/* موج هایلایت ایستگاه انتخاب‌شده / نزدیک‌ترین ایستگاه GPS */
+@keyframes map-pulse {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.6);
+  }
+  70% {
+    opacity: 0.1;
+    transform: scale(1.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+.map-pulse {
+  animation: map-pulse 1.8s ease-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
 }

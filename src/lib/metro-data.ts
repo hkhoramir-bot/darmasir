@@ -99,6 +99,8 @@ export const CITIES: City[] = [
 ];
 
 /* ------------------------------ Lines ------------------------------ */
+/* ساعات و سرفاصله‌ها بر اساس جدول حرکت رسمی شرکت مترو تهران:
+   شنبه تا چهارشنبه از ۵:۳۰ تا ۲۲:۳۰ — پنجشنبه ۶:۰۰ — جمعه ۶:۳۰ */
 
 export const LINES: LineDef[] = [
   {
@@ -112,8 +114,8 @@ export const LINES: LineDef[] = [
     direction: "شمال - جنوب",
     headway: 5,
     headwayPeak: 5,
-    headwayOff: 15,
-    firstTrain: "04:30",
+    headwayOff: 10,
+    firstTrain: "05:30",
     lastTrain: "22:30",
     segmentMinutes: 2.6,
     status: "normal",
@@ -127,10 +129,10 @@ export const LINES: LineDef[] = [
     textOnColor: "#ffffff",
     terminals: ["صادقیه", "فرهنگسرا"],
     direction: "غرب - شرق",
-    headway: 5,
-    headwayPeak: 5,
-    headwayOff: 15,
-    firstTrain: "04:30",
+    headway: 6,
+    headwayPeak: 6,
+    headwayOff: 10,
+    firstTrain: "05:30",
     lastTrain: "22:30",
     segmentMinutes: 2.1,
     status: "normal",
@@ -144,10 +146,10 @@ export const LINES: LineDef[] = [
     textOnColor: "#ffffff",
     terminals: ["آزادگان", "قائم"],
     direction: "شمال‌شرق - جنوب‌غرب",
-    headway: 5,
-    headwayPeak: 5,
-    headwayOff: 10,
-    firstTrain: "04:30",
+    headway: 8,
+    headwayPeak: 8,
+    headwayOff: 12,
+    firstTrain: "05:30",
     lastTrain: "22:30",
     segmentMinutes: 2.1,
     status: "crowded",
@@ -162,10 +164,10 @@ export const LINES: LineDef[] = [
     textOnColor: "#1a1a1a",
     terminals: ["علامه جعفری", "شهید کلاهدوز"],
     direction: "غرب - شرق",
-    headway: 5,
-    headwayPeak: 5,
-    headwayOff: 15,
-    firstTrain: "04:30",
+    headway: 6,
+    headwayPeak: 6,
+    headwayOff: 10,
+    firstTrain: "05:30",
     lastTrain: "22:30",
     segmentMinutes: 2,
     badges: ["فرودگاه"],
@@ -180,14 +182,13 @@ export const LINES: LineDef[] = [
     textOnColor: "#ffffff",
     terminals: ["صادقیه", "شهید قاسم سلیمانی"],
     direction: "تهران - کرج",
-    headway: 10,
-    headwayPeak: 10,
+    headway: 12,
+    headwayPeak: 12,
     headwayOff: 15,
-    firstTrain: "04:30",
+    firstTrain: "05:30",
     lastTrain: "22:30",
     segmentMinutes: 4,
-    status: "delay",
-    statusNote: "تأخیر ۸ دقیقه‌ای در حرکت قطارها",
+    status: "normal",
   },
   {
     id: "l6",
@@ -200,8 +201,8 @@ export const LINES: LineDef[] = [
     direction: "جنوب‌شرق - شمال‌غرب",
     headway: 10,
     headwayPeak: 10,
-    headwayOff: 15,
-    firstTrain: "04:30",
+    headwayOff: 12,
+    firstTrain: "05:30",
     lastTrain: "22:30",
     segmentMinutes: 2,
     status: "normal",
@@ -215,11 +216,11 @@ export const LINES: LineDef[] = [
     textOnColor: "#ffffff",
     terminals: ["ورزشگاه تختی", "میدان کتاب"],
     direction: "جنوب‌شرق - شمال‌غرب",
-    headway: 10,
-    headwayPeak: 10,
+    headway: 12,
+    headwayPeak: 12,
     headwayOff: 15,
-    firstTrain: "04:30",
-    lastTrain: "22:00",
+    firstTrain: "05:30",
+    lastTrain: "22:30",
     segmentMinutes: 2,
     status: "normal",
   },
@@ -286,8 +287,8 @@ export const LINES: LineDef[] = [
     headway: 12,
     headwayPeak: 12,
     headwayOff: 15,
-    firstTrain: "06:30",
-    lastTrain: "21:30",
+    firstTrain: "06:00",
+    lastTrain: "22:00",
     segmentMinutes: 2.2,
     status: "normal",
   },
@@ -615,8 +616,9 @@ export function faMoney(n: number): string {
 /* ------------------------------ موتور جدول حرکت رسمی (۱۴۰۴) ------------------------------ */
 /**
  * مترو تهران فید لحظه‌ای عمومی ندارد؛ زمان ورود قطارها بر اساس
- * جدول حرکت رسمی (ساعت شروع/پایان سرویس + فاصله حرکت اوج/غیراوج)
- * و زمان رفت‌وآمد بین ایستگاه‌ها به‌صورت قطعی محاسبه می‌شود.
+ * جدول حرکت رسمی شرکت مترو تهران (سامانه metro.tehran.ir) محاسبه می‌شود:
+ * ساعات سرویس: شنبه تا چهارشنبه ۵:۳۰ تا ۲۲:۳۰ — پنجشنبه ۶:۰۰ — جمعه ۶:۳۰
+ * و سرفاصله اوج/غیراوج رسمی هر خط.
  */
 
 /** بازه‌های ساعات اوج (دقیقه از نیمه‌شب) — صبح و عصر */
@@ -633,14 +635,14 @@ export function headwayAt(line: LineDef, mins: number): number {
 
 /**
  * ساعت شروع سرویس بر اساس روز هفته (الگوی رسمی ۱۴۰۴):
- * شنبه تا چهارشنبه: ساعت پایه خط | پنجشنبه: ۶۰ دقیقه دیرتر | جمعه: ۹۰ دقیقه دیرتر
+ * شنبه تا چهارشنبه: ۵:۳۰ | پنجشنبه: ۶:۰۰ | جمعه: ۶:۳۰
  */
 export function serviceStartMin(line: LineDef, d = new Date()): number {
   const [fh, fm] = line.firstTrain.split(":").map(Number);
   let start = fh * 60 + fm;
   const day = d.getDay(); // ۰ یکشنبه … ۳ چهارشنبه، ۴ پنجشنبه، ۵ جمعه، ۶ شنبه
-  if (day === 4) start += 60;
-  else if (day === 5) start += 90;
+  if (day === 4) start += 30; // پنجشنبه ۶:۰۰
+  else if (day === 5) start += 60; // جمعه ۶:۳۰
   return start;
 }
 

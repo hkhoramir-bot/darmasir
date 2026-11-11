@@ -1,0 +1,772 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useCallback, useEffect, useMemo, useState } from "react";
+     4→     4→import { useParams, useRouter } from "next/navigation";
+     5→     5→import {
+     6→     6→  amenitiesLabels,
+     7→     7→  CROWD_COLOR,
+     8→     8→  equipmentFor,
+     9→     9→  exitsFor,
+    10→    10→  getLine,
+    11→    11→  getStation,
+    12→    12→  headwayAt,
+    13→    13→  landmarksFor,
+    14→    14→  nextArrivalsBoth,
+    15→    15→  toFa,
+    16→    16→  type CrowdLevel,
+    17→    17→  type StationDef,
+    18→    18→} from "@/lib/metro-data";
+    19→    19→import { MI, PageHeader } from "@/components/metro/shell";
+    20→    20→import { useAnnouncer } from "@/components/metro/voice";
+    21→    21→import { useToast } from "@/hooks/use-toast";
+    22→    22→
+    23→    23→/* ============================================================
+    24→    24→   جزئیات ایستگاه — امکانات، خروجی‌ها، هشدار مقصد و گزارش تجهیزات
+    25→    25→   ============================================================ */
+    26→    26→
+    27→    27→interface ArrivalRow {
+    28→    28→  lineId: string;
+    29→    29→  lineName: string;
+    30→    30→  lineNumber: number;
+    31→    31→  color: string;
+    32→    32→  textOnColor: string;
+    33→    33→  headwayLabel: string;
+    34→    34→  directions: {
+    35→    35→    to: string;
+    36→    36→    nextMin: number | null;
+    37→    37→    next2Min: number | null;
+    38→    38→    nextAt: string | null;
+    39→    39→    next2At: string | null;
+    40→    40→    outOfService: boolean;
+    41→    41→    crowd: CrowdLevel;
+    42→    42→    crowdLabel: string;
+    43→    43→  }[];
+    44→    44→  firstTrain: string;
+    45→    45→  lastTrain: string;
+    46→    46→}
+    47→    47→
+    48→    48→interface ReportRow {
+    49→    49→  id: string;
+    50→    50→  stationId: string;
+    51→    51→  equipmentType: string;
+    52→    52→  exitLabel: string;
+    53→    53→  status: string;
+    54→    54→  note: string | null;
+    55→    55→  createdAt: string;
+    56→    56→}
+    57→    57→
+    58→    58→type TabKey = "amenities" | "exits" | "alert" | "report";
+    59→    59→type EquipmentType = "escalator" | "elevator" | "ramp";
+    60→    60→type ReportStatus = "working" | "malfunction" | "under_maintenance";
+    61→    61→type BeforeStations = 2 | 3 | 4;
+    62→    62→
+    63→    63→const TABS: { key: TabKey; label: string }[] = [
+    64→    64→  { key: "amenities", label: "امکانات" },
+    65→    65→  { key: "exits", label: "خروجی‌ها" },
+    66→    66→  { key: "alert", label: "هشدار مقصد" },
+    67→    67→  { key: "report", label: "گزارش" },
+    68→    68→];
+    69→    69→
+    70→    70→const EQ_OPTIONS: { key: EquipmentType; label: string; icon: string }[] = [
+    71→    71→  { key: "escalator", label: "پله‌برقی", icon: "escalator" },
+    72→    72→  { key: "elevator", label: "آسانسور", icon: "elevator" },
+    73→    73→  { key: "ramp", label: "رمپ متحرک", icon: "accessible_forward" },
+    74→    74→];
+    75→    75→
+    76→    76→const STATUS_OPTIONS: {
+    77→    77→  key: ReportStatus;
+    78→    78→  label: string;
+    79→    79→  dot: string;
+    80→    80→  active: string;
+    81→    81→}[] = [
+    82→    82→  { key: "working", label: "سالم", dot: "bg-emerald-500", active: "bg-emerald-50 text-emerald-800 border-emerald-300" },
+    83→    83→  { key: "malfunction", label: "خراب", dot: "bg-red-500", active: "bg-red-50 text-red-800 border-red-300" },
+    84→    84→  {
+    85→    85→    key: "under_maintenance",
+    86→    86→    label: "در حال تعمیر",
+    87→    87→    dot: "bg-amber-500",
+    88→    88→    active: "bg-amber-50 text-amber-800 border-amber-300",
+    89→    89→  },
+    90→    90→];
+    91→    91→
+    92→    92→/* برچسب گزارش‌های ذخیره‌شده */
+    93→    93→const SAVED_TYPE_LABEL: Record<string, string> = {
+    94→    94→  escalator: "پله‌برقی",
+    95→    95→  elevator: "آسانسور",
+    96→    96→  ramp: "رمپ متحرک",
+    97→    97→};
+    98→    98→const SAVED_STATUS_LABEL: Record<string, string> = {
+    99→    99→  working: "سالم",
+   100→   100→  malfunction: "خراب",
+   101→   101→  under_maintenance: "در حال تعمیر",
+   102→   102→};
+   103→   103→const SAVED_STATUS_DOT: Record<string, string> = {
+   104→   104→  working: "bg-emerald-500",
+   105→   105→  malfunction: "bg-red-500",
+   106→   106→  under_maintenance: "bg-amber-500",
+   107→   107→};
+   108→   108→
+   109→   109→/* ------------------------- ایستگاه یافت نشد ------------------------- */
+   110→   110→function NotFound() {
+   111→   111→  const router = useRouter();
+   112→   112→  return (
+   113→   113→    <>
+   114→   114→      <PageHeader title="ایستگاه یافت نشد" />
+   115→   115→      <main className="flex-1 w-full px-4 pt-3 pb-28">
+   116→   116→        <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/40 shadow-sm flex flex-col items-center text-center gap-3 mt-10">
+   117→   117→          <div className="w-14 h-14 rounded-full bg-error-container flex items-center justify-center text-error shrink-0">
+   118→   118→            <MI name="search_off" size={28} />
+   119→   119→          </div>
+   120→   120→          <h2 className="font-bold text-sm text-on-surface">ایستگاه یافت نشد</h2>
+   121→   121→          <p className="text-xs text-outline leading-6">
+   122→   122→            ایستگاه مورد نظر در شبکه مترو وجود ندارد یا آدرس وارد شده اشتباه است.
+   123→   123→          </p>
+   124→   124→          <button
+   125→   125→            type="button"
+   126→   126→            onClick={() => router.push("/stations")}
+   127→   127→            className="bg-primary-container text-white rounded-xl font-bold text-xs py-2.5 px-6 shadow-sm active:scale-[0.98] transition-all"
+   128→   128→          >
+   129→   129→            مشاهده همه ایستگاه‌ها
+   130→   130→          </button>
+   131→   131→        </div>
+   132→   132→      </main>
+   133→   133→    </>
+   134→   134→  );
+   135→   135→}
+   136→   136→
+   137→   137→/* ------------------------- صفحه اصلی ------------------------- */
+   138→   138→export default function StationDetailPage() {
+   139→   139→  const params = useParams<{ id: string }>();
+   140→   140→  const id = params.id;
+   141→   141→  const station = useMemo(() => getStation(id), [id]);
+   142→   142→
+   143→   143→  if (!station) return <NotFound />;
+   144→   144→  return <StationDetail key={id} station={station} />;
+   145→   145→}
+   146→   146→
+   147→   147→function StationDetail({ station }: { station: StationDef }) {
+   148→   148→  const router = useRouter();
+   149→   149→  const { toast } = useToast();
+   150→   150→  const announcer = useAnnouncer();
+   151→   151→  const id = station.id;
+   152→   152→
+   153→   153→  const [tab, setTab] = useState<TabKey>("amenities");
+   154→   154→  const [isFav, setIsFav] = useState(false);
+   155→   155→  const [favPending, setFavPending] = useState(false);
+   156→   156→  const [arrivals, setArrivals] = useState<ArrivalRow[] | null>(null);
+   157→   157→  const [beforeStations, setBeforeStations] = useState<BeforeStations>(2);
+   158→   158→  const [alertOn, setAlertOn] = useState(false);
+   159→   159→
+   160→   160→  /* فرم گزارش */
+   161→   161→  const [eqType, setEqType] = useState<EquipmentType | null>(null);
+   162→   162→  const [status, setStatus] = useState<ReportStatus | null>(null);
+   163→   163→  const [note, setNote] = useState("");
+   164→   164→  const [submitting, setSubmitting] = useState(false);
+   165→   165→  const [reports, setReports] = useState<ReportRow[]>([]);
+   166→   166→
+   167→   167→  const subtitle =
+   168→   168→    station.lines.length > 1
+   169→   169→      ? `تقاطع ${station.lines.map((l) => toFa(getLine(l.lineId).number)).join(" و ")}`
+   170→   170→      : `خط ${toFa(getLine(station.lines[0].lineId).number)}`;
+   171→   171→
+   172→   172→  const amenities = useMemo(() => amenitiesLabels(station.amenities), [station.amenities]);
+   173→   173→  const exits = useMemo(() => exitsFor(station.id), [station.id]);
+   174→   174→  const landmarks = useMemo(() => landmarksFor(station.id), [station.id]);
+   175→   175→  const equipment = useMemo(() => equipmentFor(station.id), [station.id]);
+   176→   176→
+   177→   177→  /* ---------- تابلوی قطارهای بعدی — محاسبه محلی بر اساس جدول حرکت رسمی ----------
+   178→   178→     (با ساعت خودِ دستگاه کاربر محاسبه می‌شود تا دقیق باشد؛ هر ۳۰ ثانیه بروزرسانی) */
+   179→   179→  useEffect(() => {
+   180→   180→    let alive = true;
+   181→   181→    const build = () => {
+   182→   182→      const now = Date.now();
+   183→   183→      const d = new Date(now);
+   184→   184→      const nowMin = d.getHours() * 60 + d.getMinutes();
+   185→   185→      const rows = station.lines.map((ls) => {
+   186→   186→        const line = getLine(ls.lineId);
+   187→   187→        return {
+   188→   188→          lineId: line.id,
+   189→   189→          lineName: line.name,
+   190→   190→          lineNumber: line.number,
+   191→   191→          color: line.color,
+   192→   192→          textOnColor: line.textOnColor,
+   193→   193→          headwayLabel: toFa(headwayAt(line, nowMin)),
+   194→   194→          directions: nextArrivalsBoth(ls.lineId, station.id, now).map((dir) => ({
+   195→   195→            to: dir.to,
+   196→   196→            nextMin: dir.minutes[0] ?? null,
+   197→   197→            next2Min: dir.minutes[1] ?? null,
+   198→   198→            nextAt: dir.at[0] ?? null,
+   199→   199→            next2At: dir.at[1] ?? null,
+   200→   200→            outOfService: dir.outOfService,
+   201→   201→            crowd: dir.crowd,
+   202→   202→            crowdLabel: dir.crowdLabel,
+   203→   203→          })),
+   204→   204→          firstTrain: line.firstTrain,
+   205→   205→          lastTrain: line.lastTrain,
+   206→   206→        };
+   207→   207→      });
+   208→   208→      if (alive) setArrivals(rows);
+   209→   209→    };
+   210→   210→    build();
+   211→   211→    const t = setInterval(build, 30000);
+   212→   212→    return () => {
+   213→   213→      alive = false;
+   214→   214→      clearInterval(t);
+   215→   215→    };
+   216→   216→  }, [station]);
+   217→   217→
+   218→   218→  /* ---------- وضعیت نشان ---------- */
+   219→   219→  useEffect(() => {
+   220→   220→    let alive = true;
+   221→   221→    fetch("/api/favorites")
+   222→   222→      .then((r) => r.json())
+   223→   223→      .then((d: { ids?: string[] }) => {
+   224→   224→        if (alive) setIsFav(!!d.ids?.includes(id));
+   225→   225→      })
+   226→   226→      .catch(() => {});
+   227→   227→    return () => {
+   228→   228→      alive = false;
+   229→   229→    };
+   230→   230→  }, [id]);
+   231→   231→
+   232→   232→  const toggleFav = async () => {
+   233→   233→    if (favPending) return;
+   234→   234→    setFavPending(true);
+   235→   235→    const next = !isFav;
+   236→   236→    setIsFav(next);
+   237→   237→    try {
+   238→   238→      if (next) {
+   239→   239→        const res = await fetch("/api/favorites", {
+   240→   240→          method: "POST",
+   241→   241→          headers: { "Content-Type": "application/json" },
+   242→   242→          body: JSON.stringify({ stationId: id }),
+   243→   243→        });
+   244→   244→        if (!res.ok) throw new Error();
+   245→   245→        toast({ title: "به نشان‌ها اضافه شد", description: `${station.name} به فهرست نشان‌شده‌ها اضافه شد` });
+   246→   246→      } else {
+   247→   247→        const res = await fetch(`/api/favorites?stationId=${id}`, { method: "DELETE" });
+   248→   248→        if (!res.ok) throw new Error();
+   249→   249→        toast({ title: "از نشان‌ها حذف شد", description: `${station.name} از فهرست نشان‌شده‌ها حذف شد` });
+   250→   250→      }
+   251→   251→    } catch {
+   252→   252→      setIsFav(!next);
+   253→   253→      toast({ title: "خطا در ارتباط با سرور", description: "لطفاً دوباره تلاش کنید" });
+   254→   254→    } finally {
+   255→   255→      setFavPending(false);
+   256→   256→    }
+   257→   257→  };
+   258→   258→
+   259→   259→  /* ---------- اعلام صوتی ---------- */
+   260→   260→  const speak = useCallback(() => {
+   261→   261→    const first = arrivals?.[0]?.directions?.[0];
+   262→   262→    if (!first || first.outOfService || first.nextMin === null) {
+   263→   263→      announcer.announce(`ایستگاه ${station.name}. در حال حاضر قطاری در سرویس نیست`).catch(() => {});
+   264→   264→      return;
+   265→   265→    }
+   266→   266→    const mins = first.nextMin > 90 ? `ساعت ${first.nextAt ?? ""}` : `${toFa(first.nextMin)} دقیقه`;
+   267→   267→    announcer
+   268→   268→      .announce(`ایستگاه ${station.name}. قطار بعدی به سمت ${first.to}، ${mins}`)
+   269→   269→      .catch(() => {});
+   270→   270→  }, [arrivals, announcer, station.name]);
+   271→   271→
+   272→   272→  /* ---------- هشدار مقصد (بیدارباش هوشمند) ---------- */
+   273→   273→  useEffect(() => {
+   274→   274→    try {
+   275→   275→      const raw = localStorage.getItem("metrojo-alert");
+   276→   276→      if (!raw) return;
+   277→   277→      const a = JSON.parse(raw) as { stationId?: string; beforeStations?: number };
+   278→   278→      if (a.stationId === id) {
+   279→   279→        setAlertOn(true);
+   280→   280→        if (a.beforeStations === 2 || a.beforeStations === 3 || a.beforeStations === 4) {
+   281→   281→          setBeforeStations(a.beforeStations);
+   282→   282→        }
+   283→   283→      }
+   284→   284→    } catch {}
+   285→   285→  }, [id]);
+   286→   286→
+   287→   287→  const saveAlert = (on: boolean, before: BeforeStations) => {
+   288→   288→    try {
+   289→   289→      if (on) {
+   290→   290→        localStorage.setItem(
+   291→   291→          "metrojo-alert",
+   292→   292→          JSON.stringify({ stationId: id, stationName: station.name, beforeStations: before })
+   293→   293→        );
+   294→   294→      } else {
+   295→   295→        localStorage.removeItem("metrojo-alert");
+   296→   296→      }
+   297→   297→    } catch {}
+   298→   298→  };
+   299→   299→
+   300→   300→  const pickBefore = (n: BeforeStations) => {
+   301→   301→    setBeforeStations(n);
+   302→   302→    if (alertOn) {
+   303→   303→      saveAlert(true, n);
+   304→   304→      toast({ title: "تنظیم هشدار بروزرسانی شد", description: `${toFa(n)} ایستگاه مانده به مقصد بیدار می‌شوید` });
+   305→   305→    }
+   306→   306→  };
+   307→   307→
+   308→   308→  const toggleAlert = () => {
+   309→   309→    const next = !alertOn;
+   310→   310→    setAlertOn(next);
+   311→   311→    saveAlert(next, beforeStations);
+   312→   312→    if (next) {
+   313→   313→      toast({ title: "هشدار مقصد فعال شد", description: `${toFa(beforeStations)} ایستگاه مانده به ${station.name} بیدار می‌شوید` });
+   314→   314→      announcer
+   315→   315→        .announce(`هشدار مقصد فعال شد. ${toFa(beforeStations)} ایستگاه مانده به مقصد بیدار می‌شوید.`)
+   316→   316→        .catch(() => {});
+   317→   317→    } else {
+   318→   318→      toast({ title: "هشدار مقصد غیرفعال شد", description: "می‌توانید هر زمان دوباره فعال کنید" });
+   319→   319→    }
+   320→   320→  };
+   321→   321→
+   322→   322→  /* ---------- گزارش تجهیزات ---------- */
+   323→   323→  useEffect(() => {
+   324→   324→    let alive = true;
+   325→   325→    fetch(`/api/reports?station=${id}`)
+   326→   326→      .then((r) => r.json())
+   327→   327→      .then((d: { reports?: ReportRow[] }) => {
+   328→   328→        if (alive) setReports(d.reports ?? []);
+   329→   329→      })
+   330→   330→      .catch(() => {});
+   331→   331→    return () => {
+   332→   332→      alive = false;
+   333→   333→    };
+   334→   334→  }, [id]);
+   335→   335→
+   336→   336→  const submitReport = async () => {
+   337→   337→    if (!eqType || !status || submitting) return;
+   338→   338→    setSubmitting(true);
+   339→   339→    try {
+   340→   340→      const res = await fetch("/api/reports", {
+   341→   341→        method: "POST",
+   342→   342→        headers: { "Content-Type": "application/json" },
+   343→   343→        body: JSON.stringify({
+   344→   344→          stationId: id,
+   345→   345→          equipmentType: eqType,
+   346→   346→          status,
+   347→   347→          note: note.trim() ? note.trim() : undefined,
+   348→   348→        }),
+   349→   349→      });
+   350→   350→      if (!res.ok) throw new Error();
+   351→   351→      toast({ title: "گزارش شما ثبت شد. سپاس از همکاری" });
+   352→   352→      setEqType(null);
+   353→   353→      setStatus(null);
+   354→   354→      setNote("");
+   355→   355→      const r = await fetch(`/api/reports?station=${id}`);
+   356→   356→      const d = (await r.json()) as { reports?: ReportRow[] };
+   357→   357→      setReports(d.reports ?? []);
+   358→   358→    } catch {
+   359→   359→      toast({ title: "ثبت گزارش ناموفق بود", description: "اتصال اینترنت را بررسی و دوباره تلاش کنید" });
+   360→   360→    } finally {
+   361→   361→      setSubmitting(false);
+   362→   362→    }
+   363→   363→  };
+   364→   364→
+   365→   365→  return (
+   366→   366→    <>
+   367→   367→      <PageHeader
+   368→   368→        title={station.name}
+   369→   369→        subtitle={subtitle}
+   370→   370→        actions={
+   371→   371→          <button
+   372→   372→            type="button"
+   373→   373→            aria-label={isFav ? "حذف از نشان‌ها" : "افزودن به نشان‌ها"}
+   374→   374→            aria-pressed={isFav}
+   375→   375→            onClick={toggleFav}
+   376→   376→            className={`w-10 h-10 flex items-center justify-center rounded-full active:scale-95 transition-all ${
+   377→   377→              isFav ? "text-amber-500" : "text-outline"
+   378→   378→            }`}
+   379→   379→          >
+   380→   380→            <MI name="star" size={22} fill={isFav} />
+   381→   381→          </button>
+   382→   382→        }
+   383→   383→      />
+   384→   384→
+   385→   385→      <main className="flex-1 w-full px-4 pt-3 pb-28 space-y-4">
+   386→   386→        {/* ================= کارت اطلاعات و تابلوی زنده ================= */}
+   387→   387→        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   388→   388→          <div className="flex items-center justify-between gap-2">
+   389→   389→            <div className="flex flex-wrap items-center gap-1.5">
+   390→   390→              {station.lines.map((ls) => {
+   391→   391→                const line = getLine(ls.lineId);
+   392→   392→                return (
+   393→   393→                  <span
+   394→   394→                    key={ls.lineId}
+   395→   395→                    className="rounded-lg px-1.5 py-1 text-[10px] font-bold shadow-sm"
+   396→   396→                    style={{ backgroundColor: line.color, color: line.textOnColor }}
+   397→   397→                  >
+   398→   398→                    خط {toFa(line.number)}
+   399→   399→                  </span>
+   400→   400→                );
+   401→   401→              })}
+   402→   402→            </div>
+   403→   403→            <button
+   404→   404→              type="button"
+   405→   405→              onClick={speak}
+   406→   406→              aria-label="اعلام صوتی اطلاعات ایستگاه"
+   407→   407→              className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center active:scale-95 transition-all shrink-0"
+   408→   408→            >
+   409→   409→              <MI name="volume_up" size={18} />
+   410→   410→            </button>
+   411→   411→          </div>
+   412→   412→
+   413→   413→          {/* تابلوی قطارهای بعدی — بر اساس جدول حرکت رسمی */}
+   414→   414→          <div className="flex items-center justify-between">
+   415→   415→            <div className="flex items-center gap-2">
+   416→   416→              <MI name="departure_board" size={20} className="text-primary" />
+   417→   417→              <h3 className="font-bold text-xs text-on-surface">قطارهای بعدی</h3>
+   418→   418→            </div>
+   419→   419→            <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+   420→   420→              <MI name="schedule" size={12} />
+   421→   421→              بر اساس جدول حرکت
+   422→   422→            </span>
+   423→   423→          </div>
+   424→   424→
+   425→   425→          {arrivals === null ? (
+   426→   426→            <div className="space-y-2" aria-hidden>
+   427→   427→              <div className="bg-surface-container-low rounded-xl h-12 animate-pulse" />
+   428→   428→              <div className="bg-surface-container-low rounded-xl h-12 animate-pulse" />
+   429→   429→            </div>
+   430→   430→          ) : (
+   431→   431→            <div className="divide-y divide-outline-variant/30">
+   432→   432→              {arrivals.map((a) =>
+   433→   433→                a.directions.map((d) => {
+   434→   434→                  const c = CROWD_COLOR[d.crowd];
+   435→   435→                  return (
+   436→   436→                    <div key={`${a.lineId}-${d.to}`} className="py-2.5 space-y-1.5 first:pt-0 last:pb-0">
+   437→   437→                      <div className="flex items-center justify-between gap-2">
+   438→   438→                        <div className="flex items-center gap-1.5 min-w-0">
+   439→   439→                          <span
+   440→   440→                            className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0"
+   441→   441→                            style={{ backgroundColor: a.color, color: a.textOnColor }}
+   442→   442→                          >
+   443→   443→                            {toFa(a.lineNumber)}
+   444→   444→                          </span>
+   445→   445→                          <span className="text-[11px] font-bold text-on-surface truncate">
+   446→   446→                            به سمت {d.to}
+   447→   447→                          </span>
+   448→   448→                        </div>
+   449→   449→                        <span
+   450→   450→                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 shrink-0"
+   451→   451→                          style={{ color: c, backgroundColor: `${c}14` }}
+   452→   452→                        >
+   453→   453→                          <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: c }} />
+   454→   454→                          {d.crowdLabel}
+   455→   455→                        </span>
+   456→   456→                      </div>
+   457→   457→                      {d.outOfService || d.nextMin === null ? (
+   458→   458→                        <p className="text-[10px] text-outline font-medium">
+   459→   459→                          سرویس امروز پایان یافته — اولین قطار فردا ساعت {toFa(a.firstTrain)}
+   460→   460→                        </p>
+   461→   461→                      ) : (
+   462→   462→                        <div className="flex items-center gap-1.5">
+   463→   463→                          <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-primary">
+   464→   464→                            {d.nextMin > 90 ? `ساعت ${toFa(d.nextAt ?? "")}` : `${toFa(d.nextMin)} دقیقه`}
+   465→   465→                          </span>
+   466→   466→                          {d.next2Min !== null && (
+   467→   467→                            <span className="bg-surface-container-low rounded-lg px-2 py-1 text-[10px] font-bold text-on-surface-variant">
+   468→   468→                              {d.next2Min > 90 ? `ساعت ${toFa(d.next2At ?? "")}` : `${toFa(d.next2Min)} دقیقه`}
+   469→   469→                            </span>
+   470→   470→                          )}
+   471→   471→                          <span className="text-[9px] text-outline ms-auto">هر {toFa(a.headwayLabel)} دقیقه یک قطار</span>
+   472→   472→                        </div>
+   473→   473→                      )}
+   474→   474→                    </div>
+   475→   475→                  );
+   476→   476→                })
+   477→   477→              )}
+   478→   478→            </div>
+   479→   479→          )}
+   480→   480→        </section>
+   481→   481→
+   482→   482→        {/* ================= تب‌ها ================= */}
+   483→   483→        <div className="bg-surface-container-low p-1 rounded-full flex items-center" role="tablist" aria-label="بخش‌های ایستگاه">
+   484→   484→          {TABS.map((t) => (
+   485→   485→            <button
+   486→   486→              key={t.key}
+   487→   487→              type="button"
+   488→   488→              role="tab"
+   489→   489→              aria-selected={tab === t.key}
+   490→   490→              onClick={() => setTab(t.key)}
+   491→   491→              className={`flex-1 text-center py-1.5 rounded-full text-[11px] active:scale-95 transition-all ${
+   492→   492→                tab === t.key
+   493→   493→                  ? "bg-surface-container-lowest shadow-sm text-primary font-bold"
+   494→   494→                  : "text-on-surface-variant"
+   495→   495→              }`}
+   496→   496→            >
+   497→   497→              {t.label}
+   498→   498→            </button>
+   499→   499→          ))}
+   500→   500→        </div>
+   501→   501→
+   502→   502→        {/* ================= محتوای تب امکانات ================= */}
+   503→   503→        {tab === "amenities" && (
+   504→   504→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   505→   505→            <div className="flex items-center gap-2">
+   506→   506→              <MI name="widgets" size={20} className="text-primary" />
+   507→   507→              <h3 className="font-bold text-xs text-on-surface">امکانات ایستگاه</h3>
+   508→   508→            </div>
+   509→   509→
+   510→   510→            <div className="grid grid-cols-4 gap-2">
+   511→   511→              {amenities.map((a) => (
+   512→   512→                <div
+   513→   513→                  key={a.key}
+   514→   514→                  className="bg-surface-container-low rounded-xl p-2 flex flex-col items-center gap-1 text-center"
+   515→   515→                >
+   516→   516→                  <MI name={a.icon} size={20} className="text-primary" />
+   517→   517→                  <span className="text-[9px] font-medium text-on-surface-variant leading-tight">{a.label}</span>
+   518→   518→                </div>
+   519→   519→              ))}
+   520→   520→            </div>
+   521→   521→
+   522→   522→            <div className="flex items-center gap-2 pt-1">
+   523→   523→              <MI name="place" size={20} className="text-primary" />
+   524→   524→              <h3 className="font-bold text-xs text-on-surface">نقاط شاخص اطراف</h3>
+   525→   525→            </div>
+   526→   526→
+   527→   527→            {landmarks.length > 0 ? (
+   528→   528→              <ul className="space-y-1.5">
+   529→   529→                {landmarks.map((lm) => (
+   530→   530→                  <li key={lm} className="flex items-center gap-2 text-xs text-on-surface-variant">
+   531→   531→                    <MI name="place" size={14} className="text-primary shrink-0" />
+   532→   532→                    {lm}
+   533→   533→                  </li>
+   534→   534→                ))}
+   535→   535→              </ul>
+   536→   536→            ) : (
+   537→   537→              <p className="text-[11px] text-outline">نقطه شاخصی برای این ایستگاه ثبت نشده است</p>
+   538→   538→            )}
+   539→   539→          </section>
+   540→   540→        )}
+   541→   541→
+   542→   542→        {/* ================= محتوای تب خروجی‌ها ================= */}
+   543→   543→        {tab === "exits" && (
+   544→   544→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-2.5">
+   545→   545→            <div className="flex items-center gap-2 pb-1">
+   546→   546→              <MI name="door_open" size={20} className="text-primary" />
+   547→   547→              <h3 className="font-bold text-xs text-on-surface">خروجی‌های ایستگاه</h3>
+   548→   548→            </div>
+   549→   549→
+   550→   550→            {exits.map((ex) => (
+   551→   551→              <div key={ex.label} className="bg-surface-container-low rounded-xl p-3 space-y-1.5">
+   552→   552→                <div className="flex items-center justify-between gap-2">
+   553→   553→                  <span className="text-xs font-bold text-on-surface">{ex.label}</span>
+   554→   554→                  <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
+   555→   555→                    {ex.direction}
+   556→   556→                  </span>
+   557→   557→                </div>
+   558→   558→                <div className="flex items-center gap-1 text-[10px] text-outline">
+   559→   559→                  <MI name="accessible" size={13} className="shrink-0" />
+   560→   560→                  {ex.accessibility}
+   561→   561→                </div>
+   562→   562→                {ex.landmarks.length > 0 && (
+   563→   563→                  <div className="flex items-start gap-1 text-[10px] text-on-surface-variant">
+   564→   564→                    <MI name="place" size={13} className="text-primary mt-0.5 shrink-0" />
+   565→   565→                    <span>{ex.landmarks.join(" • ")}</span>
+   566→   566→                  </div>
+   567→   567→                )}
+   568→   568→              </div>
+   569→   569→            ))}
+   570→   570→          </section>
+   571→   571→        )}
+   572→   572→
+   573→   573→        {/* ================= محتوای تب هشدار مقصد ================= */}
+   574→   574→        {tab === "alert" && (
+   575→   575→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   576→   576→            <div className="flex items-center gap-2">
+   577→   577→              <MI name="alarm" size={20} className="text-primary" />
+   578→   578→              <h3 className="font-bold text-xs text-on-surface">بیدارباش هوشمند</h3>
+   579→   579→              {alertOn && (
+   580→   580→                <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full ms-auto">
+   581→   581→                  فعال
+   582→   582→                </span>
+   583→   583→              )}
+   584→   584→            </div>
+   585→   585→
+   586→   586→            <p className="text-[11px] text-on-surface-variant leading-6">
+   587→   587→              با فعال‌سازی این قابلیت، چند ایستگاه مانده به رسیدن به {station.name} با اعلان صوتی بیدار می‌شوید تا با
+   588→   588→              خیال راحت آماده پیاده شدن باشید.
+   589→   589→            </p>
+   590→   590→
+   591→   591→            <div className="space-y-1.5">
+   592→   592→              <p className="text-[11px] font-bold text-outline">چند ایستگاه مانده به مقصد؟</p>
+   593→   593→              <div className="flex items-center gap-1.5">
+   594→   594→                {([2, 3, 4] as BeforeStations[]).map((n) => (
+   595→   595→                  <button
+   596→   596→                    key={n}
+   597→   597→                    type="button"
+   598→   598→                    onClick={() => pickBefore(n)}
+   599→   599→                    aria-pressed={beforeStations === n}
+   600→   600→                    className={`flex-1 py-2 rounded-xl text-xs font-bold border active:scale-95 transition-all ${
+   601→   601→                      beforeStations === n
+   602→   602→                        ? "bg-primary text-white border-primary shadow-sm"
+   603→   603→                        : "bg-surface-container-lowest border-outline-variant/30 text-on-surface-variant"
+   604→   604→                    }`}
+   605→   605→                  >
+   606→   606→                    {toFa(n)} ایستگاه
+   607→   607→                  </button>
+   608→   608→                ))}
+   609→   609→              </div>
+   610→   610→            </div>
+   611→   611→
+   612→   612→            <div className="flex items-center justify-between bg-surface-container-low rounded-xl p-3">
+   613→   613→              <div className="flex flex-col">
+   614→   614→                <span className="text-xs font-bold text-on-surface">فعال‌سازی هشدار</span>
+   615→   615→                <span className="text-[10px] text-outline mt-0.5">
+   616→   616→                  {alertOn ? "هشدار برای این ایستگاه فعال است" : "هشدار در حالت خاموش است"}
+   617→   617→                </span>
+   618→   618→              </div>
+   619→   619→              <button
+   620→   620→                type="button"
+   621→   621→                role="switch"
+   622→   622→                aria-checked={alertOn}
+   623→   623→                aria-label="فعال‌سازی هشدار مقصد"
+   624→   624→                onClick={toggleAlert}
+   625→   625→                className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${
+   626→   626→                  alertOn ? "bg-primary-container" : "bg-surface-container-high border border-outline-variant/40"
+   627→   627→                }`}
+   628→   628→              >
+   629→   629→                <span
+   630→   630→                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
+   631→   631→                    alertOn ? "right-[22px]" : "right-0.5"
+   632→   632→                  }`}
+   633→   633→                />
+   634→   634→              </button>
+   635→   635→            </div>
+   636→   636→          </section>
+   637→   637→        )}
+   638→   638→
+   639→   639→        {/* ================= محتوای تب گزارش ================= */}
+   640→   640→        {tab === "report" && (
+   641→   641→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   642→   642→            <div className="flex items-center gap-2">
+   643→   643→              <MI name="flag" size={20} className="text-primary" />
+   644→   644→              <h3 className="font-bold text-xs text-on-surface">گزارش وضعیت تجهیزات</h3>
+   645→   645→            </div>
+   646→   646→
+   647→   647→            {/* نوع تجهیزات */}
+   648→   648→            <div className="space-y-1.5">
+   649→   649→              <p className="text-[11px] font-bold text-outline">نوع تجهیزات</p>
+   650→   650→              <div className="grid grid-cols-3 gap-1.5">
+   651→   651→                {EQ_OPTIONS.map((o) => (
+   652→   652→                  <button
+   653→   653→                    key={o.key}
+   654→   654→                    type="button"
+   655→   655→                    onClick={() => setEqType(o.key)}
+   656→   656→                    aria-pressed={eqType === o.key}
+   657→   657→                    className={`py-2 rounded-xl border flex flex-col items-center gap-1 text-[10px] font-bold active:scale-95 transition-all ${
+   658→   658→                      eqType === o.key
+   659→   659→                        ? "bg-primary text-white border-primary shadow-sm"
+   660→   660→                        : "bg-surface-container-lowest border-outline-variant/30 text-on-surface-variant"
+   661→   661→                    }`}
+   662→   662→                  >
+   663→   663→                    <MI name={o.icon} size={18} />
+   664→   664→                    {o.label}
+   665→   665→                  </button>
+   666→   666→                ))}
+   667→   667→              </div>
+   668→   668→            </div>
+   669→   669→
+   670→   670→            {/* وضعیت */}
+   671→   671→            <div className="space-y-1.5">
+   672→   672→              <p className="text-[11px] font-bold text-outline">وضعیت فعلی</p>
+   673→   673→              <div className="grid grid-cols-3 gap-1.5">
+   674→   674→                {STATUS_OPTIONS.map((o) => (
+   675→   675→                  <button
+   676→   676→                    key={o.key}
+   677→   677→                    type="button"
+   678→   678→                    onClick={() => setStatus(o.key)}
+   679→   679→                    aria-pressed={status === o.key}
+   680→   680→                    className={`py-2 rounded-xl border flex items-center justify-center gap-1 text-[10px] font-bold active:scale-95 transition-all ${
+   681→   681→                      status === o.key ? o.active : "bg-surface-container-lowest border-outline-variant/30 text-on-surface-variant"
+   682→   682→                    }`}
+   683→   683→                  >
+   684→   684→                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${o.dot}`} />
+   685→   685→                    {o.label}
+   686→   686→                  </button>
+   687→   687→                ))}
+   688→   688→              </div>
+   689→   689→            </div>
+   690→   690→
+   691→   691→            {/* توضیح */}
+   692→   692→            <textarea
+   693→   693→              value={note}
+   694→   694→              onChange={(e) => setNote(e.target.value)}
+   695→   695→              rows={2}
+   696→   696→              aria-label="توضیح دلخواه گزارش"
+   697→   697→              placeholder="توضیح دلخواه (اختیاری) — مثلاً پله‌برقی خروجی ۲ خاموش است"
+   698→   698→              className="w-full bg-surface-container-low rounded-xl p-2.5 text-xs text-on-surface placeholder:text-outline border border-outline-variant/30 focus:outline-none focus:border-primary resize-none"
+   699→   699→            />
+   700→   700→
+   701→   701→            <button
+   702→   702→              type="button"
+   703→   703→              onClick={submitReport}
+   704→   704→              disabled={!eqType || !status || submitting}
+   705→   705→              className="w-full flex items-center justify-center gap-1.5 bg-primary-container text-white rounded-xl font-bold text-xs py-2.5 shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
+   706→   706→            >
+   707→   707→              {submitting ? (
+   708→   708→                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+   709→   709→              ) : (
+   710→   710→                <MI name="send" size={15} />
+   711→   711→              )}
+   712→   712→              ثبت گزارش
+   713→   713→            </button>
+   714→   714→
+   715→   715→            {/* وضعیت تجهیزات خط */}
+   716→   716→            <div className="space-y-1.5 pt-1">
+   717→   717→              <p className="text-[11px] font-bold text-outline">وضعیت رسمی تجهیزات</p>
+   718→   718→              {equipment.map((eq) => {
+   719→   719→                const dot = eq.active >= eq.total ? "bg-emerald-500" : eq.active === 0 ? "bg-red-500" : "bg-amber-500";
+   720→   720→                return (
+   721→   721→                  <div key={eq.type} className="flex items-center gap-2 bg-surface-container-low rounded-xl p-2.5">
+   722→   722→                    <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+   723→   723→                    <div className="flex-1 min-w-0">
+   724→   724→                      <div className="flex items-center justify-between gap-2">
+   725→   725→                        <span className="text-xs font-bold text-on-surface">{eq.typeLabel}</span>
+   726→   726→                        <span className="text-[10px] font-bold text-primary whitespace-nowrap">
+   727→   727→                          {toFa(eq.active)} از {toFa(eq.total)} فعال
+   728→   728→                        </span>
+   729→   729→                      </div>
+   730→   730→                      {eq.note && <p className="text-[10px] text-outline mt-0.5">{eq.note}</p>}
+   731→   731→                    </div>
+   732→   732→                  </div>
+   733→   733→                );
+   734→   734→              })}
+   735→   735→            </div>
+   736→   736→
+   737→   737→            {/* گزارش‌های اخیر مسافران */}
+   738→   738→            {reports.length > 0 && (
+   739→   739→              <div className="space-y-1.5 pt-2 border-t border-outline-variant/30">
+   740→   740→                <div className="flex items-center gap-1.5">
+   741→   741→                  <MI name="history" size={14} className="text-outline" />
+   742→   742→                  <span className="text-[10px] font-bold text-outline">گزارش‌های اخیر مسافران</span>
+   743→   743→                </div>
+   744→   744→                {reports.map((r) => (
+   745→   745→                  <div key={r.id} className="text-[10px] text-on-surface-variant flex items-center gap-1.5 min-w-0">
+   746→   746→                    <span
+   747→   747→                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${SAVED_STATUS_DOT[r.status] ?? "bg-outline"}`}
+   748→   748→                    />
+   749→   749→                    <span className="font-bold shrink-0">{SAVED_TYPE_LABEL[r.equipmentType] ?? r.equipmentType}</span>
+   750→   750→                    <span className="shrink-0">{SAVED_STATUS_LABEL[r.status] ?? r.status}</span>
+   751→   751→                    {r.note && <span className="text-outline truncate">— {r.note}</span>}
+   752→   752→                  </div>
+   753→   753→                ))}
+   754→   754→              </div>
+   755→   755→            )}
+   756→   756→          </section>
+   757→   757→        )}
+   758→   758→
+   759→   759→        {/* دکمه بازگشت به فهرست */}
+   760→   760→        <button
+   761→   761→          type="button"
+   762→   762→          onClick={() => router.push("/stations")}
+   763→   763→          className="w-full flex items-center justify-center gap-1.5 bg-primary-container text-white rounded-xl font-bold text-xs py-2.5 shadow-sm active:scale-[0.98] transition-all"
+   764→   764→        >
+   765→   765→          <MI name="arrow_forward" size={15} />
+   766→   766→          بازگشت به فهرست ایستگاه‌ها
+   767→   767→        </button>
+   768→   768→      </main>
+   769→   769→    </>
+   770→   770→  );
+   771→   771→}
+   772→   772→

@@ -41,4 +41,7 @@
     <!-- دستیار صوتی: میکروفون برای جستجوی گفتاری + TTS -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- موقعیت‌یاب: نزدیک‌ترین ایستگاه مترو با GPS دستگاه -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 </manifest>

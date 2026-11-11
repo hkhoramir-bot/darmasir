@@ -1,23 +1,44 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LINES, toFa } from "@/lib/metro-data";
+import { LINES, toFa, getStation, headwayAt, type StationDef } from "@/lib/metro-data";
 import { PageHeader, MI } from "@/components/metro/shell";
 import MetroMap from "@/components/metro/metro-map";
 
 /* ============================================================
-   نقشه تعاملی شبکه — بزرگ‌نمایی، جابجایی و انتخاب ایستگاه
+   نقشه تعاملی شبکه — پینچ/جابجایی روان، انتخاب ایستگاه با
+   کارد پایین‌صفحه (مثل اپ‌های نقشه) و موقعیت‌یاب GPS
    ============================================================ */
 
 const GESTURE_TIPS: { icon: string; text: string }[] = [
   { icon: "pan_tool", text: "یک انگشت: جابجایی روی نقشه" },
   { icon: "pinch", text: "دو انگشت: بزرگ‌نمایی و کوچک‌نمایی" },
-  { icon: "touch_app", text: "لمس ایستگاه: مشاهده جزئیات" },
+  { icon: "my_location", text: "دکمه موقعیت: نزدیک‌ترین ایستگاه به شما" },
 ];
 
 export default function MapPage() {
   const router = useRouter();
+  const [selected, setSelected] = useState<StationDef | null>(null);
   const tehranLines = LINES.filter((l) => l.cityId === "tehran");
+
+  const selHeadway = useMemo(() => {
+    if (!selected) return null;
+    const d = new Date();
+    const line = LINES.find((l) => l.id === selected.lines[0].lineId);
+    if (!line) return null;
+    return headwayAt(line, d.getHours() * 60 + d.getMinutes());
+  }, [selected]);
+
+  const selLineLabel = useMemo(() => {
+    if (!selected) return "";
+    if (selected.lines.length > 1) {
+      return `ایستگاه تقاطع — ${selected.lines
+        .map((l) => `خط ${toFa(LINES.find((x) => x.id === l.lineId)?.number ?? 0)}`)
+        .join(" و ")}`;
+    }
+    return `خط ${toFa(LINES.find((x) => x.id === selected.lines[0].lineId)?.number ?? 0)}`;
+  }, [selected]);
 
   return (
     <>
@@ -28,7 +49,10 @@ export default function MapPage() {
         <div className="mx-4 bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
           <MetroMap
             className="h-[560px] w-full"
-            onStationSelect={(stationId) => router.push(`/stations/${stationId}`)}
+            onStationSelect={(stationId) => {
+              const st = getStation(stationId);
+              if (st) setSelected(st);
+            }}
           />
         </div>
 
@@ -82,11 +106,83 @@ export default function MapPage() {
               ))}
             </div>
             <p className="text-[10px] text-outline-variant pt-1">
-              با لمس هر ایستگاه روی نقشه، جزئیات کامل آن باز می‌شود.
+              با لمس هر ایستگاه روی نقشه، کارد جزئیات باز می‌شود.
             </p>
           </section>
         </div>
       </main>
+
+      {/* ================= کارد پایین‌صفحه ایستگاه انتخاب‌شده ================= */}
+      {selected && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`ایستگاه ${selected.name}`}
+        >
+          <div className="absolute inset-0 bg-black/35 backdrop-blur-[2px]" onClick={() => setSelected(null)} />
+          <div className="fade-in relative w-full sm:max-w-md bg-surface-container-lowest rounded-t-3xl sm:rounded-3xl sm:bottom-4 shadow-2xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <MI name="directions_subway" size={22} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-on-surface truncate">{selected.name}</h3>
+                  <p className="text-[10px] text-outline">
+                    {selLineLabel}
+                    {selHeadway ? ` • فاصله حرکت حدود ${toFa(selHeadway)} دقیقه` : ""}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="بستن"
+                onClick={() => setSelected(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-outline shrink-0"
+              >
+                <MI name="close" size={18} />
+              </button>
+            </div>
+
+            {/* نشان خطوط */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {selected.lines.map((ls) => {
+                const line = LINES.find((x) => x.id === ls.lineId);
+                if (!line) return null;
+                return (
+                  <span
+                    key={ls.lineId}
+                    className="rounded-lg px-2 py-1 text-[10px] font-bold shadow-sm"
+                    style={{ backgroundColor: line.color, color: line.textOnColor }}
+                  >
+                    خط {toFa(line.number)} — {line.terminals[0]} ↔ {line.terminals[1]}
+                  </span>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => router.push(`/stations/${selected.id}`)}
+                className="flex-1 h-10 rounded-xl bg-primary-container text-white text-xs font-bold shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+              >
+                <MI name="info" size={15} />
+                مشاهده جزئیات ایستگاه
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(`/plan?to=${selected.id}`)}
+                className="h-10 px-4 rounded-xl border border-outline-variant text-xs font-bold text-on-surface active:scale-95 transition-all flex items-center gap-1"
+              >
+                <MI name="route" size={15} />
+                مسیریابی
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

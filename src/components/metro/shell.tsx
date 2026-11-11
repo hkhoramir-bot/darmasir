@@ -167,7 +167,6 @@ const DRAWER_LINKS: { label: string; icon: string; href: string }[] = [
   { label: "خطوط و نقشه", icon: "route", href: "/lines" },
   { label: "ایستگاه‌ها", icon: "directions_subway", href: "/stations" },
   { label: "نقشه تعاملی شبکه", icon: "map", href: "/map" },
-  { label: "اشیای گمشده و پیدا شده", icon: "travel_explore", href: "/lost" },
   { label: "تاریخچه سفر", icon: "history", href: "/history" },
   { label: "تنظیمات", icon: "settings", href: "/settings" },
 ];
@@ -242,10 +241,10 @@ export function MenuDrawer() {
       className={`fixed inset-0 z-[70] transition-all duration-300 ${open ? "" : "pointer-events-none"}`}
       aria-hidden={!open}
     >
-      {/* پس‌زمینه */}
+      {/* پس‌زمینه — با محو شیشه‌ای پشت منو */}
       <div
         onClick={() => setDrawer(false)}
-        className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-black/35 backdrop-blur-md transition-opacity duration-300 ${
           open ? "opacity-100" : "opacity-0"
         }`}
       />
@@ -264,7 +263,7 @@ export function MenuDrawer() {
               <div>
                 <h2 className="font-bold text-sm text-primary">متروجو هوشمند</h2>
                 <span className="text-[10px] text-tertiary font-bold bg-tertiary-fixed/40 px-1.5 py-0.5 rounded">
-                  نسخه {toFa("4.8.3")} آنلاین
+                  نسخه {toFa("4.8.4")} آنلاین
                 </span>
               </div>
             </div>

@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import {
   amenitiesLabels,
   CROWD_COLOR,
-  equipmentFor,
   exitsFor,
   getLine,
   getStation,
@@ -21,7 +20,7 @@ import { useAnnouncer } from "@/components/metro/voice";
 import { useToast } from "@/hooks/use-toast";
 
 /* ============================================================
-   جزئیات ایستگاه — امکانات، خروجی‌ها، هشدار مقصد و گزارش تجهیزات
+   جزئیات ایستگاه — امکانات، خروجی‌ها و هشدار مقصد
    ============================================================ */
 
 interface ArrivalRow {
@@ -45,66 +44,14 @@ interface ArrivalRow {
   lastTrain: string;
 }
 
-interface ReportRow {
-  id: string;
-  stationId: string;
-  equipmentType: string;
-  exitLabel: string;
-  status: string;
-  note: string | null;
-  createdAt: string;
-}
-
-type TabKey = "amenities" | "exits" | "alert" | "report";
-type EquipmentType = "escalator" | "elevator" | "ramp";
-type ReportStatus = "working" | "malfunction" | "under_maintenance";
+type TabKey = "amenities" | "exits" | "alert";
 type BeforeStations = 2 | 3 | 4;
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "amenities", label: "امکانات" },
   { key: "exits", label: "خروجی‌ها" },
   { key: "alert", label: "هشدار مقصد" },
-  { key: "report", label: "گزارش" },
 ];
-
-const EQ_OPTIONS: { key: EquipmentType; label: string; icon: string }[] = [
-  { key: "escalator", label: "پله‌برقی", icon: "escalator" },
-  { key: "elevator", label: "آسانسور", icon: "elevator" },
-  { key: "ramp", label: "رمپ متحرک", icon: "accessible_forward" },
-];
-
-const STATUS_OPTIONS: {
-  key: ReportStatus;
-  label: string;
-  dot: string;
-  active: string;
-}[] = [
-  { key: "working", label: "سالم", dot: "bg-emerald-500", active: "bg-emerald-50 text-emerald-800 border-emerald-300" },
-  { key: "malfunction", label: "خراب", dot: "bg-red-500", active: "bg-red-50 text-red-800 border-red-300" },
-  {
-    key: "under_maintenance",
-    label: "در حال تعمیر",
-    dot: "bg-amber-500",
-    active: "bg-amber-50 text-amber-800 border-amber-300",
-  },
-];
-
-/* برچسب گزارش‌های ذخیره‌شده */
-const SAVED_TYPE_LABEL: Record<string, string> = {
-  escalator: "پله‌برقی",
-  elevator: "آسانسور",
-  ramp: "رمپ متحرک",
-};
-const SAVED_STATUS_LABEL: Record<string, string> = {
-  working: "سالم",
-  malfunction: "خراب",
-  under_maintenance: "در حال تعمیر",
-};
-const SAVED_STATUS_DOT: Record<string, string> = {
-  working: "bg-emerald-500",
-  malfunction: "bg-red-500",
-  under_maintenance: "bg-amber-500",
-};
 
 /* ------------------------- ایستگاه یافت نشد ------------------------- */
 function NotFound() {
@@ -157,13 +104,6 @@ function StationDetail({ station }: { station: StationDef }) {
   const [beforeStations, setBeforeStations] = useState<BeforeStations>(2);
   const [alertOn, setAlertOn] = useState(false);
 
-  /* فرم گزارش */
-  const [eqType, setEqType] = useState<EquipmentType | null>(null);
-  const [status, setStatus] = useState<ReportStatus | null>(null);
-  const [note, setNote] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [reports, setReports] = useState<ReportRow[]>([]);
-
   const subtitle =
     station.lines.length > 1
       ? `تقاطع ${station.lines.map((l) => toFa(getLine(l.lineId).number)).join(" و ")}`
@@ -172,7 +112,6 @@ function StationDetail({ station }: { station: StationDef }) {
   const amenities = useMemo(() => amenitiesLabels(station.amenities), [station.amenities]);
   const exits = useMemo(() => exitsFor(station.id), [station.id]);
   const landmarks = useMemo(() => landmarksFor(station.id), [station.id]);
-  const equipment = useMemo(() => equipmentFor(station.id), [station.id]);
 
   /* ---------- تابلوی قطارهای بعدی — محاسبه محلی بر اساس جدول حرکت رسمی ----------
      (با ساعت خودِ دستگاه کاربر محاسبه می‌شود تا دقیق باشد؛ هر ۳۰ ثانیه بروزرسانی) */
@@ -316,49 +255,6 @@ function StationDetail({ station }: { station: StationDef }) {
         .catch(() => {});
     } else {
       toast({ title: "هشدار مقصد غیرفعال شد", description: "می‌توانید هر زمان دوباره فعال کنید" });
-    }
-  };
-
-  /* ---------- گزارش تجهیزات ---------- */
-  useEffect(() => {
-    let alive = true;
-    fetch(`/api/reports?station=${id}`)
-      .then((r) => r.json())
-      .then((d: { reports?: ReportRow[] }) => {
-        if (alive) setReports(d.reports ?? []);
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [id]);
-
-  const submitReport = async () => {
-    if (!eqType || !status || submitting) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stationId: id,
-          equipmentType: eqType,
-          status,
-          note: note.trim() ? note.trim() : undefined,
-        }),
-      });
-      if (!res.ok) throw new Error();
-      toast({ title: "گزارش شما ثبت شد. سپاس از همکاری" });
-      setEqType(null);
-      setStatus(null);
-      setNote("");
-      const r = await fetch(`/api/reports?station=${id}`);
-      const d = (await r.json()) as { reports?: ReportRow[] };
-      setReports(d.reports ?? []);
-    } catch {
-      toast({ title: "ثبت گزارش ناموفق بود", description: "اتصال اینترنت را بررسی و دوباره تلاش کنید" });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -633,126 +529,6 @@ function StationDetail({ station }: { station: StationDef }) {
                 />
               </button>
             </div>
-          </section>
-        )}
-
-        {/* ================= محتوای تب گزارش ================= */}
-        {tab === "report" && (
-          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
-            <div className="flex items-center gap-2">
-              <MI name="flag" size={20} className="text-primary" />
-              <h3 className="font-bold text-xs text-on-surface">گزارش وضعیت تجهیزات</h3>
-            </div>
-
-            {/* نوع تجهیزات */}
-            <div className="space-y-1.5">
-              <p className="text-[11px] font-bold text-outline">نوع تجهیزات</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {EQ_OPTIONS.map((o) => (
-                  <button
-                    key={o.key}
-                    type="button"
-                    onClick={() => setEqType(o.key)}
-                    aria-pressed={eqType === o.key}
-                    className={`py-2 rounded-xl border flex flex-col items-center gap-1 text-[10px] font-bold active:scale-95 transition-all ${
-                      eqType === o.key
-                        ? "bg-primary text-white border-primary shadow-sm"
-                        : "bg-surface-container-lowest border-outline-variant/30 text-on-surface-variant"
-                    }`}
-                  >
-                    <MI name={o.icon} size={18} />
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* وضعیت */}
-            <div className="space-y-1.5">
-              <p className="text-[11px] font-bold text-outline">وضعیت فعلی</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {STATUS_OPTIONS.map((o) => (
-                  <button
-                    key={o.key}
-                    type="button"
-                    onClick={() => setStatus(o.key)}
-                    aria-pressed={status === o.key}
-                    className={`py-2 rounded-xl border flex items-center justify-center gap-1 text-[10px] font-bold active:scale-95 transition-all ${
-                      status === o.key ? o.active : "bg-surface-container-lowest border-outline-variant/30 text-on-surface-variant"
-                    }`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${o.dot}`} />
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* توضیح */}
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={2}
-              aria-label="توضیح دلخواه گزارش"
-              placeholder="توضیح دلخواه (اختیاری) — مثلاً پله‌برقی خروجی ۲ خاموش است"
-              className="w-full bg-surface-container-low rounded-xl p-2.5 text-xs text-on-surface placeholder:text-outline border border-outline-variant/30 focus:outline-none focus:border-primary resize-none"
-            />
-
-            <button
-              type="button"
-              onClick={submitReport}
-              disabled={!eqType || !status || submitting}
-              className="w-full flex items-center justify-center gap-1.5 bg-primary-container text-white rounded-xl font-bold text-xs py-2.5 shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              {submitting ? (
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              ) : (
-                <MI name="send" size={15} />
-              )}
-              ثبت گزارش
-            </button>
-
-            {/* وضعیت تجهیزات خط */}
-            <div className="space-y-1.5 pt-1">
-              <p className="text-[11px] font-bold text-outline">وضعیت رسمی تجهیزات</p>
-              {equipment.map((eq) => {
-                const dot = eq.active >= eq.total ? "bg-emerald-500" : eq.active === 0 ? "bg-red-500" : "bg-amber-500";
-                return (
-                  <div key={eq.type} className="flex items-center gap-2 bg-surface-container-low rounded-xl p-2.5">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-on-surface">{eq.typeLabel}</span>
-                        <span className="text-[10px] font-bold text-primary whitespace-nowrap">
-                          {toFa(eq.active)} از {toFa(eq.total)} فعال
-                        </span>
-                      </div>
-                      {eq.note && <p className="text-[10px] text-outline mt-0.5">{eq.note}</p>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* گزارش‌های اخیر مسافران */}
-            {reports.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-outline-variant/30">
-                <div className="flex items-center gap-1.5">
-                  <MI name="history" size={14} className="text-outline" />
-                  <span className="text-[10px] font-bold text-outline">گزارش‌های اخیر مسافران</span>
-                </div>
-                {reports.map((r) => (
-                  <div key={r.id} className="text-[10px] text-on-surface-variant flex items-center gap-1.5 min-w-0">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${SAVED_STATUS_DOT[r.status] ?? "bg-outline"}`}
-                    />
-                    <span className="font-bold shrink-0">{SAVED_TYPE_LABEL[r.equipmentType] ?? r.equipmentType}</span>
-                    <span className="shrink-0">{SAVED_STATUS_LABEL[r.status] ?? r.status}</span>
-                    {r.note && <span className="text-outline truncate">— {r.note}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
           </section>
         )}
 
