@@ -34,6 +34,7 @@ interface Transform {
 const MIN_SCALE = 0.75;
 const MAX_SCALE = 4;
 const TAP_SLOP_PX = 7; // حرکت بیشتر از این = جابجایی، نه لمس ایستگاه
+const STALE_POINTER_MS = 1500; // اشاره‌گر بدون هیچ رویداد جدید بعد از این مدت = مرده
 
 const TEHRAN_LINES = LINES.filter((l) => l.cityId === "tehran");
 
@@ -134,8 +135,8 @@ export default function MetroMap({
   const tRef = useRef<Transform>({ scale: 1, tx: 0, ty: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
 
-  /* اشاره‌گرهای فعال — پایه ژست چندلمسی */
-  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  /* اشاره‌گرهای فعال — پایه ژست چندلمسی (t = آخرین زمان دیدن اشاره‌گر) */
+  const pointersRef = useRef<Map<number, { x: number; y: number; t: number }>>(new Map());
   const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
   const pinchRef = useRef<{
     dist0: number;
@@ -190,10 +191,29 @@ export default function MetroMap({
   /** ثبت ترنسفورم جدید — همیشه از طریق این تابع */
   const commit = useCallback((next: Transform) => {
     const scale = clamp(next.scale, MIN_SCALE, MAX_SCALE);
-    const half = MAP_CANVAS.w / 2;
-    const halfH = MAP_CANVAS.h / 2;
-    const tx = clamp(next.tx, half - scale * half - 60, -(half - scale * half) + 60);
-    const ty = clamp(next.ty, halfH - scale * halfH - 60, -(halfH - scale * halfH) + 60);
+    /* پنجره دید واقعی بر حسب واحدهای viewBox — با احتساب letterbox حالت meet.
+       clamp قبلی فقط مرکز بوم را مبنا می‌گرفت و در بزرگ‌نمایی اجازه می‌داد
+       کل نقشه از پنجره دید خارج شود (کاربر حس می‌کرد pan خراب است). */
+    let wx0 = 0, wy0 = 0, winW = MAP_CANVAS.w, winH = MAP_CANVAS.h;
+    const svg = svgRef.current;
+    if (svg) {
+      const rect = svg.getBoundingClientRect();
+      if (rect.width > 2 && rect.height > 2) {
+        const f = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+        wx0 = -((rect.width - MAP_CANVAS.w * f) / 2) / f;
+        wy0 = -((rect.height - MAP_CANVAS.h * f) / 2) / f;
+        winW = rect.width / f;
+        winH = rect.height / f;
+      }
+    }
+    const OVER = 60; // اجازه سرریز اندک در لبه‌ها
+    // لبه محتوا نباید از پنجره دید بیرون بزند — در هر بزرگ‌نمایی کل نقشه قابل رسیدن است
+    const loX = wx0 + winW - scale * MAP_CANVAS.w - OVER;
+    const hiX = wx0 + OVER;
+    const loY = wy0 + winH - scale * MAP_CANVAS.h - OVER;
+    const hiY = wy0 + OVER;
+    const tx = loX <= hiX ? clamp(next.tx, loX, hiX) : (loX + hiX) / 2;
+    const ty = loY <= hiY ? clamp(next.ty, loY, hiY) : (loY + hiY) / 2;
     const fixed = { scale, tx, ty };
     tRef.current = fixed;
     setT(fixed);
@@ -253,22 +273,76 @@ export default function MetroMap({
     return () => el.removeEventListener("wheel", onWheel);
   }, [zoomAt]);
 
+  /* ---------- تور ایمنی سراسری برای اشاره‌گرهای گم‌شده ----------
+     اگر pointerup/pointercancel انگشتی به SVG نرسد (مثلاً انگشت روی کارت
+     راهنما، دکمه‌های شناور یا بیرون نقشه بالا آمده باشد، یا برچسبِ زیر
+     انگشت در میانه ژست از DOM حذف شود)، اشاره‌گر «مرده» در حافظه می‌ماند
+     و ژستِ بعدی به‌جای جابجایی، پینچِ خراب با لنگر مرده اجرا می‌شد —
+     همین باعث «ناتوانی در pan بعد از zoom» بود. این شنوندهٔ سراسری
+     (فاز capture) هر اشاره‌گر گم‌شده را بلافاصله پاک می‌کند. */
+  useEffect(() => {
+    const release = (e: PointerEvent) => {
+      if (!pointersRef.current.has(e.pointerId)) return;
+      pointersRef.current.delete(e.pointerId);
+      if (pointersRef.current.size === 1) {
+        // یک انگشت باقی مانده — ادامه با جابجایی از موقعیت فعلی او
+        pinchRef.current = null;
+        const [p] = [...pointersRef.current.values()];
+        panRef.current = { startX: p.x, startY: p.y, tx: tRef.current.tx, ty: tRef.current.ty };
+      } else if (pointersRef.current.size === 0) {
+        panRef.current = null;
+        pinchRef.current = null;
+      }
+    };
+    const resetAll = () => {
+      pointersRef.current.clear();
+      panRef.current = null;
+      pinchRef.current = null;
+    };
+    const onVisibility = () => {
+      if (document.hidden) resetAll();
+    };
+    window.addEventListener("pointerup", release, true);
+    window.addEventListener("pointercancel", release, true);
+    window.addEventListener("blur", resetAll);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pointerup", release, true);
+      window.removeEventListener("pointercancel", release, true);
+      window.removeEventListener("blur", resetAll);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
   /* ---------- اشاره‌گرها ---------- */
   const onPointerDown = (e: React.PointerEvent) => {
-    try {
-      (e.target as Element).setPointerCapture?.(e.pointerId);
-    } catch {
-      /* برخی محیط‌ها (رویدادهای ساختگی/WebView) خطای InvalidPointerId می‌دهند */
+    /* پاک‌سازی اشاره‌گرهای مرده — pointerup آن‌ها هرگز به نقشه نرسیده
+       (انگشت روی کارت HTML یا بیرون نقشه بالا آمده بود). همین اشاره‌گرهای
+       مرده ژستِ بعدی را به پینچ خراب تبدیل می‌کردند. */
+    const now = performance.now();
+    for (const [id, p] of pointersRef.current) {
+      if (now - p.t > STALE_POINTER_MS) pointersRef.current.delete(id);
     }
-    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY, t: now });
 
     if (pointersRef.current.size === 1) {
-      // شروع جابجایی تک‌انگشتی
+      // شروع جابجایی تک‌انگشتی — کپچر عمداً فعال نمی‌شود تا تپ روی
+      // برچسب/ایستگاه با click واقعی روی خود عنصر کار کند؛
+      // کپچر روی SVG به‌محض عبور از آستانه درگ فعال می‌شود.
       movedRef.current = false;
       panRef.current = { startX: e.clientX, startY: e.clientY, tx: tRef.current.tx, ty: tRef.current.ty };
       pinchRef.current = null;
     } else if (pointersRef.current.size === 2) {
-      // شروع پینچ — فاصله و نقطه میانی دو انگشت
+      // شروع پینچ — کپچر هر دو انگشت روی خود SVG (عنصر پایدار که هرگز
+      // unmount نمی‌شود؛ برخلاف برچسب‌ها که در میانه ژست حذف می‌شوند)
+      try {
+        svgRef.current?.setPointerCapture?.(e.pointerId);
+        for (const id of pointersRef.current.keys()) {
+          if (id !== e.pointerId) svgRef.current?.setPointerCapture?.(id);
+        }
+      } catch {
+        /* برخی محیط‌ها (رویدادهای ساختگی/WebView) خطای InvalidPointerId می‌دهند */
+      }
       const [p1, p2] = [...pointersRef.current.values()];
       const t0 = tRef.current;
       const svg = svgRef.current;
@@ -293,7 +367,7 @@ export default function MetroMap({
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!pointersRef.current.has(e.pointerId)) return;
-    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now() });
 
     if (pinchRef.current && pointersRef.current.size >= 2) {
       // پینچ: مقیاس + حفظ لنگر زیر انگشتان
@@ -332,6 +406,15 @@ export default function MetroMap({
       const dx = (e.clientX - p0.startX) / fit;
       const dy = (e.clientY - p0.startY) / fit;
       if (Math.abs(e.clientX - p0.startX) > TAP_SLOP_PX || Math.abs(e.clientY - p0.startY) > TAP_SLOP_PX) {
+        if (!movedRef.current) {
+          // گذر از آستانه درگ — کپچر روی SVG تا pointerup حتی روی کارت‌های
+          // HTML یا بیرون نقشه هم تضمین‌شده به همین عنصر برسد
+          try {
+            svgRef.current?.setPointerCapture?.(e.pointerId);
+          } catch {
+            /* محیط‌های ساختگی */
+          }
+        }
         movedRef.current = true;
       }
       commit({ scale: tRef.current.scale, tx: p0.tx + dx, ty: p0.ty + dy });
@@ -340,7 +423,7 @@ export default function MetroMap({
 
   const endPointer = (e: React.PointerEvent) => {
     try {
-      (e.target as Element).releasePointerCapture?.(e.pointerId);
+      svgRef.current?.releasePointerCapture?.(e.pointerId);
     } catch {
       /* قبلاً آزاد شده */
     }
@@ -479,7 +562,7 @@ export default function MetroMap({
         if (!s) continue;
         const n = badgeN.get(id) ?? 0;
         badgeN.set(id, n + 1);
-        const r = toVb(8.5);
+        const r = toVb(8);
         const side = s.x > MAP_CANVAS.w / 2 ? -1 : 1;
         const bx = s.x * t.scale + t.tx + side * toVb(14);
         const by = s.y * t.scale + t.ty - toVb(15) - n * toVb(19);
@@ -498,7 +581,7 @@ export default function MetroMap({
           y: by,
           r,
           stroke: toVb(1.5),
-          font: toVb(10),
+          font: toVb(9.5),
           num: toFa(TEHRAN_LINES.find((l) => l.id === ml.lineId)?.number ?? 0),
           color: ml.color,
           ink: ml.lineId === "l4" ? "#1a1a1a" : "#ffffff",
@@ -547,7 +630,7 @@ export default function MetroMap({
       const margin = toVb(26);
       if (X < -margin || X > MAP_CANVAS.w + margin || Y < -margin || Y > MAP_CANVAS.h + margin) continue;
 
-      const fontPx = major ? 11.5 : 10.5;
+      const fontPx = major ? 10.5 : 9.5;
       const weight = major ? 800 : 600;
       const wVb = toVb(textWidthPx(s.name, weight, fontPx, fontsTick) + 7);
       const hVb = toVb(fontPx * 1.1 + 5);
