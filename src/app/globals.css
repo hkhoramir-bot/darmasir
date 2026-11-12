@@ -47,7 +47,7 @@ html {
   font-weight: 100 700;
   font-display: block;
   /* نسخه ۶ — زیرمجموعه بازسازی‌شده با همه آیکون‌های استفاده‌شده در اپ */
-  src: url("/fonts/material-symbols-subset.woff2?v=6") format("woff2");
+  src: url("/fonts/material-symbols-subset.woff2?v=8") format("woff2");
 }
 
 /* ============================================================
