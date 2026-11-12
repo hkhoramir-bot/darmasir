@@ -228,7 +228,7 @@ export default function HomeScreen() {
                   {(arrivals[f.id] ?? []).slice(0, 2).map((a) => (
                     <span key={a.lineId} className="text-[10px] text-metro-onvar flex items-center gap-0.5">
                       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: a.color }} />
-                      {toFa(a.nextMin)} دقیقه
+                      {a.directions?.[0]?.nextMin != null ? `${toFa(a.directions[0].nextMin)} دقیقه` : ""}
                     </span>
                   ))}
                   {!(arrivals[f.id] ?? []).length && (
@@ -300,6 +300,9 @@ function RouteCard({ route, now }: { route: DailyRoute; now: number }) {
     };
   }, [route.fromStationId, now]);
 
+  /* اولین جهتِ اولین خط — nextMin داخل directions است نه سطح بالا */
+  const firstDir = arr && arr.length > 0 ? arr[0]?.directions?.[0] : undefined;
+
   const icon = route.kind === "home" ? "home" : route.kind === "work" ? "work" : "star";
   const tint = route.kind === "home" ? "from-metro-primary-c via-[#1a5eac] to-metro-secondary" : "from-[#7d2382] via-metro-primary-c to-metro-c-highest";
 
@@ -335,8 +338,8 @@ function RouteCard({ route, now }: { route: DailyRoute; now: number }) {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-metro-secondary opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-metro-secondary-c" />
             </span>
-            نزدیک‌ترین قطار: <strong className="text-metro-secondary font-bold">{toFa(arr[0].nextMin)} دقیقه</strong>
-            <CrowdPill level={arr[0].nextMin > 6 ? "quiet" : "moderate"} label={arr[0].crowdLabel} />
+            نزدیک‌ترین قطار: <strong className="text-metro-secondary font-bold">{firstDir?.nextMin != null ? `${toFa(firstDir.nextMin)} دقیقه` : "—"}</strong>
+            <CrowdPill level={(firstDir?.nextMin ?? 9) > 6 ? "quiet" : "moderate"} label={firstDir?.crowdLabel} />
           </span>
         ) : (
           <span className="text-[11px] text-metro-outline">در حال دریافت زمان‌بندی...</span>

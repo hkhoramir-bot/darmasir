@@ -263,7 +263,7 @@ export function MenuDrawer() {
               <div>
                 <h2 className="font-bold text-sm text-primary">متروجو هوشمند</h2>
                 <span className="text-[10px] text-tertiary font-bold bg-tertiary-fixed/40 px-1.5 py-0.5 rounded">
-                  نسخه {toFa("4.8.5")} آنلاین
+                  نسخه {toFa("4.8.6")} آنلاین
                 </span>
               </div>
             </div>

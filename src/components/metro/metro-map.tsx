@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MAP_LINES,
   MAP_STATIONS,
   MAP_STATION_BY_ID,
   MAP_CANVAS,
+  type MapStation,
 } from "@/lib/map-geometry";
 import { nearestStationTo } from "@/lib/station-geo";
 import { LINES, toFa } from "@/lib/metro-data";
@@ -13,7 +14,9 @@ import { MI } from "./ui";
 
 /* ============================================================
    نقشه تعاملی مترو — موتور ژست چندلمسی (پینچ/جابجایی بدون خطا)
-   + برچسب خوانا با هاله + راهنمای خطوط + موقعیت‌یاب GPS
+   + موتور برچسب «فضای صفحه»: متن همیشه با اندازه ثابت و خوانا،
+     موقعیت‌یابی زنده روی نقشه و حذف هوشمند همپوشانی
+   + راهنمای خطوط + موقعیت‌یاب GPS
    ============================================================ */
 
 interface MetroMapProps {
@@ -29,10 +32,85 @@ interface Transform {
 }
 
 const MIN_SCALE = 0.75;
-const MAX_SCALE = 3.6;
+const MAX_SCALE = 4;
 const TAP_SLOP_PX = 7; // حرکت بیشتر از این = جابجایی، نه لمس ایستگاه
 
 const TEHRAN_LINES = LINES.filter((l) => l.cityId === "tehran");
+
+/* ایستگاه‌های تبادلی (اشتراک دو خط یا بیشتر) — ثابت و مستقل از رندر */
+const INTERCHANGE_IDS = new Set(
+  MAP_LINES.flatMap((ml) => ml.stations).filter(
+    (id) => MAP_LINES.filter((ml) => ml.stations.includes(id)).length > 1
+  )
+);
+
+/** نقاط هر خط به‌صورت رشته points برای polyline */
+function linePoints(stations: string[]): string {
+  return stations
+    .map((id) => {
+      const s = MAP_STATION_BY_ID.get(id);
+      return s ? `${s.x},${s.y}` : "";
+    })
+    .filter(Boolean)
+    .join(" ");
+}
+
+/* ---------------- اندازه‌گیری واقعی عرض متن (برای جلوگیری از همپوشانی) ---------------- */
+let measureCtx: CanvasRenderingContext2D | null = null;
+const widthCache = new Map<string, number>();
+
+function textWidthPx(text: string, weight: number, px: number, epoch: number): number {
+  const key = `${epoch}|${weight}|${px}|${text}`;
+  const hit = widthCache.get(key);
+  if (hit !== undefined) return hit;
+  let w: number;
+  try {
+    if (!measureCtx) {
+      measureCtx = document.createElement("canvas").getContext("2d");
+    }
+    if (measureCtx) {
+      measureCtx.font = `${weight} ${px}px Vazirmatn, sans-serif`;
+      w = measureCtx.measureText(text).width;
+    } else {
+      w = text.length * px * 0.6;
+    }
+  } catch {
+    w = text.length * px * 0.6;
+  }
+  widthCache.set(key, w);
+  return w;
+}
+
+/* ---------------- انواع لایه برچسب ---------------- */
+interface LabelItem {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  anchor: "start" | "end";
+  fontSize: number;
+  weight: number;
+  halo: number;
+}
+
+interface BadgeItem {
+  key: string;
+  x: number;
+  y: number;
+  r: number;
+  stroke: number;
+  font: number;
+  num: string;
+  color: string;
+  ink: string;
+}
+
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
 
 type LocateState =
   | { kind: "idle" }
@@ -49,6 +127,8 @@ export default function MetroMap({
   const [t, setT] = useState<Transform>({ scale: 1, tx: 0, ty: 0 });
   const [legendOpen, setLegendOpen] = useState(false);
   const [locate, setLocate] = useState<LocateState>({ kind: "idle" });
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  const [fontsTick, setFontsTick] = useState(0);
 
   /* ---------- آینه همزمان ترنسفورم — جلوگیری از رقابت با React ---------- */
   const tRef = useRef<Transform>({ scale: 1, tx: 0, ty: 0 });
@@ -66,6 +146,44 @@ export default function MetroMap({
     ty0: number;
   } | null>(null);
   const movedRef = useRef(false); // بعد از جابجایی، تپ ایستگاه نادیده گرفته می‌شود
+
+  /* ---------- اندازه واقعی بوم برای مقیاس ثابت متن ---------- */
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) return;
+      setBox((b) =>
+        Math.abs(b.w - r.width) > 0.5 || Math.abs(b.h - r.height) > 0.5
+          ? { w: r.width, h: r.height }
+          : b
+      );
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  /* ---------- بعد از لود کامل فونت، عرض متن‌ها دوباره اندازه‌گیری می‌شود ---------- */
+  useEffect(() => {
+    let alive = true;
+    try {
+      document.fonts?.ready
+        .then(() => {
+          if (!alive) return;
+          widthCache.clear();
+          setFontsTick((v) => v + 1);
+        })
+        .catch(() => {});
+    } catch {
+      /* مرورگرهای قدیمی */
+    }
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -245,7 +363,7 @@ export default function MetroMap({
       if (!svg) return;
       const rect = svg.getBoundingClientRect();
       const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
-      const scale = 2.2;
+      const scale = 2.4;
       commit({
         scale,
         tx: rect.width / (2 * fit) - scale * sx,
@@ -298,14 +416,160 @@ export default function MetroMap({
     setLocate({ kind: "idle" });
   }, [commit]);
 
-  const highlighted = new Set(highlightStations ?? []);
-  if (locate.kind === "ok") highlighted.add(locate.stationId);
+  const highlighted = useMemo(() => {
+    const set = new Set(highlightStations ?? []);
+    if (locate.kind === "ok") set.add(locate.stationId);
+    return set;
+  }, [highlightStations, locate]);
 
-  const interchangeIds = new Set(
-    MAP_LINES.flatMap((ml) => ml.stations).filter(
-      (id) => MAP_LINES.filter((ml) => ml.stations.includes(id)).length > 1
-    )
-  );
+  /* ============================================================
+     موتور برچسب‌ها — مقیاس «فضای صفحه»:
+     برخلاف گذشته که متن‌ها داخل گروه بزرگ‌نمایی‌شونده بودند (و در
+     بزرگ‌نمایی ۱ روی هم ریخته دیده می‌شدند)، اینجا هر برچسب:
+     ۱. با اندازه ثابت روی صفحه رندر می‌شود (مستقل از زوم)
+     ۲. زنده از مختصات ایستگاه پیروی می‌کند
+     ۳. فقط اگر با برچسب مهم‌تری همپوشانی نداشته باشد نمایش
+        داده می‌شود — با نزدیک‌تر شدن (زوم بیشتر) برچسب‌های
+        بیشتری جا می‌گیرند و ظاهر می‌شوند
+     ============================================================ */
+  const fit = box.w > 0 && box.h > 0 ? Math.min(box.w / MAP_CANVAS.w, box.h / MAP_CANVAS.h) : 0;
+
+  const labelLayout = useMemo(() => {
+    const empty: { labels: LabelItem[]; badges: BadgeItem[] } = { labels: [], badges: [] };
+    if (fit <= 0) return empty;
+    const toVb = (px: number) => px / fit;
+
+    const boxes: Box[] = [];
+    const overlaps = (b: Box) =>
+      boxes.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0);
+
+    /* ---------- ناحیه کارت‌های HTML روی نقشه (راهنما + کنترل‌ها) —
+       برچسب و نشان نباید زیر این کارت‌ها پنهان شوند ---------- */
+    const ox = (box.w - MAP_CANVAS.w * fit) / 2;
+    const oy = (box.h - MAP_CANVAS.h * fit) / 2;
+    const htmlZone = (left: number, top: number, w: number, h: number): Box | null => {
+      const x0 = Math.max(0, (left - ox) / fit);
+      const y0 = Math.max(0, (top - oy) / fit);
+      const x1 = Math.min(MAP_CANVAS.w, (left + w - ox) / fit);
+      const y1 = Math.min(MAP_CANVAS.h, (top + h - oy) / fit);
+      if (x1 <= x0 || y1 <= y0) return null;
+      return { x0, y0, x1, y1 };
+    };
+    const legendZone = htmlZone(10, 10, 158, legendOpen ? 185 : 40);
+    if (legendZone) boxes.push(legendZone);
+    // ستون دکمه‌های شناور پایین-چپ (۴ دکمه ۳۶px با فاصله)
+    const controlsZone = htmlZone(8, box.h - 196, 44, 188);
+    if (controlsZone) boxes.push(controlsZone);
+
+    /* ---------- نشان شماره خطوط (اندازه ثابت، پشته‌ای در ایستگاه مشترک) ---------- */
+    const badges: BadgeItem[] = [];
+    const badgeN = new Map<string, number>();
+    for (const ml of MAP_LINES) {
+      for (const id of [ml.stations[0], ml.stations[ml.stations.length - 1]]) {
+        const s = MAP_STATION_BY_ID.get(id);
+        if (!s) continue;
+        const n = badgeN.get(id) ?? 0;
+        badgeN.set(id, n + 1);
+        const r = toVb(8.5);
+        const side = s.x > MAP_CANVAS.w / 2 ? -1 : 1;
+        const bx = s.x * t.scale + t.tx + side * toVb(14);
+        const by = s.y * t.scale + t.ty - toVb(15) - n * toVb(19);
+        if (bx < -r || bx > MAP_CANVAS.w + r || by < -r || by > MAP_CANVAS.h + r) continue;
+        const bBox: Box = {
+          x0: bx - r - toVb(1),
+          y0: by - r - toVb(1),
+          x1: bx + r + toVb(1),
+          y1: by + r + toVb(1),
+        };
+        // نشان زیر کارت‌های HTML پنهان نمی‌شود
+        if (overlaps(bBox)) continue;
+        badges.push({
+          key: `${ml.lineId}-${id}-${n}`,
+          x: bx,
+          y: by,
+          r,
+          stroke: toVb(1.5),
+          font: toVb(10),
+          num: toFa(TEHRAN_LINES.find((l) => l.id === ml.lineId)?.number ?? 0),
+          color: ml.color,
+          ink: ml.lineId === "l4" ? "#1a1a1a" : "#ffffff",
+        });
+        boxes.push(bBox);
+      }
+    }
+
+    /* ---------- ناحیه حفاظتی نشان بزرگ ایستگاه‌های تبادلی ---------- */
+    const interExcl: { id: string; box: Box }[] = [];
+    for (const s of MAP_STATIONS) {
+      if (!INTERCHANGE_IDS.has(s.id)) continue;
+      const half = 6.4 * t.scale + 3 / fit;
+      const X = s.x * t.scale + t.tx;
+      const Y = s.y * t.scale + t.ty;
+      interExcl.push({
+        id: s.id,
+        box: { x0: X - half, y0: Y - half, x1: X + half, y1: Y + half },
+      });
+    }
+    const hitsInterchange = (b: Box, selfId: string) =>
+      interExcl.some(
+        (e) => e.id !== selfId && b.x0 < e.box.x1 && b.x1 > e.box.x0 && b.y0 < e.box.y1 && b.y1 > e.box.y0
+      );
+
+    /* ---------- برچسب‌ها به ترتیب اولویت (تبادلی ← پرچم‌دار ← عادی) ---------- */
+    const cands = MAP_STATIONS.map((s: MapStation) => {
+      const isInter = INTERCHANGE_IDS.has(s.id);
+      const prio = highlighted.has(s.id)
+        ? 1000
+        : isInter && s.label
+          ? 500
+          : isInter
+            ? 400
+            : s.label
+              ? 300
+              : 200;
+      return { s, prio, major: isInter || s.label };
+    }).sort((a, b) => b.prio - a.prio);
+
+    const labels: LabelItem[] = [];
+    for (const { s, prio, major } of cands) {
+      void prio;
+      const X = s.x * t.scale + t.tx;
+      const Y = s.y * t.scale + t.ty;
+      const margin = toVb(26);
+      if (X < -margin || X > MAP_CANVAS.w + margin || Y < -margin || Y > MAP_CANVAS.h + margin) continue;
+
+      const fontPx = major ? 11.5 : 10.5;
+      const weight = major ? 800 : 600;
+      const wVb = toVb(textWidthPx(s.name, weight, fontPx, fontsTick) + 7);
+      const hVb = toVb(fontPx * 1.1 + 5);
+      const gapVb = toVb(10);
+      // جهت متن فارسی rtl است: anchor «end» یعنی لبه چپ متن در x
+      const prefRight = s.x <= MAP_CANVAS.w / 2;
+      const sides: ("right" | "left")[] = prefRight ? ["right", "left"] : ["left", "right"];
+
+      for (const side of sides) {
+        const bx0 = side === "right" ? X + gapVb : X - gapVb - wVb;
+        const by0 = Y - hVb / 2;
+        const b: Box = { x0: bx0, y0: by0, x1: bx0 + wVb, y1: by0 + hVb };
+        if (b.x0 < 1 || b.x1 > MAP_CANVAS.w - 1 || b.y0 < 1 || b.y1 > MAP_CANVAS.h - 1) continue;
+        if (overlaps(b) || hitsInterchange(b, s.id)) continue;
+        boxes.push(b);
+        labels.push({
+          id: s.id,
+          name: s.name,
+          x: side === "right" ? X + gapVb : X - gapVb,
+          y: Y + toVb(fontPx * 0.35),
+          anchor: side === "right" ? "end" : "start",
+          fontSize: toVb(fontPx),
+          weight,
+          halo: toVb(major ? 3.4 : 2.8),
+        });
+        break;
+      }
+    }
+
+    return { labels, badges };
+  }, [t, fit, fontsTick, highlighted, legendOpen, box.w, box.h]);
 
   return (
     <div className={`relative overflow-hidden rounded-2xl ${className}`}>
@@ -331,31 +595,33 @@ export default function MetroMap({
         <rect width={MAP_CANVAS.w} height={MAP_CANVAS.h} fill="url(#map-grid)" />
 
         <g transform={`translate(${t.tx} ${t.ty}) scale(${t.scale})`}>
-          {/* خطوط */}
+          {/* خطوط — هر خط با زیرلایه روشن تا در تقاطع‌ها از هم جدا دیده شوند */}
           {MAP_LINES.map((ml) => (
-            <polyline
-              key={ml.lineId}
-              points={ml.stations
-                .map((id) => {
-                  const s = MAP_STATION_BY_ID.get(id);
-                  return s ? `${s.x},${s.y}` : "";
-                })
-                .filter(Boolean)
-                .join(" ")}
-              fill="none"
-              stroke={ml.color}
-              strokeWidth={8.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity={0.95}
-            />
+            <g key={ml.lineId}>
+              <polyline
+                points={linePoints(ml.stations)}
+                fill="none"
+                stroke="var(--mq-map-bg)"
+                strokeWidth={10.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <polyline
+                points={linePoints(ml.stations)}
+                fill="none"
+                stroke={ml.color}
+                strokeWidth={7}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
           ))}
 
-          {/* ایستگاه‌ها */}
+          {/* ایستگاه‌ها — فقط نشان‌ها؛ برچسب‌ها در لایه جداگانه پایین رندر می‌شوند */}
           {MAP_STATIONS.map((s) => {
-            const isInter = interchangeIds.has(s.id);
+            const isInter = INTERCHANGE_IDS.has(s.id);
             const isHi = highlighted.has(s.id);
-            const r = isInter ? 7.4 : 5.2;
+            const r = isInter ? 6.4 : 4.6;
             return (
               <g
                 key={s.id}
@@ -366,74 +632,84 @@ export default function MetroMap({
                 }}
                 className="cursor-pointer"
               >
-                <circle cx={s.x} cy={s.y} r={16} fill="transparent" />
-                {isInter && <circle cx={s.x} cy={s.y} r={r + 3.6} fill="var(--mq-card)" opacity={0.95} />}
-                {isHi && <circle cx={s.x} cy={s.y} r={15} fill="#0d58a6" opacity={0.18} className="map-pulse" />}
+                <circle cx={s.x} cy={s.y} r={15} fill="transparent" />
+                {isInter && <circle cx={s.x} cy={s.y} r={r + 3} fill="var(--mq-card)" opacity={0.95} />}
+                {isHi && <circle cx={s.x} cy={s.y} r={13} fill="#0d58a6" opacity={0.18} className="map-pulse" />}
                 <circle
                   cx={s.x}
                   cy={s.y}
-                  r={isHi ? 7.5 : r}
+                  r={isHi ? 6.5 : r}
                   fill={isHi ? "#0d58a6" : "var(--mq-card)"}
                   stroke={isHi ? "#0d58a6" : "var(--mq-ink)"}
-                  strokeWidth={isHi ? 2.4 : 1.8}
+                  strokeWidth={isHi ? 2.4 : 1.6}
                 />
-                {/* برچسب همیشه نمایان با هاله روشن برای خوانایی */}
-                <text
-                  x={s.x >= 300 ? s.x - 13 : s.x + 11}
-                  y={s.y + 4.3}
-                  textAnchor={s.x >= 300 ? "end" : "start"}
-                  fontSize={s.label ? 13.2 : 11.2}
-                  fontWeight={s.label ? 800 : 600}
-                  fill="var(--mq-ink)"
-                  stroke="var(--mq-card)"
-                  strokeWidth={3.4}
-                  paintOrder="stroke"
-                  strokeLinejoin="round"
-                  style={{ fontFamily: "Vazirmatn, sans-serif" }}
-                >
-                  {s.name}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* شماره خطوط روی سرخط‌ها */}
-          {MAP_LINES.map((ml) => {
-            const first = MAP_STATION_BY_ID.get(ml.stations[0]);
-            const last = MAP_STATION_BY_ID.get(ml.stations[ml.stations.length - 1]);
-            if (!first || !last) return null;
-            const num = toFa(TEHRAN_LINES.find((l) => l.id === ml.lineId)?.number ?? 0);
-            return (
-              <g key={`t-${ml.lineId}`}>
-                {[first, last].map((p, i) => (
-                  <circle
-                    key={i}
-                    cx={p.x + (p.x > 200 ? -1 : 1) * 15}
-                    cy={p.y - 15}
-                    r={8}
-                    fill={ml.color}
-                    stroke="#fff"
-                    strokeWidth={1.5}
-                  />
-                ))}
-                {[first, last].map((p, i) => (
-                  <text
-                    key={`x-${i}`}
-                    x={p.x + (p.x > 200 ? -1 : 1) * 15}
-                    y={p.y - 11.6}
-                    textAnchor="middle"
-                    fontSize={9.5}
-                    fontWeight={800}
-                    fill={ml.lineId === "l4" ? "#1a1a1a" : "var(--mq-card)"}
-                    style={{ fontFamily: "Vazirmatn, sans-serif" }}
-                  >
-                    {num}
-                  </text>
-                ))}
               </g>
             );
           })}
         </g>
+
+        {/* ============================================================
+            لایه برچسب‌ها (خارج از گروه بزرگ‌نمایی — اندازه ثابت روی صفحه)
+            ============================================================ */}
+        {fit > 0 && (
+          <g style={{ pointerEvents: "none" }}>
+            {/* نشان شماره خطوط */}
+            {labelLayout.badges.map((b) => (
+              <g key={b.key}>
+                <circle
+                  cx={b.x}
+                  cy={b.y}
+                  r={b.r}
+                  fill={b.color}
+                  stroke="var(--mq-card)"
+                  strokeWidth={b.stroke}
+                />
+                <text
+                  x={b.x}
+                  y={b.y + b.r * 0.38}
+                  textAnchor="middle"
+                  fontSize={b.font}
+                  fontWeight={800}
+                  fill={b.ink}
+                  style={{ fontFamily: "Vazirmatn, sans-serif" }}
+                >
+                  {b.num}
+                </text>
+              </g>
+            ))}
+
+            {/* نام ایستگاه‌ها — با هاله روشن و کنترل همپوشانی */}
+            {labelLayout.labels.map((L) => (
+              <text
+                key={L.id}
+                x={L.x}
+                y={L.y}
+                textAnchor={L.anchor}
+                fontSize={L.fontSize}
+                fontWeight={L.weight}
+                fill="var(--mq-ink)"
+                stroke="var(--mq-card)"
+                strokeWidth={L.halo}
+                paintOrder="stroke"
+                strokeLinejoin="round"
+                style={{
+                  fontFamily: "Vazirmatn, sans-serif",
+                  direction: "rtl",
+                  pointerEvents: "auto",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (movedRef.current) return; // بعد از جابجایی نقشه، تپ نیست
+                  onStationSelect?.(L.id);
+                }}
+              >
+                {L.name}
+              </text>
+            ))}
+          </g>
+        )}
       </svg>
 
       {/* ================= کارت راهنمای خطوط (جای دکمه در هر دو حالت ثابت است) ================= */}
