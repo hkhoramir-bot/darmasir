@@ -1,0 +1,817 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+     4→     4→import {
+     5→     5→  MAP_LINES,
+     6→     6→  MAP_STATIONS,
+     7→     7→  MAP_STATION_BY_ID,
+     8→     8→  MAP_CANVAS,
+     9→     9→  type MapStation,
+    10→    10→} from "@/lib/map-geometry";
+    11→    11→import { nearestStationTo } from "@/lib/station-geo";
+    12→    12→import { LINES, toFa } from "@/lib/metro-data";
+    13→    13→import { MI } from "./ui";
+    14→    14→
+    15→    15→/* ============================================================
+    16→    16→   نقشه تعاملی مترو — موتور ژست چندلمسی (پینچ/جابجایی بدون خطا)
+    17→    17→   + موتور برچسب «فضای صفحه»: متن همیشه با اندازه ثابت و خوانا،
+    18→    18→     موقعیت‌یابی زنده روی نقشه و حذف هوشمند همپوشانی
+    19→    19→   + راهنمای خطوط + موقعیت‌یاب GPS
+    20→    20→   ============================================================ */
+    21→    21→
+    22→    22→interface MetroMapProps {
+    23→    23→  onStationSelect?: (stationId: string) => void;
+    24→    24→  highlightStations?: string[];
+    25→    25→  className?: string;
+    26→    26→}
+    27→    27→
+    28→    28→interface Transform {
+    29→    29→  scale: number;
+    30→    30→  tx: number;
+    31→    31→  ty: number;
+    32→    32→}
+    33→    33→
+    34→    34→const MIN_SCALE = 0.75;
+    35→    35→const MAX_SCALE = 4;
+    36→    36→const TAP_SLOP_PX = 7; // حرکت بیشتر از این = جابجایی، نه لمس ایستگاه
+    37→    37→
+    38→    38→const TEHRAN_LINES = LINES.filter((l) => l.cityId === "tehran");
+    39→    39→
+    40→    40→/* ایستگاه‌های تبادلی (اشتراک دو خط یا بیشتر) — ثابت و مستقل از رندر */
+    41→    41→const INTERCHANGE_IDS = new Set(
+    42→    42→  MAP_LINES.flatMap((ml) => ml.stations).filter(
+    43→    43→    (id) => MAP_LINES.filter((ml) => ml.stations.includes(id)).length > 1
+    44→    44→  )
+    45→    45→);
+    46→    46→
+    47→    47→/** نقاط هر خط به‌صورت رشته points برای polyline */
+    48→    48→function linePoints(stations: string[]): string {
+    49→    49→  return stations
+    50→    50→    .map((id) => {
+    51→    51→      const s = MAP_STATION_BY_ID.get(id);
+    52→    52→      return s ? `${s.x},${s.y}` : "";
+    53→    53→    })
+    54→    54→    .filter(Boolean)
+    55→    55→    .join(" ");
+    56→    56→}
+    57→    57→
+    58→    58→/* ---------------- اندازه‌گیری واقعی عرض متن (برای جلوگیری از همپوشانی) ---------------- */
+    59→    59→let measureCtx: CanvasRenderingContext2D | null = null;
+    60→    60→const widthCache = new Map<string, number>();
+    61→    61→
+    62→    62→function textWidthPx(text: string, weight: number, px: number, epoch: number): number {
+    63→    63→  const key = `${epoch}|${weight}|${px}|${text}`;
+    64→    64→  const hit = widthCache.get(key);
+    65→    65→  if (hit !== undefined) return hit;
+    66→    66→  let w: number;
+    67→    67→  try {
+    68→    68→    if (!measureCtx) {
+    69→    69→      measureCtx = document.createElement("canvas").getContext("2d");
+    70→    70→    }
+    71→    71→    if (measureCtx) {
+    72→    72→      measureCtx.font = `${weight} ${px}px Vazirmatn, sans-serif`;
+    73→    73→      w = measureCtx.measureText(text).width;
+    74→    74→    } else {
+    75→    75→      w = text.length * px * 0.6;
+    76→    76→    }
+    77→    77→  } catch {
+    78→    78→    w = text.length * px * 0.6;
+    79→    79→  }
+    80→    80→  widthCache.set(key, w);
+    81→    81→  return w;
+    82→    82→}
+    83→    83→
+    84→    84→/* ---------------- انواع لایه برچسب ---------------- */
+    85→    85→interface LabelItem {
+    86→    86→  id: string;
+    87→    87→  name: string;
+    88→    88→  x: number;
+    89→    89→  y: number;
+    90→    90→  anchor: "start" | "end";
+    91→    91→  fontSize: number;
+    92→    92→  weight: number;
+    93→    93→  halo: number;
+    94→    94→}
+    95→    95→
+    96→    96→interface BadgeItem {
+    97→    97→  key: string;
+    98→    98→  x: number;
+    99→    99→  y: number;
+   100→   100→  r: number;
+   101→   101→  stroke: number;
+   102→   102→  font: number;
+   103→   103→  num: string;
+   104→   104→  color: string;
+   105→   105→  ink: string;
+   106→   106→}
+   107→   107→
+   108→   108→interface Box {
+   109→   109→  x0: number;
+   110→   110→  y0: number;
+   111→   111→  x1: number;
+   112→   112→  y1: number;
+   113→   113→}
+   114→   114→
+   115→   115→type LocateState =
+   116→   116→  | { kind: "idle" }
+   117→   117→  | { kind: "busy" }
+   118→   118→  | { kind: "ok"; stationId: string; stationName: string; distanceM: number }
+   119→   119→  | { kind: "far" }
+   120→   120→  | { kind: "error"; message: string };
+   121→   121→
+   122→   122→export default function MetroMap({
+   123→   123→  onStationSelect,
+   124→   124→  highlightStations,
+   125→   125→  className = "",
+   126→   126→}: MetroMapProps) {
+   127→   127→  const [t, setT] = useState<Transform>({ scale: 1, tx: 0, ty: 0 });
+   128→   128→  const [legendOpen, setLegendOpen] = useState(false);
+   129→   129→  const [locate, setLocate] = useState<LocateState>({ kind: "idle" });
+   130→   130→  const [box, setBox] = useState({ w: 0, h: 0 });
+   131→   131→  const [fontsTick, setFontsTick] = useState(0);
+   132→   132→
+   133→   133→  /* ---------- آینه همزمان ترنسفورم — جلوگیری از رقابت با React ---------- */
+   134→   134→  const tRef = useRef<Transform>({ scale: 1, tx: 0, ty: 0 });
+   135→   135→  const svgRef = useRef<SVGSVGElement>(null);
+   136→   136→
+   137→   137→  /* اشاره‌گرهای فعال — پایه ژست چندلمسی */
+   138→   138→  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+   139→   139→  const panRef = useRef<{ startX: number; startY: number; tx: number; ty: number } | null>(null);
+   140→   140→  const pinchRef = useRef<{
+   141→   141→    dist0: number;
+   142→   142→    vx0: number;
+   143→   143→    vy0: number;
+   144→   144→    s0: number;
+   145→   145→    tx0: number;
+   146→   146→    ty0: number;
+   147→   147→  } | null>(null);
+   148→   148→  const movedRef = useRef(false); // بعد از جابجایی، تپ ایستگاه نادیده گرفته می‌شود
+   149→   149→
+   150→   150→  /* ---------- اندازه واقعی بوم برای مقیاس ثابت متن ---------- */
+   151→   151→  useEffect(() => {
+   152→   152→    const el = svgRef.current;
+   153→   153→    if (!el) return;
+   154→   154→    const update = () => {
+   155→   155→      const r = el.getBoundingClientRect();
+   156→   156→      if (r.width < 2 || r.height < 2) return;
+   157→   157→      setBox((b) =>
+   158→   158→        Math.abs(b.w - r.width) > 0.5 || Math.abs(b.h - r.height) > 0.5
+   159→   159→          ? { w: r.width, h: r.height }
+   160→   160→          : b
+   161→   161→      );
+   162→   162→    };
+   163→   163→    update();
+   164→   164→    const ro = new ResizeObserver(update);
+   165→   165→    ro.observe(el);
+   166→   166→    return () => ro.disconnect();
+   167→   167→  }, []);
+   168→   168→
+   169→   169→  /* ---------- بعد از لود کامل فونت، عرض متن‌ها دوباره اندازه‌گیری می‌شود ---------- */
+   170→   170→  useEffect(() => {
+   171→   171→    let alive = true;
+   172→   172→    try {
+   173→   173→      document.fonts?.ready
+   174→   174→        .then(() => {
+   175→   175→          if (!alive) return;
+   176→   176→          widthCache.clear();
+   177→   177→          setFontsTick((v) => v + 1);
+   178→   178→        })
+   179→   179→        .catch(() => {});
+   180→   180→    } catch {
+   181→   181→      /* مرورگرهای قدیمی */
+   182→   182→    }
+   183→   183→    return () => {
+   184→   184→      alive = false;
+   185→   185→    };
+   186→   186→  }, []);
+   187→   187→
+   188→   188→  const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+   189→   189→
+   190→   190→  /** ثبت ترنسفورم جدید — همیشه از طریق این تابع */
+   191→   191→  const commit = useCallback((next: Transform) => {
+   192→   192→    const scale = clamp(next.scale, MIN_SCALE, MAX_SCALE);
+   193→   193→    const half = MAP_CANVAS.w / 2;
+   194→   194→    const halfH = MAP_CANVAS.h / 2;
+   195→   195→    const tx = clamp(next.tx, half - scale * half - 60, -(half - scale * half) + 60);
+   196→   196→    const ty = clamp(next.ty, halfH - scale * halfH - 60, -(halfH - scale * halfH) + 60);
+   197→   197→    const fixed = { scale, tx, ty };
+   198→   198→    tRef.current = fixed;
+   199→   199→    setT(fixed);
+   200→   200→  }, []);
+   201→   201→
+   202→   202→  /** تبدیل مختصات صفحه به مختصات viewBox (با احتساب letterbox وضعیت meet) */
+   203→   203→  const viewPoint = useCallback((clientX: number, clientY: number) => {
+   204→   204→    const svg = svgRef.current;
+   205→   205→    if (!svg) return { vx: 0, vy: 0 };
+   206→   206→    const rect = svg.getBoundingClientRect();
+   207→   207→    const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+   208→   208→    const ox = (rect.width - MAP_CANVAS.w * fit) / 2;
+   209→   209→    const oy = (rect.height - MAP_CANVAS.h * fit) / 2;
+   210→   210→    return {
+   211→   211→      vx: (clientX - rect.left - ox) / (fit * tRef.current.scale) - tRef.current.tx / tRef.current.scale,
+   212→   212→      vy: (clientY - rect.top - oy) / (fit * tRef.current.scale) - tRef.current.ty / tRef.current.scale,
+   213→   213→    };
+   214→   214→  }, []);
+   215→   215→
+   216→   216→  /** بزرگ‌نمایی حول یک نقطه صفحه (پیش‌فرض: مرکز) — لنگر ثابت می‌ماند */
+   217→   217→  const zoomAt = useCallback(
+   218→   218→    (factor: number, clientX?: number, clientY?: number) => {
+   219→   219→      const t0 = tRef.current;
+   220→   220→      const svg = svgRef.current;
+   221→   221→      if (!svg) {
+   222→   222→        commit({ ...t0, scale: t0.scale * factor });
+   223→   223→        return;
+   224→   224→      }
+   225→   225→      const rect = svg.getBoundingClientRect();
+   226→   226→      const cx = clientX ?? rect.left + rect.width / 2;
+   227→   227→      const cy = clientY ?? rect.top + rect.height / 2;
+   228→   228→      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+   229→   229→      const ox = (rect.width - MAP_CANVAS.w * fit) / 2;
+   230→   230→      const oy = (rect.height - MAP_CANVAS.h * fit) / 2;
+   231→   231→      // نقطه لنگر در مختصات viewBox فعلی
+   232→   232→      const ax = (cx - rect.left - ox) / fit;
+   233→   233→      const ay = (cy - rect.top - oy) / fit;
+   234→   234→      const scale = clamp(t0.scale * factor, MIN_SCALE, MAX_SCALE);
+   235→   235→      commit({
+   236→   236→        scale,
+   237→   237→        tx: ax - ((ax - t0.tx) * scale) / t0.scale,
+   238→   238→        ty: ay - ((ay - t0.ty) * scale) / t0.scale,
+   239→   239→      });
+   240→   240→    },
+   241→   241→    [commit]
+   242→   242→  );
+   243→   243→
+   244→   244→  /* ---------- چرخ ماوس (غیر-Passive تا preventDefault کار کند) ---------- */
+   245→   245→  useEffect(() => {
+   246→   246→    const el = svgRef.current;
+   247→   247→    if (!el) return;
+   248→   248→    const onWheel = (e: WheelEvent) => {
+   249→   249→      e.preventDefault();
+   250→   250→      zoomAt(e.deltaY < 0 ? 1.15 : 0.87, e.clientX, e.clientY);
+   251→   251→    };
+   252→   252→    el.addEventListener("wheel", onWheel, { passive: false });
+   253→   253→    return () => el.removeEventListener("wheel", onWheel);
+   254→   254→  }, [zoomAt]);
+   255→   255→
+   256→   256→  /* ---------- اشاره‌گرها ---------- */
+   257→   257→  const onPointerDown = (e: React.PointerEvent) => {
+   258→   258→    try {
+   259→   259→      (e.target as Element).setPointerCapture?.(e.pointerId);
+   260→   260→    } catch {
+   261→   261→      /* برخی محیط‌ها (رویدادهای ساختگی/WebView) خطای InvalidPointerId می‌دهند */
+   262→   262→    }
+   263→   263→    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+   264→   264→
+   265→   265→    if (pointersRef.current.size === 1) {
+   266→   266→      // شروع جابجایی تک‌انگشتی
+   267→   267→      movedRef.current = false;
+   268→   268→      panRef.current = { startX: e.clientX, startY: e.clientY, tx: tRef.current.tx, ty: tRef.current.ty };
+   269→   269→      pinchRef.current = null;
+   270→   270→    } else if (pointersRef.current.size === 2) {
+   271→   271→      // شروع پینچ — فاصله و نقطه میانی دو انگشت
+   272→   272→      const [p1, p2] = [...pointersRef.current.values()];
+   273→   273→      const t0 = tRef.current;
+   274→   274→      const svg = svgRef.current;
+   275→   275→      if (!svg) return;
+   276→   276→      const rect = svg.getBoundingClientRect();
+   277→   277→      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+   278→   278→      const ox = (rect.width - MAP_CANVAS.w * fit) / 2;
+   279→   279→      const oy = (rect.height - MAP_CANVAS.h * fit) / 2;
+   280→   280→      const mx = (p1.x + p2.x) / 2;
+   281→   281→      const my = (p1.y + p2.y) / 2;
+   282→   282→      pinchRef.current = {
+   283→   283→        dist0: Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1,
+   284→   284→        vx0: (mx - rect.left - ox) / fit,
+   285→   285→        vy0: (my - rect.top - oy) / fit,
+   286→   286→        s0: t0.scale,
+   287→   287→        tx0: t0.tx,
+   288→   288→        ty0: t0.ty,
+   289→   289→      };
+   290→   290→      panRef.current = null;
+   291→   291→    }
+   292→   292→  };
+   293→   293→
+   294→   294→  const onPointerMove = (e: React.PointerEvent) => {
+   295→   295→    if (!pointersRef.current.has(e.pointerId)) return;
+   296→   296→    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+   297→   297→
+   298→   298→    if (pinchRef.current && pointersRef.current.size >= 2) {
+   299→   299→      // پینچ: مقیاس + حفظ لنگر زیر انگشتان
+   300→   300→      const [p1, p2] = [...pointersRef.current.values()];
+   301→   301→      const p0 = pinchRef.current;
+   302→   302→      const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1;
+   303→   303→      const svg = svgRef.current;
+   304→   304→      if (!svg) return;
+   305→   305→      const rect = svg.getBoundingClientRect();
+   306→   306→      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+   307→   307→      const ox = (rect.width - MAP_CANVAS.w * fit) / 2;
+   308→   308→      const oy = (rect.height - MAP_CANVAS.h * fit) / 2;
+   309→   309→      const mx = (p1.x + p2.x) / 2;
+   310→   310→      const my = (p1.y + p2.y) / 2;
+   311→   311→      const vxm = (mx - rect.left - ox) / fit;
+   312→   312→      const vym = (my - rect.top - oy) / fit;
+   313→   313→      const scale = clamp((p0.s0 * dist) / p0.dist0, MIN_SCALE, MAX_SCALE);
+   314→   314→      // نقطه میانی اولیه باید زیر انگشتان بماند
+   315→   315→      const cx = (p0.vx0 - p0.tx0) / p0.s0;
+   316→   316→      const cy = (p0.vy0 - p0.ty0) / p0.s0;
+   317→   317→      commit({
+   318→   318→        scale,
+   319→   319→        tx: vxm - scale * cx,
+   320→   320→        ty: vym - scale * cy,
+   321→   321→      });
+   322→   322→      movedRef.current = true;
+   323→   323→      return;
+   324→   324→    }
+   325→   325→
+   326→   326→    if (panRef.current && pointersRef.current.size === 1) {
+   327→   327→      const p0 = panRef.current;
+   328→   328→      const svg = svgRef.current;
+   329→   329→      if (!svg) return;
+   330→   330→      const rect = svg.getBoundingClientRect();
+   331→   331→      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+   332→   332→      const dx = (e.clientX - p0.startX) / fit;
+   333→   333→      const dy = (e.clientY - p0.startY) / fit;
+   334→   334→      if (Math.abs(e.clientX - p0.startX) > TAP_SLOP_PX || Math.abs(e.clientY - p0.startY) > TAP_SLOP_PX) {
+   335→   335→        movedRef.current = true;
+   336→   336→      }
+   337→   337→      commit({ scale: tRef.current.scale, tx: p0.tx + dx, ty: p0.ty + dy });
+   338→   338→    }
+   339→   339→  };
+   340→   340→
+   341→   341→  const endPointer = (e: React.PointerEvent) => {
+   342→   342→    try {
+   343→   343→      (e.target as Element).releasePointerCapture?.(e.pointerId);
+   344→   344→    } catch {
+   345→   345→      /* قبلاً آزاد شده */
+   346→   346→    }
+   347→   347→    pointersRef.current.delete(e.pointerId);
+   348→   348→    if (pointersRef.current.size === 1) {
+   349→   349→      // یک انگشت باقی مانده — پینچ تمام شده، ادامه با جابجایی
+   350→   350→      pinchRef.current = null;
+   351→   351→      const [p] = [...pointersRef.current.values()];
+   352→   352→      panRef.current = { startX: p.x, startY: p.y, tx: tRef.current.tx, ty: tRef.current.ty };
+   353→   353→    } else if (pointersRef.current.size === 0) {
+   354→   354→      panRef.current = null;
+   355→   355→      pinchRef.current = null;
+   356→   356→    }
+   357→   357→  };
+   358→   358→
+   359→   359→  /* ---------- مرکز کردن دید روی یک ایستگاه ---------- */
+   360→   360→  const zoomToStation = useCallback(
+   361→   361→    (sx: number, sy: number) => {
+   362→   362→      const svg = svgRef.current;
+   363→   363→      if (!svg) return;
+   364→   364→      const rect = svg.getBoundingClientRect();
+   365→   365→      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+   366→   366→      const scale = 2.4;
+   367→   367→      commit({
+   368→   368→        scale,
+   369→   369→        tx: rect.width / (2 * fit) - scale * sx,
+   370→   370→        ty: rect.height / (2 * fit) - scale * sy,
+   371→   371→      });
+   372→   372→    },
+   373→   373→    [commit]
+   374→   374→  );
+   375→   375→
+   376→   376→  /* ---------- موقعیت‌یاب GPS ---------- */
+   377→   377→  const locateMe = useCallback(() => {
+   378→   378→    if (locate.kind === "busy") return;
+   379→   379→    if (!("geolocation" in navigator)) {
+   380→   380→      setLocate({ kind: "error", message: "مرورگر از موقعیت‌یابی پشتیبانی نمی‌کند" });
+   381→   381→      return;
+   382→   382→    }
+   383→   383→    setLocate({ kind: "busy" });
+   384→   384→    navigator.geolocation.getCurrentPosition(
+   385→   385→      (pos) => {
+   386→   386→        const { latitude, longitude } = pos.coords;
+   387→   387→        const near = nearestStationTo(latitude, longitude);
+   388→   388→        if (!near) {
+   389→   389→          setLocate({ kind: "far" });
+   390→   390→          return;
+   391→   391→        }
+   392→   392→        const st = MAP_STATION_BY_ID.get(near.id);
+   393→   393→        if (!st) {
+   394→   394→          setLocate({ kind: "far" });
+   395→   395→          return;
+   396→   396→        }
+   397→   397→        setLocate({ kind: "ok", stationId: near.id, stationName: near.name, distanceM: near.distanceM });
+   398→   398→        // بزرگ‌نمایی روی ایستگاه
+   399→   399→        zoomToStation(st.x, st.y);
+   400→   400→      },
+   401→   401→      (err) => {
+   402→   402→        setLocate({
+   403→   403→          kind: "error",
+   404→   404→          message:
+   405→   405→            err.code === err.PERMISSION_DENIED
+   406→   406→              ? "دسترسی موقعیت مکانی داده نشد"
+   407→   407→              : "موقعیت مکانی در دسترس نیست",
+   408→   408→        });
+   409→   409→      },
+   410→   410→      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+   411→   411→    );
+   412→   412→  }, [locate.kind, zoomToStation]);
+   413→   413→
+   414→   414→  const resetView = useCallback(() => {
+   415→   415→    commit({ scale: 1, tx: 0, ty: 0 });
+   416→   416→    setLocate({ kind: "idle" });
+   417→   417→  }, [commit]);
+   418→   418→
+   419→   419→  const highlighted = useMemo(() => {
+   420→   420→    const set = new Set(highlightStations ?? []);
+   421→   421→    if (locate.kind === "ok") set.add(locate.stationId);
+   422→   422→    return set;
+   423→   423→  }, [highlightStations, locate]);
+   424→   424→
+   425→   425→  /* ============================================================
+   426→   426→     موتور برچسب‌ها — مقیاس «فضای صفحه»:
+   427→   427→     برخلاف گذشته که متن‌ها داخل گروه بزرگ‌نمایی‌شونده بودند (و در
+   428→   428→     بزرگ‌نمایی ۱ روی هم ریخته دیده می‌شدند)، اینجا هر برچسب:
+   429→   429→     ۱. با اندازه ثابت روی صفحه رندر می‌شود (مستقل از زوم)
+   430→   430→     ۲. زنده از مختصات ایستگاه پیروی می‌کند
+   431→   431→     ۳. فقط اگر با برچسب مهم‌تری همپوشانی نداشته باشد نمایش
+   432→   432→        داده می‌شود — با نزدیک‌تر شدن (زوم بیشتر) برچسب‌های
+   433→   433→        بیشتری جا می‌گیرند و ظاهر می‌شوند
+   434→   434→     ============================================================ */
+   435→   435→  const fit = box.w > 0 && box.h > 0 ? Math.min(box.w / MAP_CANVAS.w, box.h / MAP_CANVAS.h) : 0;
+   436→   436→
+   437→   437→  const labelLayout = useMemo(() => {
+   438→   438→    const empty: { labels: LabelItem[]; badges: BadgeItem[] } = { labels: [], badges: [] };
+   439→   439→    if (fit <= 0) return empty;
+   440→   440→    const toVb = (px: number) => px / fit;
+   441→   441→
+   442→   442→    const boxes: Box[] = [];
+   443→   443→    const overlaps = (b: Box) =>
+   444→   444→      boxes.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0);
+   445→   445→
+   446→   446→    /* ---------- ناحیه کارت‌های HTML روی نقشه (راهنما + کنترل‌ها) —
+   447→   447→       برچسب و نشان نباید زیر این کارت‌ها پنهان شوند ---------- */
+   448→   448→    const ox = (box.w - MAP_CANVAS.w * fit) / 2;
+   449→   449→    const oy = (box.h - MAP_CANVAS.h * fit) / 2;
+   450→   450→    const htmlZone = (left: number, top: number, w: number, h: number): Box | null => {
+   451→   451→      const x0 = Math.max(0, (left - ox) / fit);
+   452→   452→      const y0 = Math.max(0, (top - oy) / fit);
+   453→   453→      const x1 = Math.min(MAP_CANVAS.w, (left + w - ox) / fit);
+   454→   454→      const y1 = Math.min(MAP_CANVAS.h, (top + h - oy) / fit);
+   455→   455→      if (x1 <= x0 || y1 <= y0) return null;
+   456→   456→      return { x0, y0, x1, y1 };
+   457→   457→    };
+   458→   458→    const legendZone = htmlZone(10, 10, 158, legendOpen ? 185 : 40);
+   459→   459→    if (legendZone) boxes.push(legendZone);
+   460→   460→    // ستون دکمه‌های شناور پایین-چپ (۴ دکمه ۳۶px با فاصله)
+   461→   461→    const controlsZone = htmlZone(8, box.h - 196, 44, 188);
+   462→   462→    if (controlsZone) boxes.push(controlsZone);
+   463→   463→
+   464→   464→    /* ---------- نشان شماره خطوط (اندازه ثابت، پشته‌ای در ایستگاه مشترک) ---------- */
+   465→   465→    const badges: BadgeItem[] = [];
+   466→   466→    const badgeN = new Map<string, number>();
+   467→   467→    for (const ml of MAP_LINES) {
+   468→   468→      for (const id of [ml.stations[0], ml.stations[ml.stations.length - 1]]) {
+   469→   469→        const s = MAP_STATION_BY_ID.get(id);
+   470→   470→        if (!s) continue;
+   471→   471→        const n = badgeN.get(id) ?? 0;
+   472→   472→        badgeN.set(id, n + 1);
+   473→   473→        const r = toVb(8.5);
+   474→   474→        const side = s.x > MAP_CANVAS.w / 2 ? -1 : 1;
+   475→   475→        const bx = s.x * t.scale + t.tx + side * toVb(14);
+   476→   476→        const by = s.y * t.scale + t.ty - toVb(15) - n * toVb(19);
+   477→   477→        if (bx < -r || bx > MAP_CANVAS.w + r || by < -r || by > MAP_CANVAS.h + r) continue;
+   478→   478→        const bBox: Box = {
+   479→   479→          x0: bx - r - toVb(1),
+   480→   480→          y0: by - r - toVb(1),
+   481→   481→          x1: bx + r + toVb(1),
+   482→   482→          y1: by + r + toVb(1),
+   483→   483→        };
+   484→   484→        // نشان زیر کارت‌های HTML پنهان نمی‌شود
+   485→   485→        if (overlaps(bBox)) continue;
+   486→   486→        badges.push({
+   487→   487→          key: `${ml.lineId}-${id}-${n}`,
+   488→   488→          x: bx,
+   489→   489→          y: by,
+   490→   490→          r,
+   491→   491→          stroke: toVb(1.5),
+   492→   492→          font: toVb(10),
+   493→   493→          num: toFa(TEHRAN_LINES.find((l) => l.id === ml.lineId)?.number ?? 0),
+   494→   494→          color: ml.color,
+   495→   495→          ink: ml.lineId === "l4" ? "#1a1a1a" : "#ffffff",
+   496→   496→        });
+   497→   497→        boxes.push(bBox);
+   498→   498→      }
+   499→   499→    }
+   500→   500→
+   501→   501→    /* ---------- ناحیه حفاظتی نشان بزرگ ایستگاه‌های تبادلی ---------- */
+   502→   502→    const interExcl: { id: string; box: Box }[] = [];
+   503→   503→    for (const s of MAP_STATIONS) {
+   504→   504→      if (!INTERCHANGE_IDS.has(s.id)) continue;
+   505→   505→      const half = 6.4 * t.scale + 3 / fit;
+   506→   506→      const X = s.x * t.scale + t.tx;
+   507→   507→      const Y = s.y * t.scale + t.ty;
+   508→   508→      interExcl.push({
+   509→   509→        id: s.id,
+   510→   510→        box: { x0: X - half, y0: Y - half, x1: X + half, y1: Y + half },
+   511→   511→      });
+   512→   512→    }
+   513→   513→    const hitsInterchange = (b: Box, selfId: string) =>
+   514→   514→      interExcl.some(
+   515→   515→        (e) => e.id !== selfId && b.x0 < e.box.x1 && b.x1 > e.box.x0 && b.y0 < e.box.y1 && b.y1 > e.box.y0
+   516→   516→      );
+   517→   517→
+   518→   518→    /* ---------- برچسب‌ها به ترتیب اولویت (تبادلی ← پرچم‌دار ← عادی) ---------- */
+   519→   519→    const cands = MAP_STATIONS.map((s: MapStation) => {
+   520→   520→      const isInter = INTERCHANGE_IDS.has(s.id);
+   521→   521→      const prio = highlighted.has(s.id)
+   522→   522→        ? 1000
+   523→   523→        : isInter && s.label
+   524→   524→          ? 500
+   525→   525→          : isInter
+   526→   526→            ? 400
+   527→   527→            : s.label
+   528→   528→              ? 300
+   529→   529→              : 200;
+   530→   530→      return { s, prio, major: isInter || s.label };
+   531→   531→    }).sort((a, b) => b.prio - a.prio);
+   532→   532→
+   533→   533→    const labels: LabelItem[] = [];
+   534→   534→    for (const { s, prio, major } of cands) {
+   535→   535→      void prio;
+   536→   536→      const X = s.x * t.scale + t.tx;
+   537→   537→      const Y = s.y * t.scale + t.ty;
+   538→   538→      const margin = toVb(26);
+   539→   539→      if (X < -margin || X > MAP_CANVAS.w + margin || Y < -margin || Y > MAP_CANVAS.h + margin) continue;
+   540→   540→
+   541→   541→      const fontPx = major ? 11.5 : 10.5;
+   542→   542→      const weight = major ? 800 : 600;
+   543→   543→      const wVb = toVb(textWidthPx(s.name, weight, fontPx, fontsTick) + 7);
+   544→   544→      const hVb = toVb(fontPx * 1.1 + 5);
+   545→   545→      const gapVb = toVb(10);
+   546→   546→      // جهت متن فارسی rtl است: anchor «end» یعنی لبه چپ متن در x
+   547→   547→      const prefRight = s.x <= MAP_CANVAS.w / 2;
+   548→   548→      const sides: ("right" | "left")[] = prefRight ? ["right", "left"] : ["left", "right"];
+   549→   549→
+   550→   550→      for (const side of sides) {
+   551→   551→        const bx0 = side === "right" ? X + gapVb : X - gapVb - wVb;
+   552→   552→        const by0 = Y - hVb / 2;
+   553→   553→        const b: Box = { x0: bx0, y0: by0, x1: bx0 + wVb, y1: by0 + hVb };
+   554→   554→        if (b.x0 < 1 || b.x1 > MAP_CANVAS.w - 1 || b.y0 < 1 || b.y1 > MAP_CANVAS.h - 1) continue;
+   555→   555→        if (overlaps(b) || hitsInterchange(b, s.id)) continue;
+   556→   556→        boxes.push(b);
+   557→   557→        labels.push({
+   558→   558→          id: s.id,
+   559→   559→          name: s.name,
+   560→   560→          x: side === "right" ? X + gapVb : X - gapVb,
+   561→   561→          y: Y + toVb(fontPx * 0.35),
+   562→   562→          anchor: side === "right" ? "end" : "start",
+   563→   563→          fontSize: toVb(fontPx),
+   564→   564→          weight,
+   565→   565→          halo: toVb(major ? 3.4 : 2.8),
+   566→   566→        });
+   567→   567→        break;
+   568→   568→      }
+   569→   569→    }
+   570→   570→
+   571→   571→    return { labels, badges };
+   572→   572→  }, [t, fit, fontsTick, highlighted, legendOpen, box.w, box.h]);
+   573→   573→
+   574→   574→  return (
+   575→   575→    <div className={`relative overflow-hidden rounded-2xl ${className}`}>
+   576→   576→      {/* لایه SVG نقشه */}
+   577→   577→      <svg
+   578→   578→        ref={svgRef}
+   579→   579→        viewBox={`0 0 ${MAP_CANVAS.w} ${MAP_CANVAS.h}`}
+   580→   580→        className="w-full h-full map-viewport select-none"
+   581→   581→        style={{ touchAction: "none" }}
+   582→   582→        onPointerDown={onPointerDown}
+   583→   583→        onPointerMove={onPointerMove}
+   584→   584→        onPointerUp={endPointer}
+   585→   585→        onPointerCancel={endPointer}
+   586→   586→        role="img"
+   587→   587→        aria-label="نقشه شماتیک شبکه متروی تهران — با دو انگشت بزرگ‌نمایی کنید"
+   588→   588→      >
+   589→   589→        <defs>
+   590→   590→          <pattern id="map-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+   591→   591→            <path d="M 28 0 L 0 0 0 28" fill="none" stroke="var(--mq-map-grid)" strokeWidth="0.7" />
+   592→   592→          </pattern>
+   593→   593→        </defs>
+   594→   594→        <rect width={MAP_CANVAS.w} height={MAP_CANVAS.h} fill="var(--mq-map-bg)" />
+   595→   595→        <rect width={MAP_CANVAS.w} height={MAP_CANVAS.h} fill="url(#map-grid)" />
+   596→   596→
+   597→   597→        <g transform={`translate(${t.tx} ${t.ty}) scale(${t.scale})`}>
+   598→   598→          {/* خطوط — هر خط با زیرلایه روشن تا در تقاطع‌ها از هم جدا دیده شوند */}
+   599→   599→          {MAP_LINES.map((ml) => (
+   600→   600→            <g key={ml.lineId}>
+   601→   601→              <polyline
+   602→   602→                points={linePoints(ml.stations)}
+   603→   603→                fill="none"
+   604→   604→                stroke="var(--mq-map-bg)"
+   605→   605→                strokeWidth={10.5}
+   606→   606→                strokeLinecap="round"
+   607→   607→                strokeLinejoin="round"
+   608→   608→              />
+   609→   609→              <polyline
+   610→   610→                points={linePoints(ml.stations)}
+   611→   611→                fill="none"
+   612→   612→                stroke={ml.color}
+   613→   613→                strokeWidth={7}
+   614→   614→                strokeLinecap="round"
+   615→   615→                strokeLinejoin="round"
+   616→   616→              />
+   617→   617→            </g>
+   618→   618→          ))}
+   619→   619→
+   620→   620→          {/* ایستگاه‌ها — فقط نشان‌ها؛ برچسب‌ها در لایه جداگانه پایین رندر می‌شوند */}
+   621→   621→          {MAP_STATIONS.map((s) => {
+   622→   622→            const isInter = INTERCHANGE_IDS.has(s.id);
+   623→   623→            const isHi = highlighted.has(s.id);
+   624→   624→            const r = isInter ? 6.4 : 4.6;
+   625→   625→            return (
+   626→   626→              <g
+   627→   627→                key={s.id}
+   628→   628→                onClick={(e) => {
+   629→   629→                  e.stopPropagation();
+   630→   630→                  if (movedRef.current) return; // بعد از جابجایی نقشه، تپ نیست
+   631→   631→                  onStationSelect?.(s.id);
+   632→   632→                }}
+   633→   633→                className="cursor-pointer"
+   634→   634→              >
+   635→   635→                <circle cx={s.x} cy={s.y} r={15} fill="transparent" />
+   636→   636→                {isInter && <circle cx={s.x} cy={s.y} r={r + 3} fill="var(--mq-card)" opacity={0.95} />}
+   637→   637→                {isHi && <circle cx={s.x} cy={s.y} r={13} fill="#0d58a6" opacity={0.18} className="map-pulse" />}
+   638→   638→                <circle
+   639→   639→                  cx={s.x}
+   640→   640→                  cy={s.y}
+   641→   641→                  r={isHi ? 6.5 : r}
+   642→   642→                  fill={isHi ? "#0d58a6" : "var(--mq-card)"}
+   643→   643→                  stroke={isHi ? "#0d58a6" : "var(--mq-ink)"}
+   644→   644→                  strokeWidth={isHi ? 2.4 : 1.6}
+   645→   645→                />
+   646→   646→              </g>
+   647→   647→            );
+   648→   648→          })}
+   649→   649→        </g>
+   650→   650→
+   651→   651→        {/* ============================================================
+   652→   652→            لایه برچسب‌ها (خارج از گروه بزرگ‌نمایی — اندازه ثابت روی صفحه)
+   653→   653→            ============================================================ */}
+   654→   654→        {fit > 0 && (
+   655→   655→          <g style={{ pointerEvents: "none" }}>
+   656→   656→            {/* نشان شماره خطوط */}
+   657→   657→            {labelLayout.badges.map((b) => (
+   658→   658→              <g key={b.key}>
+   659→   659→                <circle
+   660→   660→                  cx={b.x}
+   661→   661→                  cy={b.y}
+   662→   662→                  r={b.r}
+   663→   663→                  fill={b.color}
+   664→   664→                  stroke="var(--mq-card)"
+   665→   665→                  strokeWidth={b.stroke}
+   666→   666→                />
+   667→   667→                <text
+   668→   668→                  x={b.x}
+   669→   669→                  y={b.y + b.r * 0.38}
+   670→   670→                  textAnchor="middle"
+   671→   671→                  fontSize={b.font}
+   672→   672→                  fontWeight={800}
+   673→   673→                  fill={b.ink}
+   674→   674→                  style={{ fontFamily: "Vazirmatn, sans-serif" }}
+   675→   675→                >
+   676→   676→                  {b.num}
+   677→   677→                </text>
+   678→   678→              </g>
+   679→   679→            ))}
+   680→   680→
+   681→   681→            {/* نام ایستگاه‌ها — با هاله روشن و کنترل همپوشانی */}
+   682→   682→            {labelLayout.labels.map((L) => (
+   683→   683→              <text
+   684→   684→                key={L.id}
+   685→   685→                x={L.x}
+   686→   686→                y={L.y}
+   687→   687→                textAnchor={L.anchor}
+   688→   688→                fontSize={L.fontSize}
+   689→   689→                fontWeight={L.weight}
+   690→   690→                fill="var(--mq-ink)"
+   691→   691→                stroke="var(--mq-card)"
+   692→   692→                strokeWidth={L.halo}
+   693→   693→                paintOrder="stroke"
+   694→   694→                strokeLinejoin="round"
+   695→   695→                style={{
+   696→   696→                  fontFamily: "Vazirmatn, sans-serif",
+   697→   697→                  direction: "rtl",
+   698→   698→                  pointerEvents: "auto",
+   699→   699→                  cursor: "pointer",
+   700→   700→                  userSelect: "none",
+   701→   701→                }}
+   702→   702→                onClick={(e) => {
+   703→   703→                  e.stopPropagation();
+   704→   704→                  if (movedRef.current) return; // بعد از جابجایی نقشه، تپ نیست
+   705→   705→                  onStationSelect?.(L.id);
+   706→   706→                }}
+   707→   707→              >
+   708→   708→                {L.name}
+   709→   709→              </text>
+   710→   710→            ))}
+   711→   711→          </g>
+   712→   712→        )}
+   713→   713→      </svg>
+   714→   714→
+   715→   715→      {/* ================= کارت راهنمای خطوط (جای دکمه در هر دو حالت ثابت است) ================= */}
+   716→   716→      <div className="absolute top-2.5 left-2.5 w-[9.5rem] rounded-xl bg-metro-card/95 backdrop-blur border border-metro-outline-var shadow-md overflow-hidden">
+   717→   717→        <button
+   718→   718→          onClick={() => setLegendOpen((o) => !o)}
+   719→   719→          aria-expanded={legendOpen}
+   720→   720→          aria-label={legendOpen ? "بستن راهنمای خطوط" : "نمایش راهنمای خطوط"}
+   721→   721→          className="w-full h-9 px-2.5 flex items-center gap-1.5 text-[10px] font-bold text-metro-ink active:bg-surface-container transition-colors"
+   722→   722→        >
+   723→   723→          <MI name="layers" size={15} className="text-metro-primary-c shrink-0" />
+   724→   724→          راهنمای خطوط
+   725→   725→          <MI
+   726→   726→            name="expand_more"
+   727→   727→            size={14}
+   728→   728→            className={`text-outline mr-auto transition-transform ${legendOpen ? "rotate-180" : ""}`}
+   729→   729→          />
+   730→   730→        </button>
+   731→   731→        {legendOpen && (
+   732→   732→          <div className="fade-in px-2.5 pb-2 grid grid-cols-1 gap-1 border-t border-metro-outline-var/50 pt-1.5">
+   733→   733→            {TEHRAN_LINES.map((l) => (
+   734→   734→              <div key={l.id} className="flex items-center gap-1.5">
+   735→   735→                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
+   736→   736→                <span className="text-[9px] font-semibold text-metro-ink truncate">
+   737→   737→                  {l.name} — {l.terminals[0]} / {l.terminals[1]}
+   738→   738→                </span>
+   739→   739→              </div>
+   740→   740→            ))}
+   741→   741→          </div>
+   742→   742→        )}
+   743→   743→      </div>
+   744→   744→
+   745→   745→      {/* ================= نتیجه موقعیت‌یاب ================= */}
+   746→   746→      {locate.kind === "busy" && (
+   747→   747→        <div className="absolute top-2.5 right-2.5 bg-metro-card/95 backdrop-blur rounded-full shadow-md border border-metro-outline-var px-3 py-1.5 flex items-center gap-1.5">
+   748→   748→          <span className="w-3.5 h-3.5 border-2 border-metro-primary-c/30 border-t-metro-primary-c rounded-full animate-spin" />
+   749→   749→          <span className="text-[10px] font-bold text-metro-ink">در حال یافتن موقعیت...</span>
+   750→   750→        </div>
+   751→   751→      )}
+   752→   752→      {locate.kind === "ok" && (
+   753→   753→        <div className="fade-in absolute top-2.5 right-2.5 max-w-[70%] bg-metro-card/95 backdrop-blur rounded-xl shadow-md border border-metro-outline-var px-3 py-1.5 flex items-center gap-2">
+   754→   754→          <MI name="near_me" size={15} className="text-metro-primary-c shrink-0" />
+   755→   755→          <span className="text-[10px] font-bold text-metro-ink truncate">
+   756→   756→            نزدیک‌ترین ایستگاه: {locate.stationName} (حدود {toFa(Math.round(locate.distanceM / 50) * 50)} متر)
+   757→   757→          </span>
+   758→   758→          <button
+   759→   759→            onClick={() => setLocate({ kind: "idle" })}
+   760→   760→            aria-label="بستن"
+   761→   761→            className="text-outline shrink-0 active:scale-90 transition-transform"
+   762→   762→          >
+   763→   763→            <MI name="close" size={13} />
+   764→   764→          </button>
+   765→   765→        </div>
+   766→   766→      )}
+   767→   767→      {(locate.kind === "far" || locate.kind === "error") && (
+   768→   768→        <div className="fade-in absolute top-2.5 right-2.5 max-w-[70%] bg-metro-card/95 backdrop-blur rounded-xl shadow-md border border-error/40 px-3 py-1.5 flex items-center gap-2">
+   769→   769→          <MI name="location_off" size={15} className="text-error shrink-0" />
+   770→   770→          <span className="text-[10px] font-bold text-metro-ink">
+   771→   771→            {locate.kind === "far" ? "در محدوده ایستگاه‌های مترو نیستید" : locate.message}
+   772→   772→          </span>
+   773→   773→          <button
+   774→   774→            onClick={() => setLocate({ kind: "idle" })}
+   775→   775→            aria-label="بستن"
+   776→   776→            className="text-outline shrink-0 active:scale-90 transition-transform"
+   777→   777→          >
+   778→   778→            <MI name="close" size={13} />
+   779→   779→          </button>
+   780→   780→        </div>
+   781→   781→      )}
+   782→   782→
+   783→   783→      {/* ================= کنترل‌های شناور (بزرگ‌نمایی + موقعیت) ================= */}
+   784→   784→      <div className="absolute bottom-2.5 left-2.5 flex flex-col gap-1.5">
+   785→   785→        <button
+   786→   786→          onClick={locateMe}
+   787→   787→          aria-label="نزدیک‌ترین ایستگاه به من"
+   788→   788→          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+   789→   789→        >
+   790→   790→          <MI name="my_location" size={18} />
+   791→   791→        </button>
+   792→   792→        <button
+   793→   793→          onClick={() => zoomAt(1.25)}
+   794→   794→          aria-label="بزرگ‌نمایی"
+   795→   795→          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+   796→   796→        >
+   797→   797→          <MI name="add" size={18} />
+   798→   798→        </button>
+   799→   799→        <button
+   800→   800→          onClick={() => zoomAt(0.8)}
+   801→   801→          aria-label="کوچک‌نمایی"
+   802→   802→          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+   803→   803→        >
+   804→   804→          <MI name="remove" size={18} />
+   805→   805→        </button>
+   806→   806→        <button
+   807→   807→          onClick={resetView}
+   808→   808→          aria-label="بازگشت به نمای کامل"
+   809→   809→          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+   810→   810→        >
+   811→   811→          <MI name="center_focus_strong" size={18} />
+   812→   812→        </button>
+   813→   813→      </div>
+   814→   814→    </div>
+   815→   815→  );
+   816→   816→}
+   817→   817→
