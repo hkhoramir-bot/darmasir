@@ -48,7 +48,7 @@ export default function MapPage() {
         {/* ================= بوم نقشه ================= */}
         <div className="mx-4 bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
           <MetroMap
-            className="h-[560px] w-full"
+            className="h-[640px] w-full"
             onStationSelect={(stationId) => {
               const st = getStation(stationId);
               if (st) setSelected(st);
