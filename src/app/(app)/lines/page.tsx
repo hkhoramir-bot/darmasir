@@ -1,223 +1,362 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  CITIES,
   LINES,
-  STATIONS,
-  getLine,
-  toFa,
   crowdingNow,
-  CROWD_LABEL,
-  type CrowdLevel,
+  getLine,
+  headwayAt,
+  interchangeLinesOf,
+  lineInterchanges,
+  searchStations,
+  stationsOfLine,
+  toFa,
+  type CityId,
   type LineDef,
-  type StationDef,
 } from "@/lib/metro-data";
 import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
 
 /* ============================================================
-   خطوط و نقشه — فهرست خطوط شهر انتخابی + ایستگاه‌های تقاطعی
+   خطوط و نقشه — بازسازی دقیق ui/_23/code.html
+   (بنر آگهی + چیپ شهرها + ابزارها + جستجو + کارت‌های خط + CTA مسیریابی)
    ============================================================ */
 
-const CROWD_DOT: Record<CrowdLevel, string> = {
-  quiet: "bg-emerald-500",
-  moderate: "bg-amber-500",
-  busy: "bg-red-500",
-};
-
-/** نشان رنگی خط (کوچک، مربع با گوشه گرد) */
-function LineChip({ number, color, textOn }: { number: number; color: string; textOn: string }) {
-  return (
-    <span
-      className="w-4 h-4 rounded-md flex items-center justify-center text-[9px] font-bold shrink-0 shadow-sm"
-      style={{ backgroundColor: color, color: textOn }}
-    >
-      {toFa(number)}
-    </span>
-  );
+/** وضعیت خط → رنگ و برچسب چیپ (فعال سبز / ازدحام کهربایی / تاخیر و مسدود قرمز) */
+function statusChip(line: LineDef): { label: string; dot: string; text: string } {
+  if (line.status === "closed") return { label: "مسدود", dot: "bg-error", text: "text-error" };
+  if (line.status === "delay") return { label: "تاخیر", dot: "bg-error", text: "text-error" };
+  if (line.status === "crowded" || crowdingNow(line.id) === "busy")
+    return { label: "ازدحام", dot: "bg-amber-500", text: "text-amber-600" };
+  return { label: "فعال", dot: "bg-tertiary", text: "text-tertiary" };
 }
 
-/** کارت خط — نشان رنگی + ترمینال‌ها + فاصله قطار + ازدحام زنده */
-function LineCard({ line, onOpen }: { line: LineDef; onOpen: () => void }) {
-  const crowd = crowdingNow(line.id);
+/** خط‌های تقاطعی یک خط (بدون خودش) برای نشان‌های رنگی ردیف «تقاطع‌ها» */
+function interchangeLineChips(lineId: string): LineDef[] {
+  const ids = new Set<string>();
+  for (const sid of lineInterchanges(lineId)) {
+    for (const lid of interchangeLinesOf(sid)) {
+      if (lid !== lineId) ids.add(lid);
+    }
+  }
+  return Array.from(ids).map((lid) => getLine(lid));
+}
+
+/* ------------------------- کارت خط (دقیقاً _23) ------------------------- */
+function LineCard({
+  line,
+  nowMin,
+  onOpen,
+}: {
+  line: LineDef;
+  nowMin: number;
+  onOpen: () => void;
+}) {
+  const st = statusChip(line);
+  const stationCount = stationsOfLine(line.id).length;
+  const headway = headwayAt(line, nowMin);
+  const interchanges = interchangeLineChips(line.id);
+
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="w-full text-right bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm hover:border-primary/30 hover:shadow-md active:scale-[0.98] transition-all group"
+      className="w-full text-right bg-surface-container-lowest border border-outline-variant/40 rounded-2xl p-3.5 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
     >
-      <div className="flex items-start gap-3">
-        {/* نشان خط */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* حباب شماره خط */}
+          <div
+            className="w-9 h-9 rounded-xl flex flex-col items-center justify-center shrink-0 shadow-sm"
+            style={{ backgroundColor: line.color, color: line.textOnColor }}
+          >
+            <span className="text-[9px] leading-none opacity-90">خط</span>
+            <span className="text-sm font-bold leading-none mt-0.5">{toFa(line.number)}</span>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="text-sm font-bold text-on-surface truncate">
+                {line.terminals[1]} ↔ {line.terminals[0]}
+              </h3>
+              {line.badges?.map((b) => (
+                <span
+                  key={b}
+                  className="bg-amber-100 text-amber-800 text-[11px] px-1.5 py-0.5 rounded font-medium"
+                >
+                  {b}
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-on-surface-variant mt-0.5">
+              {toFa(stationCount)} ایستگاه • هر {toFa(headway)} دقیقه
+            </p>
+          </div>
+        </div>
+        {/* چیپ وضعیت زنده */}
         <div
-          className="w-11 h-11 rounded-xl flex flex-col items-center justify-center shrink-0 shadow-sm leading-none"
-          style={{ backgroundColor: line.color, color: line.textOnColor }}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container text-xs font-medium shrink-0 ${st.text}`}
         >
-          <span className="text-[8px] font-medium opacity-90">خط</span>
-          <span className="text-base font-bold mt-0.5">{toFa(line.number)}</span>
+          <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+          <span>{st.label}</span>
         </div>
-
-        {/* اطلاعات خط */}
-        <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <h4 className="text-sm font-bold text-on-surface truncate">{line.name}</h4>
-            <MI
-              name="chevron_left"
-              size={18}
-              className="text-outline shrink-0 group-hover:text-primary group-hover:-translate-x-0.5 transition-all"
-            />
-          </div>
-
-          {/* ترمینال‌ها */}
-          <div className="flex items-center gap-1.5 text-[11px] text-on-surface-variant font-medium">
-            <span className="truncate">{line.terminals[0]}</span>
-            <MI name="sync_alt" size={13} className="text-outline shrink-0" />
-            <span className="truncate">{line.terminals[1]}</span>
-          </div>
-
-          {/* فاصله قطار + ساعت سرویس */}
-          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[10px] text-outline">
-            <span className="flex items-center gap-1">
-              <MI name="schedule" size={12} />
-              قطار هر {toFa(line.headway)} دقیقه
-            </span>
-            <span className="flex items-center gap-1" dir="ltr">
-              <MI name="timelapse" size={12} />
-              {toFa(line.firstTrain)} - {toFa(line.lastTrain)}
-            </span>
-          </div>
-
-          {/* ازدحام زنده + هشدار وضعیت */}
-          <div className="flex items-center flex-wrap gap-1.5 pt-0.5">
-            <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded-full flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${CROWD_DOT[crowd]}`} />
-              {CROWD_LABEL[crowd]}
-            </span>
-            {line.status === "delay" && (
-              <span className="bg-error-container text-on-error-container rounded-xl text-[10px] px-2 py-1 font-bold flex items-center gap-1">
-                <MI name="warning" size={11} />
-                تاخیر در سرویس
+      </div>
+      {/* ردیف تقاطع‌ها */}
+      <div className="mt-3 pt-2.5 border-t border-outline-variant/30 flex items-center justify-between text-xs">
+        <span className="text-on-surface-variant text-[11px]">تقاطع‌ها:</span>
+        {interchanges.length > 0 ? (
+          <div className="flex items-center gap-1">
+            {interchanges.map((ol) => (
+              <span
+                key={ol.id}
+                className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shadow-sm"
+                style={{ backgroundColor: ol.color, color: ol.textOnColor }}
+              >
+                {toFa(ol.number)}
               </span>
-            )}
-            {line.status === "closed" && (
-              <span className="bg-error-container text-on-error-container rounded-xl text-[10px] px-2 py-1 font-bold flex items-center gap-1">
-                <MI name="block" size={11} />
-                خط مسدود است
-              </span>
-            )}
+            ))}
           </div>
-        </div>
+        ) : (
+          <span className="text-[11px] text-outline">بدون تقاطع</span>
+        )}
       </div>
     </button>
   );
 }
 
-/** ردیف ایستگاه تقاطعی */
-function InterchangeRow({ station, onOpen }: { station: StationDef; onOpen: () => void }) {
-  const label = `تقاطع ${station.lines.map((l) => toFa(getLine(l.lineId)?.number ?? 0)).join(" و ")}`;
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-container-low active:scale-[0.98] transition-all text-right"
-    >
-      <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center shrink-0">
-        <MI name="swap_calls" size={16} className="text-cyan-700" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-bold text-on-surface truncate">{station.name}</p>
-        <div className="flex items-center gap-1 mt-1">
-          {station.lines.map((l) => {
-            const ol = getLine(l.lineId);
-            return <LineChip key={l.lineId} number={ol.number} color={ol.color} textOn={ol.textOnColor} />;
-          })}
-        </div>
-      </div>
-      <span className="text-[10px] font-bold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-full shrink-0">
-        {label}
-      </span>
-      <MI name="chevron_left" size={16} className="text-outline-variant shrink-0" />
-    </button>
-  );
-}
-
+/* ------------------------------- صفحه ------------------------------- */
 export default function LinesPage() {
   const router = useRouter();
   useInitCity();
-  const city = useShell((s) => s.city);
+
+  const shellCity = useShell((s) => s.city);
+  const setShellCity = useShell((s) => s.setCity);
+
+  // شهر محلی: برای پشتیبانی از کرج (که در ShellCity نیست) — با پوسته همگام می‌ماند
+  const [city, setCityState] = useState<CityId>(shellCity);
+  const [lastShellCity, setLastShellCity] = useState(shellCity);
+  if (shellCity !== lastShellCity) {
+    // همگام‌سازی با تغییر شهر از هدر پوسته (الگوی رسمی React — setState حین رندر)
+    setLastShellCity(shellCity);
+    setCityState(shellCity);
+  }
+
+  const selectCity = (id: CityId) => {
+    setCityState(id);
+    if (id !== "karaj") setShellCity(id); // همگام‌سازی با پوسته هرجا ممکن باشد
+  };
 
   const cityLines = useMemo(() => LINES.filter((l) => l.cityId === city), [city]);
-  const interchanges = useMemo(
-    () => STATIONS.filter((s) => s.lines.length > 1 && s.cityId === city),
-    [city]
-  );
+  const cityName = CITIES.find((c) => c.id === city)?.name ?? "تهران";
+
+  // جستجوی زنده ایستگاه‌ها (حداکثر ۵ نتیجه)
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => {
+    const q = query.trim();
+    if (!q) return [];
+    return searchStations({ q, cityId: city }).slice(0, 5);
+  }, [query, city]);
+
+  const listRef = useRef<HTMLElement>(null);
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
 
   return (
     <>
       <AppBar />
 
-      <main className="flex-1 w-full px-4 pt-3 pb-28 space-y-4">
-        {/* ================= خطوط شبکه مترو ================= */}
-        <section className="space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MI name="route" size={20} className="text-primary" />
-              <h3 className="font-bold text-xs text-on-surface">خطوط شبکه مترو</h3>
-            </div>
-            <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              بروزرسانی زنده
+      <main className="w-full max-w-md mx-auto px-4 flex-1 flex flex-col gap-4 mt-3 pb-28">
+        {/* ------------------- بنر آگهی ------------------- */}
+        <section className="w-full bg-surface-container-low rounded-xl border border-outline-variant/40 p-2.5 flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="bg-error text-white text-label-sm font-bold px-2 py-0.5 rounded-md shrink-0">
+              آگهی
             </span>
+            <p className="text-body-sm text-on-surface-variant line-clamp-1">
+              شارژ سریع بلیت اعتباری و متروکارت بدون صف
+            </p>
           </div>
+          <a
+            href="#"
+            className="text-label-sm text-primary-container font-bold flex items-center gap-0.5 hover:underline whitespace-nowrap pl-1 shrink-0"
+          >
+            مشاهده
+            <MI name="chevron_left" size={14} />
+          </a>
+        </section>
 
-          <div className="space-y-2.5">
-            {cityLines.map((line) => (
-              <LineCard key={line.id} line={line} onOpen={() => router.push(`/lines/${line.id}`)} />
-            ))}
+        {/* ------------------- چیپ‌های انتخاب شهر ------------------- */}
+        <section className="w-full">
+          <div className="flex items-center gap-2 overflow-x-auto pretty-scroll py-0.5">
+            {CITIES.map((c) =>
+              city === c.id ? (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selectCity(c.id)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-medium shadow-sm whitespace-nowrap transition-all duration-150"
+                >
+                  <span className="w-2 h-2 rounded-full bg-tertiary-fixed" />
+                  <span>{c.name}</span>
+                </button>
+              ) : (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selectCity(c.id)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-surface-container-lowest text-on-surface-variant border border-outline-variant/50 text-xs font-medium whitespace-nowrap hover:bg-surface-container transition-all duration-150"
+                >
+                  <span>{c.name}</span>
+                </button>
+              )
+            )}
           </div>
         </section>
 
-        {/* ================= ایستگاه‌های تقاطعی ================= */}
-        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-2">
-          <div className="flex items-center justify-between pb-1">
-            <div className="flex items-center gap-2">
-              <MI name="swap_calls" size={20} className="text-primary" />
-              <h3 className="font-bold text-xs text-on-surface">همه ایستگاه‌های تقاطعی</h3>
+        {/* ------------------- ابزارهای سریع شبکه ------------------- */}
+        <section className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => router.push("/map")}
+            className="bg-surface-container-lowest border border-outline-variant/50 hover:border-primary-container p-2.5 rounded-xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
+          >
+            <div className="w-9 h-9 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
+              <MI name="picture_as_pdf" size={20} />
             </div>
-            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-              {toFa(interchanges.length)} ایستگاه
-            </span>
-          </div>
-
-          <div className="max-h-72 overflow-y-auto pretty-scroll space-y-0.5">
-            {interchanges.map((s) => (
-              <InterchangeRow key={s.id} station={s} onOpen={() => router.push(`/stations/${s.id}`)} />
-            ))}
-          </div>
+            <span className="text-xs text-on-surface font-medium leading-tight">نقشه PDF و راهنما</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/stations")}
+            className="bg-surface-container-lowest border border-outline-variant/50 hover:border-primary-container p-2.5 rounded-xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
+          >
+            <div className="w-9 h-9 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary-container">
+              <MI name="alt_route" size={20} />
+            </div>
+            <span className="text-xs text-on-surface font-medium leading-tight">راهنمای تقاطع‌ها</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="bg-surface-container-lowest border border-outline-variant/50 hover:border-primary-container p-2.5 rounded-xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
+          >
+            <div className="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-tertiary">
+              <MI name="schedule" size={20} />
+            </div>
+            <span className="text-xs text-on-surface font-medium leading-tight">سرفاصله اعزام</span>
+          </button>
         </section>
 
-        {/* ================= لینک نقشه تعاملی ================= */}
-        <button
-          type="button"
-          onClick={() => router.push("/map")}
-          className="w-full flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-2xl p-4 text-right hover:bg-primary/10 active:scale-[0.98] transition-all group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-primary shrink-0 transition-colors">
-            <MI name="map" size={20} />
+        {/* ------------------- جستجوی ایستگاه ------------------- */}
+        <section className="relative">
+          <div className="relative flex items-center">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full bg-surface-container-lowest border border-outline-variant/60 rounded-2xl py-2.5 pr-10 pl-10 text-xs font-normal text-on-surface focus:outline-none focus:border-primary-container shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              placeholder="جستجوی ایستگاه، تقاطع یا خط..."
+              type="text"
+            />
+            <MI
+              name="search"
+              size={20}
+              className="text-outline absolute right-3 pointer-events-none"
+            />
+            <button
+              type="button"
+              aria-label="جستجوی صوتی"
+              className="absolute left-3 text-outline hover:text-on-surface flex items-center justify-center"
+            >
+              <MI name="mic" size={18} />
+            </button>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-primary">مشاهده نقشه تعاملی شبکه</p>
-            <p className="text-[10px] text-outline mt-0.5">بزرگ‌نمایی، جابجایی و انتخاب ایستگاه‌ها</p>
-          </div>
-          <MI
-            name="chevron_left"
-            size={18}
-            className="text-primary shrink-0 group-hover:-translate-x-0.5 transition-all"
-          />
-        </button>
+          {query.trim() !== "" && (
+            <div className="absolute top-full inset-x-0 mt-1.5 bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-lg overflow-hidden z-30">
+              {results.length > 0 ? (
+                results.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => router.push(`/stations/${s.id}`)}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2 hover:bg-surface-container-low active:bg-surface-container-low text-right transition-colors"
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <MI name="location_on" size={14} className="text-outline shrink-0" />
+                      <span className="text-xs font-bold text-on-surface truncate">{s.name}</span>
+                    </span>
+                    <span className="flex items-center gap-1 shrink-0">
+                      {s.lines.map(({ lineId }) => {
+                        const ol = getLine(lineId);
+                        return (
+                          <span
+                            key={lineId}
+                            className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                            style={{ backgroundColor: ol.color, color: ol.textOnColor }}
+                          >
+                            {toFa(ol.number)}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-2.5 text-xs text-on-surface-variant text-center">
+                  نتیجه‌ای برای «{query.trim()}» یافت نشد
+                </div>
+              )}
+            </div>
+          )}
+        </section>
 
-        <p className="text-center text-[10px] text-outline-variant pt-1">
-          اطلاعات خطوط به‌صورت زنده به‌روزرسانی می‌شود
-        </p>
+        {/* ------------------- عنوان بخش خطوط ------------------- */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-4 bg-primary-container rounded-full" />
+            <h2 className="text-sm font-bold text-on-surface">خطوط فعال شبکه {cityName}</h2>
+          </div>
+          <span className="text-xs text-on-surface-variant font-normal">
+            {toFa(cityLines.length)} خط درون‌شهری
+          </span>
+        </div>
+
+        {/* ------------------- فهرست خطوط ------------------- */}
+        <section ref={listRef} className="flex flex-col gap-3">
+          {cityLines.map((line) => (
+            <LineCard
+              key={line.id}
+              line={line}
+              nowMin={nowMin}
+              onOpen={() => router.push(`/lines/${line.id}`)}
+            />
+          ))}
+          {cityLines.length === 0 && (
+            <div className="bg-surface-container-low rounded-2xl border border-outline-variant/40 p-6 text-center text-xs text-on-surface-variant">
+              خطی برای این شهر ثبت نشده است
+            </div>
+          )}
+        </section>
+
+        {/* ------------------- CTA مسیریابی ------------------- */}
+        <section className="bg-primary text-white rounded-2xl p-4 shadow-md flex items-center justify-between mt-1 mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0">
+              <MI name="route" size={24} className="text-tertiary-fixed" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold">مسیریابی بین دو خط</h4>
+              <p className="text-xs text-on-primary-container mt-0.5">
+                مبدأ و مقصد خود را در نقشه خطوط جستجو کنید
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/plan")}
+            className="bg-surface-container-lowest text-primary px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 hover:bg-surface active:scale-95 transition-all shadow-sm"
+          >
+            مسیریابی
+          </button>
+        </section>
       </main>
     </>
   );

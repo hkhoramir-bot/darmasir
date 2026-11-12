@@ -1,0 +1,891 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+     4→import { useRouter } from "next/navigation";
+     5→import {
+     6→  STATIONS,
+     7→  computeRoute,
+     8→  searchStations,
+     9→  getLine,
+    10→  getStation,
+    11→  toFa,
+    12→  type StationDef,
+    13→} from "@/lib/metro-data";
+    14→import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
+    15→import { ApkDownloadCard } from "@/components/metro/apk-download";
+    16→import { useAnnouncer, useVoiceSearch, openStandaloneTab } from "@/components/metro/voice";
+    17→import { useToast } from "@/hooks/use-toast";
+    18→
+    19→/* ============================================================
+    20→   صفحه اصلی — بازسازی دقیق code.html تاییدشده + موتور واقعی مسیریابی
+    21→   ============================================================ */
+    22→
+    23→/* رنگ روشن برای نشان خط داخل پیشنهادها (مثل دیزاین: bg-red-50/text-red-800) */
+    24→const LINE_CHIP: Record<string, string> = {
+    25→  l1: "bg-red-50 text-red-800",
+    26→  l2: "bg-blue-50 text-blue-800",
+    27→  l3: "bg-cyan-50 text-cyan-800",
+    28→  l4: "bg-yellow-50 text-yellow-800",
+    29→  l5: "bg-green-50 text-green-800",
+    30→  l6: "bg-pink-50 text-pink-800",
+    31→  l7: "bg-purple-50 text-purple-800",
+    32→  k1: "bg-sky-50 text-sky-800",
+    33→  m1: "bg-orange-50 text-orange-800",
+    34→  m2: "bg-teal-50 text-teal-800",
+    35→  e1: "bg-lime-50 text-lime-800",
+    36→};
+    37→
+    38→function chipClass(station: StationDef) {
+    39→  if (station.lines.length > 1) return "bg-cyan-50 text-cyan-800";
+    40→  return LINE_CHIP[station.lines[0]?.lineId] ?? "bg-surface-container text-on-surface-variant";
+    41→}
+    42→
+    43→function chipLabel(station: StationDef) {
+    44→  if (station.lines.length > 1)
+    45→    return `تقاطع ${station.lines.map((l) => toFa(getLine(l.lineId)?.number ?? 0)).join(" و ")}`;
+    46→  return `خط ${toFa(getLine(station.lines[0]?.lineId)?.number ?? 0)}`;
+    47→}
+    48→
+    49→/* پیشنهادهای پیش‌فرض مثل دیزاین */
+    50→const DEFAULT_ORIGIN_IDS = ["enghelab-sq", "tajrish", "sadeghieh"];
+    51→const DEFAULT_DEST_IDS = ["tajrish", "enghelab-sq", "sadeghieh"];
+    52→
+    53→type VoiceState = "idle" | "listening" | "result";
+    54→
+    55→/* مسیرهای روزمره ذخیره‌شده (خانه / محل کار) */
+    56→interface DailyRouteItem {
+    57→  id: string;
+    58→  kind: string;
+    59→  label: string;
+    60→  fromStationId: string;
+    61→  toStationId: string;
+    62→  fromName: string;
+    63→  toName: string;
+    64→}
+    65→
+    66→export default function HomePage() {
+    67→  const router = useRouter();
+    68→  useInitCity();
+    69→  const city = useShell((s) => s.city);
+    70→
+    71→  const [originText, setOriginText] = useState("میدان انقلاب اسلامی");
+    72→  const [destText, setDestText] = useState("تجریش");
+    73→  const [openDrop, setOpenDrop] = useState<"origin" | "destination" | null>(null);
+    74→  const [rotation, setRotation] = useState(0);
+    75→  const [voiceState, setVoiceState] = useState<VoiceState>("idle");
+    76→  const [voiceNote, setVoiceNote] = useState("«از اینجا تا تجریش چقدر راهه؟»");
+    77→  const originRef = useRef<HTMLInputElement>(null);
+    78→  const destRef = useRef<HTMLInputElement>(null);
+    79→  const announcer = useAnnouncer();
+    80→  const { toast } = useToast();
+    81→
+    82→  /* ---------- resolve + محاسبه زنده مسیر ---------- */
+    83→  const resolve = useCallback(
+    84→    (text: string): StationDef | undefined => {
+    85→      const q = text.trim().replace(/[«»"]/g, "");
+    86→      if (!q) return undefined;
+    87→      // استخر کامل: نتایج جستجو + همه ایستگاه‌های شهر + همه ایستگاه‌ها
+    88→      const seen = new Set<string>();
+    89→      const candidates: StationDef[] = [];
+    90→      for (const s of [
+    91→        ...searchStations({ q, cityId: city }),
+    92→        ...searchStations({ q }),
+    93→        ...STATIONS.filter((st) => st.cityId === city),
+    94→        ...STATIONS,
+    95→      ]) {
+    96→        if (!seen.has(s.id)) {
+    97→          seen.add(s.id);
+    98→          candidates.push(s);
+    99→        }
+   100→      }
+   101→      // ۱) تطابق دقیق
+   102→      const exact = candidates.find((s) => s.name === q);
+   103→      if (exact) return exact;
+   104→      // ۲) شامل بودن دوطرفه («میدان انقلاب اسلامی» → «میدان انقلاب»)
+   105→      const incl = candidates.find((s) => s.name.includes(q) || q.includes(s.name));
+   106→      if (incl) return incl;
+   107→      // ۳) تطابق کلمه‌به‌کلمه
+   108→      const words = q.split(/[\s()]+/).filter((w) => w.length > 1);
+   109→      const token = candidates.find((s) => {
+   110→        const sn = s.name.replace(/[()]/g, " ");
+   111→        return words.length > 0 && words.every((w) => sn.includes(w));
+   112→      });
+   113→      return token;
+   114→    },
+   115→    [city]
+   116→  );
+   117→
+   118→  const origin = useMemo(() => resolve(originText), [originText, resolve]);
+   119→  const dest = useMemo(() => resolve(destText), [destText, resolve]);
+   120→
+   121→  const plan = useMemo(() => {
+   122→    if (!origin || !dest || origin.id === dest.id) return null;
+   123→    return computeRoute(origin.id, dest.id, "fastest");
+   124→  }, [origin, dest]);
+   125→
+   126→  /* ---------- متن‌های نمایشی ---------- */
+   127→  const badgeText = useMemo(() => {
+   128→    if (!plan) return "خط ۴ به ۱";
+   129→    if (plan.legs.length === 1) return `خط ${toFa(getLine(plan.legs[0].lineId)?.number ?? 0)} مستقیم`;
+   130→    return `خط ${plan.legs.map((l) => toFa(getLine(l.lineId)?.number ?? 0)).join(" به ")}`;
+   131→  }, [plan]);
+   132→
+   133→  const durationText = plan ? `${toFa(Math.round(plan.totalMinutes))} دقیقه` : "—";
+   134→  const stationsText = plan ? `${toFa(plan.totalStations)} ایستگاه` : "—";
+   135→  const transferText = useMemo(() => {
+   136→    if (!plan) return "—";
+   137→    if (plan.transfers === 0) return "بدون تعویض";
+   138→    const name = plan.transferStations[0] ? getStation(plan.transferStations[0])?.name : "";
+   139→    return `${toFa(plan.transfers)} تعویض${name ? ` (${name})` : ""}`;
+   140→  }, [plan]);
+   141→
+   142→  /* ایستگاه جاری/بعدی — شبیه‌سازی زنده مثل دیزاین (نام‌ها همیشه متوالی و متفاوت) */
+   143→  const live = useMemo(() => {
+   144→    if (!plan || plan.legs.length === 0)
+   145→      return { current: "دروازه دولت", next: "ایستگاه بعدی: طالقانی (۲ دقیقه)" };
+   146→    const leg = plan.legs[0];
+   147→    const names = leg.stationNames;
+   148→    if (names.length > 2) {
+   149→      return {
+   150→        current: names[1],
+   151→        next: `ایستگاه بعدی: ${names[2]} (${toFa(2)} دقیقه)`,
+   152→      };
+   153→    }
+   154→    // سوار شدن در مبدأ — ایستگاه بعدی همان ایستگاه بعدی روی خط است
+   155→    return {
+   156→      current: names[0],
+   157→      next: `ایستگاه بعدی: ${names[1]} (${toFa(2)} دقیقه)`,
+   158→    };
+   159→  }, [plan]);
+   160→
+   161→  /* ---------- جابجایی مبدأ/مقصد با چرخش ۱۸۰ درجه ---------- */
+   162→  const swap = () => {
+   163→    setOriginText(destText);
+   164→    setDestText(originText);
+   165→    setRotation((r) => r + 180);
+   166→  };
+   167→
+   168→  /* ---------- دستیار صوتی ---------- */
+   169→  const applyVoiceRoute = useCallback(
+   170→    (from: StationDef, to: StationDef) => {
+   171→      setOriginText(from.name);
+   172→      setDestText(to.name);
+   173→      const p = computeRoute(from.id, to.id, "fastest");
+   174→      if (p) {
+   175→        const mins = toFa(Math.round(p.totalMinutes));
+   176→        const tr = p.transfers === 0 ? "بدون تعویض خط" : `${toFa(p.transfers)} تعویض خط`;
+   177→        setVoiceState("result");
+   178→        setVoiceNote(`«مسیر ${from.name} به ${to.name} آماده است»`);
+   179→        announcer.announce(`مسیر محاسبه شد. ${mins} دقیقه، ${tr}`).catch(() => {});
+   180→      }
+   181→    },
+   182→    [announcer]
+   183→  );
+   184→
+   185→  const parseVoiceText = useCallback(
+   186→    (text: string) => {
+   187→      const clean = text.replace(/[«»"]/g, "").trim();
+   188→      const m = clean.match(/(?:از|بیا|برو)\s*(.+?)\s*(?:به|تا|سوی)\s*(.+)$/);
+   189→      if (m) {
+   190→        const from = resolve(m[1]);
+   191→        const to = resolve(m[2]);
+   192→        if (from && to && from.id !== to.id) {
+   193→          applyVoiceRoute(from, to);
+   194→          return;
+   195→        }
+   196→      }
+   197→      // اگر فقط یک ایستگاه شنیده شد → مقصد
+   198→      const to = resolve(clean);
+   199→      if (to) {
+   200→        const from = resolve("میدان انقلاب اسلامی");
+   201→        if (from && to.id !== from.id) {
+   202→          applyVoiceRoute(from, to);
+   203→          return;
+   204→        }
+   205→      }
+   206→      setVoiceState("idle");
+   207→      setVoiceNote("«متوجه نشدم؛ دوباره بگویید»");
+   208→    },
+   209→    [resolve, applyVoiceRoute]
+   210→  );
+   211→
+   212→  const voice = useVoiceSearch((text) => {
+   213→    setVoiceNote(`«گفتید: ${text}»`);
+   214→    parseVoiceText(text);
+   215→  });
+   216→
+   217→  const onMicClick = () => {
+   218→    if (voice.listening) {
+   219→      voice.stop();
+   220→      setVoiceState("idle");
+   221→      setVoiceNote("«از اینجا تا تجریش چقدر راهه؟»");
+   222→      return;
+   223→    }
+   224→    if (voice.busy) return;
+   225→    if (typeof MediaRecorder === "undefined") {
+   226→      // محیط بدون میکروفون — شبیه‌سازی مثل دیزاین
+   227→      setVoiceNote("«در حال شنیدن...»");
+   228→      setTimeout(() => {
+   229→        const from = resolve("میدان انقلاب اسلامی");
+   230→        const to = resolve("تجریش");
+   231→        if (from && to) applyVoiceRoute(from, to);
+   232→      }, 1800);
+   233→      return;
+   234→    }
+   235→    setVoiceNote("«دارم گوش می‌دهم...»");
+   236→    voice.start();
+   237→  };
+   238→
+   239→  /* ---------- بستن دراپ‌داون با کلیک بیرون ---------- */
+   240→  useEffect(() => {
+   241→    const onDoc = (e: MouseEvent) => {
+   242→      const t = e.target as HTMLElement;
+   243→      if (!t.closest("[data-station-drop]")) setOpenDrop(null);
+   244→    };
+   245→    document.addEventListener("click", onDoc);
+   246→    return () => document.removeEventListener("click", onDoc);
+   247→  }, []);
+   248→
+   249→  /* ---------- مسیرهای روزمره (خانه / محل کار) — علاقمندی کاربر ---------- */
+   250→  const [dailyRoutes, setDailyRoutes] = useState<DailyRouteItem[] | null>(null);
+   251→  const [routeDialog, setRouteDialog] = useState<"home" | "work" | null>(null);
+   252→  const [dlgFrom, setDlgFrom] = useState("");
+   253→  const [dlgTo, setDlgTo] = useState("");
+   254→  const [dlgSaving, setDlgSaving] = useState(false);
+   255→  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+   256→  const longPressedRef = useRef(false);
+   257→
+   258→  useEffect(() => {
+   259→    fetch("/api/daily-routes")
+   260→      .then((r) => r.json())
+   261→      .then((d: { routes?: DailyRouteItem[] }) => setDailyRoutes(d.routes ?? []))
+   262→      .catch(() => setDailyRoutes([]));
+   263→    return () => {
+   264→      if (holdTimer.current) clearTimeout(holdTimer.current);
+   265→    };
+   266→  }, []);
+   267→
+   268→  const homeRoute = dailyRoutes?.find((r) => r.kind === "home");
+   269→  const workRoute = dailyRoutes?.find((r) => r.kind === "work");
+   270→
+   271→  const openRouteDialog = (kind: "home" | "work") => {
+   272→    const saved = kind === "home" ? homeRoute : workRoute;
+   273→    setDlgFrom(saved?.fromName ?? "میدان انقلاب اسلامی");
+   274→    setDlgTo(saved?.toName ?? "");
+   275→    setRouteDialog(kind);
+   276→  };
+   277→
+   278→  /** لمس کوتاه: اجرای مسیر ذخیره‌شده یا باز کردن فرم تعریف */
+   279→  const applyQuickRoute = (kind: "home" | "work") => {
+   280→    const saved = kind === "home" ? homeRoute : workRoute;
+   281→    if (saved) {
+   282→      setOriginText(saved.fromName);
+   283→      setDestText(saved.toName);
+   284→      setVoiceState("result");
+   285→      setVoiceNote(`«مسیر ${kind === "home" ? "خانه" : "محل کار"}: به سمت ${saved.toName}»`);
+   286→    } else {
+   287→      openRouteDialog(kind);
+   288→    }
+   289→  };
+   290→
+   291→  /** نگه‌داشتن دکمه: باز کردن فرم تغییر ایستگاه */
+   292→  const quickPress = (kind: "home" | "work") => {
+   293→    longPressedRef.current = false;
+   294→    holdTimer.current = setTimeout(() => {
+   295→      holdTimer.current = null;
+   296→      longPressedRef.current = true;
+   297→      openRouteDialog(kind);
+   298→    }, 550);
+   299→  };
+   300→  const quickRelease = () => {
+   301→    if (holdTimer.current) {
+   302→      clearTimeout(holdTimer.current);
+   303→      holdTimer.current = null;
+   304→    }
+   305→  };
+   306→  const quickClick = (kind: "home" | "work") => {
+   307→    if (longPressedRef.current) {
+   308→      longPressedRef.current = false;
+   309→      return;
+   310→    }
+   311→    applyQuickRoute(kind);
+   312→  };
+   313→
+   314→  const saveDailyRoute = async () => {
+   315→    if (!routeDialog) return;
+   316→    const from = resolve(dlgFrom);
+   317→    const to = resolve(dlgTo);
+   318→    if (!from || !to || from.id === to.id) return;
+   319→    setDlgSaving(true);
+   320→    try {
+   321→      const prev = routeDialog === "home" ? homeRoute : workRoute;
+   322→      if (prev) await fetch(`/api/daily-routes?id=${prev.id}`, { method: "DELETE" });
+   323→      const res = await fetch("/api/daily-routes", {
+   324→        method: "POST",
+   325→        headers: { "Content-Type": "application/json" },
+   326→        body: JSON.stringify({ kind: routeDialog, fromStationId: from.id, toStationId: to.id }),
+   327→      });
+   328→      if (!res.ok) throw new Error();
+   329→      const d = (await res.json()) as { route?: DailyRouteItem };
+   330→      setDailyRoutes((prevList) => {
+   331→        const base = (prevList ?? []).filter((r) => r.kind !== routeDialog);
+   332→        return d.route ? [...base, d.route] : base;
+   333→      });
+   334→      setOriginText(from.name);
+   335→      setDestText(to.name);
+   336→      setRouteDialog(null);
+   337→      toast({
+   338→        title: "مسیر ذخیره شد",
+   339→        description: `${routeDialog === "home" ? "مسیر خانه" : "مسیر محل کار"}: به سمت ${to.name}`,
+   340→      });
+   341→    } catch {
+   342→      toast({ title: "خطا در ذخیره مسیر", description: "لطفاً دوباره تلاش کنید" });
+   343→    } finally {
+   344→      setDlgSaving(false);
+   345→    }
+   346→  };
+   347→
+   348→  const deleteDailyRoute = async (kind: "home" | "work") => {
+   349→    const saved = kind === "home" ? homeRoute : workRoute;
+   350→    if (!saved) return;
+   351→    try {
+   352→      await fetch(`/api/daily-routes?id=${saved.id}`, { method: "DELETE" });
+   353→      setDailyRoutes((prevList) => (prevList ?? []).filter((r) => r.id !== saved.id));
+   354→      toast({ title: "مسیر حذف شد" });
+   355→    } catch {}
+   356→  };
+   357→
+   358→  /** انتخابگر ایستگاه داخل دیالوگ مسیر روزمره */
+   359→  const dlgPicker = (field: "from" | "to") => {
+   360→    const isFrom = field === "from";
+   361→    const value = isFrom ? dlgFrom : dlgTo;
+   362→    const setValue = isFrom ? setDlgFrom : setDlgTo;
+   363→    const q = value.trim();
+   364→    const res = q ? searchStations({ q, cityId: city }).slice(0, 5) : [];
+   365→    return (
+   366→      <div className="relative">
+   367→        <span className="text-[10px] font-bold text-outline">
+   368→          {isFrom ? "مبدأ سفر" : routeDialog === "home" ? "ایستگاه خانه" : "ایستگاه محل کار"}
+   369→        </span>
+   370→        <div className="mt-1 flex items-center gap-2 bg-surface-container-low rounded-lg px-2.5 py-1.5 border border-outline-variant/30">
+   371→          <span className={`w-2 h-2 rounded-full shrink-0 ${isFrom ? "bg-emerald-500" : "bg-red-600"}`} />
+   372→          <input
+   373→            type="text"
+   374→            value={value}
+   375→            onChange={(e) => setValue(e.target.value)}
+   376→            placeholder="جستجوی ایستگاه..."
+   377→            className="w-full bg-transparent text-[12px] font-bold text-on-surface focus:outline-none border-none p-0"
+   378→            aria-label={isFrom ? "مبدأ سفر" : "ایستگاه مقصد"}
+   379→          />
+   380→          {value && (
+   381→            <button
+   382→              type="button"
+   383→              aria-label="پاک کردن"
+   384→              onClick={() => setValue("")}
+   385→              className="text-outline hover:text-on-surface p-0.5"
+   386→            >
+   387→              <MI name="close" size={13} />
+   388→            </button>
+   389→          )}
+   390→        </div>
+   391→        {res.length > 0 && (
+   392→          <div className="absolute top-full right-0 left-0 mt-1 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1 z-[90] text-xs">
+   393→            {res.map((s) => (
+   394→              <button
+   395→                key={s.id}
+   396→                type="button"
+   397→                onClick={() => setValue(s.name)}
+   398→                className="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between"
+   399→              >
+   400→                <span className="truncate">{s.name}</span>
+   401→                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${chipClass(s)}`}>
+   402→                  {chipLabel(s)}
+   403→                </span>
+   404→              </button>
+   405→            ))}
+   406→          </div>
+   407→        )}
+   408→      </div>
+   409→    );
+   410→  };
+   411→
+   412→  const suggestionsFor = (field: "origin" | "destination", q: string) => {
+   413→    const defaults = (field === "origin" ? DEFAULT_ORIGIN_IDS : DEFAULT_DEST_IDS)
+   414→      .map((id) => getStation(id))
+   415→      .filter((s): s is StationDef => !!s);
+   416→    const text = q.trim();
+   417→    if (!text) return defaults.slice(0, 3);
+   418→    const res = searchStations({ q: text, cityId: city });
+   419→    return (res.length ? res : searchStations({ q: text })).slice(0, 4);
+   420→  };
+   421→
+   422→  const suggestions = {
+   423→    origin: suggestionsFor("origin", originText),
+   424→    destination: suggestionsFor("destination", destText),
+   425→  };
+   426→
+   427→  const goFullPlan = () => {
+   428→    if (origin && dest && origin.id !== dest.id) {
+   429→      router.push(`/plan?from=${origin.id}&to=${dest.id}`);
+   430→    } else {
+   431→      router.push("/plan");
+   432→    }
+   433→  };
+   434→
+   435→  const inputRow = (field: "origin" | "destination") => {
+   436→    const isOrigin = field === "origin";
+   437→    const value = isOrigin ? originText : destText;
+   438→    const setValue = isOrigin ? setOriginText : setDestText;
+   439→    const inputRef = isOrigin ? originRef : destRef;
+   440→    return (
+   441→      <div className="relative flex items-center gap-2 bg-surface-container-lowest rounded-lg px-2.5 py-1.5 border border-outline-variant/30 shadow-sm" data-station-drop>
+   442→        <span className={`w-2 h-2 rounded-full shrink-0 ${isOrigin ? "bg-emerald-500" : "bg-red-600"}`} />
+   443→        <div className="flex-1 flex flex-col justify-center min-w-0">
+   444→          <span className="text-[10px] text-outline leading-tight font-bold">{isOrigin ? "مبدأ" : "مقصد"}</span>
+   445→          <input
+   446→            ref={inputRef}
+   447→            type="text"
+   448→            value={value}
+   449→            onChange={(e) => {
+   450→              setValue(e.target.value);
+   451→              setOpenDrop(field);
+   452→            }}
+   453→            onFocus={() => setOpenDrop(field)}
+   454→            placeholder={isOrigin ? "انتخاب ایستگاه مبدأ..." : "انتخاب ایستگاه مقصد..."}
+   455→            className="w-full bg-transparent text-[13px] font-bold text-on-surface focus:outline-none border-none p-0 mt-0.5"
+   456→            aria-label={isOrigin ? "ایستگاه مبدأ" : "ایستگاه مقصد"}
+   457→          />
+   458→        </div>
+   459→        <button
+   460→          type="button"
+   461→          aria-label="پاک کردن"
+   462→          onClick={() => {
+   463→            setValue("");
+   464→            setOpenDrop(field);
+   465→            inputRef.current?.focus();
+   466→          }}
+   467→          className="text-outline hover:text-on-surface p-0.5 rounded-full hover:bg-surface-container transition-colors shrink-0"
+   468→        >
+   469→          <MI name="close" size={13} />
+   470→        </button>
+   471→
+   472→        {/* دراپ‌داون پیشنهاد ایستگاه */}
+   473→        {openDrop === field && (
+   474→          <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1 z-[60] text-xs">
+   475→            {suggestions[field].length === 0 && (
+   476→              <div className="px-3 py-2 text-outline">ایستگاهی یافت نشد</div>
+   477→            )}
+   478→            {suggestions[field].map((s) => (
+   479→              <button
+   480→                key={s.id}
+   481→                type="button"
+   482→                onClick={() => {
+   483→                  setValue(s.name);
+   484→                  setOpenDrop(null);
+   485→                }}
+   486→                className="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between"
+   487→              >
+   488→                <span className="truncate">{s.name}</span>
+   489→                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${chipClass(s)}`}>
+   490→                  {chipLabel(s)}
+   491→                </span>
+   492→              </button>
+   493→            ))}
+   494→          </div>
+   495→        )}
+   496→      </div>
+   497→    );
+   498→  };
+   499→
+   500→  const listening = voice.listening;
+   501→  // نمایش پیام خطای واقعی (میکروفن/شبکه/تشخیص گفتار) به‌جای متن ثابت
+   502→  const voiceNoteFinal = voice.error ? `«${voice.error}»` : voiceNote;
+   503→
+   504→  return (
+   505→    <>
+   506→      <AppBar />
+   507→
+   508→      <main className="flex-1 w-full px-4 pt-3 pb-28 space-y-3">
+   509→        {/* ================= ۱. بنر تبلیغ ================= */}
+   510→        <section className="bg-gradient-to-l from-primary/5 via-surface-container-low to-surface-container-lowest rounded-xl p-3 border border-primary/20 shadow-sm relative overflow-hidden group">
+   511→          <div className="flex items-center justify-center text-center text-[10px] font-medium text-outline">
+   512→            <MI name="campaign" size={14} className="ml-1.5" />
+   513→            بخش تبلیغ
+   514→          </div>
+   515→        </section>
+   516→
+   517→        {/* ================= ۲. دستیار صوتی ================= */}
+   518→        <section className="bg-gradient-to-b from-surface-container-lowest to-surface-container-low rounded-2xl p-4 border border-outline-variant/40 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
+   519→          {/* هاله‌های محیطی */}
+   520→          <div className="absolute -top-8 -left-8 w-32 h-32 bg-primary-fixed/40 rounded-full blur-2xl pointer-events-none" />
+   521→          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-tertiary-fixed/30 rounded-full blur-2xl pointer-events-none" />
+   522→
+   523→          {/* حلقه‌های پالس و دکمه صوتی */}
+   524→          <div className="relative w-20 h-20 flex items-center justify-center">
+   525→            <div
+   526→              className={`pulse-wave-1 absolute inset-0 rounded-full ${
+   527→                listening ? "bg-error/30" : "bg-primary-fixed/60"
+   528→              }`}
+   529→            />
+   530→            <div
+   531→              className={`pulse-wave-2 absolute inset-1.5 rounded-full ${
+   532→                listening ? "bg-error/20" : "bg-primary-fixed/40"
+   533→              }`}
+   534→            />
+   535→            <button
+   536→              onClick={onMicClick}
+   537→              aria-label="دستیار صوتی"
+   538→              className={`relative z-10 w-14 h-14 rounded-full flex items-center justify-center shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 ${
+   539→                listening ? "bg-error text-on-error scale-105" : "bg-primary-container text-white"
+   540→              }`}
+   541→            >
+   542→              {voice.busy ? (
+   543→                <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+   544→              ) : (
+   545→                <MI name="mic" size={26} />
+   546→              )}
+   547→            </button>
+   548→          </div>
+   549→
+   550→          <div className="space-y-1 mt-1">
+   551→            <h2
+   552→              className={`text-sm font-bold text-on-surface transition-colors ${
+   553→                listening ? "text-error" : ""
+   554→              }`}
+   555→            >
+   556→              {listening
+   557→                ? "در حال شنیدن صدای شما..."
+   558→                : voice.busy
+   559→                  ? "در حال پردازش گفتار شما..."
+   560→                  : voiceState === "result" && plan
+   561→                    ? `مسیر محاسبه شد: ${durationText}، ${transferText}`
+   562→                    : "لمس کنید و صحبت کنید"}
+   563→            </h2>
+   564→            <p className="text-[11px] text-outline">نام ایستگاه مبدأ و مقصد را بگویید</p>
+   565→            <div className="pt-0.5">
+   566→              <button
+   567→                type="button"
+   568→                onClick={() => {
+   569→                  const from = resolve("میدان انقلاب اسلامی");
+   570→                  const to = resolve("تجریش");
+   571→                  if (from && to) {
+   572→                    setOriginText(from.name);
+   573→                    setDestText(to.name);
+   574→                    setVoiceState("result");
+   575→                    setVoiceNote("«از اینجا تا تجریش چقدر راهه؟»");
+   576→                    const p = computeRoute(from.id, to.id);
+   577→                    if (p) announcer.announce(`مسیر محاسبه شد. ${toFa(Math.round(p.totalMinutes))} دقیقه`).catch(() => {});
+   578→                  }
+   579→                }}
+   580→                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium cursor-pointer hover:bg-primary/20 transition-colors"
+   581→              >
+   582→                <MI name="chat_bubble" size={13} />
+   583→                {voiceNoteFinal}
+   584→              </button>
+   585→            </div>
+   586→            {/* میکروفن در این پنجره (پیش‌نمایش داخل iframe) مسدود است → راهکار یک‌کلیکی */}
+   587→            {voice.errorKind === "blocked" && (
+   588→              <div className="pt-1.5">
+   589→                <button
+   590→                  type="button"
+   591→                  onClick={openStandaloneTab}
+   592→                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0d58a6] text-white text-[11px] font-bold shadow-sm hover:bg-[#0a4a8c] active:scale-95 transition-all"
+   593→                >
+   594→                  <MI name="open_in_new" size={14} />
+   595→                  باز کردن متروجو در تب جدید (برای میکروفن)
+   596→                </button>
+   597→              </div>
+   598→            )}
+   599→          </div>
+   600→        </section>
+   601→
+   602→        {/* ================= ۳. دسترسی سریع مسافر ================= */}
+   603→        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   604→          <div className="flex items-center justify-between">
+   605→            <div className="flex items-center gap-1.5">
+   606→              <MI name="electric_bolt" size={16} className="text-primary" />
+   607→              <h3 className="font-bold text-[11px] text-on-surface">دسترسی سریع مسافر</h3>
+   608→            </div>
+   609→            <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+   610→              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+   611→              بروزرسانی زنده
+   612→            </span>
+   613→          </div>
+   614→          <div className="grid grid-cols-5 gap-1.5 text-center pt-1">
+   615→            {/* به خانه — لمس: اجرا | نگه‌داشتن: تغییر ایستگاه */}
+   616→            <button
+   617→              type="button"
+   618→              onClick={() => quickClick("home")}
+   619→              onPointerDown={() => quickPress("home")}
+   620→              onPointerUp={quickRelease}
+   621→              onPointerLeave={quickRelease}
+   622→              onContextMenu={(e) => {
+   623→                e.preventDefault();
+   624→                openRouteDialog("home");
+   625→              }}
+   626→              aria-label="مسیر خانه — برای تغییر ایستگاه، دکمه را نگه دارید"
+   627→              className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   628→            >
+   629→              <div className="relative w-11 h-11 rounded-xl bg-primary/10 group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm">
+   630→                <MI name="home" size={20} />
+   631→                {homeRoute && <span className="absolute top-0.5 left-0.5 w-2 h-2 rounded-full bg-emerald-500" />}
+   632→              </div>
+   633→              <span className="text-[10px] font-medium text-on-surface group-hover:text-primary truncate w-full">
+   634→                به خانه
+   635→              </span>
+   636→            </button>
+   637→            {/* محل کار — لمس: اجرا | نگه‌داشتن: تغییر ایستگاه */}
+   638→            <button
+   639→              type="button"
+   640→              onClick={() => quickClick("work")}
+   641→              onPointerDown={() => quickPress("work")}
+   642→              onPointerUp={quickRelease}
+   643→              onPointerLeave={quickRelease}
+   644→              onContextMenu={(e) => {
+   645→                e.preventDefault();
+   646→                openRouteDialog("work");
+   647→              }}
+   648→              aria-label="مسیر محل کار — برای تغییر ایستگاه، دکمه را نگه دارید"
+   649→              className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   650→            >
+   651→              <div className="relative w-11 h-11 rounded-xl bg-tertiary-fixed/50 group-hover:bg-tertiary-fixed text-tertiary flex items-center justify-center transition-colors shadow-sm">
+   652→                <MI name="work" size={20} />
+   653→                {workRoute && <span className="absolute top-0.5 left-0.5 w-2 h-2 rounded-full bg-emerald-500" />}
+   654→              </div>
+   655→              <span className="text-[10px] font-medium text-on-surface group-hover:text-tertiary truncate w-full">
+   656→                محل کار
+   657→              </span>
+   658→            </button>
+   659→            {/* نقشه آفلاین */}
+   660→            <button
+   661→              type="button"
+   662→              onClick={() => router.push("/map")}
+   663→              className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   664→            >
+   665→              <div className="w-11 h-11 rounded-xl bg-primary-fixed/50 group-hover:bg-primary-fixed text-primary flex items-center justify-center transition-colors shadow-sm">
+   666→                <MI name="download_for_offline" size={20} />
+   667→              </div>
+   668→              <span className="text-[10px] font-medium text-on-surface group-hover:text-primary truncate w-full">
+   669→                نقشه آفلاین
+   670→              </span>
+   671→            </button>
+   672→            {/* زمان‌بندی */}
+   673→            <button
+   674→              type="button"
+   675→              onClick={() => router.push("/stations")}
+   676→              className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   677→            >
+   678→              <div className="w-11 h-11 rounded-xl bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-colors shadow-sm">
+   679→                <MI name="schedule" size={20} />
+   680→              </div>
+   681→              <span className="text-[10px] font-medium text-on-surface group-hover:text-primary truncate w-full">
+   682→                زمان‌بندی
+   683→              </span>
+   684→            </button>
+   685→            {/* شلوغی سکو */}
+   686→            <button
+   687→              type="button"
+   688→              onClick={() => router.push("/lines")}
+   689→              className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   690→            >
+   691→              <div className="w-11 h-11 rounded-xl bg-blue-50 group-hover:bg-blue-100 text-primary flex items-center justify-center transition-colors shadow-sm relative">
+   692→                <MI name="groups" size={20} />
+   693→                <span className="absolute top-1 left-1 w-2 h-2 rounded-full bg-emerald-500" />
+   694→              </div>
+   695→              <span className="text-[10px] font-medium text-on-surface group-hover:text-primary truncate w-full">
+   696→                شلوغی سکو
+   697→              </span>
+   698→            </button>
+   699→          </div>
+   700→          <p className="text-[9px] text-outline-variant text-center">
+   701→            لمس: اجرای مسیر ذخیره‌شده | نگه‌داشتن دکمه خانه یا محل کار: تغییر ایستگاه علاقمندی
+   702→          </p>
+   703→        </section>
+   704→
+   705→        {/* ================= ۴. محاسبه دقیق زمان سفر ================= */}
+   706→        <section className="bg-surface-container-lowest rounded-2xl p-3.5 border border-outline-variant/40 shadow-sm space-y-3">
+   707→          {/* هدر */}
+   708→          <div className="flex items-center justify-between">
+   709→            <div className="flex items-center gap-1.5">
+   710→              <MI name="route" size={16} className="text-primary" />
+   711→              <h3 className="font-bold text-[11px] text-on-surface">محاسبه زمان سفر</h3>
+   712→            </div>
+   713→            <span
+   714→              id="routeLineBadge"
+   715→              className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0"
+   716→            >
+   717→              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+   718→              {badgeText}
+   719→            </span>
+   720→          </div>
+   721→
+   722→          {/* ورودی دوگانه با دکمه جابجایی */}
+   723→          <div className="relative bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/30 flex items-center gap-2">
+   724→            <div className="flex-1 space-y-2 min-w-0">
+   725→              {inputRow("origin")}
+   726→              {inputRow("destination")}
+   727→            </div>
+   728→            <div className="flex items-center justify-center shrink-0">
+   729→              <button
+   730→                type="button"
+   731→                aria-label="جابجایی مبدأ و مقصد"
+   732→                onClick={swap}
+   733→                className="w-9 h-9 rounded-full bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/40 shadow-sm flex items-center justify-center text-primary active:scale-90 transition-all duration-300 ease-in-out focus:outline-none"
+   734→                style={{ transform: `rotate(${rotation}deg)` }}
+   735→              >
+   736→                <MI name="swap_vert" size={18} />
+   737→              </button>
+   738→            </div>
+   739→          </div>
+   740→
+   741→          {/* قرص‌های پیشنهادی */}
+   742→          <div className="flex items-center gap-1.5 overflow-x-hidden">
+   743→            <span className="text-[10px] text-outline font-medium shrink-0">پیشنهادی:</span>
+   744→            {[
+   745→              { label: "تجریش", name: "تجریش" },
+   746→              { label: "بهشتی", name: "شهید بهشتی" },
+   747→              { label: "دروازه دولت", name: "دروازه دولت" },
+   748→              { label: "صادقیه", name: "صادقیه (تهران)" },
+   749→            ].map((p, i) => (
+   750→              <button
+   751→                key={p.name}
+   752→                type="button"
+   753→                onClick={() => setDestText(p.name)}
+   754→                className={`px-2 py-1 rounded-full bg-surface-container-low hover:bg-surface-container text-[10px] font-medium border border-outline-variant/30 transition-colors whitespace-nowrap ${
+   755→                  i === 0 ? "text-primary" : "text-on-surface-variant"
+   756→                }`}
+   757→              >
+   758→                {p.label}
+   759→              </button>
+   760→            ))}
+   761→          </div>
+   762→
+   763→          {/* آمار سفر */}
+   764→          <div className="grid grid-cols-3 gap-2 text-center py-1.5 border-y border-outline-variant/20">
+   765→            <div className="flex flex-col items-center justify-center">
+   766→              <span className="text-[10px] text-outline">مدت تقریبی</span>
+   767→              <span className="text-sm font-bold text-primary">{durationText}</span>
+   768→            </div>
+   769→            <div className="flex flex-col items-center justify-center border-x border-outline-variant/20">
+   770→              <span className="text-[10px] text-outline">تعداد ایستگاه</span>
+   771→              <span className="text-sm font-bold text-on-surface">{stationsText}</span>
+   772→            </div>
+   773→            <div className="flex flex-col items-center justify-center">
+   774→              <span className="text-[10px] text-outline">تبادل خط</span>
+   775→              <span className="text-sm font-bold text-tertiary">{transferText}</span>
+   776→            </div>
+   777→          </div>
+   778→
+   779→          {/* وضعیت زنده ایستگاه */}
+   780→          <div className="bg-surface-container-low rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px]">
+   781→            <div className="flex items-center gap-1.5 font-medium text-on-surface min-w-0">
+   782→              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+   783→              <span className="text-[10px] text-outline">ایستگاه جاری:</span>
+   784→              <span className="text-[11px] font-bold text-primary truncate">{live.current}</span>
+   785→            </div>
+   786→            <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full shrink-0">
+   787→              {live.next}
+   788→            </span>
+   789→          </div>
+   790→
+   791→          {/* مشاهده مسیر کامل */}
+   792→          <button
+   793→            type="button"
+   794→            onClick={goFullPlan}
+   795→            disabled={!plan}
+   796→            className="w-full flex items-center justify-center gap-1 py-2 rounded-xl bg-primary-container text-white text-[11px] font-bold shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
+   797→          >
+   798→            <MI name="route" size={14} />
+   799→            مشاهده مسیر کامل و شروع سفر
+   800→            <MI name="chevron_left" size={14} />
+   801→          </button>
+   802→        </section>
+   803→
+   804→        <ApkDownloadCard />
+   805→
+   806→        <p className="text-center text-[10px] text-outline-variant pt-1">
+   807→          متروجو نسخه {toFa("4.8.8")} • طراحی شده برای ناوبری صوتی و سریع مسافران
+   808→        </p>
+   809→      </main>
+   810→
+   811→      {/* ================= دیالوگ تعیین مسیر خانه / محل کار ================= */}
+   812→      {routeDialog && (
+   813→        <div
+   814→          className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center"
+   815→          role="dialog"
+   816→          aria-modal="true"
+   817→          aria-label="تعیین مسیر روزمره"
+   818→        >
+   819→          <div className="absolute inset-0 bg-black/40" onClick={() => setRouteDialog(null)} />
+   820→          <div className="relative bg-surface-container-lowest rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm p-4 space-y-3 shadow-2xl max-h-[85vh] overflow-y-auto">
+   821→            <div className="flex items-center justify-between">
+   822→              <div className="flex items-center gap-2">
+   823→                <div
+   824→                  className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm ${
+   825→                    routeDialog === "home" ? "bg-primary/10 text-primary" : "bg-tertiary-fixed/50 text-tertiary"
+   826→                  }`}
+   827→                >
+   828→                  <MI name={routeDialog === "home" ? "home" : "work"} size={20} />
+   829→                </div>
+   830→                <div>
+   831→                  <h3 className="font-bold text-xs text-on-surface">
+   832→                    {routeDialog === "home" ? "تعیین مسیر خانه" : "تعیین مسیر محل کار"}
+   833→                  </h3>
+   834→                  <p className="text-[10px] text-outline">ایستگاه‌های علاقمندی خود را انتخاب کنید</p>
+   835→                </div>
+   836→              </div>
+   837→              <button
+   838→                type="button"
+   839→                aria-label="بستن"
+   840→                onClick={() => setRouteDialog(null)}
+   841→                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-outline"
+   842→              >
+   843→                <MI name="close" size={18} />
+   844→              </button>
+   845→            </div>
+   846→
+   847→            {dlgPicker("from")}
+   848→            {dlgPicker("to")}
+   849→
+   850→            {(routeDialog === "home" ? homeRoute : workRoute) && (
+   851→              <div className="flex items-center justify-between bg-surface-container-low rounded-xl px-3 py-2 text-[10px]">
+   852→                <span className="text-on-surface-variant font-medium">
+   853→                  ذخیره‌شده: {(routeDialog === "home" ? homeRoute : workRoute)?.fromName} ←{" "}
+   854→                  {(routeDialog === "home" ? homeRoute : workRoute)?.toName}
+   855→                </span>
+   856→                <button
+   857→                  type="button"
+   858→                  onClick={() => deleteDailyRoute(routeDialog)}
+   859→                  className="text-error font-bold flex items-center gap-1 shrink-0"
+   860→                >
+   861→                  <MI name="delete" size={14} />
+   862→                  حذف
+   863→                </button>
+   864→              </div>
+   865→            )}
+   866→
+   867→            <div className="flex items-center gap-2 pt-1">
+   868→              <button
+   869→                type="button"
+   870→                onClick={saveDailyRoute}
+   871→                disabled={dlgSaving || !dlgFrom.trim() || !dlgTo.trim()}
+   872→                className="flex-1 h-10 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-sm active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+   873→              >
+   874→                {dlgSaving ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <MI name="check" size={16} />}
+   875→                ذخیره و استفاده
+   876→              </button>
+   877→              <button
+   878→                type="button"
+   879→                onClick={() => setRouteDialog(null)}
+   880→                className="h-10 px-4 rounded-xl border border-outline-variant text-xs font-bold text-on-surface active:scale-95 transition-all"
+   881→              >
+   882→                انصراف
+   883→              </button>
+   884→            </div>
+   885→          </div>
+   886→        </div>
+   887→      )}
+   888→    </>
+   889→  );
+   890→}
+   891→

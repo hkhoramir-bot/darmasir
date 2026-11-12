@@ -376,6 +376,15 @@ export default function MetroMap({
   /* ---------- موقعیت‌یاب GPS ---------- */
   const locateMe = useCallback(() => {
     if (locate.kind === "busy") return;
+    /* احترام به کلید GPS در تنظیمات */
+    try {
+      if (localStorage.getItem("mj-gps-enabled") === "false") {
+        setLocate({ kind: "error", message: "دسترسی موقعیت مکانی در تنظیمات غیرفعال است" });
+        return;
+      }
+    } catch {
+      /* حافظه در دسترس نیست — ادامه */
+    }
     if (!("geolocation" in navigator)) {
       setLocate({ kind: "error", message: "مرورگر از موقعیت‌یابی پشتیبانی نمی‌کند" });
       return;

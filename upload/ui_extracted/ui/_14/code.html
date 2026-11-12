@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+
+<html class="light" dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>زمان‌بندی و جدول اعزام قطارها - مترویار تهران</title>
+<!-- Persian Typography (Vazirmatn) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Forms & Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration Injection -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-container": "#fffbff",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#b6d0ff",
+            "on-secondary-fixed": "#410001",
+            "secondary-fixed": "#ffdad5",
+            "on-surface": "#111c2d",
+            "secondary-container": "#e32220",
+            "on-secondary-fixed-variant": "#930007",
+            "surface-dim": "#cfdaf2",
+            "inverse-surface": "#263143",
+            "surface-container-lowest": "#ffffff",
+            "on-surface-variant": "#424751",
+            "on-tertiary-fixed": "#00210e",
+            "secondary": "#bc000c",
+            "surface-variant": "#d8e3fb",
+            "surface-container-highest": "#d8e3fb",
+            "on-error-container": "#93000a",
+            "error": "#ba1a1a",
+            "on-tertiary": "#ffffff",
+            "primary-fixed": "#d5e3ff",
+            "surface-container-high": "#dee8ff",
+            "tertiary-container": "#006638",
+            "inverse-on-surface": "#ecf1ff",
+            "tertiary-fixed": "#7efbac",
+            "on-tertiary-container": "#6ae79a",
+            "primary-fixed-dim": "#a8c8ff",
+            "surface-tint": "#1a5eac",
+            "tertiary": "#004c28",
+            "primary": "#00417f",
+            "error-container": "#ffdad6",
+            "background": "#f9f9ff",
+            "outline-variant": "#c2c6d3",
+            "primary-container": "#0d58a6",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-error": "#ffffff",
+            "surface-bright": "#f9f9ff",
+            "surface-container": "#e7eeff",
+            "inverse-primary": "#a8c8ff",
+            "on-primary-fixed": "#001b3c",
+            "outline": "#727782",
+            "on-background": "#111c2d",
+            "tertiary-fixed-dim": "#61de92",
+            "on-primary-fixed-variant": "#004689",
+            "surface": "#f9f9ff",
+            "on-tertiary-fixed-variant": "#00522c",
+            "surface-container-low": "#f0f3ff",
+            "on-secondary": "#ffffff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "margin": "1rem",
+            "gutter": "1rem",
+            "space-xs": "0.25rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "title-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+            "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+            "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+            "headline-md": ["20px", {"lineHeight": "30px", "fontWeight": "700"}],
+            "headline-lg": ["24px", {"lineHeight": "36px", "fontWeight": "700"}],
+            "body-sm": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "label-sm": ["10px", {"lineHeight": "14px", "fontWeight": "700"}],
+            "headline-xl": ["32px", {"lineHeight": "44px", "fontWeight": "800"}],
+            "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+    }
+    /* Hide scrollbars for slick mobile look */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased selection:bg-primary selection:text-on-primary min-h-screen">
+<!-- Mobile Wrapper Max 480px Centered for Real Device Feel -->
+<div class="max-w-md mx-auto min-h-screen flex flex-col relative bg-surface shadow-2xl">
+<!-- 1. Top App Bar (Shared Anchor Execution) -->
+<header class="bg-surface dark:bg-inverse-surface border-b border-outline-variant/30 dark:border-outline/20 shadow-sm flex justify-between items-center w-full px-4 h-16 sticky top-0 z-40 backdrop-blur-md">
+<!-- Right: Back Button & Context Title -->
+<div class="flex items-center gap-3">
+<button aria-label="بازگشت" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-primary text-[24px]">arrow_forward</span>
+</button>
+<div>
+<div class="flex items-center gap-1.5">
+<h1 class="text-title-lg font-title-lg text-primary">زمان‌بندی و جدول اعزام</h1>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-tertiary-container text-on-tertiary">زنده</span>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            شبکه متروی تهران - بروزرسانی لحظه‌ای
+          </p>
+</div>
+</div>
+<!-- Left: City Selector / Quick Filter -->
+<div class="flex items-center gap-1">
+<button aria-label="تنظیمات اعلان" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+</header>
+<!-- Main Scrollable Content Container (pb-28 for bottom dock clearance) -->
+<main class="flex-1 px-4 pt-3 pb-28 space-y-4">
+<!-- 2. Metro Lines Filter Chips (Horizontally Scrollable Persian) -->
+<section aria-label="فهرست خطوط مترو">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-md font-label-md text-on-surface-variant font-bold">انتخاب خط مترو</span>
+<span class="text-label-sm font-label-sm text-primary">۷ خط فعال</span>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+<!-- Line 1 Active (Red #E32220) -->
+<button class="flex-shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-secondary-container text-on-secondary shadow-sm active:scale-95 transition-all" type="button">
+<span class="w-2.5 h-2.5 rounded-full bg-white ring-2 ring-white/30"></span>
+<span class="text-title-md font-title-md font-bold">خط ۱</span>
+<span class="text-label-sm font-label-sm opacity-90 border-r border-white/20 pr-1.5">تجریش - کهریزک</span>
+</button>
+<!-- Line 2 (Blue #005FA8) -->
+<button class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="w-2.5 h-2.5 rounded-full bg-[#005FA8]"></span>
+<span class="text-title-md font-title-md text-on-surface">خط ۲</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant border-r border-outline-variant pr-1.5">صادقیه - فرهنگسرا</span>
+</button>
+<!-- Line 3 (Cyan/Turquoise #00B1AF) -->
+<button class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="w-2.5 h-2.5 rounded-full bg-[#00B1AF]"></span>
+<span class="text-title-md font-title-md text-on-surface">خط ۳</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant border-r border-outline-variant pr-1.5">قائم - آزادگان</span>
+</button>
+<!-- Line 4 (Yellow #FBC02D) -->
+<button class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="w-2.5 h-2.5 rounded-full bg-[#FBC02D]"></span>
+<span class="text-title-md font-title-md text-on-surface">خط ۴</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant border-r border-outline-variant pr-1.5">کلاهدوز - ارم سبز</span>
+</button>
+<!-- Line 6 (Pink #E91E63) -->
+<button class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="w-2.5 h-2.5 rounded-full bg-[#E91E63]"></span>
+<span class="text-title-md font-title-md text-on-surface">خط ۶</span>
+</button>
+<!-- Line 7 (Violet #8E24AA) -->
+<button class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="w-2.5 h-2.5 rounded-full bg-[#8E24AA]"></span>
+<span class="text-title-md font-title-md text-on-surface">خط ۷</span>
+</button>
+</div>
+</section>
+<!-- 3. Station Selector & Direction Tabs Card -->
+<section class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-3.5 shadow-sm space-y-3">
+<!-- Station Dropdown Trigger -->
+<div class="flex items-center justify-between bg-surface-container-low px-3 py-2.5 rounded-xl border border-outline-variant/20">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary font-bold">
+<span class="material-symbols-outlined text-[20px]">directions_subway</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">ایستگاه منتخب</span>
+<span class="text-title-md font-title-md text-on-surface font-bold">دروازه دولت (تقاطع خط ۱ و ۴)</span>
+</div>
+</div>
+<button class="flex items-center gap-1 text-primary text-label-md font-label-md font-bold px-2 py-1 rounded-lg hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="">تغییر</span>
+<span class="material-symbols-outlined text-[16px]">unfold_more</span>
+</button>
+</div><div class="space-y-1.5 pt-1"><div class="flex items-center justify-between"><span class="text-label-sm font-label-sm text-on-surface-variant font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[15px] text-primary">alt_route</span>تقاطع‌های پرتردد:</span><span class="text-[11px] text-primary font-bold">۶ ایستگاه</span></div><div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1"><button class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-primary text-on-primary shadow-sm text-label-sm font-label-sm font-bold active:scale-95 transition-all" type="button"><span class="flex items-center -space-x-1"><span class="w-2.5 h-2.5 rounded-full bg-secondary-container ring-1 ring-white z-10"></span><span class="w-2.5 h-2.5 rounded-full bg-[#FBC02D] ring-1 ring-white"></span></span><span class="">دروازه دولت (۱ و ۴)</span><span class="material-symbols-outlined text-[14px]">check</span></button><button class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/40 text-on-surface hover:bg-surface-container text-label-sm font-label-sm font-medium active:scale-95 transition-all" type="button"><span class="flex items-center -space-x-1"><span class="w-2.5 h-2.5 rounded-full bg-[#00B1AF] ring-1 ring-white z-10"></span><span class="w-2.5 h-2.5 rounded-full bg-[#FBC02D] ring-1 ring-white"></span></span><span class="">تئاتر شهر (۳ و ۴)</span></button><button class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/40 text-on-surface hover:bg-surface-container text-label-sm font-label-sm font-medium active:scale-95 transition-all" type="button"><span class="flex items-center -space-x-1"><span class="w-2.5 h-2.5 rounded-full bg-secondary-container ring-1 ring-white z-10"></span><span class="w-2.5 h-2.5 rounded-full bg-[#005FA8] ring-1 ring-white"></span></span><span class="">امام خمینی (۱ و ۲)</span></button><button class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/40 text-on-surface hover:bg-surface-container text-label-sm font-label-sm font-medium active:scale-95 transition-all" type="button"><span class="flex items-center -space-x-1"><span class="w-2.5 h-2.5 rounded-full bg-[#005FA8] ring-1 ring-white z-10"></span><span class="w-2.5 h-2.5 rounded-full bg-[#FBC02D] ring-1 ring-white"></span></span><span class="">شادمان (۲ و ۴)</span></button><button class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/40 text-on-surface hover:bg-surface-container text-label-sm font-label-sm font-medium active:scale-95 transition-all" type="button"><span class="flex items-center -space-x-1"><span class="w-2.5 h-2.5 rounded-full bg-secondary-container ring-1 ring-white z-10"></span><span class="w-2.5 h-2.5 rounded-full bg-[#00B1AF] ring-1 ring-white"></span></span><span class="">شهید بهشتی (۱ و ۳)</span></button><button class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/40 text-on-surface hover:bg-surface-container text-label-sm font-label-sm font-medium active:scale-95 transition-all" type="button"><span class="flex items-center -space-x-1"><span class="w-2.5 h-2.5 rounded-full bg-[#005FA8] ring-1 ring-white z-10"></span><span class="w-2.5 h-2.5 rounded-full bg-[#8E24AA] ring-1 ring-white"></span></span><span class="">نواب صفوی (۲ و ۷)</span></button></div></div>
+<!-- Direction Segmented Buttons -->
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block mb-1.5 font-medium">جهت حرکت قطار:</span>
+<div class="grid grid-cols-2 gap-2 bg-surface-container-low p-1 rounded-xl">
+<!-- Active Direction: North / Tajrish -->
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-lg bg-primary-container text-on-primary shadow-sm text-label-md font-label-md font-bold transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">north</span>
+<span class="">به سمت تجریش (شمال)</span>
+</button>
+<!-- Inactive Direction: South / Kahrizak -->
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-lg text-on-surface-variant hover:text-on-surface text-label-md font-label-md font-medium transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">south</span>
+<span class="">به سمت کهریزک (جنوب)</span>
+</button>
+</div>
+</div>
+</section><section class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm space-y-3"><div class="flex items-center justify-between border-b border-outline-variant/20 pb-2.5">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">sync_alt</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<h3 class="text-title-md font-title-md font-bold text-on-surface">مقایسه هم‌زمان خطوط متقاطع</h3>
+<button aria-label="راهنمای مقایسه" class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-primary hover:bg-primary/20 active:scale-95 transition-all text-xs font-bold" onclick="openHelpModal('interchange')" type="button">
+<span class="material-symbols-outlined text-[15px]">help</span>
+</button>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant">دروازه دولت • تقاطع خط ۱ و ۴</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+    هماهنگ
+  </span>
+</div>
+<div class="grid grid-cols-1 gap-2.5">
+<!-- Line 1 Card -->
+<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-secondary-container ring-2 ring-secondary-container/30"></span>
+<span class="text-title-md font-title-md font-bold text-on-surface">خط ۱</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant border-r border-outline-variant/40 pr-1.5">تجریش - کهریزک</span>
+</div>
+<span class="text-label-sm font-label-sm text-secondary font-bold">سرفاصله: ۵ دقیقه</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-label-sm font-label-sm">
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/20 flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant text-[11px] mb-1">
+<span>سکوی ۱ (شمال)</span>
+<span class="font-medium text-primary">به تجریش</span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-title-md font-title-md font-bold text-secondary">۲ دقیقه دیگر</span>
+<span class="font-mono text-on-surface-variant text-[11px]">۱۴:۰۵</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/20 flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant text-[11px] mb-1">
+<span>سکوی ۲ (جنوب)</span>
+<span class="font-medium text-on-surface">به کهریزک</span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-title-md font-title-md font-bold text-on-surface">۶ دقیقه دیگر</span>
+<span class="font-mono text-on-surface-variant text-[11px]">۱۴:۰۹</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Line 4 Card -->
+<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-[#FBC02D] ring-2 ring-[#FBC02D]/30"></span>
+<span class="text-title-md font-title-md font-bold text-on-surface">خط ۴</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant border-r border-outline-variant/40 pr-1.5">کلاهدوز - ارم سبز</span>
+</div>
+<span class="text-label-sm font-label-sm text-amber-600 font-bold">سرفاصله: ۶ دقیقه</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-label-sm font-label-sm">
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/20 flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant text-[11px] mb-1">
+<span>سکوی ۱ (غرب)</span>
+<span class="font-medium text-amber-600">به ارم سبز</span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-title-md font-title-md font-bold text-on-surface">۴ دقیقه دیگر</span>
+<span class="font-mono text-on-surface-variant text-[11px]">۱۴:۰۷</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/20 flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant text-[11px] mb-1">
+<span>سکوی ۲ (شرق)</span>
+<span class="font-medium text-on-surface">به کلاهدوز</span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-title-md font-title-md font-bold text-on-surface">۸ دقیقه دیگر</span>
+<span class="font-mono text-on-surface-variant text-[11px]">۱۴:۱۱</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Streamlined Compact Summary Pill -->
+<div class="flex items-center justify-between bg-primary/10 rounded-xl px-3 py-2 border border-primary/20 text-body-sm font-body-sm">
+<div class="flex items-center gap-1.5 text-primary font-bold text-[13px]">
+<span class="material-symbols-outlined text-[17px]">bolt</span>
+<span>سریع‌ترین حرکت: خط ۱ (۲ دقیقه)</span>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-medium bg-surface px-2 py-0.5 rounded-md border border-outline-variant/30">تعویض سکو: ۲ دقیقه</span>
+</div></section>
+<!-- 4. Next Train Large Hero Arrival Card -->
+<section class="bg-gradient-to-br from-primary-container via-primary to-[#002f5e] rounded-2xl p-4 text-on-primary shadow-md relative overflow-hidden">
+<!-- Ambient Graphic Ring -->
+<div class="absolute -left-10 -bottom-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
+<div class="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-secondary-container/20 pointer-events-none"></div>
+<div class="flex items-start justify-between relative z-10">
+<div class="space-y-1">
+<span class="inline-flex items-center gap-1 text-label-sm font-label-sm bg-white/15 px-2 py-0.5 rounded-full backdrop-blur-sm">
+<span class="material-symbols-outlined text-[14px]">train</span>
+              سکوی ۱ • خط ۱ به سمت تجریش
+            </span>
+<h2 class="text-headline-md font-headline-md tracking-tight pt-1">اعزام قطار بعدی</h2>
+</div>
+<span class="px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            وضعیت: عادی
+          </span>
+</div>
+<!-- Big Countdown Value -->
+<div class="my-4 flex items-baseline justify-between border-y border-white/15 py-3 relative z-10">
+<div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-headline-xl font-headline-xl font-black text-white tracking-tighter">۲</span>
+<span class="text-title-lg font-title-lg font-bold text-on-primary-container">دقیقه دیگر</span>
+</div>
+<p class="text-label-sm font-label-sm text-on-primary-container/80 mt-0.5">ساعت ورود تقریبی: ۱۴:۰۵</p>
+</div>
+<div class="text-left">
+<span class="text-label-sm font-label-sm text-on-primary-container/90 block">سرفاصله فعلی (Headway)</span>
+<span class="text-title-md font-title-md font-bold text-white">هر ۵ دقیقه</span>
+<span class="text-[10px] text-emerald-200 block">پیک بعدازظهر</span>
+</div>
+</div>
+<!-- Upcoming Trains Queue (2nd & 3rd Trains) -->
+<div class="space-y-2 relative z-10">
+<span class="text-label-sm font-label-sm text-on-primary-container/90 font-medium block">قطارهای بعدی در این سکو:</span>
+<div class="grid grid-cols-2 gap-2 text-label-sm font-label-sm">
+<div class="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 flex items-center justify-between border border-white/10">
+<div class="flex items-center gap-1.5">
+<span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">۲</span>
+<span class="">۷ دقیقه دیگر</span>
+</div>
+<span class="text-on-primary-container font-mono text-[11px]">۱۴:۱۰</span>
+</div>
+<div class="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 flex items-center justify-between border border-white/10">
+<div class="flex items-center gap-1.5">
+<span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">۳</span>
+<span class="">۱۲ دقیقه دیگر</span>
+</div>
+<span class="text-on-primary-container font-mono text-[11px]">۱۴:۱۵</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 7. Passenger Reminder & Notification Strip -->
+<section class="bg-surface-container-high/60 border border-outline-variant/40 rounded-xl p-3 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<div>
+<h4 class="text-label-lg font-label-lg text-on-surface font-bold">هشدار رسیدن قطار</h4>
+<p class="text-label-sm font-label-sm text-on-surface-variant">یادآوری ۵ یا ۱۰ دقیقه قبل از ورود قطار</p>
+</div>
+</div>
+<button class="px-3 py-1.5 bg-primary-container text-on-primary text-label-md font-label-md rounded-lg active:scale-95 transition-all shadow-sm flex items-center gap-1" type="button">
+<span class="">فعال‌سازی</span>
+<span class="material-symbols-outlined text-[16px]">add_alert</span>
+</button>
+</section>
+<!-- 5. Special / Express / Extra Trains Alert Card -->
+<section class="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5 space-y-2"><div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-amber-900">
+<span class="material-symbols-outlined text-amber-600 text-[22px]">bolt</span>
+<h3 class="text-title-md font-title-md font-bold">اعزام قطار فوق‌العاده و تندرو</h3>
+<button aria-label="راهنمای اعزام فوق العاده" class="w-5 h-5 rounded-full bg-amber-200/70 flex items-center justify-center text-amber-900 hover:bg-amber-300 active:scale-95 transition-all text-xs font-bold" onclick="openHelpModal('express')" type="button">
+<span class="material-symbols-outlined text-[14px]">help</span>
+</button>
+</div>
+<span class="text-label-sm font-label-sm bg-amber-200/60 text-amber-900 font-bold px-2.5 py-0.5 rounded-full">تخلیه پیک بار</span>
+</div>
+<div class="flex items-center justify-between pt-1 text-label-sm font-label-sm text-amber-900 font-medium">
+<div class="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-lg border border-amber-200/60">
+<span class="material-symbols-outlined text-[16px] text-amber-600">schedule</span>
+<span>زمان اعزام: <strong class="font-bold font-mono">۱۴:۲۲</strong></span>
+</div>
+<div class="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-lg border border-amber-200/60">
+<span class="material-symbols-outlined text-[16px] text-amber-600">group</span>
+<span>ظرفیت آزاد: <strong class="font-bold font-mono">۸۰٪</strong></span>
+</div>
+</div></section>
+<!-- 6. Full Operational Timetable (First & Last Trains, Shifts) -->
+<section class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm space-y-3"><div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
+<h3 class="text-title-md font-title-md text-on-surface font-bold">جدول ساعات کار و اولین/آخرین قطار</h3>
+<button aria-label="راهنمای ساعات کاری" class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center text-primary hover:bg-primary/20 active:scale-95 transition-all text-xs font-bold" onclick="openHelpModal('timetable')" type="button">
+<span class="material-symbols-outlined text-[14px]">help</span>
+</button>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">خط ۱ تجریش</span>
+</div>
+<!-- First & Last Train Pills Grid -->
+<div class="grid grid-cols-2 gap-2.5">
+<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+<span class="material-symbols-outlined text-[20px]">wb_twilight</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">اولین اعزام صبح</span>
+<span class="text-title-md font-title-md font-bold text-on-surface">۰۵:۳۰ صبح</span>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold">
+<span class="material-symbols-outlined text-[20px]">bedtime</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">آخرین اعزام شب</span>
+<span class="text-title-md font-title-md font-bold text-on-surface">۲۲:۳۰ شب</span>
+</div>
+</div>
+</div>
+<!-- Shift Schedule Table (Weekday, Thursday, Friday) -->
+<div class="overflow-hidden border border-outline-variant/30 rounded-xl mt-3">
+<table class="w-full text-right text-body-sm font-body-sm">
+<thead class="bg-surface-container text-on-surface font-bold text-label-md font-label-md border-b border-outline-variant/30">
+<tr>
+<th class="py-2.5 px-3">روز هفته</th>
+<th class="py-2.5 px-2 text-center">ساعت کاری</th>
+<th class="py-2.5 px-2 text-center">سرفاصله پیک</th>
+<th class="py-2.5 px-3 text-left">سرفاصله عادی</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20 bg-surface-container-lowest">
+<tr class="hover:bg-surface-container-low/50">
+<td class="py-2.5 px-3 font-semibold text-on-surface flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+          شنبه تا چهارشنبه
+        </td>
+<td class="py-2.5 px-2 text-center font-mono">۰۵:۳۰ - ۲۲:۳۰</td>
+<td class="py-2.5 px-2 text-center text-secondary font-bold">۴.۵ تا ۵ دقیقه</td>
+<td class="py-2.5 px-3 text-left text-on-surface-variant">۷ دقیقه</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50">
+<td class="py-2.5 px-3 font-semibold text-on-surface flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+          پنج‌شنبه‌ها
+        </td>
+<td class="py-2.5 px-2 text-center font-mono">۰۵:۳۰ - ۲۲:۰۰</td>
+<td class="py-2.5 px-2 text-center font-semibold">۶ دقیقه</td>
+<td class="py-2.5 px-3 text-left text-on-surface-variant">۹ دقیقه</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50">
+<td class="py-2.5 px-3 font-semibold text-on-surface flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+          جمعه و ایام تعطیل
+        </td>
+<td class="py-2.5 px-2 text-center font-mono">۰۶:۰۰ - ۲۲:۰۰</td>
+<td class="py-2.5 px-2 text-center font-semibold">۹ دقیقه</td>
+<td class="py-2.5 px-3 text-left text-on-surface-variant">۱۰ تا ۱۲ دقیقه</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex items-center justify-between pt-1 text-label-sm font-label-sm text-on-surface-variant">
+<span class="text-[11px] text-on-surface-variant">انشعاب‌های فرودگاه و شهر آفتاب مجزا هستند.</span>
+<button class="text-primary font-bold hover:underline flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[15px]">picture_as_pdf</span>
+<span>PDF جدول</span>
+</button>
+</div></section>
+<!-- Transit Ad Banner Container (Standard Wireframe Compliant) -->
+<section class="rounded-xl bg-[#F1F5F9] border border-outline-variant/30 p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">credit_card</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-label-sm font-label-sm text-on-surface-variant bg-surface px-1.5 py-0.2 rounded border border-outline-variant/30">آگهی</span>
+<span class="text-label-md font-label-md font-bold text-on-surface">شارژ مستقیم بلیت الکترونیک تهران‌من</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">بدون ایستادن در صف باجه با ۱۰ درصد تخفیف ویژه</p>
+</div>
+</div>
+<button class="px-2.5 py-1 text-label-sm font-label-sm bg-surface rounded-lg border border-outline-variant font-bold hover:bg-surface-container active:scale-95 transition-all text-on-surface" type="button">
+          شارژ
+        </button>
+</section>
+</main>
+<!-- 8. Shared Bottom Navigation Bar (Bottom Floating Pill Dock) -->
+<!-- JSON Blueprint Matched: Labels: ["خانه", "خطوط و نقشه", "ایستگاه‌ها"] | Icons: ["home", "map", "directions_subway"] -->
+<!-- Active State Logic: Screen is timetable & schedule for lines -> "خطوط و نقشه" highlighted -->
+<nav class="fixed bottom-6 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between z-50 rtl" dir="rtl"><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" type="button">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span>خانه</span>
+</button>
+<button class="flex items-center gap-2 bg-[#0d58a6] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all" type="button">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span>خطوط و نقشه</span>
+</button>
+<button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" type="button">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><rect height="13" rx="2" width="16" x="4" y="3"></rect><path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6"></path></svg>
+<span>ایستگاه‌ها</span>
+</button></nav>
+<div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all" id="help-modal">
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-3.5 transform scale-95 transition-all text-right rtl" dir="rtl">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-2">
+<div class="flex items-center gap-2 text-primary font-bold">
+<span class="material-symbols-outlined text-[22px]">info</span>
+<h4 class="text-title-md font-title-md" id="help-modal-title">راهنمای زمان‌بندی</h4>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant active:scale-95 transition-all" onclick="closeHelpModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant leading-relaxed" id="help-modal-body">
+      متن راهنما
+    </p>
+<div class="pt-2 flex justify-end">
+<button class="px-4 py-2 bg-primary text-on-primary rounded-xl text-label-md font-bold hover:bg-primary-container active:scale-95 transition-all shadow-sm" onclick="closeHelpModal()" type="button">
+        متوجه شدم
+      </button>
+</div>
+</div>
+</div>
+<script>
+  const helpContents = {
+    interchange: {
+      title: 'راهنمای تقاطع و تعویض خط',
+      body: 'در ایستگاه‌های تقاطعی نظیر دروازه دولت (خطوط ۱ و ۴)، زمان‌بندی حرکت به صورت هم‌گام نمایش داده می‌شود. میانگین زمان پیاده‌روی بین سکوهای خط ۱ و ۴ حدود ۲ دقیقه است.'
+    },
+    express: {
+      title: 'قطارهای فوق‌العاده و تندرو',
+      body: 'جهت سهولت تردد در ساعات شلوغی، قطارهای خالی از پایانه‌ها اعزام می‌شوند تا مسافران ایستگاه‌های پرتردد تقاطعی را سریع‌تر و با توقف‌های کمتر به مقاصد اصلی منتقل کنند.'
+    },
+    timetable: {
+      title: 'ساعات کاری و سرفاصله‌ها',
+      body: 'سرفاصله پیک مربوط به ساعات اوج تردد (صبح‌ها ۰۶:۳۰ تا ۰۹:۰۰ و بعدازظهرها ۱۶:۳۰ تا ۱۹:۳۰) است. ساعات حرکت خطوط انشعابی به صورت جداگانه در ایستگاه‌ها اعلان می‌شود.'
+    }
+  };
+
+  function openHelpModal(type) {
+    const modal = document.getElementById('help-modal');
+    const titleEl = document.getElementById('help-modal-title');
+    const bodyEl = document.getElementById('help-modal-body');
+    if (helpContents[type]) {
+      titleEl.textContent = helpContents[type].title;
+      bodyEl.textContent = helpContents[type].body;
+    }
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.querySelector('.transform').classList.remove('scale-95');
+    modal.querySelector('.transform').classList.add('scale-100');
+  }
+
+  function closeHelpModal() {
+    const modal = document.getElementById('help-modal');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    modal.querySelector('.transform').classList.remove('scale-100');
+    modal.querySelector('.transform').classList.add('scale-95');
+  }
+</script></div>
+</body></html>

@@ -1,0 +1,242 @@
+     1→<!DOCTYPE html>
+     2→
+     3→<html dir="rtl" lang="fa"><head>
+     4→<meta charset="utf-8"/>
+     5→<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+     6→<title>مترویار | وضعیت شلوغی و اعلام تأخیر</title>
+     7→<!-- Persian Typography (Vazirmatn) -->
+     8→<link href="https://fonts.googleapis.com" rel="preconnect"/>
+     9→<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    10→<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    11→<!-- Material Symbols Outlined -->
+    12→<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    13→<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    14→<!-- Tailwind CSS v3 -->
+    15→<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    16→<script id="tailwind-config">
+    17→    tailwind.config = {
+    18→      darkMode: "class",
+    19→      theme: {
+    20→        extend: {
+    21→          "colors": {
+    22→            "on-background": "#111c2d",
+    23→            "on-secondary": "#ffffff",
+    24→            "inverse-primary": "#a8c8ff",
+    25→            "surface-tint": "#1a5eac",
+    26→            "primary": "#00417f",
+    27→            "on-tertiary-fixed": "#00210e",
+    28→            "tertiary-fixed-dim": "#61de92",
+    29→            "surface-container-low": "#f0f3ff",
+    30→            "surface-dim": "#cfdaf2",
+    31→            "on-tertiary": "#ffffff",
+    32→            "on-tertiary-fixed-variant": "#00522c",
+    33→            "secondary-container": "#e32220",
+    34→            "outline": "#727782",
+    35→            "inverse-surface": "#263143",
+    36→            "on-primary-fixed": "#001b3c",
+    37→            "secondary": "#bc000c",
+    38→            "secondary-fixed": "#ffdad5",
+    39→            "on-primary-container": "#b6d0ff",
+    40→            "surface-container-lowest": "#ffffff",
+    41→            "on-secondary-fixed-variant": "#930007",
+    42→            "on-surface": "#111c2d",
+    43→            "on-tertiary-container": "#6ae79a",
+    44→            "surface-container": "#e7eeff",
+    45→            "on-secondary-fixed": "#410001",
+    46→            "tertiary-fixed": "#7efbac",
+    47→            "primary-fixed": "#d5e3ff",
+    48→            "outline-variant": "#c2c6d3",
+    49→            "surface": "#f9f9ff",
+    50→            "error": "#ba1a1a",
+    51→            "inverse-on-surface": "#ecf1ff",
+    52→            "on-surface-variant": "#424751",
+    53→            "on-error-container": "#93000a",
+    54→            "on-primary-fixed-variant": "#004689",
+    55→            "on-primary": "#ffffff",
+    56→            "surface-variant": "#d8e3fb",
+    57→            "primary-container": "#0d58a6",
+    58→            "primary-fixed-dim": "#a8c8ff",
+    59→            "surface-bright": "#f9f9ff",
+    60→            "error-container": "#ffdad6",
+    61→            "surface-container-high": "#dee8ff",
+    62→            "on-error": "#ffffff",
+    63→            "secondary-fixed-dim": "#ffb4aa",
+    64→            "surface-container-highest": "#d8e3fb",
+    65→            "on-secondary-container": "#fffbff",
+    66→            "background": "#f9f9ff",
+    67→            "tertiary": "#004c28",
+    68→            "tertiary-container": "#006638"
+    69→          },
+    70→          "borderRadius": {
+    71→            "DEFAULT": "0.25rem",
+    72→            "lg": "0.5rem",
+    73→            "xl": "0.75rem",
+    74→            "2xl": "1.25rem",
+    75→            "3xl": "1.75rem",
+    76→            "full": "9999px"
+    77→          },
+    78→          "spacing": {
+    79→            "margin": "1rem",
+    80→            "space-sm": "0.5rem",
+    81→            "gutter": "1rem",
+    82→            "space-xs": "0.25rem",
+    83→            "space-lg": "1.5rem",
+    84→            "space-md": "1rem",
+    85→            "space-xl": "2rem"
+    86→          },
+    87→          "fontFamily": {
+    88→            "body-sm": ["Vazirmatn"],
+    89→            "label-sm": ["Vazirmatn"],
+    90→            "body-md": ["Vazirmatn"],
+    91→            "label-md": ["Vazirmatn"],
+    92→            "headline-xl": ["Vazirmatn"],
+    93→            "headline-lg": ["Vazirmatn"],
+    94→            "body-lg": ["Vazirmatn"],
+    95→            "title-lg": ["Vazirmatn"],
+    96→            "headline-md": ["Vazirmatn"],
+    97→            "title-md": ["Vazirmatn"],
+    98→            "label-lg": ["Vazirmatn"]
+    99→          },
+   100→          "fontSize": {
+   101→            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+   102→            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+   103→            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+   104→            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+   105→            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+   106→            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+   107→            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+   108→            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+   109→            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+   110→            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+   111→            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+   112→          }
+   113→        }
+   114→      }
+   115→    }
+   116→  </script>
+   117→<style>
+   118→    body {
+   119→      font-family: 'Vazirmatn', sans-serif;
+   120→      user-select: none;
+   121→      -webkit-tap-highlight-color: transparent;
+   122→    }
+   123→    .material-symbols-outlined {
+   124→      font-family: 'Material Symbols Outlined';
+   125→      font-weight: normal;
+   126→      font-style: normal;
+   127→      font-size: 20px;
+   128→      line-height: 1;
+   129→      display: inline-block;
+   130→      text-transform: none;
+   131→      letter-spacing: normal;
+   132→      word-wrap: normal;
+   133→      white-space: nowrap;
+   134→      direction: ltr;
+   135→      -webkit-font-smoothing: antialiased;
+   136→      vertical-align: middle;
+   137→    }
+   138→    /* Pulse glow effect */
+   139→    @keyframes pulse-subtle {
+   140→      0%, 100% { opacity: 1; transform: scale(1); }
+   141→      50% { opacity: 0.4; transform: scale(1.15); }
+   142→    }
+   143→    .animate-pulse-subtle {
+   144→      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+   145→    }
+   146→    /* Hide scrollbar */
+   147→    .no-scrollbar::-webkit-scrollbar {
+   148→      display: none;
+   149→    }
+   150→    .no-scrollbar {
+   151→      -ms-overflow-style: none;
+   152→      scrollbar-width: none;
+   153→    }
+   154→  </style>
+   155→</head>
+   156→<body class="bg-background text-on-background min-h-screen flex justify-center antialiased">
+   157→<!-- Mobile App Frame Container -->
+   158→<div class="w-full max-w-md min-h-screen relative flex flex-col bg-surface shadow-2xl overflow-hidden">
+   159→<!-- ==================== BACKGROUND BASE APP (Blurred Behind Modal) ==================== -->
+   160→<header class="flex justify-between items-center w-full px-4 h-16 sticky top-0 z-10 bg-surface border-b border-outline-variant/30 shadow-sm filter blur-[2px]">
+   161→<div class="flex items-center gap-2">
+   162→<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors">
+   163→<span class="material-symbols-outlined">menu</span>
+   164→</button>
+   165→<div class="flex flex-col">
+   166→<span class="text-title-lg font-title-lg text-primary font-bold">تهران</span>
+   167→<span class="text-label-sm font-label-sm text-outline">ایستگاه تئاتر شهر (تقاطع خط ۳ و ۴)</span>
+   168→</div>
+   169→</div>
+   170→<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container text-on-surface">
+   171→<span class="material-symbols-outlined">tune</span>
+   172→</button>
+   173→</header>
+   174→<!-- Simulated Station Background Map & Nodes (De-emphasized via blur) -->
+   175→<div class="p-4 space-y-4 filter blur-[3px] opacity-60 pointer-events-none select-none flex-1">
+   176→<div class="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/40 shadow-sm flex items-center justify-between">
+   177→<div class="flex items-center gap-3">
+   178→<div class="w-3.5 h-3.5 rounded-full bg-secondary-container ring-4 ring-secondary-container/20"></div>
+   179→<div>
+   180→<div class="text-title-md font-title-md text-on-surface">خط ۴: زرد کلاهدوز - ارم سبز</div>
+   181→<div class="text-body-sm font-body-sm text-on-surface-variant">ورودی خیابان انقلاب و ولیعصر</div>
+   182→</div>
+   183→</div>
+   184→<span class="text-label-md font-label-md text-primary font-bold">۲ دقیقه</span>
+   185→</div>
+   186→<!-- Station Topological Nodes Graphic Placeholder -->
+   187→<div class="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/30 h-72 flex flex-col justify-between relative overflow-hidden">
+   188→<div class="flex justify-between items-center text-outline text-label-md font-label-md">
+   189→<span class="">موقعیت مکانی ناوگان</span>
+   190→<span class="">سرعت متوسط ۳۴ کیلومتر/ساعت</span>
+   191→</div>
+   192→<div class="h-1 bg-outline-variant rounded-full relative my-auto">
+   193→<div class="absolute right-1/4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary ring-4 ring-primary-fixed"></div>
+   194→</div>
+   195→<div class="text-center text-body-sm font-body-sm text-on-surface-variant">نقشه شماتیک خطوط عبوری</div>
+   196→</div>
+   197→</div>
+   198→<!-- ==================== BACKDROP OVERLAY ==================== -->
+   199→<div class="absolute inset-0 bg-on-background/45 backdrop-blur-sm z-30 transition-opacity duration-300"></div>
+   200→<!-- ==================== BOTTOM SHEET MODAL ==================== -->
+   201→<section class="absolute bottom-0 left-0 right-0 max-h-[92vh] z-40 bg-surface-container-lowest rounded-t-3xl shadow-[0_-8px_32px_rgba(17,28,45,0.18)] flex flex-col border-t border-outline-variant/30 overflow-hidden transform transition-all duration-300">
+   202→<!-- Drag Handle -->
+   203→<div class="w-full pt-3 pb-1 flex justify-center items-center cursor-grab active:cursor-grabbing">
+   204→<div class="w-12 h-1.5 bg-outline-variant rounded-full"></div>
+   205→</div>
+   206→<!-- Sheet Header -->
+   207→<div class="px-5 py-3 flex items-center justify-between border-b border-surface-container">
+   208→<div class="flex items-center gap-2.5">
+   209→<div class="relative flex items-center justify-center">
+   210→<span class="w-2.5 h-2.5 rounded-full bg-tertiary-container"></span>
+   211→<span class="absolute w-4 h-4 rounded-full bg-tertiary-fixed-dim animate-pulse-subtle"></span>
+   212→</div>
+   213→<div>
+   214→<h2 class="text-title-lg font-title-lg text-on-surface font-bold">وضعیت سکو و تراکم لحظه‌ای</h2>
+   215→<p class="text-label-sm font-label-sm text-on-surface-variant">ایستگاه تئاتر شهر • بروزرسانی ۳۰ ثانیه پیش</p>
+   216→</div>
+   217→</div>
+   218→<!-- Close Button -->
+   219→<button aria-label="بستن" class="w-8 h-8 rounded-full flex items-center justify-center bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors">
+   220→<span class="material-symbols-outlined text-[18px]">close</span>
+   221→</button>
+   222→</div>
+   223→<!-- Sheet Scrollable Content -->
+   224→<div class="p-4 space-y-3.5 overflow-y-auto no-scrollbar max-h-[calc(88vh-130px)] pb-28"><div class="space-y-2"><div class="flex justify-between items-center"><span class="text-label-md font-label-md font-bold text-on-surface">انتخاب سکو:</span><span class="text-label-sm font-label-sm text-primary font-bold bg-primary-fixed/40 px-2 py-0.5 rounded-full">خط ۴ (زرد)</span></div><div class="grid grid-cols-2 gap-2.5"><button class="p-3 rounded-2xl bg-primary text-on-primary shadow-sm text-right flex flex-col justify-between border border-primary relative transition-transform active:scale-95"><div class="flex items-center justify-between mb-1"><span class="text-label-sm font-label-sm px-2 py-0.5 rounded-full bg-surface-container-lowest/20 font-bold">سکوی ۱</span><span class="text-label-md font-label-md font-bold text-inverse-primary">۱:۴۵ دقیقه</span></div><div class="text-title-md font-title-md font-bold mt-1 truncate">به سمت ارم سبز</div><div class="text-label-sm font-label-sm text-on-primary-container mt-0.5 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim animate-pulse-subtle"></span>ورود قطار</div></button><button class="p-3 rounded-2xl bg-surface-container-lowest text-on-surface border border-outline-variant/60 hover:bg-surface-container-low transition-all text-right flex flex-col justify-between active:scale-95"><div class="flex items-center justify-between mb-1"><span class="text-label-sm font-label-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-bold">سکوی ۲</span><span class="text-label-md font-label-md font-bold text-outline">۴ دقیقه</span></div><div class="text-title-md font-title-md font-bold mt-1 text-on-surface truncate">به سمت کلاهدوز</div><div class="text-label-sm font-label-sm text-outline mt-0.5">ایستگاه فردوسی</div></button></div></div><div class="bg-surface-container-low p-3.5 rounded-2xl border border-outline-variant/40 space-y-2.5"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5 text-on-surface"><span class="material-symbols-outlined text-primary text-[20px]">directions_subway</span><span class="text-title-md font-title-md font-bold">تراکم مسافران واگن‌ها</span><button class="w-5 h-5 rounded-full bg-surface-container-highest hover:bg-primary-fixed/40 text-primary flex items-center justify-center text-label-sm font-bold transition-all" onclick="openHelpModal('crowd')" title="راهنمای تراکم واگن‌ها" type="button"><span class="material-symbols-outlined text-[14px]">help</span></button></div><span class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded-md font-medium">قطار ۲۱۹</span></div><div class="bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/30"><div class="flex items-center justify-between text-label-sm font-label-sm text-outline mb-1.5"><span class="flex items-center gap-1 font-medium"><span class="material-symbols-outlined text-[14px]">arrow_forward</span> لوکوموتیو</span><span class="font-medium">انتهای قطار</span></div><div class="grid grid-cols-5 gap-1.5 items-stretch"><div class="flex flex-col items-center py-2 px-1 rounded-xl bg-secondary-fixed/50 border border-secondary/40 text-center"><span class="text-label-sm font-label-sm text-on-surface font-bold">۱</span><span class="material-symbols-outlined text-secondary text-[20px] my-1">group</span><span class="text-label-sm font-label-sm text-secondary font-bold">تکمیل</span></div><div class="flex flex-col items-center py-2 px-1 rounded-xl bg-amber-50 border border-amber-300 text-center"><span class="text-label-sm font-label-sm text-on-surface font-bold">۲</span><span class="material-symbols-outlined text-amber-600 text-[20px] my-1">groups</span><span class="text-label-sm font-label-sm text-amber-700 font-bold">شلوغ</span></div><div class="flex flex-col items-center py-2 px-1 rounded-xl bg-tertiary-fixed/30 border-2 border-tertiary text-center relative shadow-sm"><div class="absolute -top-1.5 right-1/2 translate-x-1/2 bg-tertiary text-on-tertiary text-[9px] px-1.5 py-0.2 rounded-full font-bold">بهترین</div><span class="text-label-sm font-label-sm text-on-surface font-bold mt-1">۳</span><span class="material-symbols-outlined text-tertiary text-[20px] my-0.5">person</span><span class="text-label-sm font-label-sm text-tertiary font-bold">خلوت</span></div><div class="flex flex-col items-center py-2 px-1 rounded-xl bg-tertiary-fixed/20 border border-tertiary/40 text-center"><span class="text-label-sm font-label-sm text-on-surface font-bold">۴</span><span class="material-symbols-outlined text-tertiary text-[20px] my-1">person</span><span class="text-label-sm font-label-sm text-tertiary font-bold">خلوت</span></div><div class="flex flex-col items-center py-2 px-1 rounded-xl bg-surface-container border border-outline-variant/60 text-center"><span class="text-label-sm font-label-sm text-on-surface font-bold">۵</span><span class="material-symbols-outlined text-on-surface-variant text-[20px] my-1">group</span><span class="text-label-sm font-label-sm text-on-surface-variant font-bold">متوسط</span></div></div><div class="mt-2 px-2.5 py-1.5 rounded-lg bg-surface-container flex items-center justify-between text-label-sm font-label-sm"><div class="flex items-center gap-1.5 text-primary"><span class="material-symbols-outlined text-[16px]">tips_and_updates</span><span class="text-on-surface font-medium">پیشنهاد هوشمند:</span></div><span class="font-bold text-tertiary bg-tertiary-fixed/20 px-2 py-0.5 rounded-md">واگن ۳ و ۴ خلوت‌ترند</span></div></div></div><div class="bg-error-container/40 p-3 rounded-2xl border border-secondary/20"><div class="flex justify-between items-center"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-[14px]">warning</span></div><div class="flex items-center gap-1.5"><h4 class="text-title-md font-title-md text-error font-bold">تأخیر خطوط لحظه‌ای</h4><button class="w-5 h-5 rounded-full bg-error/10 text-error flex items-center justify-center text-label-sm font-bold hover:bg-error/20 transition-all" onclick="openHelpModal('delay')" title="راهنمای اعلام تأخیر" type="button"><span class="material-symbols-outlined text-[14px]">help</span></button></div></div><span class="text-label-sm font-label-sm bg-error/10 text-error font-bold px-2 py-0.5 rounded-full">خط ۱: ۳+ دقیقه</span></div><div class="flex items-center justify-between mt-2 pt-2 border-t border-secondary/10 text-label-sm font-label-sm"><span class="text-on-surface-variant font-medium">سرفاصله خط ۱: <strong>۴ دقیقه</strong></span><span class="text-tertiary font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> خط ۴ پایدار</span></div></div><div class="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/40 shadow-sm space-y-2.5" id="crowd-report-section"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[15px]">how_to_vote</span></div><h3 class="text-title-md font-title-md font-bold text-on-surface">ثبت گزارش شلوغی مسافر</h3><button class="w-5 h-5 rounded-full bg-surface-container-highest hover:bg-primary-fixed/40 text-primary flex items-center justify-center text-label-sm font-bold transition-all" onclick="openHelpModal('report')" title="راهنمای مشارکت" type="button"><span class="material-symbols-outlined text-[14px]">help</span></button></div><span class="text-label-sm font-label-sm font-bold text-primary bg-primary-fixed/40 px-2 py-0.5 rounded-md" id="selected-wagon-badge">واگن ۳</span></div><div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5" id="wagon-chips"><button class="wagon-chip flex-1 py-1 px-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-low text-on-surface text-label-sm font-medium transition-all active:scale-95 text-center" onclick="selectWagon(1, this)" type="button">۱</button><button class="wagon-chip flex-1 py-1 px-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-low text-on-surface text-label-sm font-medium transition-all active:scale-95 text-center" onclick="selectWagon(2, this)" type="button">۲</button><button class="wagon-chip flex-1 py-1 px-1.5 rounded-lg border-2 border-primary bg-primary text-on-primary font-bold shadow-sm transition-all active:scale-95 text-center" onclick="selectWagon(3, this)" type="button">۳</button><button class="wagon-chip flex-1 py-1 px-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-low text-on-surface text-label-sm font-medium transition-all active:scale-95 text-center" onclick="selectWagon(4, this)" type="button">۴</button><button class="wagon-chip flex-1 py-1 px-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-low text-on-surface text-label-sm font-medium transition-all active:scale-95 text-center" onclick="selectWagon(5, this)" type="button">۵</button><button class="wagon-chip flex-1 py-1 px-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-low text-on-surface text-label-sm font-medium transition-all active:scale-95 text-center" onclick="selectWagon(6, this)" type="button">۶</button><button class="wagon-chip flex-1 py-1 px-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-low text-on-surface text-label-sm font-medium transition-all active:scale-95 text-center" onclick="selectWagon(7, this)" type="button">۷</button></div><div class="grid grid-cols-3 gap-2"><button class="report-choice flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-surface-container-low hover:bg-tertiary-fixed/20 border border-tertiary/30 text-tertiary font-bold text-label-md font-label-md transition-all active:scale-95" onclick="submitReport('خلوت')" type="button"><span class="material-symbols-outlined text-[18px]">sentiment_satisfied</span>خلوت</button><button class="report-choice flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-surface-container-low hover:bg-amber-50 border border-amber-300 text-amber-700 font-bold text-label-md font-label-md transition-all active:scale-95" onclick="submitReport('متوسط')" type="button"><span class="material-symbols-outlined text-[18px]">sentiment_neutral</span>متوسط</button><button class="report-choice flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-surface-container-low hover:bg-secondary-fixed/50 border border-secondary/30 text-secondary font-bold text-label-md font-label-md transition-all active:scale-95" onclick="submitReport('خیلی شلوغ')" type="button"><span class="material-symbols-outlined text-[18px]">sentiment_very_dissatisfied</span>شلوغ</button></div><div class="flex items-center justify-between gap-1.5 pt-2 border-t border-outline-variant/30" id="ac-options"><button class="ac-choice flex-1 py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-primary-fixed/40 border border-primary/30 text-primary font-bold text-label-sm font-label-sm transition-all active:scale-95 flex items-center justify-center gap-1" onclick="submitVentilationReport('خنک', this)" type="button"><span class="material-symbols-outlined text-[15px]">ac_unit</span>خنک</button><button class="ac-choice flex-1 py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/60 text-on-surface-variant font-bold text-label-sm font-label-sm transition-all active:scale-95 flex items-center justify-center gap-1" onclick="submitVentilationReport('معمولی', this)" type="button"><span class="material-symbols-outlined text-[15px]">air</span>معتدل</button><button class="ac-choice flex-1 py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-amber-50 border border-amber-300 text-amber-700 font-bold text-label-sm font-label-sm transition-all active:scale-95 flex items-center justify-center gap-1" onclick="submitVentilationReport('گرم', this)" type="button"><span class="material-symbols-outlined text-[15px]">thermostat</span>گرم</button></div><div class="hidden flex items-center justify-between p-2 rounded-xl bg-tertiary-fixed/30 border border-tertiary/40 text-tertiary text-label-sm font-medium transition-all" id="report-toast"><div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">check_circle</span><span id="report-toast-text">گزارش شما ثبت شد.</span></div><span class="material-symbols-outlined text-[14px] cursor-pointer" onclick="document.getElementById('report-toast').classList.add('hidden')">close</span></div></div><div><button class="w-full py-2.5 px-3 rounded-xl bg-primary-container text-on-primary text-label-md font-label-md font-bold flex items-center justify-center gap-2 shadow-sm shadow-primary-container/20 hover:brightness-110 active:scale-[0.98] transition-all"><span class="material-symbols-outlined text-[18px]">notifications_active</span>فعال‌سازی هشدار صوتی نوبت قطار</button></div></div>
+   225→</section>
+   226→<!-- ==================== FIXED BOTTOM NAVIGATION BAR ==================== -->
+   227→<div class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-background/45 backdrop-blur-sm transition-opacity duration-300" id="help-modal"><div class="w-full max-w-[320px] bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-2xl p-4 space-y-3"><div class="flex items-center justify-between border-b border-surface-container pb-2"><div class="flex items-center gap-1.5 text-primary"><span class="material-symbols-outlined text-[20px]">info</span><h3 class="text-title-md font-title-md font-bold text-on-surface" id="help-modal-title">راهنما</h3></div><button class="w-7 h-7 rounded-full flex items-center justify-center bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors" onclick="closeHelpModal()" type="button"><span class="material-symbols-outlined text-[16px]">close</span></button></div><p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed" id="help-modal-desc">توضیحات راهنما</p><button class="w-full py-2 rounded-xl bg-primary text-on-primary text-label-md font-label-md font-bold transition-all active:scale-95" onclick="closeHelpModal()" type="button">متوجه شدم</button></div></div><script>function openHelpModal(type){const modal=document.getElementById('help-modal');const title=document.getElementById('help-modal-title');const desc=document.getElementById('help-modal-desc');if(type==='crowd'){title.textContent='راهنمای تراکم واگن‌ها';desc.textContent='این نمودار تخمین هوش‌مصنوعی و سنسورهای وزنی قطار را نشان می‌دهد. واگن با برچسب سبز خلوت‌ترین فضا برای سوار شدن و نشستن است.';}else if(type==='delay'){title.textContent='راهنمای تأخیرهای خطوط';desc.textContent='تأخیرها به صورت لحظه‌ای از مرکز کنترل ترافیک مترو به‌روزرسانی می‌شوند تا برنامه سفر خود را بدون معطلی تنظیم کنید.';}else if(type==='report'){title.textContent='راهنمای ثبت گزارش مسافر';desc.textContent='با انتخاب شماره واگن و لمس وضعیت شلوغی یا تهویه، سایر مسافران از شرایط زنده قطار آگاه می‌شوند.';}modal.classList.remove('hidden');}function closeHelpModal(){document.getElementById('help-modal').classList.add('hidden');}function selectWagon(num,btn){document.querySelectorAll('.wagon-chip').forEach(b=>{b.className='wagon-chip flex-1 py-1 px-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-low text-on-surface text-label-sm font-medium transition-all active:scale-95 text-center';});btn.className='wagon-chip flex-1 py-1 px-1.5 rounded-lg border-2 border-primary bg-primary text-on-primary font-bold shadow-sm transition-all active:scale-95 text-center';const badge=document.getElementById('selected-wagon-badge');if(badge)badge.textContent='واگن '+num;}function submitReport(status){const toast=document.getElementById('report-toast');const toastText=document.getElementById('report-toast-text');if(toast&&toastText){toastText.textContent='گزارش '+status+' ثبت شد.';toast.classList.remove('hidden');setTimeout(()=>{toast.classList.add('hidden');},3000);}}function submitVentilationReport(status,btn){document.querySelectorAll('.ac-choice').forEach(b=>{b.classList.remove('ring-2','ring-primary');});btn.classList.add('ring-2','ring-primary');const toast=document.getElementById('report-toast');const toastText=document.getElementById('report-toast-text');if(toast&&toastText){toastText.textContent='تهویه ('+status+') ثبت شد.';toast.classList.remove('hidden');setTimeout(()=>{toast.classList.add('hidden');},3000);}}</script><nav class="fixed bottom-6 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between z-50 rtl" dir="rtl">
+   228→<button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-home')" type="button">
+   229→<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+   230→<span class="">خانه</span>
+   231→</button>
+   232→<button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-lines')" type="button">
+   233→<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+   234→<span class="">خطوط و نقشه</span>
+   235→</button>
+   236→<button class="flex items-center gap-2 bg-[#0d58a6] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all" onclick="switchTab('tab-stations')" type="button">
+   237→<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><rect height="13" rx="2" width="16" x="4" y="3"></rect><path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6"></path></svg>
+   238→<span class="">ایستگاه‌ها</span>
+   239→</button>
+   240→</nav>
+   241→</div>
+   242→</body></html>

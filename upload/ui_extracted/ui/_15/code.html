@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مترویار | ایستگاه تجریش - خروجی‌ها و تاکسی‌های اطراف</title>
+<!-- Persian Typography (Vazirmatn) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<!-- Google Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-container": "#fffbff",
+            "on-secondary-fixed": "#410001",
+            "surface-variant": "#d8e3fb",
+            "surface-container-highest": "#d8e3fb",
+            "on-tertiary-fixed": "#00210e",
+            "surface-bright": "#f9f9ff",
+            "tertiary-fixed": "#7efbac",
+            "on-secondary-fixed-variant": "#930007",
+            "error": "#ba1a1a",
+            "primary-fixed": "#d5e3ff",
+            "on-primary-fixed-variant": "#004689",
+            "inverse-on-surface": "#ecf1ff",
+            "secondary-fixed-dim": "#ffb4aa",
+            "tertiary-container": "#006638",
+            "inverse-surface": "#263143",
+            "on-surface-variant": "#424751",
+            "secondary-fixed": "#ffdad5",
+            "surface-container-high": "#dee8ff",
+            "on-error-container": "#93000a",
+            "background": "#f9f9ff",
+            "outline": "#727782",
+            "on-background": "#111c2d",
+            "on-tertiary-container": "#6ae79a",
+            "surface-tint": "#1a5eac",
+            "on-error": "#ffffff",
+            "on-primary-container": "#b6d0ff",
+            "inverse-primary": "#a8c8ff",
+            "surface": "#f9f9ff",
+            "on-tertiary-fixed-variant": "#00522c",
+            "tertiary": "#004c28",
+            "surface-dim": "#cfdaf2",
+            "secondary": "#bc000c",
+            "error-container": "#ffdad6",
+            "secondary-container": "#e32220",
+            "primary": "#00417f",
+            "primary-fixed-dim": "#a8c8ff",
+            "on-primary-fixed": "#001b3c",
+            "on-primary": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "surface-container": "#e7eeff",
+            "surface-container-low": "#f0f3ff",
+            "on-secondary": "#ffffff",
+            "tertiary-fixed-dim": "#61de92",
+            "on-surface": "#111c2d",
+            "primary-container": "#0d58a6",
+            "outline-variant": "#c2c6d3"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "2rem",
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-xs": "0.25rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "title-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col selection:bg-primary-fixed selection:text-primary">
+<!-- Top App Bar / Station Navigation -->
+<header class="bg-surface border-b border-outline-variant/30 shadow-sm sticky top-0 z-40 w-full">
+<div class="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button aria-label="بازگشت" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container active:scale-95 transition-all text-on-surface" type="button">
+<span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+</button>
+<div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center justify-center bg-secondary text-on-secondary px-2 py-0.5 rounded-full text-label-sm font-label-sm font-bold">
+              خط ۱
+            </span>
+<h1 class="font-headline-md text-headline-md text-primary font-bold tracking-tight">
+              ایستگاه تجریش
+            </h1>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-tertiary-container" style='font-variation-settings: "FILL" 1;'>location_on</span>
+<span class="">انتهای شمالی خط ۱ • شمیرانات</span>
+</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button aria-label="اشتراک‌گذاری" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+<button aria-label="تنظیمات ایستگاه" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container text-primary active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[22px]">tune</span>
+</button>
+</div>
+</div>
+<!-- Category Filter Tabs -->
+<div class="max-w-md mx-auto px-4 overflow-x-auto no-scrollbar flex items-center gap-2 py-2.5">
+<a class="shrink-0 bg-primary-container text-on-primary px-3.5 py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 shadow-sm active:scale-95 transition-all" href="#exits">
+<span class="material-symbols-outlined text-[16px]">door_front</span>
+<span class="">خروجی‌ها و گیت‌ها</span>
+</a>
+<a class="shrink-0 bg-surface-container text-on-surface-variant hover:text-primary px-3.5 py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 border border-outline-variant/30 active:scale-95 transition-all" href="#taxis">
+<span class="material-symbols-outlined text-[16px]">local_taxi</span>
+<span class="">خطوط تاکسی‌رانی</span>
+</a>
+<a class="shrink-0 bg-surface-container text-on-surface-variant hover:text-primary px-3.5 py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 border border-outline-variant/30 active:scale-95 transition-all" href="#brt">
+<span class="material-symbols-outlined text-[16px]">directions_bus</span>
+<span class="">اتوبوس و BRT</span>
+</a>
+<a class="shrink-0 bg-surface-container text-on-surface-variant hover:text-primary px-3.5 py-1.5 rounded-full font-label-md text-label-md flex items-center gap-1.5 border border-outline-variant/30 active:scale-95 transition-all" href="#places">
+<span class="material-symbols-outlined text-[16px]">storefront</span>
+<span class="">مراکز پیرامون</span>
+</a>
+</div>
+</header>
+<!-- Main Scrollable Canvas -->
+<main class="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-6 pb-28">
+<!-- Station Live Status Hero Banner -->
+<section class="bg-gradient-to-l from-primary-container to-primary text-on-primary rounded-xl p-4 shadow-sm relative overflow-hidden"><div class="absolute -left-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-start justify-between relative z-10">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed animate-pulse"></span>
+<span class="font-label-md text-label-md text-primary-fixed font-medium">سرویس‌دهی عادی</span>
+<button class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12px] transition-all" onclick="toggleGuide('وضعیت ایستگاه تجریش', 'عمیق‌ترین ایستگاه تهران (عمق ۵۱ متر). مجهز به ۱۶ پله‌برقی و ۴ دستگاه آسانسور فعال با سرفاصله قطار ۴ تا ۶ دقیقه.')" title="اطلاعات بیشتر" type="button">
+<span class="material-symbols-outlined text-[14px]">help</span>
+</button>
+</div>
+<h2 class="font-title-lg text-title-lg text-white mt-1">ایستگاه متروی تجریش</h2>
+<p class="font-body-sm text-body-sm text-on-primary-container mt-0.5">عمق ۵۱ متر • ۱۶ پله‌برقی • ۴ آسانسور</p>
+</div>
+<div class="bg-white/15 backdrop-blur-md rounded-lg px-2.5 py-1.5 text-center shrink-0">
+<span class="font-label-sm text-label-sm text-surface-variant block">اعزام بعدی</span>
+<span class="font-title-md text-title-md text-white font-bold">۳ دقیقه</span>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-white/15 grid grid-cols-3 gap-2 text-center text-label-sm font-label-sm">
+<div class="bg-white/10 rounded-lg py-1">
+<span class="block text-primary-fixed-dim text-[11px]">اولین قطار</span>
+<span class="font-bold text-white">۰۵:۳۰</span>
+</div>
+<div class="bg-white/10 rounded-lg py-1">
+<span class="block text-primary-fixed-dim text-[11px]">آخرین قطار</span>
+<span class="font-bold text-white">۲۲:۳۰</span>
+</div>
+<div class="bg-white/10 rounded-lg py-1">
+<span class="block text-primary-fixed-dim text-[11px]">سرفاصله حرکت</span>
+<span class="font-bold text-white">۴-۶ دقیقه</span>
+</div>
+</div></section>
+<!-- SECTION 1: Station Exits (خروجی‌ها و گیت‌ها) -->
+<section class="space-y-3" id="exits"><div class="flex items-center justify-between"><div class="flex items-center gap-2">
+<span class="w-1.5 h-4 bg-primary-container rounded-full"></span>
+<h3 class="font-title-md text-sm text-on-surface font-bold">راهنمای گیت‌ها و خروجی‌ها</h3>
+<button class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-all" onclick="toggleGuide('راهنمای خروجی‌ها', 'ایستگاه دارای ۳ خروجی اصلی است: خروجی ۱ به سمت بیمارستان و دربند، خروجی ۲ به بازار تجریش و حرم امامزاده صالح، و خروجی ۳ به خیابان ولیعصر.')" type="button">
+<span class="material-symbols-outlined text-[13px]">help</span>
+</button>
+</div>
+<span class="font-label-sm text-[11px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">۳ خروجی</span></div>
+<!-- Exit 1 -->
+<article class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-3 shadow-sm hover:border-primary-container/60 transition-all">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-primary-fixed text-on-primary-fixed-variant font-bold font-title-md text-title-md flex items-center justify-center shrink-0">۱</span>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface font-semibold">خروجی شمالی (قدس و دربند)</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">میدان قدس • بیمارستان شهدای تجریش</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 shrink-0">
+<span class="text-tertiary font-label-sm text-label-sm bg-surface-container px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+        آسانسور
+      </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm bg-surface-container px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">escalator</span>
+        پله‌برقی
+      </span>
+</div>
+</div>
+</article>
+<!-- Exit 2 -->
+<article class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-3 shadow-sm hover:border-primary-container/60 transition-all">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-primary-fixed text-on-primary-fixed-variant font-bold font-title-md text-title-md flex items-center justify-center shrink-0">۲</span>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface font-semibold">خروجی جنوبی (میدان تجریش)</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">بازار تاریخی • حرم امامزاده صالح (ع)</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 shrink-0">
+<span class="text-secondary font-label-sm text-label-sm bg-secondary-fixed/50 px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">stairs</span>
+        پله‌برقی
+      </span>
+<span class="text-tertiary-container font-label-sm text-label-sm bg-surface-container px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">directions_walk</span>
+        ۳ دقیقه پیاده
+      </span>
+</div>
+</div>
+</article>
+<!-- Exit 3 -->
+<article class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-3 shadow-sm hover:border-primary-container/60 transition-all">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-primary-fixed text-on-primary-fixed-variant font-bold font-title-md text-title-md flex items-center justify-center shrink-0">۳</span>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface font-semibold">خروجی غربی (خیابان ولیعصر)</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">پایانه تاکسی‌رانی • باغ فردوس و محمودیه</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 shrink-0">
+<span class="text-primary font-label-sm text-label-sm bg-surface-container px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">near_me</span>
+        مستقیم
+      </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm bg-surface-container px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">local_taxi</span>
+        پایانه تاکسی
+      </span>
+</div>
+</div>
+</article></section>
+<!-- SECTION 2: Taxi Terminals & Lines (پایانه خطوط تاکسی‌رانی) -->
+<section class="space-y-3" id="taxis"><div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-4 bg-primary-container rounded-full"></span>
+<h3 class="font-title-md text-sm text-on-surface font-bold">پایانه‌های تاکسی و ون تجریش</h3>
+<button class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-all" onclick="toggleGuide('راهنمای تاکسی و ون', 'تاکسی‌ها در دو پایانه میدان تجریش و میدان قدس مستقر هستند. پرداخت با کارت شهروندی و QR فعال است.')" type="button">
+<span class="material-symbols-outlined text-[13px]">help</span>
+</button>
+</div>
+<span class="font-label-sm text-[11px] text-tertiary-container bg-surface-container px-2 py-0.5 rounded-full font-medium">فعال و مستقر</span>
+</div>
+<div class="space-y-2">
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex items-center justify-between shadow-sm hover:border-primary-container/40 transition-all">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[16px]">local_taxi</span>
+</div>
+<div>
+<h4 class="text-xs text-on-surface font-semibold">دربند • میدان سربند</h4>
+<p class="text-[11px] text-on-surface-variant mt-0.5">خروجی شمالی (میدان قدس)</p>
+</div>
+</div>
+<span class="text-[11px] text-primary bg-primary-fixed/50 px-2 py-0.5 rounded-full font-medium shrink-0">سکوی ۱</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex items-center justify-between shadow-sm hover:border-primary-container/40 transition-all">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[16px]">local_taxi</span>
+</div>
+<div>
+<h4 class="text-xs text-on-surface font-semibold">ولنجک • دانشگاه شهید بهشتی</h4>
+<p class="text-[11px] text-on-surface-variant mt-0.5">خروجی غربی (خیابان ولیعصر)</p>
+</div>
+</div>
+<span class="text-[11px] text-primary bg-primary-fixed/50 px-2 py-0.5 rounded-full font-medium shrink-0">سکوی ۲</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex items-center justify-between shadow-sm hover:border-primary-container/40 transition-all">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[16px]">local_taxi</span>
+</div>
+<div>
+<h4 class="text-xs text-on-surface font-semibold">نیاوران • کامرانیه • دارآباد</h4>
+<p class="text-[11px] text-on-surface-variant mt-0.5">پایانه شرقی (میدان قدس)</p>
+</div>
+</div>
+<span class="text-[11px] text-primary bg-primary-fixed/50 px-2 py-0.5 rounded-full font-medium shrink-0">سکوی ۳</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex items-center justify-between shadow-sm hover:border-primary-container/40 transition-all">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[16px]">local_taxi</span>
+</div>
+<div>
+<h4 class="text-xs text-on-surface font-semibold">زعفرانیه • آصف</h4>
+<p class="text-[11px] text-on-surface-variant mt-0.5">خروجی غربی (پایانه ولیعصر)</p>
+</div>
+</div>
+<span class="text-[11px] text-primary bg-primary-fixed/50 px-2 py-0.5 rounded-full font-medium shrink-0">سکوی ۴</span>
+</div>
+</div></section>
+<!-- SECTION 3: Bus & BRT Integration (اتوبوس تندرو و خطوط محلی) -->
+<section class="space-y-3" id="brt"><div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-4 bg-secondary rounded-full"></span>
+<h3 class="font-title-md text-sm text-on-surface font-bold">اتصال به اتوبوس‌های تندرو (BRT)</h3>
+<button class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-all" onclick="toggleGuide('راهنمای خط ۷ بی‌آرتی', 'خط ۷ مسیر تجریش تا راه‌آهن را در تمام طول خیابان ولیعصر به صورت شبانه‌روزی پوشش می‌دهد.')" type="button">
+<span class="material-symbols-outlined text-[13px]">help</span>
+</button>
+</div>
+<span class="text-[11px] text-secondary bg-secondary-fixed/40 px-2 py-0.5 rounded-full font-medium">شبانه‌روزی (۲۴h)</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-3 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-secondary-fixed text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]">directions_bus</span>
+</div>
+<div>
+<h4 class="text-xs text-on-surface font-semibold">خط ۷: تجریش ⟵ میدان راه‌آهن</h4>
+<p class="text-[11px] text-on-surface-variant mt-0.5">ایستگاه پایانه: ۱۵۰ متر از خروجی ۲</p>
+</div>
+</div>
+<span class="text-[11px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full shrink-0">سرفاصله‌ ۳ دقیقه</span>
+</div>
+<div class="mt-2 pt-2 border-t border-outline-variant/20 flex flex-wrap gap-1 text-[11px] text-on-surface-variant">
+<span class="bg-surface-container px-2 py-0.5 rounded-full">پارک‌وی (خط ۴)</span>
+<span class="bg-surface-container px-2 py-0.5 rounded-full">میدان ونک</span>
+<span class="bg-surface-container px-2 py-0.5 rounded-full">میدان ولیعصر (خط ۳)</span>
+<span class="bg-surface-container px-2 py-0.5 rounded-full">تئاتر شهر (خط ۴)</span>
+</div>
+</div></section>
+<!-- SECTION 4: Nearby Landmarks & Commercial Spots (اماکن و مراکز پیرامون) -->
+<section class="space-y-3" id="places"><div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-4 bg-primary rounded-full"></span>
+<h3 class="font-title-md text-sm text-on-surface font-bold">مراکز مهم و پیرامون ایستگاه</h3>
+<button class="w-5 h-5 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary transition-all" onclick="toggleGuide('مراکز پیرامونی', 'زمان‌های اعلام شده بر اساس پیاده‌روی از خروجی‌های مترو محاسبه شده‌اند.')" type="button">
+<span class="material-symbols-outlined text-[13px]">help</span>
+</button>
+</div>
+<span class="text-[11px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">پیاده‌روی</span>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 shadow-sm hover:border-primary-container/40 transition-all">
+<div class="flex items-center justify-between mb-1.5">
+<div class="w-6 h-6 rounded-md bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[15px]">temple_hindu</span>
+</div>
+<span class="text-tertiary-container text-[11px] font-medium bg-surface-container px-1.5 py-0.5 rounded">۳ دقیقه</span>
+</div>
+<h4 class="text-xs text-on-surface font-semibold">امامزاده صالح (ع)</h4>
+<span class="text-[11px] text-outline mt-0.5 block">خروجی ۲ (جنوبی)</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 shadow-sm hover:border-primary-container/40 transition-all">
+<div class="flex items-center justify-between mb-1.5">
+<div class="w-6 h-6 rounded-md bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[15px]">store</span>
+</div>
+<span class="text-tertiary-container text-[11px] font-medium bg-surface-container px-1.5 py-0.5 rounded">۲ دقیقه</span>
+</div>
+<h4 class="text-xs text-on-surface font-semibold">بازار سنتی تجریش</h4>
+<span class="text-[11px] text-outline mt-0.5 block">خروجی ۲ (میدان)</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 shadow-sm hover:border-primary-container/40 transition-all">
+<div class="flex items-center justify-between mb-1.5">
+<div class="w-6 h-6 rounded-md bg-surface-container flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[15px]">castle</span>
+</div>
+<span class="text-on-surface-variant text-[11px] font-medium bg-surface-container px-1.5 py-0.5 rounded">۸ دقیقه</span>
+</div>
+<h4 class="text-xs text-on-surface font-semibold">مجموعه کاخ سعدآباد</h4>
+<span class="text-[11px] text-outline mt-0.5 block">خروجی ۱ یا ۳</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 shadow-sm hover:border-primary-container/40 transition-all">
+<div class="flex items-center justify-between mb-1.5">
+<div class="w-6 h-6 rounded-md bg-surface-container flex items-center justify-center text-secondary-container">
+<span class="material-symbols-outlined text-[15px]">local_hospital</span>
+</div>
+<span class="text-tertiary-container text-[11px] font-medium bg-surface-container px-1.5 py-0.5 rounded">۲ دقیقه</span>
+</div>
+<h4 class="text-xs text-on-surface font-semibold">بیمارستان شهدای تجریش</h4>
+<span class="text-[11px] text-outline mt-0.5 block">خروجی ۱ (میدان قدس)</span>
+</div>
+</div></section>
+<!-- Discrete Ad Slot Placeholder as per transit specs -->
+<aside class="bg-surface-container border border-dashed border-outline-variant rounded-xl p-3 text-center">
+<div class="flex items-center justify-center gap-1.5 text-on-surface-variant text-label-sm font-label-sm mb-1">
+<span class="material-symbols-outlined text-[13px]">ad_units</span>
+<span class="">جایگاه آگهی شهروندی</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">
+        کارت الکترونیک مترو با تخفیف ویژه برای دانشجویان و دانش‌آموزان تهران
+      </p>
+</aside>
+</main>
+<!-- Bottom Navigation Bar (Mandatory Shell from JSON Anchor) -->
+<!-- Active Tab: "ایستگاه‌ها" (Stations) as this is a station-detail wayfinding page -->
+<nav class="fixed bottom-6 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between z-50 rtl" dir="rtl"><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-home')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="">خانه</span></button><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-lines')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="">خطوط و نقشه</span></button><button class="flex items-center gap-2 bg-[#0d58a6] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all" onclick="switchTab('tab-stations')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24"><rect height="13" rx="2" width="16" x="4" y="3"></rect><path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6"></path></svg><span class="">ایستگاه‌ها</span></button></nav>
+<div class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 transition-all" id="guideModal">
+<div class="bg-surface max-w-sm w-full rounded-2xl p-5 shadow-xl border border-outline-variant/30 text-right space-y-3">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-2">
+<div class="flex items-center gap-2 text-primary font-bold">
+<span class="material-symbols-outlined text-[20px]">info</span>
+<h4 class="font-title-md text-title-md text-on-surface" id="guideTitle">راهنما</h4>
+</div>
+<button class="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface" onclick="closeGuide()" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed" id="guideBody"></p>
+<button class="w-full bg-primary-container text-white py-2 rounded-xl font-label-md text-label-md font-bold mt-2 hover:bg-primary transition-all" onclick="closeGuide()" type="button">متوجه شدم</button>
+</div>
+</div>
+<script>
+function toggleGuide(title, text) {
+  var modal = document.getElementById('guideModal');
+  if (modal) {
+    document.getElementById('guideTitle').textContent = title;
+    document.getElementById('guideBody').textContent = text;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+function closeGuide() {
+  var modal = document.getElementById('guideModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+</script></body></html>

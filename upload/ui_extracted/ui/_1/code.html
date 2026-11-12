@@ -1,0 +1,394 @@
+<!DOCTYPE html><html dir="rtl" lang="fa"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>مترویار - تنظیمات و اطلاعات برنامه</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed": "#ffdad5",
+            "surface": "#f9f9ff",
+            "on-tertiary-container": "#6ae79a",
+            "surface-container-highest": "#d8e3fb",
+            "inverse-surface": "#263143",
+            "background": "#f9f9ff",
+            "error": "#ba1a1a",
+            "outline": "#727782",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed": "#410001",
+            "secondary-fixed-dim": "#ffb4aa",
+            "surface-bright": "#f9f9ff",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#004689",
+            "on-background": "#111c2d",
+            "on-surface-variant": "#424751",
+            "surface-dim": "#cfdaf2",
+            "tertiary-container": "#006638",
+            "inverse-on-surface": "#ecf1ff",
+            "on-tertiary-fixed": "#00210e",
+            "secondary": "#bc000c",
+            "surface-container-low": "#f0f3ff",
+            "surface-variant": "#d8e3fb",
+            "primary": "#00417f",
+            "tertiary-fixed": "#7efbac",
+            "on-primary-container": "#b6d0ff",
+            "primary-container": "#0d58a6",
+            "outline-variant": "#c2c6d3",
+            "on-surface": "#111c2d",
+            "surface-container": "#e7eeff",
+            "on-tertiary-fixed-variant": "#00522c",
+            "on-secondary-container": "#fffbff",
+            "primary-fixed-dim": "#a8c8ff",
+            "on-secondary": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff",
+            "surface-tint": "#1a5eac",
+            "secondary-container": "#e32220",
+            "on-error": "#ffffff",
+            "on-secondary-fixed-variant": "#930007",
+            "tertiary-fixed-dim": "#61de92",
+            "surface-container-high": "#dee8ff",
+            "tertiary": "#004c28",
+            "on-primary-fixed": "#001b3c",
+            "inverse-primary": "#a8c8ff",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed": "#d5e3ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "body-md": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+            "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+            "headline-xl": ["32px", {"lineHeight": "44px", "fontWeight": "800"}],
+            "title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+            "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+            "body-sm": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "headline-lg": ["24px", {"lineHeight": "36px", "fontWeight": "700"}],
+            "headline-md": ["20px", {"lineHeight": "30px", "fontWeight": "700"}],
+            "label-sm": ["10px", {"lineHeight": "14px", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col justify-between selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Main Responsive Container (Mobile Device Screen Canvas) -->
+<div class="w-full max-w-md mx-auto min-h-screen flex flex-col bg-background relative shadow-2xl">
+<!-- TopAppBar Component (from JSON anchor) -->
+<header class="flex justify-between items-center w-full px-4 h-16 sticky top-0 z-50 bg-surface dark:bg-inverse-surface shadow-sm transition-all duration-150 border-b border-outline-variant/30">
+<!-- Leading Icon / Back Action -->
+<button aria-label="بازگشت" class="w-10 h-10 rounded-xl flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<!-- Center Title & App Identity -->
+<div class="flex items-center gap-2">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrdxcdoGqt18TSDJwirXSzQS8WClbawhhL_nm0sj6VMRDnY_cXU65GSfp3ckGCdzZaCUmqvDTIUL8dY2B7JhNn5Ccr6QZbJcj1GiKfkMKEwc2Z5eUTPLM4vYvlZI_p1oukL27LOpUU_x8Er5v68M_UknWwhNl82pSADju0jxMk4Fzie3tkXyP1BwDTIu0QkbyUgbBoPWrdHGKFtwRm_gXhsLlkp1fez4cvKVC-obl0arLi7CW8SE4" alt="لوگوی متروجو" class="w-8 h-8 rounded-full object-contain shadow-sm">
+<div class="text-center">
+<h1 class="text-base font-bold text-on-surface">تنظیمات و اطلاعات برنامه</h1>
+<p class="text-body-sm text-outline">سامانه هوشمند حمل‌ونقل متروجو</p>
+</div>
+</div>
+<!-- Trailing Action -->
+<button aria-label="تنظیمات پیشرفته" class="w-10 h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</header>
+<!-- Scrollable Content Canvas -->
+<main class="flex-1 px-4 pt-3 pb-28 space-y-4 overflow-y-auto">
+<!-- Ad Banner Placeholder (کادر ظریف بخش تبلیغ) -->
+<section class="w-full bg-surface-container-low rounded-xl border border-outline-variant/40 p-3 flex items-center justify-between shadow-sm relative overflow-hidden">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shadow-inner">
+<span class="material-symbols-outlined text-2xl">campaign</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="text-label-sm font-label-sm bg-outline-variant/50 text-on-surface-variant px-1.5 py-0.5 rounded">آگهی</span>
+<p class="text-sm font-bold text-on-surface">تهیه بلیت آنلاین مترو و اتوبوس</p>
+</div>
+
+</div>
+</div>
+<button class="text-body-sm font-label-md bg-primary-container text-on-primary px-3 py-1.5 rounded-lg active:scale-95 transition-all duration-150 flex items-center gap-1">
+<span>مشاهده</span>
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+</section>
+<!-- Category 1: هشدارهای هوشمند و اعلان‌ها -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-3.5 shadow-sm space-y-3">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-xl">notifications_active</span>
+<h2 class="text-sm font-bold text-on-surface">بخش هشدارها و اعلانات</h2>
+</div>
+<span class="text-label-sm font-label-sm text-tertiary-container bg-tertiary-fixed/30 px-2 py-0.5 rounded-full">سیستم فعال</span>
+</div>
+<!-- Setting Item 1.1 -->
+<div class="flex items-center justify-between py-1">
+<div class="space-y-0.5">
+<p class="text-sm font-medium text-on-surface">نوتیفیکیشن وضعیت خطوط و تأخیرها</p>
+
+</div>
+<!-- Toggle Active -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<div class="h-px bg-surface-container"></div>
+<!-- Setting Item 1.2 -->
+<div class="flex items-center justify-between py-1">
+<div class="space-y-0.5">
+<p class="text-sm font-medium text-on-surface">هشدارهای اختصاصی مسیر من</p>
+
+</div>
+<!-- Toggle Inactive -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<div class="h-px bg-surface-container"></div>
+<!-- Setting Item 1.3 -->
+<div class="flex items-center justify-between py-1">
+<div class="space-y-0.5">
+<p class="text-sm font-medium text-on-surface">بررسی آپدیت نرم‌افزار</p>
+<p class="text-body-sm font-body-sm text-outline">نسخه نصب‌شده: ۲.۴.۰</p>
+</div>
+<button class="px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary rounded-lg text-label-md font-label-md border border-outline-variant/40 flex items-center gap-1 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-base">sync</span>
+<span>به‌روز است</span>
+</button>
+</div>
+</section>
+<!-- Category 2: دستیار صوتی و صدا (Voice Assistant) -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-3.5 shadow-sm space-y-3">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-xl">record_voice_over</span>
+<h2 class="text-sm font-bold text-on-surface">دستیار صوتی و صدا</h2>
+</div>
+<span class="text-label-sm font-label-sm text-primary bg-primary-fixed/50 px-2 py-0.5 rounded-full">هوشمند</span>
+</div>
+<!-- Audio Item 2.1 -->
+<div class="flex items-center justify-between py-1">
+<div class="space-y-0.5 pr-1 max-w-[70%]">
+<p class="text-sm font-medium text-on-surface">اعلام صوتی ایستگاه در هندزفری</p>
+
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<div class="h-px bg-surface-container"></div>
+<!-- Audio Item 2.2: Sensitivity Slider -->
+<div class="py-1 space-y-2">
+<div class="flex justify-between items-center">
+<p class="text-sm font-medium text-on-surface">حساسیت ورودی صدا و میکروفون</p>
+<span class="text-label-sm font-label-sm text-primary font-bold">متوسط (۷۰٪)</span>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-outline-variant text-base ml-2">mic_off</span>
+<input class="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-container" max="100" min="0" type="range" value="70">
+<span class="material-symbols-outlined text-primary text-base mr-2">mic</span>
+</div>
+</div>
+<div class="h-px bg-surface-container"></div>
+<!-- Audio Item 2.3: Voice Selector -->
+<div class="flex items-center justify-between py-1">
+<div class="space-y-0.5">
+<p class="text-sm font-medium text-on-surface">گوینده صوتی دستیار</p>
+
+</div>
+<!-- Segmented Control for Voice Selection -->
+<div class="flex items-center p-0.5 bg-surface-container rounded-lg border border-outline-variant/30 text-label-md font-label-md">
+<button class="px-2.5 py-1 rounded-md bg-surface-container-lowest text-primary shadow-xs transition-all">خانم</button>
+<button class="px-2.5 py-1 rounded-md text-on-surface-variant transition-all hover:text-on-surface">آقا</button>
+</div>
+</div>
+</section>
+<!-- Category 3: تنظیمات ظاهری و موقعیت -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-3.5 shadow-sm space-y-3">
+<div class="flex items-center gap-2 pb-2 border-b border-outline-variant/20 text-primary">
+<span class="material-symbols-outlined text-xl">palette</span>
+<h2 class="text-sm font-bold text-on-surface">تنظیمات ظاهری و موقعیت</h2>
+</div>
+<!-- Theme Picker -->
+<div class="py-1 space-y-2">
+<p class="text-sm font-medium text-on-surface">حالت تم نمایش</p>
+<div class="grid grid-cols-3 gap-2">
+<!-- Option 1: Light (Active) -->
+<button class="flex flex-col items-center justify-center p-2 rounded-xl border-2 border-primary-container bg-surface-container-low text-primary">
+<span class="material-symbols-outlined text-xl">light_mode</span>
+<span class="text-label-md font-label-md mt-1">روشن (روز)</span>
+</button>
+<!-- Option 2: Dark -->
+<button class="flex flex-col items-center justify-center p-2 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-xl">dark_mode</span>
+<span class="text-label-md font-label-md mt-1">تاریک (شب)</span>
+</button>
+<!-- Option 3: Auto -->
+<button class="flex flex-col items-center justify-center p-2 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-xl">brightness_auto</span>
+<span class="text-label-md font-label-md mt-1">خودکار</span>
+</button>
+</div>
+</div>
+<div class="h-px bg-surface-container"></div>
+<!-- Location GPS Access -->
+<div class="flex items-center justify-between py-1">
+<div class="space-y-0.5 max-w-[75%]">
+<p class="text-sm font-medium text-on-surface">دسترسی مکانی و GPS</p>
+
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</section>
+<!-- Category 4: درباره ما، پشتیبانی و خدمات -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-3.5 shadow-sm space-y-1">
+<div class="flex items-center gap-2 pb-2 mb-1 border-b border-outline-variant/20 text-primary">
+<span class="material-symbols-outlined text-xl">info</span>
+<h2 class="text-sm font-bold text-on-surface">درباره ما و خدمات پشتیبانی</h2>
+</div>
+<!-- Sub-item: Other Products -->
+<a class="flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-surface-container-low active:scale-[0.99] transition-all" href="#products">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">apps</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">سایر محصولات شهری ما</p>
+
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_left</span>
+</a>
+<!-- Sub-item: About MetroYar -->
+<a class="flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-surface-container-low active:scale-[0.99] transition-all" href="#about"><div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center p-0.5">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrdxcdoGqt18TSDJwirXSzQS8WClbawhhL_nm0sj6VMRDnY_cXU65GSfp3ckGCdzZaCUmqvDTIUL8dY2B7JhNn5Ccr6QZbJcj1GiKfkMKEwc2Z5eUTPLM4vYvlZI_p1oukL27LOpUU_x8Er5v68M_UknWwhNl82pSADju0jxMk4Fzie3tkXyP1BwDTIu0QkbyUgbBoPWrdHGKFtwRm_gXhsLlkp1fez4cvKVC-obl0arLi7CW8SE4" alt="لوگوی متروجو" class="w-7 h-7 object-contain">
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">درباره متروجو و سامانه هوشمند</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_left</span></a>
+<!-- Sub-item: Support Phone -->
+<div class="flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-surface-container-low transition-all">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">support_agent</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">تماس با پشتیبانی ۲۴ ساعته</p>
+
+</div>
+</div>
+<a class="text-label-md font-label-md text-primary font-bold dir-ltr bg-primary-fixed/40 px-2 py-1 rounded-md" href="tel:02191000000">
+            ۰۲۱-۹۱۰۰۰۰۰۰
+          </a>
+</div>
+<!-- Sub-item: Website & Email -->
+<a class="flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-surface-container-low active:scale-[0.99] transition-all" href="https://metrojo.ir" target="_blank">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">language</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">وب‌سایت و ایمیل پشتیبانی</p>
+<p class="text-body-sm font-body-sm text-outline">info@metrojo.ir | metrojo.ir</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">open_in_new</span>
+</a>
+<!-- Sub-item: Ads Inquiry -->
+<a class="flex items-center justify-between py-2.5 px-1 rounded-lg bg-surface-container-low/60 hover:bg-surface-container active:scale-[0.99] transition-all mt-1" href="#ads">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">add_business</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">درخواست تبلیغات در برنامه</p>
+
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-base">chevron_left</span>
+</a>
+</section>
+<!-- App Metadata Footer Info -->
+<div class="text-center pt-2 pb-6 space-y-1"><p class="text-body-sm text-outline">طراحی شده برای ناوبری سریع در ناوگان ریلی کلان‌شهرها</p><p class="text-label-sm text-outline-variant font-medium">تمامی حقوق برای سامانه متروجو محفوظ است © ۱۴۰۳</p></div>
+</main>
+<!-- BottomNavBar Component (Preserved from JSON Blueprint) -->
+<!-- Destination count: 3 | Labels: ["خانه", "خطوط و نقشه", "ایستگاه‌ها"] -->
+<nav class="fixed bottom-6 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between z-50 rtl" dir="rtl"><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-home')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>خانه</span></button><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-lines')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>خطوط و نقشه</span></button><button class="flex items-center gap-2 bg-[#0d58a6] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all" onclick="switchTab('tab-stations')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><rect height="13" rx="2" width="16" x="4" y="3"></rect><path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6"></path></svg><span>ایستگاه‌ها</span></button></nav>
+</div>
+
+
+
+
+
+
+
+
+</body></html>

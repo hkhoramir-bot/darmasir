@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toFa, type CrowdLevel, CROWD_LABEL } from "@/lib/metro-data";
-import { nav } from "@/lib/store";
 
 /* ------------------------- آیکون متریال ------------------------- */
 export function MI({
@@ -138,11 +138,12 @@ export function SubHeader({
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
 }) {
+  const router = useRouter();
   return (
     <header className="bg-metro-surface/95 backdrop-blur sticky top-0 z-40 w-full px-2 h-16 flex items-center justify-between shadow-sm border-b border-metro-outline-var/30">
       <button
         aria-label="بازگشت"
-        onClick={() => nav.back()}
+        onClick={() => router.back()}
         className="w-10 h-10 rounded-xl flex items-center justify-center text-metro-primary hover:bg-metro-c active:scale-95 transition-all"
       >
         <MI name="arrow_forward" />

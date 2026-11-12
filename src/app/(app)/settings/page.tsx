@@ -2,495 +2,616 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
-import { MI, PageHeader, useInitCity, useShell, type ShellCity } from "@/components/metro/shell";
-import { ApkDownloadCard } from "@/components/metro/apk-download";
-import { useAnnouncer, findFaVoice, resetFaVoiceCache } from "@/components/metro/voice";
+import { MI, PageHeader } from "@/components/metro/shell";
 import { useToast } from "@/hooks/use-toast";
 import { toFa } from "@/lib/metro-data";
-import { useVoicePrefs, speedOf, type VoiceEngine } from "@/lib/voice-settings";
+import { useVoicePrefs } from "@/lib/voice-settings";
 
 /* ============================================================
    تنظیمات و اطلاعات برنامه — متروجو
+   بازطراحی دقیقاً بر اساس طرح _1/code.html
    ============================================================ */
 
-interface MetrojoSettings {
-  trainAlerts: boolean;
-  wakeAlarm: boolean;
-  lowPowerMap: boolean;
-}
+const APP_VERSION = "4.9.0";
+const APK_HREF = "/metrojo-4.9.0.apk";
 
-const SETTINGS_KEY = "metrojo-settings";
-const DEFAULT_SETTINGS: MetrojoSettings = {
-  trainAlerts: true,
-  wakeAlarm: true,
-  lowPowerMap: false,
-};
-
-const AVAILABLE_CITIES: { id: ShellCity; name: string }[] = [
-  { id: "tehran", name: "تهران" },
-  { id: "mashhad", name: "مشهد" },
-  { id: "isfahan", name: "اصفهان" },
-];
-
-const SOON_CITIES = ["شیراز", "تبریز"];
-
-const ENGINE_OPTIONS: { id: VoiceEngine; label: string; hint: string }[] = [
-  { id: "auto", label: "خودکار", hint: "زن: دستگاه ← دلاورا • مرد: فرید ← دستگاه (همه فارسی)" },
-  { id: "device", label: "صدای دستگاه", hint: "گوگل TTS فارسی — آفلاین؛ در نبودش، آنلاین پخش می‌شود" },
-  { id: "cloud", label: "صدای آنلاین", hint: "گویندگان نئورال فارسی (دلاورا / فرید) — رایگان و بدون کلید" },
-];
+/* ------------------- کلیدهای ذخیره‌سازی روی دستگاه ------------------- */
+const NOTIFY_LINES_KEY = "metrojo-notify-lines";
+const NOTIFY_ROUTE_KEY = "metrojo-notify-route";
+const MIC_GAIN_KEY = "metrojo-mic-gain";
+const GPS_KEY = "mj-gps-enabled"; // کلیدی که نقشه می‌خواند («false» یعنی خاموش)
+const GPS_KEY_ALT = "metrojo-gps";
+const VOICE_BG_KEY = "metrojo-voice-bg";
 
 /* ------------------------------ تم برنامه ------------------------------ */
 type ThemeChoice = "light" | "dark" | "system";
 
+/* تشخیص hydrate شدن بدون setState داخل اثر (الگوی استاندارد React) */
 const subscribeNoop = () => () => {};
 
-const THEME_OPTIONS: { id: ThemeChoice; label: string; icon: string; hint: string }[] = [
-  { id: "light", label: "روشن", icon: "light_mode", hint: "روشن — مناسب محیط پرنور و مصرف روز" },
-  { id: "dark", label: "تاریک", icon: "dark_mode", hint: "تاریک — مناسب شب و صرفه‌جویی در باتری صفحه‌نمایش OLED" },
-  { id: "system", label: "دستگاه", icon: "brightness_auto", hint: "دستگاه — هماهنگ با تنظیم روشن/تاریک گوشی شما" },
+const THEME_OPTIONS: { id: ThemeChoice; label: string; icon: string }[] = [
+  { id: "light", label: "روشن (روز)", icon: "light_mode" },
+  { id: "dark", label: "تاریک (شب)", icon: "dark_mode" },
+  { id: "system", label: "خودکار", icon: "brightness_auto" },
 ];
 
-/* ------------------------------ کلید تعویض ------------------------------ */
-function Toggle({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
+/* ------------------- کلید تعویض (الگوی طراحی _1) ------------------- */
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={onToggle}
-      className={`w-10 h-6 rounded-full relative shrink-0 transition-all active:scale-95 ${
-        on ? "bg-primary" : "bg-surface-container-high border border-outline-variant/40"
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${
-          on ? "left-0.5" : "right-0.5"
-        }`}
+    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+      <input
+        type="checkbox"
+        className="sr-only peer"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-label={label}
       />
-    </button>
+      <div className="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container" />
+    </label>
   );
+}
+
+/* برچسب حساسیت میکروفن — مقدار ۷۰ پیش‌فرض یعنی «متوسط» */
+function gainLabel(v: number): string {
+  return v < 40 ? "کم" : v < 80 ? "متوسط" : "زیاد";
 }
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const city = useShell((s) => s.city);
-  const setCity = useShell((s) => s.setCity);
-  useInitCity();
-  const announcer = useAnnouncer();
 
   /* ---------- تم برنامه (روشن/تاریک/دستگاه) ---------- */
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  /* تشخیص hydrate شدن بدون setState داخل اثر (الگوی استاندارد React) */
+  const { theme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(
     subscribeNoop,
     () => true,
     () => false
   );
   const activeTheme: ThemeChoice = mounted && theme ? (theme as ThemeChoice) : "system";
-  const activeThemeHint = THEME_OPTIONS.find((o) => o.id === activeTheme)?.hint ?? "";
 
-  const [settings, setSettings] = useState<MetrojoSettings>(DEFAULT_SETTINGS);
-
-  /* ---------- تنظیمات صوتی ---------- */
+  /* ---------- ترجیحات صوتی (گوینده زن/مرد) ---------- */
   const prefs = useVoicePrefs();
-  const [deviceVoice, setDeviceVoice] = useState<"checking" | "found" | "missing">("checking");
 
-  /* hydrate ترجیحات صوتی از حافظه دستگاه */
+  /* ---------- وضعیت‌های قابل ذخیره ---------- */
+  const [flags, setFlags] = useState({
+    notifyLines: true, // نزدیک‌شدن وضعیت خطوط و تاخیرها
+    notifyRoute: false, // هشدارهای اختصاصی مسیر من
+    gps: true, // دسترسی مکانی و GPS
+    voiceBg: true, // اعلام صوتی ایستگاه در پس‌زمینه
+  });
+  const [micGain, setMicGain] = useState(70);
+
+  /* ---------- بررسی به‌روزرسانی ---------- */
+  const [updateState, setUpdateState] = useState<"idle" | "checking" | "done">("idle");
+
+  /* ---------- مودال درباره متروجو ---------- */
+  const [aboutOpen, setAboutOpen] = useState(false);
+
+  /* ---------- نسخه اندروید (در خود اپ نیتیو مخفی می‌شود) ---------- */
+  const [isNative, setIsNative] = useState(false);
+
+  /* بازیابی تنظیمات ذخیره‌شده (یک‌بار، خارج از چرخه رندر) */
   useEffect(() => {
     const id = window.setTimeout(() => {
       useVoicePrefs.getState().hydrate();
+      try {
+        const w = window as unknown as { Capacitor?: unknown };
+        setIsNative(!!w.Capacitor);
+        const lines = localStorage.getItem(NOTIFY_LINES_KEY);
+        const route = localStorage.getItem(NOTIFY_ROUTE_KEY);
+        const gps = localStorage.getItem(GPS_KEY) ?? localStorage.getItem(GPS_KEY_ALT);
+        const vbg = localStorage.getItem(VOICE_BG_KEY);
+        const gain = localStorage.getItem(MIC_GAIN_KEY);
+        setFlags((f) => ({
+          notifyLines: lines === null ? f.notifyLines : lines === "true",
+          notifyRoute: route === null ? f.notifyRoute : route === "true",
+          gps: gps === null ? f.gps : gps !== "false",
+          voiceBg: vbg === null ? f.voiceBg : vbg === "true",
+        }));
+        if (gain !== null) {
+          const n = Number(gain);
+          if (Number.isFinite(n)) setMicGain(Math.min(100, Math.max(0, Math.round(n))));
+        }
+      } catch {}
     }, 0);
     return () => window.clearTimeout(id);
   }, []);
 
-  /* بررسی وجود صدای فارسی روی دستگاه (لیست صداها به‌صورت ناهمزمان می‌آید) */
+  const setFlag = (key: keyof typeof flags, value: boolean) => {
+    setFlags((f) => ({ ...f, [key]: value }));
+    try {
+      if (key === "notifyLines") localStorage.setItem(NOTIFY_LINES_KEY, String(value));
+      else if (key === "notifyRoute") localStorage.setItem(NOTIFY_ROUTE_KEY, String(value));
+      else if (key === "gps") {
+        // نقشه «mj-gps-enabled» را می‌خواند؛ هم‌زمان کلید نامی هم ذخیره می‌شود
+        localStorage.setItem(GPS_KEY, value ? "true" : "false");
+        localStorage.setItem(GPS_KEY_ALT, String(value));
+      } else if (key === "voiceBg") localStorage.setItem(VOICE_BG_KEY, String(value));
+    } catch {}
+  };
+
+  const onGainChange = (v: number) => {
+    setMicGain(v);
+    try {
+      localStorage.setItem(MIC_GAIN_KEY, String(v));
+    } catch {}
+  };
+
+  const checkUpdate = () => {
+    if (updateState !== "idle") return;
+    setUpdateState("checking");
+    window.setTimeout(() => setUpdateState("done"), 900);
+  };
+
+  /* بستن مودال با Escape */
   useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      const t0 = setTimeout(() => setDeviceVoice("missing"), 0);
-      return () => clearTimeout(t0);
-    }
-    const check = () => {
-      resetFaVoiceCache();
-      setDeviceVoice(findFaVoice() ? "found" : "missing");
+    if (!aboutOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAboutOpen(false);
     };
-    check();
-    window.speechSynthesis.onvoiceschanged = check;
-    const t = window.setTimeout(check, 900);
-    return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-      window.clearTimeout(t);
-    };
-  }, []);
-
-  /* بازیابی تنظیمات ذخیره‌شده (یک‌بار، خارج از چرخه رندر) */
-  useEffect(() => {
-    let cancelled = false;
-    const id = window.setTimeout(() => {
-      try {
-        const raw = localStorage.getItem(SETTINGS_KEY);
-        if (raw && !cancelled) {
-          const parsed = JSON.parse(raw) as Partial<MetrojoSettings>;
-          setSettings((s) => ({ ...s, ...parsed }));
-        }
-      } catch {}
-    }, 0);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(id);
-    };
-  }, []);
-
-  const updateSetting = (key: keyof MetrojoSettings) => {
-    setSettings((s) => {
-      const next = { ...s, [key]: !s[key] };
-      try {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  };
-
-  const pickCity = (c: ShellCity, name: string) => {
-    if (c === city) return;
-    setCity(c);
-    toast({ title: "شهر پیش‌فرض ذخیره شد", description: `شبکه مترو ${name} بارگذاری می‌شود` });
-  };
-
-  const testVoice = () => {
-    if (announcer.speaking) {
-      announcer.stop();
-      return;
-    }
-    announcer
-      .announce(
-        prefs.gender === "male"
-          ? "سلام! دستیار صوتی متروجو با صدای مرد آماده است"
-          : "سلام! دستیار صوتی متروجو با صدای زن آماده است"
-      )
-      .catch(() => {});
-  };
-
-  const cityName = city === "tehran" ? "تهران" : city === "mashhad" ? "مشهد" : "اصفهان";
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [aboutOpen]);
 
   return (
     <>
-      <PageHeader title="تنظیمات و اطلاعات برنامه" />
+      <PageHeader
+        title="تنظیمات و اطلاعات برنامه"
+        subtitle="سامانه هوشمند حمل‌ونقل متروجو"
+        actions={
+          <img
+            src="/metrojo-symbol.png"
+            alt="لوگوی متروجو"
+            className="w-9 h-9 rounded-full object-contain shrink-0 shadow-sm"
+          />
+        }
+      />
 
       <main className="flex-1 w-full px-4 pt-3 pb-28 space-y-4">
-        {/* ---------------- تم برنامه ---------------- */}
-        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
-          <div className="flex items-center gap-2">
-            <MI name="dark_mode" size={20} className="text-primary" />
-            <h3 className="font-bold text-xs text-on-surface">تم برنامه</h3>
-            <span className="mr-auto text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">
-              {!mounted
-                ? "—"
-                : resolvedTheme === "dark"
-                  ? "تاریک فعال"
-                  : "روشن فعال"}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-1 bg-surface-container-low rounded-xl p-1">
-            {THEME_OPTIONS.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => setTheme(o.id)}
-                aria-pressed={activeTheme === o.id}
-                className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
-                  activeTheme === o.id
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-on-surface-variant"
-                }`}
-              >
-                <MI name={o.icon} size={17} />
-                {o.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-[10px] text-outline">{activeThemeHint}</p>
-        </section>
-
-        {/* ---------------- شهر پیش‌فرض ---------------- */}
-        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
-          <div className="flex items-center gap-2">
-            <MI name="location_on" size={20} className="text-primary" />
-            <h3 className="font-bold text-xs text-on-surface">شهر پیش‌فرض</h3>
-            <span className="mr-auto text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">
-              {cityName}
-            </span>
-          </div>
-          <div className="flex items-center flex-wrap gap-1.5">
-            {AVAILABLE_CITIES.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => pickCity(c.id, c.name)}
-                aria-pressed={city === c.id}
-                className={`px-4 py-2 rounded-full text-xs font-bold border active:scale-95 transition-all ${
-                  city === c.id
-                    ? "bg-primary text-white border-primary shadow-sm"
-                    : "bg-surface-container-low text-on-surface-variant border-outline-variant/40 hover:bg-surface-container"
-                }`}
-              >
-                {c.name}
-              </button>
-            ))}
-            {SOON_CITIES.map((name) => (
-              <span
-                key={name}
-                className="px-4 py-2 rounded-full text-xs font-medium text-outline/60 border border-outline-variant/30 cursor-not-allowed select-none"
-                title="به‌زودی"
-              >
-                {name}
-              </span>
-            ))}
-          </div>
-          <p className="text-[10px] text-outline">شهر انتخابی پس از بازگشایی برنامه حفظ می‌شود</p>
-        </section>
-
-        {/* ---------------- ترجیحات ---------------- */}
-        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <MI name="tune" size={20} className="text-primary" />
-            <h3 className="font-bold text-xs text-on-surface">ترجیحات</h3>
-          </div>
-          <div className="divide-y divide-outline-variant/30">
-            <div className="flex items-center justify-between gap-3 py-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <MI name="train" size={18} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-on-surface">اعلان‌های حرکت قطار</p>
-                  <p className="text-[10px] text-outline mt-0.5">اطلاع‌رسانی نزدیک‌شدن قطار به سکو</p>
-                </div>
+        {/* ------------------- بنر آگهی ------------------- */}
+        <section
+          aria-label="آگهی"
+          className="w-full bg-surface-container-low rounded-2xl border border-outline-variant/40 p-3 flex items-center justify-between shadow-sm relative overflow-hidden"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+              <MI name="campaign" size={22} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-label-sm bg-outline-variant/50 text-on-surface-variant px-1.5 py-0.5 rounded shrink-0">
+                  آگهی
+                </span>
+                <p className="text-sm font-bold text-on-surface truncate">
+                  تهیه بلیت آنلاین مترو و اتوبوس
+                </p>
               </div>
-              <Toggle
-                on={settings.trainAlerts}
-                onToggle={() => updateSetting("trainAlerts")}
-                label="اعلان‌های حرکت قطار"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3 py-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-tertiary-fixed/50 text-tertiary flex items-center justify-center shrink-0">
-                  <MI name="alarm" size={18} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-on-surface">هشدار بیدارباش</p>
-                  <p className="text-[10px] text-outline mt-0.5">بیدارشدن پیش از رسیدن به ایستگاه مقصد</p>
-                </div>
-              </div>
-              <Toggle
-                on={settings.wakeAlarm}
-                onToggle={() => updateSetting("wakeAlarm")}
-                label="هشدار بیدارباش"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3 py-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-surface-container text-on-surface-variant flex items-center justify-center shrink-0">
-                  <MI name="battery_saver" size={18} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-on-surface">حالت کم‌مصرف نقشه</p>
-                  <p className="text-[10px] text-outline mt-0.5">کاهش انیمیشن برای صرفه‌جویی در باتری</p>
-                </div>
-              </div>
-              <Toggle
-                on={settings.lowPowerMap}
-                onToggle={() => updateSetting("lowPowerMap")}
-                label="حالت کم‌مصرف نقشه"
-              />
             </div>
           </div>
-        </section>
-
-        {/* ---------------- دستیار صوتی فارسی ---------------- */}
-        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
-          <div className="flex items-center gap-2">
-            <MI name="graphic_eq" size={20} className="text-primary" />
-            <h3 className="font-bold text-xs text-on-surface">دستیار صوتی فارسی</h3>
-            <span
-              className={`mr-auto text-[10px] font-bold rounded-full px-2 py-0.5 ${
-                deviceVoice === "found"
-                  ? "text-tertiary bg-tertiary-fixed/40"
-                  : deviceVoice === "missing"
-                    ? "text-primary bg-primary/10"
-                    : "text-outline bg-surface-container"
-              }`}
-            >
-              {deviceVoice === "found"
-                ? "صدای فارسی دستگاه فعال"
-                : deviceVoice === "missing"
-                  ? "صدای آنلاین فارسی فعال"
-                  : "در بررسی صدا..."}
-            </span>
-          </div>
-          <p className="text-[10px] text-outline leading-relaxed">
-            اعلام «ایستگاه بعدی» و جستجوی صوتی کاملاً به زبان فارسی است؛ با دو گوینده — زن (دلاورا) و مرد (فرید) — و به هیچ کلید یا API نیاز ندارد.
-          </p>
-
-          {/* انتخاب موتور گفتار */}
-          <div className="grid grid-cols-3 gap-1 bg-surface-container-low rounded-xl p-1">
-            {ENGINE_OPTIONS.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => prefs.setEngine(o.id)}
-                aria-pressed={prefs.engine === o.id}
-                className={`rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
-                  prefs.engine === o.id
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-on-surface-variant"
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-[10px] text-on-surface-variant">
-            {ENGINE_OPTIONS.find((o) => o.id === prefs.engine)?.hint}
-          </p>
-
-          {/* انتخاب صدای زن / مرد — دو گوینده فارسی */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-bold text-on-surface-variant">نوع صدا (دو گوینده فارسی)</p>
-            <div className="grid grid-cols-2 gap-1 bg-surface-container-low rounded-xl p-1">
-              {(
-                [
-                  { id: "female", label: "صدای زن", voice: "دلاورا", icon: "woman" },
-                  { id: "male", label: "صدای مرد", voice: "فرید", icon: "man" },
-                ] as const
-              ).map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  onClick={() => prefs.setGender(o.id)}
-                  aria-pressed={prefs.gender === o.id}
-                  className={`flex flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
-                    prefs.gender === o.id
-                      ? "bg-primary text-white shadow-sm"
-                      : "text-on-surface-variant"
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <MI name={o.icon} size={16} />
-                    {o.label}
-                  </span>
-                  <span className={`text-[9px] font-medium ${prefs.gender === o.id ? "text-white/80" : "text-outline"}`}>
-                    گوینده: {o.voice}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="text-[10px] text-outline">
-              {prefs.gender === "male"
-                ? "صدای مرد — گوینده فرید؛ در نبود اینترنت، صدای دستگاه بم‌تر پخش می‌شود"
-                : "صدای زن — گوینده دلاورا یا صدای فارسی دستگاه"}
-            </p>
-          </div>
-
-          {/* کلید Gemini حذف شد — صدای آنلاین بدون کلید کار می‌کند */}
-
-          {/* سرعت گفتار — فقط دو حالت: عادی و تند */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-bold text-on-surface-variant">سرعت گفتار</p>
-            <div className="grid grid-cols-2 gap-1 bg-surface-container-low rounded-xl p-1">
-              <button
-                type="button"
-                onClick={() => prefs.setSpeed("normal")}
-                aria-pressed={speedOf(prefs.rate) === "normal"}
-                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
-                  speedOf(prefs.rate) === "normal"
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-on-surface-variant"
-                }`}
-              >
-                <MI name="volume_up" size={15} />
-                عادی
-              </button>
-              <button
-                type="button"
-                onClick={() => prefs.setSpeed("fast")}
-                aria-pressed={speedOf(prefs.rate) === "fast"}
-                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-bold transition-all active:scale-95 ${
-                  speedOf(prefs.rate) === "fast"
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-on-surface-variant"
-                }`}
-              >
-                <MI name="fast_forward" size={15} />
-                تند
-              </button>
-            </div>
-            <p className="text-[10px] text-outline">
-              {speedOf(prefs.rate) === "fast"
-                ? "تند — برای وقتی عجله دارید"
-                : "عادی — آرام و شفاف برای گوش دادن راحت"}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={testVoice}
-            className="w-full flex items-center justify-center gap-1.5 bg-primary-container text-white rounded-xl font-bold text-xs py-2.5 shadow-sm active:scale-[0.98] transition-all"
+          <a
+            href="#"
+            className="text-body-sm font-bold bg-primary text-white px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center gap-1 shrink-0"
           >
-            {announcer.speaking ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                در حال پخش... (لمس برای توقف)
-              </>
-            ) : (
-              <>
-                <MI name="volume_up" size={16} />
-                آزمایش صدای فارسی
-              </>
-            )}
-          </button>
-          {announcer.error && (
-            <p className="text-[10px] text-error font-medium flex items-start gap-1">
-              <MI name="error" size={12} className="shrink-0 mt-0.5" />
-              {announcer.error}
+            <span>مشاهده</span>
+            <MI name="chevron_left" size={14} />
+          </a>
+        </section>
+
+        {/* ------------------- بخش هشدارها و اعلانات ------------------- */}
+        <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+            <div className="flex items-center gap-2 text-primary">
+              <MI name="notifications_active" size={20} />
+              <h2 className="text-sm font-bold text-on-surface">بخش هشدارها و اعلانات</h2>
+            </div>
+            <span className="text-label-sm text-tertiary-container bg-tertiary-fixed/30 px-2 py-0.5 rounded-full">
+              سیستم فعال
+            </span>
+          </div>
+
+          {/* اعلان وضعیت خطوط */}
+          <div className="flex items-center justify-between py-1 gap-3">
+            <div className="space-y-0.5 min-w-0">
+              <p className="text-sm font-medium text-on-surface">نزدیک‌شدن وضعیت خطوط و تاخیرها</p>
+            </div>
+            <Toggle
+              checked={flags.notifyLines}
+              onChange={(v) => setFlag("notifyLines", v)}
+              label="نزدیک‌شدن وضعیت خطوط و تاخیرها"
+            />
+          </div>
+          <div className="h-px bg-surface-container" />
+
+          {/* هشدار مسیر من */}
+          <div className="flex items-center justify-between py-1 gap-3">
+            <div className="space-y-0.5 min-w-0">
+              <p className="text-sm font-medium text-on-surface">هشدارهای اختصاصی مسیر من</p>
+            </div>
+            <Toggle
+              checked={flags.notifyRoute}
+              onChange={(v) => setFlag("notifyRoute", v)}
+              label="هشدارهای اختصاصی مسیر من"
+            />
+          </div>
+          <div className="h-px bg-surface-container" />
+
+          {/* بررسی آپدیت نرم‌افزار */}
+          <div className="flex items-center justify-between py-1 gap-3">
+            <div className="space-y-0.5 min-w-0">
+              <p className="text-sm font-medium text-on-surface">بررسی آپدیت نرم‌افزار</p>
+              <p className="text-body-sm text-outline">نسخه نصب‌شده: {toFa(APP_VERSION)}</p>
+            </div>
+            <button
+              type="button"
+              onClick={checkUpdate}
+              disabled={updateState !== "idle"}
+              className="px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary rounded-lg text-label-md font-bold border border-outline-variant/40 flex items-center gap-1 active:scale-95 transition-all disabled:opacity-80 shrink-0"
+            >
+              {updateState === "checking" ? (
+                <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              ) : updateState === "done" ? (
+                <MI name="check_circle" size={15} />
+              ) : (
+                <MI name="restart_alt" size={15} />
+              )}
+              <span>
+                {updateState === "checking"
+                  ? "در حال بررسی..."
+                  : updateState === "done"
+                    ? "به‌روز است"
+                    : "بررسی به‌روزرسانی"}
+              </span>
+            </button>
+          </div>
+          {updateState === "done" && (
+            <p className="text-[11px] font-bold text-tertiary flex items-center gap-1">
+              <MI name="check_circle" size={14} />
+              به‌روزترین نسخه را دارید
             </p>
           )}
         </section>
 
-        {/* ---------------- درباره برنامه ---------------- */}
-        <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <MI name="info" size={20} className="text-primary" />
-            <h3 className="font-bold text-xs text-on-surface">درباره برنامه</h3>
-          </div>
-          <div className="divide-y divide-outline-variant/30">
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-xs text-on-surface-variant">نسخه نرم‌افزار</span>
-              <span className="text-xs font-bold text-on-surface">{toFa("4.8.3")} (پایدار)</span>
+        {/* ------------------- دستیار صوتی و صدا ------------------- */}
+        <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+            <div className="flex items-center gap-2 text-primary">
+              <MI name="record_voice_over" size={20} />
+              <h2 className="text-sm font-bold text-on-surface">دستیار صوتی و صدا</h2>
             </div>
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-xs text-on-surface-variant">وضعیت سرویس</span>
-              <span className="text-xs font-bold text-tertiary flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                آنلاین
+            <span className="text-label-sm text-primary bg-primary-fixed/50 px-2 py-0.5 rounded-full">
+              هوشمند
+            </span>
+          </div>
+
+          {/* اعلام صوتی ایستگاه در پس‌زمینه */}
+          <div className="flex items-center justify-between py-1 gap-3">
+            <div className="space-y-0.5 pr-1 max-w-[70%] min-w-0">
+              <p className="text-sm font-medium text-on-surface">اعلام صوتی ایستگاه در پس‌زمینه</p>
+            </div>
+            <Toggle
+              checked={flags.voiceBg}
+              onChange={(v) => setFlag("voiceBg", v)}
+              label="اعلام صوتی ایستگاه در پس‌زمینه"
+            />
+          </div>
+          <div className="h-px bg-surface-container" />
+
+          {/* حساسیت ورودی صدا و میکروفون */}
+          <div className="py-1 space-y-2">
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium text-on-surface">حساسیت ورودی صدا و میکروفون</p>
+              <span className="text-label-sm text-primary font-bold">
+                {gainLabel(micGain)} ({toFa(micGain)}٪)
               </span>
             </div>
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-xs text-on-surface-variant">طراحی</span>
-              <span className="text-xs font-bold text-on-surface">Material Design 3 — Metro Yar</span>
+            <div className="relative flex items-center">
+              <MI name="mic_off" size={16} className="text-outline-variant ml-2 shrink-0" />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={micGain}
+                onChange={(e) => onGainChange(Number(e.target.value))}
+                aria-label="حساسیت ورودی صدا و میکروفون"
+                className="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary-container"
+              />
+              <MI name="mic" size={16} className="text-primary mr-2 shrink-0" />
+            </div>
+          </div>
+          <div className="h-px bg-surface-container" />
+
+          {/* گوینده صوتی دستیار — زن / مرد */}
+          <div className="flex items-center justify-between py-1 gap-3">
+            <div className="space-y-0.5 min-w-0">
+              <p className="text-sm font-medium text-on-surface">گوینده صوتی دستیار</p>
+            </div>
+            <div className="flex items-center p-0.5 bg-surface-container rounded-lg border border-outline-variant/30 text-label-md shrink-0">
+              <button
+                type="button"
+                onClick={() => prefs.setGender("female")}
+                aria-pressed={prefs.gender === "female"}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  prefs.gender === "female"
+                    ? "bg-surface-container-lowest text-primary shadow-xs font-bold"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+              >
+                خانم
+              </button>
+              <button
+                type="button"
+                onClick={() => prefs.setGender("male")}
+                aria-pressed={prefs.gender === "male"}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  prefs.gender === "male"
+                    ? "bg-surface-container-lowest text-primary shadow-xs font-bold"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+              >
+                آقا
+              </button>
             </div>
           </div>
         </section>
 
-        {/* دانلود نسخه اندروید */}
-        <ApkDownloadCard />
+        {/* ------------------- تنظیمات ظاهری و موقعیت ------------------- */}
+        <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm space-y-3">
+          <div className="flex items-center gap-2 pb-2 border-b border-outline-variant/20 text-primary">
+            <MI name="palette" size={20} />
+            <h2 className="text-sm font-bold text-on-surface">تنظیمات ظاهری و موقعیت</h2>
+          </div>
 
-        <p className="text-center text-[10px] text-outline-variant pt-1">
-          متروجو — دستیار صوتی و ناوبری مترو
-        </p>
+          {/* انتخابگر تم */}
+          <div className="py-1 space-y-2">
+            <p className="text-sm font-medium text-on-surface">حالت تم نمایش</p>
+            <div className="grid grid-cols-3 gap-2">
+              {THEME_OPTIONS.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => setTheme(o.id)}
+                  aria-pressed={activeTheme === o.id}
+                  className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all active:scale-95 ${
+                    activeTheme === o.id
+                      ? "border-2 border-primary bg-primary text-white"
+                      : "border border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low"
+                  }`}
+                >
+                  <MI name={o.icon} size={20} />
+                  <span className="text-label-md mt-1">{o.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="h-px bg-surface-container" />
+
+          {/* دسترسی مکانی و GPS */}
+          <div className="flex items-center justify-between py-1 gap-3">
+            <div className="space-y-0.5 max-w-[75%] min-w-0">
+              <p className="text-sm font-medium text-on-surface flex items-center gap-1.5">
+                <MI name="location_on" size={16} className="text-primary shrink-0" />
+                دسترسی مکانی و GPS
+              </p>
+            </div>
+            <Toggle
+              checked={flags.gps}
+              onChange={(v) => setFlag("gps", v)}
+              label="دسترسی مکانی و GPS"
+            />
+          </div>
+        </section>
+
+        {/* ------------------- درباره ما و خدمات پشتیبانی ------------------- */}
+        <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm space-y-1">
+          <div className="flex items-center gap-2 pb-2 mb-1 border-b border-outline-variant/20 text-primary">
+            <MI name="info" size={20} />
+            <h2 className="text-sm font-bold text-on-surface">درباره ما و خدمات پشتیبانی</h2>
+          </div>
+
+          {/* سایر محصولات شهری */}
+          <button
+            type="button"
+            onClick={() =>
+              toast({
+                title: "به‌زودی",
+                description: "سایر محصولات شهری ما به‌زودی به متروجو اضافه می‌شوند",
+              })
+            }
+            className="w-full flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-surface-container-low active:scale-[0.99] transition-all text-right"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+                <MI name="apps" size={18} />
+              </div>
+              <p className="text-sm font-medium text-on-surface">سایر محصولات شهری ما</p>
+            </div>
+            <MI name="chevron_left" size={20} className="text-outline-variant shrink-0" />
+          </button>
+
+          {/* درباره متروجو */}
+          <button
+            type="button"
+            onClick={() => setAboutOpen(true)}
+            className="w-full flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-surface-container-low active:scale-[0.99] transition-all text-right"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center p-0.5 shrink-0">
+                <img
+                  src="/metrojo-symbol.png"
+                  alt="لوگوی متروجو"
+                  className="w-7 h-7 object-contain rounded-full"
+                />
+              </div>
+              <p className="text-sm font-medium text-on-surface">درباره متروجو و سامانه هوشمند</p>
+            </div>
+            <MI name="chevron_left" size={20} className="text-outline-variant shrink-0" />
+          </button>
+
+          {/* تماس با پشتیبانی */}
+          <div className="flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-surface-container-low transition-all gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+                <MI name="support_agent" size={18} />
+              </div>
+              <p className="text-sm font-medium text-on-surface">تماس با پشتیبانی ۲۴ ساعته</p>
+            </div>
+            <a
+              dir="ltr"
+              href="tel:02191000000"
+              className="text-label-md text-primary font-bold bg-primary-fixed/40 px-2 py-1 rounded-md shrink-0 active:scale-95 transition-all"
+            >
+              ۰۲۱-۹۱۰۰۰۰۰۰
+            </a>
+          </div>
+
+          {/* وب‌سایت و ایمیل */}
+          <a
+            href="https://metrojo.ir"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-surface-container-low active:scale-[0.99] transition-all gap-3"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+                <MI name="language" size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-on-surface">وب‌سایت و ایمیل پشتیبانی</p>
+                <p dir="ltr" className="text-body-sm text-outline text-right truncate">
+                  info@metrojo.ir | metrojo.ir
+                </p>
+              </div>
+            </div>
+            <MI name="open_in_new" size={20} className="text-outline-variant shrink-0" />
+          </a>
+
+          {/* درخواست تبلیغات */}
+          <a
+            href={`mailto:info@metrojo.ir?subject=${encodeURIComponent("تبلیغات")}`}
+            className="flex items-center justify-between py-2.5 px-1 rounded-lg bg-surface-container-low/60 hover:bg-surface-container active:scale-[0.99] transition-all mt-1 gap-3"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+                <MI name="campaign" size={18} />
+              </div>
+              <p className="text-sm font-medium text-on-surface">درخواست تبلیغات در برنامه</p>
+            </div>
+            <MI name="chevron_left" size={18} className="text-primary shrink-0" />
+          </a>
+        </section>
+
+        {/* ------------------- دریافت نسخه اندروید ------------------- */}
+        {!isNative && (
+          <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <MI name="download_for_offline" size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-sm font-bold text-on-surface">دریافت نسخه اندروید متروجو</p>
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-1.5 py-0.5 shrink-0">
+                    نسخه {toFa(APP_VERSION)}
+                  </span>
+                </div>
+                <p className="text-body-sm text-outline mt-0.5">نصب مستقیم بسته نصبی روی گوشی</p>
+              </div>
+              <a
+                href={APK_HREF}
+                download="metrojo-4.9.0.apk"
+                className="bg-primary text-white px-3 py-2 rounded-lg text-label-md font-bold flex items-center gap-1 active:scale-95 transition-all shrink-0"
+              >
+                <MI name="download_for_offline" size={15} />
+                نصب بسته نصبی
+              </a>
+            </div>
+          </section>
+        )}
+
+        {/* ------------------- پانوشت ------------------- */}
+        <div className="text-center pt-2 pb-6 space-y-1">
+          <p className="text-body-sm text-outline">طراحی شده برای ناوبری سریع مسافران کلان‌شهرها</p>
+          <p className="text-label-sm text-outline-variant font-medium">
+            تمامی حقوق برای سامانه متروجو محفوظ است © ۱۴۰۳
+          </p>
+        </div>
       </main>
+
+      {/* ------------------- مودال درباره متروجو ------------------- */}
+      {aboutOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="درباره متروجو و سامانه هوشمند"
+        >
+          <div
+            className="absolute inset-0 bg-black/35 backdrop-blur-md"
+            onClick={() => setAboutOpen(false)}
+          />
+          <div className="relative bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-2xl p-5 w-full max-w-sm space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/metrojo-symbol.png"
+                  alt="لوگوی متروجو"
+                  className="w-9 h-9 rounded-full object-contain shadow-sm"
+                />
+                <div>
+                  <h3 className="text-sm font-bold text-on-surface">درباره متروجو</h3>
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 rounded px-1.5 py-0.5">
+                    نسخه {toFa(APP_VERSION)} (پایدار)
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAboutOpen(false)}
+                aria-label="بستن"
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-outline active:scale-95 transition-all"
+              >
+                <MI name="close" size={18} />
+              </button>
+            </div>
+            <p className="text-body-md text-on-surface-variant leading-relaxed">
+              متروجو سامانه هوشمند حمل‌ونقل ریلی است؛ ناوبری کامل مترو، نقشه تعاملی شبکه، وضعیت
+              لحظه‌ای خطوط، مسیریابی و دستیار صوتی کامل فارسی — بدون نیاز به هیچ کلید یا سرویس
+              خارجی.
+            </p>
+            <div className="divide-y divide-outline-variant/30 text-xs">
+              <div className="flex items-center justify-between py-2">
+                <span className="text-on-surface-variant">وضعیت سرویس</span>
+                <span className="font-bold text-tertiary flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  آنلاین
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-on-surface-variant">پشتیبانی</span>
+                <span className="font-bold text-on-surface">۲۴ ساعته — ۰۲۱-۹۱۰۰۰۰۰۰</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-on-surface-variant">طراحی</span>
+                <span className="font-bold text-on-surface">Material Design 3</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAboutOpen(false)}
+              className="w-full bg-primary text-white rounded-xl py-2.5 text-xs font-bold active:scale-[0.98] transition-all"
+            >
+              بستن
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

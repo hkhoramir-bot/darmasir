@@ -1,0 +1,554 @@
+<!DOCTYPE html><html class="h-full bg-slate-100" dir="rtl" lang="fa"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>مترویار - لیست کامل ایستگاه‌های تقاطعی با نقشه شماتیک</title>
+<!-- Persian Font Vazirmatn -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container": "#e7eeff",
+            "error": "#ba1a1a",
+            "primary-fixed-dim": "#a8c8ff",
+            "outline-variant": "#c2c6d3",
+            "on-secondary-fixed": "#410001",
+            "on-surface": "#111c2d",
+            "on-primary-fixed-variant": "#004689",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#1a5eac",
+            "on-primary-container": "#b6d0ff",
+            "on-error-container": "#93000a",
+            "surface-container-lowest": "#ffffff",
+            "surface-bright": "#f9f9ff",
+            "primary-container": "#0d58a6",
+            "surface-variant": "#d8e3fb",
+            "inverse-surface": "#263143",
+            "background": "#f9f9ff",
+            "tertiary": "#004c28",
+            "on-primary-fixed": "#001b3c",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#dee8ff",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-secondary-fixed-variant": "#930007",
+            "secondary": "#bc000c",
+            "tertiary-container": "#006638",
+            "secondary-container": "#e32220",
+            "inverse-on-surface": "#ecf1ff",
+            "on-error": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "outline": "#727782",
+            "surface": "#f9f9ff",
+            "tertiary-fixed-dim": "#61de92",
+            "error-container": "#ffdad6",
+            "on-tertiary-fixed-variant": "#00522c",
+            "on-surface-variant": "#424751",
+            "on-tertiary-container": "#6ae79a",
+            "on-background": "#111c2d",
+            "secondary-fixed": "#ffdad5",
+            "on-secondary-container": "#fffbff",
+            "inverse-primary": "#a8c8ff",
+            "primary": "#00417f",
+            "surface-container-low": "#f0f3ff",
+            "on-tertiary-fixed": "#00210e",
+            "surface-container-highest": "#d8e3fb",
+            "tertiary-fixed": "#7efbac",
+            "surface-dim": "#cfdaf2",
+            "primary-fixed": "#d5e3ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "gutter": "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "headline-xl": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "headline-xl": ["32px", {"lineHeight": "44px", "fontWeight": "800"}],
+            "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+            "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+            "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+            "headline-lg": ["24px", {"lineHeight": "36px", "fontWeight": "700"}],
+            "headline-md": ["20px", {"lineHeight": "30px", "fontWeight": "700"}],
+            "label-sm": ["10px", {"lineHeight": "14px", "fontWeight": "700"}],
+            "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+            "body-sm": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex justify-center text-on-surface antialiased min-h-screen">
+<!-- Mobile Screen Container mimicking real smartphone viewport -->
+<div class="w-full max-w-md bg-background min-h-screen flex flex-col relative shadow-2xl overflow-x-hidden pb-28">
+<!-- Top App Bar (Shared Component Anchor) -->
+<header class="flex justify-between items-center w-full px-4 h-16 sticky top-0 z-50 bg-surface shadow-sm border-b border-outline-variant/30">
+<button aria-label="منو" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-surface-container active:scale-95 transition-all text-primary" type="button">
+<span class="material-symbols-outlined text-[24px]" data-icon="menu">menu</span>
+</button>
+<div class="flex items-center gap-1.5 cursor-pointer">
+<span class="text-title-lg font-title-lg text-primary tracking-tight font-extrabold">تهران</span>
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+<button aria-label="تنظیمات و فیلترها" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-surface-container active:scale-95 transition-all text-on-surface-variant" type="button">
+<span class="material-symbols-outlined text-[24px]" data-icon="tune">tune</span>
+</button>
+</header>
+<!-- Simulated Bottom Sheet Modal Header Container -->
+<section class="bg-surface-container-lowest px-4 pt-3 pb-4 shadow-sm border-b border-slate-200">
+<!-- Modal Grabber Handle -->
+<div class="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-3"></div>
+<!-- Header Title & Counter Badge -->
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]" data-icon="alt_route" data-weight="fill" style="font-variation-settings: 'FILL' 1;">alt_route</span>
+</div>
+<div>
+<h1 class="text-title-lg font-title-lg text-primary leading-tight font-bold">ایستگاه‌های تقاطعی مترو تهران</h1>
+
+</div>
+</div>
+<span class="bg-surface-container text-primary text-label-sm font-label-sm px-2.5 py-1 rounded-full border border-primary/20">
+          ۱۴ ایستگاه تبادلی فعال
+        </span>
+</div>
+<!-- Search Input -->
+<div class="relative mt-2">
+<div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+</div>
+<input class="w-full h-11 pr-10 pl-10 text-body-md font-body-md bg-surface-container-low rounded-xl border border-outline-variant/40 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary text-on-surface placeholder:text-outline transition-all" placeholder="جستجوی نام ایستگاه یا خطوط متقاطع..." type="text">
+<button aria-label="پاک کردن جستجو" class="absolute inset-y-0 left-0 flex items-center pl-3 text-outline hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="close">close</span>
+</button>
+</div>
+<!-- Filter Chips Carousel (RTL Scrollable) -->
+<div class="flex items-center gap-2 overflow-x-auto custom-scroll pt-3 pb-1 -mx-4 px-4">
+<button class="shrink-0 px-3.5 py-1.5 rounded-full bg-primary text-on-primary text-label-md font-label-md shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="done">done</span>
+<span class="">همه تقاطع‌ها</span>
+</button>
+<button class="shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant border border-outline-variant/40 text-label-md font-label-md transition-all active:scale-95">
+          تقاطع‌های پرتردد (هسته‌ای)
+        </button>
+<button class="shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant border border-outline-variant/40 text-label-md font-label-md transition-all active:scale-95 flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+<span class="">تقاطع‌های خط ۱</span>
+</button>
+<button class="shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant border border-outline-variant/40 text-label-md font-label-md transition-all active:scale-95 flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+<span class="">تقاطع‌های خط ۴</span>
+</button>
+<button class="shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant border border-outline-variant/40 text-label-md font-label-md transition-all active:scale-95">
+          تقاطع‌های ۳ خطه
+        </button>
+</div>
+</section>
+<!-- Main Content Area: Interchange Station Cards -->
+<main class="px-4 py-4 space-y-4">
+<!-- Interchange Card 1: دروازه دولت (خط ۱ و خط ۴) -->
+<article class="bg-surface-container-lowest rounded-2xl p-4 border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] relative overflow-hidden transition-all hover:border-primary/40">
+<!-- Top Row: Station Name + Transfer Time Badge -->
+<div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-label-md">
+              ۱
+            </div>
+<div>
+<h2 class="text-title-lg font-title-lg text-on-surface font-extrabold flex items-center gap-1.5">
+                دروازه دولت
+                <span class="text-xs font-normal text-slate-400 font-body-sm">(Darvazeh Dowlat)</span>
+</h2>
+<span class="text-label-sm font-label-sm text-slate-500">منطقه ۱۲ • تقاطع شریانی مرکز پایتخت</span>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-label-sm font-label-sm shrink-0">
+<span class="material-symbols-outlined text-[16px] text-emerald-600" data-icon="directions_walk">directions_walk</span>
+<span class="">۲ دقیقه (۹۵ متر)</span>
+</div>
+</div>
+<!-- Connecting Lines Badges -->
+<div class="flex flex-wrap items-center gap-2 my-3">
+<!-- Line 1 Badge -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-rose-600 inline-block ring-2 ring-rose-200"></span>
+<span class="font-bold">خط ۱:</span>
+<span class="">تجریش ⇄ کهریزک</span>
+</div>
+<!-- Line 4 Badge -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-amber-500 inline-block ring-2 ring-amber-200"></span>
+<span class="font-bold">خط ۴:</span>
+<span class="">شهید کلاهدوز ⇄ ارم سبز</span>
+</div>
+</div>
+<!-- Schematic Micro-Map Diagram Container -->
+<div class="bg-slate-50 rounded-xl p-3 border border-slate-200 relative mb-3">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-sm font-label-sm text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary" data-icon="schema">schema</span>
+              پلان شماتیک تراز طبقات و تقاطع
+            </span>
+<span class="text-[11px] text-slate-400 font-label-sm">سکو طبقه ۲- به ۱-</span>
+</div>
+<!-- Schematic SVG Visual -->
+<div class="w-full h-24 bg-white rounded-lg border border-slate-200/80 p-2 flex items-center justify-center relative overflow-hidden">
+<svg class="w-full h-full" fill="none" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg">
+<!-- Grid background hint -->
+<line stroke="#f1f5f9" stroke-width="1" x1="0" x2="320" y1="20" y2="20"></line>
+<line stroke="#f1f5f9" stroke-width="1" x1="0" x2="320" y1="40" y2="40"></line>
+<line stroke="#f1f5f9" stroke-width="1" x1="0" x2="320" y1="60" y2="60"></line>
+<!-- Line 4 (Horizontal - Yellow) -->
+<path d="M 20 40 L 300 40" stroke="#eab308" stroke-linecap="round" stroke-width="7"></path>
+<text fill="#854d0e" font-family="Vazirmatn" font-size="9" font-weight="bold" x="25" y="32">خط ۴ (شرقی-غربی)</text>
+<!-- Line 1 (Vertical crossing - Red) -->
+<path d="M 160 10 L 160 70" stroke="#e11d48" stroke-linecap="round" stroke-width="7"></path>
+<text fill="#9f1239" font-family="Vazirmatn" font-size="9" font-weight="bold" x="170" y="18">خط ۱ (شمالی-جنوبی)</text>
+<!-- Central Node: Interchange Core -->
+<circle cx="160" cy="40" fill="#ffffff" r="10" stroke="#0f172a" stroke-width="2.5"></circle>
+<circle cx="160" cy="40" fill="#0d58a6" r="5"></circle>
+<!-- Escalator connection indicator -->
+<rect fill="#eff6ff" height="16" rx="4" stroke="#93c5fd" stroke-width="1" width="55" x="180" y="32"></rect>
+<text fill="#1e40af" font-family="Vazirmatn" font-size="8" x="185" y="44">پله‌برقی مستقیم</text>
+</svg>
+</div>
+
+</div>
+<!-- Quick Actions Footer -->
+<div class="pt-2 border-t border-slate-100 flex items-center gap-2"><button class="flex-1 py-2 px-3 rounded-xl bg-surface-container text-primary text-label-md font-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">floor</span><span class="">پلان طبقات</span></button><button class="flex-1 py-2 px-3 rounded-xl bg-primary text-on-primary text-label-md font-label-md shadow-sm hover:bg-primary-container transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">near_me</span><span class="">مسیریابی</span></button></div>
+</article>
+<!-- Interchange Card 2: تئاتر شهر (خط ۳ و خط ۴) -->
+<article class="bg-surface-container-lowest rounded-2xl p-4 border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] relative overflow-hidden transition-all hover:border-primary/40">
+<!-- Top Row -->
+<div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-800 font-bold text-label-md">
+              ۲
+            </div>
+<div>
+<h2 class="text-title-lg font-title-lg text-on-surface font-extrabold flex items-center gap-1.5">
+                تئاتر شهر
+                <span class="text-xs font-normal text-slate-400 font-body-sm">(Tehran City Theater)</span>
+</h2>
+<span class="text-label-sm font-label-sm text-slate-500">چهارراه ولیعصر • تبادل فرهنگ و هنر</span>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-label-sm font-label-sm shrink-0">
+<span class="material-symbols-outlined text-[16px] text-amber-600" data-icon="directions_walk">directions_walk</span>
+<span class="">۳ دقیقه (۱۲۰ متر)</span>
+</div>
+</div>
+<!-- Lines -->
+<div class="flex flex-wrap items-center gap-2 my-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-900 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-cyan-500 inline-block ring-2 ring-cyan-200"></span>
+<span class="font-bold">خط ۳:</span>
+<span class="">قائم ⇄ آزادگان</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-amber-500 inline-block ring-2 ring-amber-200"></span>
+<span class="font-bold">خط ۴:</span>
+<span class="">شهید کلاهدوز ⇄ ارم سبز</span>
+</div>
+</div>
+<!-- Schematic Visual -->
+<div class="bg-slate-50 rounded-xl p-3 border border-slate-200 relative mb-3">
+<div class="w-full h-24 bg-white rounded-lg border border-slate-200/80 p-2 flex items-center justify-center relative overflow-hidden">
+<svg class="w-full h-full" fill="none" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg">
+<!-- Line 4 (Horizontal - Yellow) -->
+<path d="M 30 30 L 290 30" stroke="#eab308" stroke-linecap="round" stroke-width="7"></path>
+<text fill="#854d0e" font-family="Vazirmatn" font-size="9" font-weight="bold" x="35" y="22">خط ۴ (انقلاب)</text>
+<!-- Line 3 (Diagonal cross - Cyan) -->
+<path d="M 70 70 L 250 10" stroke="#06b6d4" stroke-linecap="round" stroke-width="7"></path>
+<text fill="#0e7490" font-family="Vazirmatn" font-size="9" font-weight="bold" x="220" y="65">خط ۳ (ولیعصر)</text>
+<!-- Interchange Station Hub Ring -->
+<circle cx="160" cy="30" fill="#ffffff" r="11" stroke="#0891b2" stroke-width="3"></circle>
+<circle cx="160" cy="30" fill="#eab308" r="5"></circle>
+<!-- BRT link badge -->
+<rect fill="#fee2e2" height="16" rx="4" stroke="#fca5a5" stroke-width="1" width="65" x="75" y="44"></rect>
+<text fill="#991b1b" font-family="Vazirmatn" font-size="8" x="80" y="55">اتصال به BRT ۱ و ۷</text>
+</svg>
+</div>
+
+</div>
+<div class="pt-2 border-t border-slate-100 flex items-center gap-2"><button class="flex-1 py-2 px-3 rounded-xl bg-surface-container text-primary text-label-md font-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">floor</span><span class="">پلان طبقات</span></button><button class="flex-1 py-2 px-3 rounded-xl bg-primary text-on-primary text-label-md font-label-md shadow-sm hover:bg-primary-container transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">near_me</span><span class="">مسیریابی</span></button></div>
+</article>
+<!-- Interchange Card 3: امام خمینی (خط ۱ و خط ۲) -->
+<article class="bg-surface-container-lowest rounded-2xl p-4 border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] relative overflow-hidden transition-all hover:border-primary/40">
+<div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-900 font-bold text-label-md">
+              ۳
+            </div>
+<div>
+<h2 class="text-title-lg font-title-lg text-on-surface font-extrabold flex items-center gap-1.5">
+                امام خمینی (ره)
+                <span class="text-xs font-normal text-slate-400 font-body-sm">(Imam Khomeini)</span>
+</h2>
+<span class="text-label-sm font-label-sm text-slate-500">میدان توپخانه سابق • اولین هاب تقاطعی تهران</span>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-label-sm font-label-sm shrink-0">
+<span class="material-symbols-outlined text-[16px] text-emerald-600" data-icon="directions_walk">directions_walk</span>
+<span class="">۲.۵ دقیقه (۱۱۰ متر)</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2 my-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-rose-600 inline-block ring-2 ring-rose-200"></span>
+<span class="font-bold">خط ۱:</span>
+<span class="">تجریش ⇄ کهریزک</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-blue-700 inline-block ring-2 ring-blue-200"></span>
+<span class="font-bold">خط ۲:</span>
+<span class="">صادقیه ⇄ فرهنگسرا</span>
+</div>
+</div>
+<!-- Schematic SVG -->
+<div class="bg-slate-50 rounded-xl p-3 border border-slate-200 relative mb-3">
+<div class="w-full h-24 bg-white rounded-lg border border-slate-200/80 p-2 flex items-center justify-center relative overflow-hidden">
+<svg class="w-full h-full" fill="none" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg">
+<!-- Line 2 (Navy - Horizontal) -->
+<path d="M 25 45 L 295 45" stroke="#1d4ed8" stroke-linecap="round" stroke-width="7"></path>
+<text fill="#1e40af" font-family="Vazirmatn" font-size="9" font-weight="bold" x="30" y="37">خط ۲ (شرق-غرب)</text>
+<!-- Line 1 (Red - Vertical) -->
+<path d="M 160 12 L 160 68" stroke="#e11d48" stroke-linecap="round" stroke-width="7"></path>
+<text fill="#9f1239" font-family="Vazirmatn" font-size="9" font-weight="bold" x="170" y="24">خط ۱ (شمال-جنوب)</text>
+<!-- Transfer Circle -->
+<circle cx="160" cy="45" fill="#ffffff" r="11" stroke="#1d4ed8" stroke-width="3"></circle>
+<circle cx="160" cy="45" fill="#e11d48" r="5"></circle>
+<rect fill="#f8fafc" height="16" rx="4" stroke="#cbd5e1" stroke-width="1" width="85" x="185" y="48"></rect>
+<text fill="#475569" font-family="Vazirmatn" font-size="8" x="190" y="60">دسترسی مستقیم بازار بزرگ</text>
+</svg>
+</div>
+
+</div>
+<div class="pt-2 border-t border-slate-100 flex items-center gap-2"><button class="flex-1 py-2 px-3 rounded-xl bg-surface-container text-primary text-label-md font-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">floor</span><span class="">پلان طبقات</span></button><button class="flex-1 py-2 px-3 rounded-xl bg-primary text-on-primary text-label-md font-label-md shadow-sm hover:bg-primary-container transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">near_me</span><span class="">مسیریابی</span></button></div>
+</article>
+<!-- Non-intrusive Civic Ad Banner Slot (Design Requirement) -->
+<aside class="bg-gradient-to-l from-slate-100 via-surface-container-low to-slate-100 rounded-xl p-3 border border-slate-200 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="credit_card">credit_card</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="text-label-sm font-label-sm font-bold text-primary">شارژ آنلاین بلیت مترو</span>
+<span class="text-[9px] bg-slate-200 text-slate-600 px-1 rounded">آگهی</span>
+</div>
+<p class="text-body-sm font-body-sm text-slate-500">شارژ مستقیم کارت‌های اعتباری شهرزاد و تهران‌من</p>
+</div>
+</div>
+<button class="bg-primary text-on-primary text-label-sm font-label-sm px-3 py-1.5 rounded-lg active:scale-95 transition-all">
+          شارژ آنی
+        </button>
+</aside>
+<!-- Interchange Card 4: شهید بهشتی (خط ۱ و خط ۳) -->
+<article class="bg-surface-container-lowest rounded-2xl p-4 border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] relative overflow-hidden transition-all hover:border-primary/40">
+<div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-800 font-bold text-label-md">
+              ۴
+            </div>
+<div>
+<h2 class="text-title-lg font-title-lg text-on-surface font-extrabold flex items-center gap-1.5">
+                شهید بهشتی
+                <span class="text-xs font-normal text-slate-400 font-body-sm">(Shahid Beheshti)</span>
+</h2>
+<span class="text-label-sm font-label-sm text-slate-500">مصلای امام خمینی • خیابان بهشتی</span>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-label-sm font-label-sm shrink-0">
+<span class="material-symbols-outlined text-[16px] text-amber-600" data-icon="directions_walk">directions_walk</span>
+<span class="">۳ دقیقه (۱۳۰ متر)</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2 my-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-rose-600 inline-block ring-2 ring-rose-200"></span>
+<span class="font-bold">خط ۱:</span>
+<span class="">تجریش ⇄ کهریزک</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-cyan-500 inline-block ring-2 ring-cyan-200"></span>
+<span class="font-bold">خط ۳:</span>
+<span class="">قائم ⇄ آزادگان</span>
+</div>
+</div>
+
+<div class="pt-2 border-t border-slate-100 flex items-center gap-2"><button class="flex-1 py-2 px-3 rounded-xl bg-surface-container text-primary text-label-md font-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">floor</span><span class="">پلان طبقات</span></button><button class="flex-1 py-2 px-3 rounded-xl bg-primary text-on-primary text-label-md font-label-md shadow-sm hover:bg-primary-container transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">near_me</span><span class="">مسیریابی</span></button></div>
+</article>
+<!-- Interchange Card 5: شادمان (خط ۲ و خط ۴) -->
+<article class="bg-surface-container-lowest rounded-2xl p-4 border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] relative overflow-hidden transition-all hover:border-primary/40">
+<div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-900 font-bold text-label-md">
+              ۵
+            </div>
+<div>
+<h2 class="text-title-lg font-title-lg text-on-surface font-extrabold flex items-center gap-1.5">
+                شادمان
+                <span class="text-xs font-normal text-slate-400 font-body-sm">(Shademan)</span>
+</h2>
+<span class="text-label-sm font-label-sm text-slate-500">خیابان آزادی • تقاطع پرتردد غرب</span>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-label-sm font-label-sm shrink-0">
+<span class="material-symbols-outlined text-[16px] text-emerald-600" data-icon="directions_walk">directions_walk</span>
+<span class="">۲ دقیقه (۸۵ متر)</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2 my-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-blue-700 inline-block ring-2 ring-blue-200"></span>
+<span class="font-bold">خط ۲:</span>
+<span class="">صادقیه ⇄ فرهنگسرا</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-amber-500 inline-block ring-2 ring-amber-200"></span>
+<span class="font-bold">خط ۴:</span>
+<span class="">شهید کلاهدوز ⇄ ارم سبز</span>
+</div>
+</div>
+
+<div class="pt-2 border-t border-slate-100 flex items-center gap-2"><button class="flex-1 py-2 px-3 rounded-xl bg-surface-container text-primary text-label-md font-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">floor</span><span class="">پلان طبقات</span></button><button class="flex-1 py-2 px-3 rounded-xl bg-primary text-on-primary text-label-md font-label-md shadow-sm hover:bg-primary-container transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">near_me</span><span class="">مسیریابی</span></button></div>
+</article>
+<!-- Interchange Card 6: شهید نواب صفوی (خط ۲ و خط ۷) -->
+<article class="bg-surface-container-lowest rounded-2xl p-4 border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] relative overflow-hidden transition-all hover:border-primary/40">
+<div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-900 font-bold text-label-md">
+              ۶
+            </div>
+<div>
+<h2 class="text-title-lg font-title-lg text-on-surface font-extrabold flex items-center gap-1.5">
+                شهید نواب صفوی
+                <span class="text-xs font-normal text-slate-400 font-body-sm">(Navvab-e Safavi)</span>
+</h2>
+<span class="text-label-sm font-label-sm text-slate-500">بزرگراه نواب و آذربایجان • عمیق‌ترین سکو</span>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 text-label-sm font-label-sm shrink-0">
+<span class="material-symbols-outlined text-[16px] text-rose-600" data-icon="directions_walk">directions_walk</span>
+<span class="">۴ دقیقه (۱۶۰ متر)</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2 my-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-blue-700 inline-block ring-2 ring-blue-200"></span>
+<span class="font-bold">خط ۲:</span>
+<span class="">صادقیه ⇄ فرهنگسرا</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-purple-600 inline-block ring-2 ring-purple-200"></span>
+<span class="font-bold">خط ۷:</span>
+<span class="">میدان کتاب ⇄ بسیج</span>
+</div>
+</div>
+
+<div class="pt-2 border-t border-slate-100 flex items-center gap-2"><button class="flex-1 py-2 px-3 rounded-xl bg-surface-container text-primary text-label-md font-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">floor</span><span class="">پلان طبقات</span></button><button class="flex-1 py-2 px-3 rounded-xl bg-primary text-on-primary text-label-md font-label-md shadow-sm hover:bg-primary-container transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">near_me</span><span class="">مسیریابی</span></button></div>
+</article>
+<!-- Interchange Card 7: میدان ولیعصر (عج) (خط ۳ و خط ۶) -->
+<article class="bg-surface-container-lowest rounded-2xl p-4 border border-slate-200/90 shadow-[0_2px_8px_rgba(15,23,42,0.04)] relative overflow-hidden transition-all hover:border-primary/40">
+<div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-900 font-bold text-label-md">
+              ۷
+            </div>
+<div>
+<h2 class="text-title-lg font-title-lg text-on-surface font-extrabold flex items-center gap-1.5">
+                میدان حضرت ولیعصر (عج)
+                <span class="text-xs font-normal text-slate-400 font-body-sm">(Meydan-e ValiAsr)</span>
+</h2>
+<span class="text-label-sm font-label-sm text-slate-500">پلازای شهری ولیعصر • تبادل مدرن</span>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-label-sm font-label-sm shrink-0">
+<span class="material-symbols-outlined text-[16px] text-emerald-600" data-icon="directions_walk">directions_walk</span>
+<span class="">۲.۵ دقیقه (۹۰ متر)</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2 my-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-cyan-500 inline-block ring-2 ring-cyan-200"></span>
+<span class="font-bold">خط ۳:</span>
+<span class="">قائم ⇄ آزادگان</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-pink-50 border border-pink-200 text-pink-800 text-label-sm font-label-sm">
+<span class="w-3 h-3 rounded-full bg-pink-600 inline-block ring-2 ring-pink-200"></span>
+<span class="font-bold">خط ۶:</span>
+<span class="">شهید ستاری ⇄ دولت‌آباد</span>
+</div>
+</div>
+
+<div class="pt-2 border-t border-slate-100 flex items-center gap-2"><button class="flex-1 py-2 px-3 rounded-xl bg-surface-container text-primary text-label-md font-label-md hover:bg-surface-container-high transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">floor</span><span class="">پلان طبقات</span></button><button class="flex-1 py-2 px-3 rounded-xl bg-primary text-on-primary text-label-md font-label-md shadow-sm hover:bg-primary-container transition-all flex items-center justify-center gap-1 active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">near_me</span><span class="">مسیریابی</span></button></div>
+</article>
+<!-- Helpful Legend & Wayfinding Info Card -->
+
+</main>
+<!-- Unified Floating Bottom Navigation Bar (Shared Components JSON Anchor) -->
+<!-- Prohibits border-t/border-b as mandated by semantic shell protocol, relies on soft ambient shadow -->
+<nav class="fixed bottom-6 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between z-50 rtl" dir="rtl"><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-home')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg><span class="">خانه</span></button><button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900" onclick="switchTab('tab-lines')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg><span class="">خطوط و نقشه</span></button><button class="flex items-center gap-2 bg-[#0d58a6] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all" onclick="switchTab('tab-stations')" type="button"><svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="13" rx="2"></rect><path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6"></path></svg><span class="">ایستگاه‌ها</span></button></nav>
+</div>
+
+
+
+
+
+
+</body></html>

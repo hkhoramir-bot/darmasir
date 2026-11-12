@@ -68,7 +68,7 @@ export function MI({
   );
 }
 
-/* ------------------------- هدر اصلی (دقیقاً code.html) ------------------------- */
+/* --------------- هدر اصلی (بر اساس طراحی code.html — نسخه ۷) --------------- */
 const CITY_OPTIONS: { id: ShellCity | "shiraz" | "tabriz"; name: string; soon?: boolean }[] = [
   { id: "tehran", name: "تهران" },
   { id: "mashhad", name: "مشهد" },
@@ -78,7 +78,6 @@ const CITY_OPTIONS: { id: ShellCity | "shiraz" | "tabriz"; name: string; soon?: 
 ];
 
 export function AppBar() {
-  const router = useRouter();
   const city = useShell((s) => s.city);
   const setCity = useShell((s) => s.setCity);
   const setDrawer = useShell((s) => s.setDrawer);
@@ -96,8 +95,8 @@ export function AppBar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-4 transition-colors bg-surface/85 backdrop-blur-xl backdrop-saturate-150">
-      {/* راست: منو + لوگو + عنوان */}
+    <header className="sticky top-0 z-40 border-b border-outline-variant/30 flex justify-between items-center w-full h-16 px-4 transition-colors bg-surface">
+      {/* راست (شروع RTL): دکمه منو + لوگو و عنوان اپ */}
       <div className="flex items-center gap-3">
         <button
           aria-label="منو"
@@ -119,10 +118,11 @@ export function AppBar() {
         </div>
       </div>
 
-      {/* چپ: انتخاب شهر */}
-      <div className="flex items-center gap-2 relative" ref={dropRef}>
+      {/* چپ (انتهای RTL): انتخابگر شهر */}
+      <div className="flex items-center gap-2 relative min-w-0" ref={dropRef}>
         <button
           id="cityToggleBtn"
+          aria-label="انتخاب شهر"
           onClick={() => setCityOpen((v) => !v)}
           className="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-3 py-1 rounded-full border border-outline-variant/50 text-primary active:scale-95 transition-all text-xs font-bold"
         >
@@ -145,9 +145,7 @@ export function AppBar() {
                   setCityOpen(false);
                 }}
                 className={`w-full text-right px-3 py-1.5 flex items-center justify-between ${
-                  o.soon
-                    ? "text-outline/60 cursor-not-allowed"
-                    : "hover:bg-surface-container"
+                  o.soon ? "text-outline/60 cursor-not-allowed" : "hover:bg-surface-container"
                 } ${!o.soon && o.id === city ? "text-primary font-bold" : ""}`}
               >
                 <span>{o.name}</span>
@@ -166,6 +164,8 @@ const DRAWER_LINKS: { label: string; icon: string; href: string }[] = [
   { label: "خانه", icon: "home", href: "/" },
   { label: "خطوط و نقشه", icon: "route", href: "/lines" },
   { label: "ایستگاه‌ها", icon: "directions_subway", href: "/stations" },
+  { label: "وضعیت خطوط و اطلاعیه‌ها", icon: "campaign", href: "/status" },
+  { label: "مسیرهای برگزیده", icon: "bookmark_add", href: "/saved" },
   { label: "نقشه تعاملی شبکه", icon: "map", href: "/map" },
   { label: "تاریخچه سفر", icon: "history", href: "/history" },
   { label: "تنظیمات", icon: "settings", href: "/settings" },
@@ -263,7 +263,7 @@ export function MenuDrawer() {
               <div>
                 <h2 className="font-bold text-sm text-primary">متروجو هوشمند</h2>
                 <span className="text-[10px] text-tertiary font-bold bg-tertiary-fixed/40 px-1.5 py-0.5 rounded">
-                  نسخه {toFa("4.8.7")} آنلاین
+                  نسخه {toFa("4.9.0")} آنلاین
                 </span>
               </div>
             </div>
@@ -441,14 +441,14 @@ export function BottomNav() {
 
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-40 flex justify-center pointer-events-none transition-[opacity,visibility] duration-300 ${
+      className={`fixed inset-x-0 bottom-0 z-50 flex justify-center pointer-events-none transition-[opacity,visibility] duration-300 ${
         drawerOpen ? "opacity-0 invisible" : "opacity-100 visible"
       }`}
-      style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
+      style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
       aria-hidden={drawerOpen}
     >
       <nav
-        className="mj-nav-frost pointer-events-auto w-[calc(100%-1.5rem)] max-w-[380px] bg-surface-container-lowest/85 backdrop-blur-lg rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-outline-variant/50 px-1.5 py-1.5 flex items-center justify-between flex-nowrap"
+        className="mj-nav-frost pointer-events-auto w-[90%] max-w-[360px] bg-surface-container-lowest/90 backdrop-blur-lg rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-outline-variant/40 p-1.5 flex items-center justify-between flex-nowrap"
         dir="rtl"
         aria-label="ناوبری اصلی"
       >
@@ -459,10 +459,10 @@ export function BottomNav() {
               key={href}
               onClick={() => router.push(href)}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-1 rounded-full transition-all active:scale-95 shrink-0 ${
+              className={`flex items-center gap-1.5 rounded-full transition-all active:scale-95 shrink-0 ${
                 active
-                  ? "bg-[#0d58a6] text-white px-3.5 py-2 font-bold text-xs shadow-sm"
-                  : "text-on-surface-variant px-2 py-2 font-medium text-xs hover:bg-surface-container hover:text-on-surface"
+                  ? "bg-primary-container text-white px-5 py-2.5 font-bold text-sm shadow-sm"
+                  : "text-on-surface-variant px-3 py-2 font-medium text-sm hover:bg-surface-container hover:text-on-surface"
               }`}
             >
               <Icon />

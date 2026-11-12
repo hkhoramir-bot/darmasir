@@ -1,0 +1,407 @@
+<!DOCTYPE html><html dir="rtl" lang="fa"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>جزئیات و امکانات ایستگاه | مترویار</title>
+<!-- Google Fonts: Vazirmatn -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed": "#ffdad5",
+            "surface": "#f9f9ff",
+            "on-tertiary-container": "#6ae79a",
+            "surface-container-highest": "#d8e3fb",
+            "inverse-surface": "#263143",
+            "background": "#f9f9ff",
+            "error": "#ba1a1a",
+            "outline": "#727782",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed": "#410001",
+            "secondary-fixed-dim": "#ffb4aa",
+            "surface-bright": "#f9f9ff",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#004689",
+            "on-background": "#111c2d",
+            "on-surface-variant": "#424751",
+            "surface-dim": "#cfdaf2",
+            "tertiary-container": "#006638",
+            "inverse-on-surface": "#ecf1ff",
+            "on-tertiary-fixed": "#00210e",
+            "secondary": "#bc000c",
+            "surface-container-low": "#f0f3ff",
+            "surface-variant": "#d8e3fb",
+            "primary": "#00417f",
+            "tertiary-fixed": "#7efbac",
+            "on-primary-container": "#b6d0ff",
+            "primary-container": "#0d58a6",
+            "outline-variant": "#c2c6d3",
+            "on-surface": "#111c2d",
+            "surface-container": "#e7eeff",
+            "on-tertiary-fixed-variant": "#00522c",
+            "on-secondary-container": "#fffbff",
+            "primary-fixed-dim": "#a8c8ff",
+            "on-secondary": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff",
+            "surface-tint": "#1a5eac",
+            "secondary-container": "#e32220",
+            "on-error": "#ffffff",
+            "on-secondary-fixed-variant": "#930007",
+            "tertiary-fixed-dim": "#61de92",
+            "surface-container-high": "#dee8ff",
+            "tertiary": "#004c28",
+            "on-primary-fixed": "#001b3c",
+            "inverse-primary": "#a8c8ff",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed": "#d5e3ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "body-md": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 22px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Metro Line 4 Yellow Accent Token */
+    .line4-accent {
+      background-color: #ffd200;
+      color: #1f1b00;
+    }
+    .line4-border {
+      border-color: #ffd200;
+    }
+    .line4-text {
+      color: #b58900;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen selection:bg-surface-container-highest pb-28">
+<!-- Mobile Screen Container -->
+<div class="max-w-md mx-auto min-h-screen bg-surface flex flex-col shadow-sm relative">
+<!-- Top App Bar (Shared Component Anchor Protocol) -->
+<header class="bg-surface text-primary border-b border-outline-variant/30 shadow-sm flex justify-between items-center w-full px-4 h-16 sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<button aria-label="منو" class="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-title-lg font-title-lg text-primary font-bold">تهران</span>
+</div>
+<!-- Center Title: Station name & Line badge -->
+<div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant/40">
+<span class="w-2 h-2 rounded-full bg-primary/70 inline-block"></span>
+<span class="text-label-md font-label-md font-bold text-on-surface">میدان انقلاب اسلامی</span>
+</div>
+<button aria-label="فیلتر و تنظیمات" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-4 pt-3 pb-6 flex flex-col gap-3.5"><!-- Clean Station Hero Card -->
+<section class="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/30 shadow-sm flex flex-col gap-2.5 relative">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-lg bg-surface-container border border-outline-variant/30 flex items-center justify-center font-bold text-sm text-primary shrink-0">
+        خط ۴
+      </div>
+<div>
+<h1 class="text-sm font-bold text-on-surface leading-tight">ایستگاه میدان انقلاب اسلامی</h1>
+<span class="text-[11px] text-on-surface-variant">شهید کلاهدوز ↔ ارم سبز</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1 rounded-full border border-outline-variant/30">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary/70 animate-pulse"></span>
+<span class="text-[11px] font-medium text-on-surface-variant">وضعیت: عادی</span>
+</div>
+</div>
+<!-- Train Countdown -->
+<div class="grid grid-cols-2 gap-2 pt-2 border-t border-outline-variant/20">
+<div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant/20 flex items-center justify-between">
+<div>
+<span class="text-[10px] text-on-surface-variant block">به سمت کلاهدوز</span>
+<span class="text-xs font-bold text-primary">۲ دقیقه بعد</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-base">train</span>
+</div>
+<div class="bg-surface-container-low p-2 rounded-lg border border-outline-variant/20 flex items-center justify-between">
+<div>
+<span class="text-[10px] text-on-surface-variant block">به سمت ارم سبز</span>
+<span class="text-xs font-bold text-primary">۴ دقیقه بعد</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-base">train</span>
+</div>
+</div>
+</section>
+<!-- Facilities Section (Decluttered 2-Column Grid) -->
+<section class="flex flex-col gap-2 relative">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-bold text-on-surface">امکانات رفاهی ایستگاه</span>
+<button aria-label="راهنمای امکانات" class="w-4 h-4 rounded-full border border-outline text-outline hover:text-primary hover:border-primary flex items-center justify-center text-[10px] font-bold leading-none" onclick="openHelpModal('امکانات رفاهی و گزارش خرابی', 'تمامی تجهیزات و امکانات رفاهی ایستگاه به‌صورت مستمر پایش می‌شوند. در صورت مشاهده هرگونه خرابی در آسانسورها، پله‌برقی‌ها یا سایر تجهیزات، می‌توانید موضوع را به متصدی ایستگاه یا از طریق سامانه ۱۳۷ گزارش فرمایید.')" type="button">
+        ?
+      </button>
+</div>
+<span class="text-[11px] text-on-surface-variant bg-surface-container px-2.5 py-0.5 rounded-full border border-outline-variant/30 font-medium">۸ امکان فعال</span>
+</div>
+<!-- Minimal 2-column Facilities Grid -->
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-on-surface-variant text-base shrink-0">elevator</span>
+<span class="text-xs text-on-surface font-medium truncate">آسانسور معلولین</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium bg-surface-container px-1.5 py-0.5 rounded shrink-0">فعال</span>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-on-surface-variant text-base shrink-0">escalator</span>
+<span class="text-xs text-on-surface font-medium truncate">پله‌برقی</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium bg-surface-container px-1.5 py-0.5 rounded shrink-0">فعال</span>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-on-surface-variant text-base shrink-0">atm</span>
+<span class="text-xs text-on-surface font-medium truncate">خودپرداز بانکی</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium bg-surface-container px-1.5 py-0.5 rounded shrink-0">مستقر</span>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-on-surface-variant text-base shrink-0">confirmation_number</span>
+<span class="text-xs text-on-surface font-medium truncate">باجه بلیت</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium bg-surface-container px-1.5 py-0.5 rounded shrink-0">دایر</span>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-on-surface-variant text-base shrink-0">mosque</span>
+<span class="text-xs text-on-surface font-medium truncate">نمازخانه</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium bg-surface-container px-1.5 py-0.5 rounded shrink-0">باز</span>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-on-surface-variant text-base shrink-0">wc</span>
+<span class="text-xs text-on-surface font-medium truncate">سرویس بهداشتی</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium bg-surface-container px-1.5 py-0.5 rounded shrink-0">دایر</span>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-on-surface-variant text-base shrink-0">family_restroom</span>
+<span class="text-xs text-on-surface font-medium truncate">اتاق مادر و کودک</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium bg-surface-container px-1.5 py-0.5 rounded shrink-0">آماده</span>
+</div>
+<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-on-surface-variant text-base shrink-0">medical_services</span>
+<span class="text-xs text-on-surface font-medium truncate">فوریت‌های پزشکی</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-medium bg-surface-container px-1.5 py-0.5 rounded shrink-0">مستقر</span>
+</div>
+</div>
+</section>
+<!-- Schedule Section (Decluttered & Compact) -->
+<section class="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col gap-2.5 relative">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-bold text-on-surface">برنامه زمان‌بندی</span>
+<button aria-label="راهنمای ساعات کار" class="w-4 h-4 rounded-full border border-outline text-outline hover:text-primary hover:border-primary flex items-center justify-center text-[10px] font-bold leading-none" onclick="openHelpModal('برنامه زمان‌بندی قطارها', 'سرفاصله استاندارد قطارها در ساعات اوج تردد ۴ دقیقه و در ساعات عادی ۵ تا ۶ دقیقه می‌باشد. اولین اعزام از مبادی خط در ساعت ۰۵:۳۰ صبح و آخرین اعزام در ساعت ۲۲:۳۰ انجام می‌پذیرد.')" type="button">
+        ?
+      </button>
+</div>
+<span class="text-[11px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full font-bold">سرفاصله: ۴ دقیقه</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-center">
+<div class="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/20 flex flex-col items-center justify-center">
+<span class="text-[11px] text-on-surface-variant block mb-1">نخستین قطار</span>
+<span class="text-sm font-bold text-on-surface leading-none">۰۵:۳۰ صبح</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/20 flex flex-col items-center justify-center">
+<span class="text-[11px] text-on-surface-variant block mb-1">آخرین قطار</span>
+<span class="text-sm font-bold text-on-surface leading-none">۲۲:۳۰ شب</span>
+</div>
+</div>
+</section>
+<!-- Surrounding Connections & Exits (Clean Capsule Tags, No Fares) -->
+<section class="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/30 shadow-sm flex flex-col gap-2.5 relative">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-bold text-on-surface">دسترسی‌های پیرامونی و خروجی‌ها</span>
+<button aria-label="راهنمای دسترسی‌ها" class="w-4 h-4 rounded-full border border-outline text-outline hover:text-primary hover:border-primary flex items-center justify-center text-[10px] font-bold leading-none" onclick="openHelpModal('خروجی‌ها و دسترسی به ناوگان', 'از طریق تابلوهای راهنمای داخل سالن ایستگاه می‌توانید مناسب‌ترین خروجی به سمت سامانه‌های بی‌آرتی یا پایانه‌های تاکسیرانی را انتخاب کنید.')" type="button">
+        ?
+      </button>
+</div>
+</div>
+<!-- Station Exits -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low border border-outline-variant/20 text-xs">
+<div class="flex items-center gap-2 truncate">
+<span class="text-[11px] font-bold text-primary bg-surface-container px-2 py-0.5 rounded-full shrink-0">خروجی ۱</span>
+<span class="text-on-surface font-medium truncate">خیابان کارگر - پایانه تاکسی</span>
+</div>
+<span class="material-symbols-outlined text-base text-on-surface-variant shrink-0">local_taxi</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-low border border-outline-variant/20 text-xs">
+<div class="flex items-center gap-2 truncate">
+<span class="text-[11px] font-bold text-primary bg-surface-container px-2 py-0.5 rounded-full shrink-0">خروجی ۲</span>
+<span class="text-on-surface font-medium truncate">میدان انقلاب - اتوبوس BRT خط ۱</span>
+</div>
+<span class="w-5 h-5 rounded bg-surface-container text-on-surface-variant flex items-center justify-center text-[10px] font-bold shrink-0">BRT</span>
+</div>
+</div>
+<!-- Surrounding Landmarks with Walk Times -->
+<div class="pt-2 border-t border-outline-variant/20 flex flex-col gap-1.5">
+<span class="text-[11px] font-medium text-on-surface-variant block">مراکز و اماکن نزدیک:</span>
+<div class="grid grid-cols-3 gap-1.5 text-center text-[11px]">
+<div class="p-1.5 rounded-lg bg-surface-container text-on-surface font-medium flex flex-col items-center justify-center gap-0.5">
+<span class="truncate w-full">دانشگاه تهران</span>
+<span class="text-[10px] text-primary font-bold">۳ دقیقه پیاده</span>
+</div>
+<div class="p-1.5 rounded-lg bg-surface-container text-on-surface font-medium flex flex-col items-center justify-center gap-0.5">
+<span class="truncate w-full">راسته کتابفروشی</span>
+<span class="text-[10px] text-primary font-bold">۱ دقیقه پیاده</span>
+</div>
+<div class="p-1.5 rounded-lg bg-surface-container text-on-surface font-medium flex flex-col items-center justify-center gap-0.5">
+<span class="truncate w-full">سینما بهمن</span>
+<span class="text-[10px] text-primary font-bold">۲ دقیقه پیاده</span>
+</div>
+</div>
+</div>
+</section></main>
+<!-- Docked Bottom Navigation Bar (Mandatory Shared Component JSON Schema) -->
+<!-- Destination 3 is active ("ایستگاه‌ها") corresponding to this Station Detail Canvas -->
+<!-- Standard Guide Help Modal Popup -->
+<div class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity duration-200" id="global-help-modal">
+<div class="bg-surface-container-lowest rounded-2xl max-w-sm w-full p-4 border border-outline-variant/30 shadow-xl flex flex-col gap-3 relative">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-2.5">
+<div class="flex items-center gap-2 text-primary font-bold text-sm">
+<span class="material-symbols-outlined text-base">info</span>
+<span id="modal-title" class="">راهنما</span>
+</div>
+<button class="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container text-sm" onclick="closeHelpModal()">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+<p class="text-xs text-on-surface leading-relaxed text-justify" id="modal-description"></p>
+<div class="pt-1 flex justify-end">
+<button class="bg-primary text-white text-xs font-medium px-4 py-1.5 rounded-lg active:scale-95 transition-all" onclick="closeHelpModal()">
+        متوجه شدم
+      </button>
+</div>
+</div>
+</div>
+<script>
+  function openHelpModal(title, text) {
+    const modal = document.getElementById('global-help-modal');
+    const titleEl = document.getElementById('modal-title');
+    const descEl = document.getElementById('modal-description');
+    if (modal && titleEl && descEl) {
+      titleEl.innerText = title;
+      descEl.innerText = text;
+      modal.classList.remove('hidden');
+    }
+  }
+  function closeHelpModal() {
+    const modal = document.getElementById('global-help-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+  window.addEventListener('click', function(e) {
+    const modal = document.getElementById('global-help-modal');
+    if (e.target === modal) {
+      closeHelpModal();
+    }
+  });
+</script><nav class="fixed bottom-6 inset-x-0 mx-auto w-[90%] max-w-[360px] bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-slate-100 p-1.5 flex items-center justify-between z-50 rtl" dir="rtl">
+<button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span class="">خانه</span>
+</button>
+<button class="flex items-center gap-1.5 text-slate-600 px-3 py-2 rounded-full font-medium text-sm transition-all hover:text-slate-900">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span class="">خطوط و نقشه</span>
+</button>
+<button class="flex items-center gap-2 bg-[#0d58a6] text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><rect height="13" rx="2" width="16" x="4" y="3"></rect><path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6"></path></svg>
+<span class="">ایستگاه‌ها</span>
+</button>
+</nav>
+</div>
+
+
+</body></html>

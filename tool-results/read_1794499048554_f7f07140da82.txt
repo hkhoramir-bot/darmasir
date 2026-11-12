@@ -1,0 +1,575 @@
+     1→<!DOCTYPE html><html class="h-full bg-background text-on-background" dir="rtl" lang="fa"><head>
+     2→<meta charset="utf-8">
+     3→<meta content="width=device-width, initial-scale=1.0" name="viewport">
+     4→<title>تاریخچه فعالیت مسافر | مترویار</title>
+     5→<!-- Google Fonts: Vazirmatn -->
+     6→<link href="https://fonts.googleapis.com" rel="preconnect">
+     7→<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+     8→<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+     9→<!-- Material Symbols Outlined -->
+    10→<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    11→<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    12→<!-- Tailwind CSS v3 with Plugins -->
+    13→<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    14→<!-- Tailwind Config as specified in guidelines -->
+    15→<script id="tailwind-config">
+    16→    tailwind.config = {
+    17→      darkMode: "class",
+    18→      theme: {
+    19→        extend: {
+    20→          "colors": {
+    21→            "on-tertiary-fixed-variant": "#00522c",
+    22→            "outline-variant": "#c2c6d3",
+    23→            "tertiary": "#004c28",
+    24→            "surface-container-lowest": "#ffffff",
+    25→            "primary-container": "#0d58a6",
+    26→            "on-tertiary-container": "#6ae79a",
+    27→            "secondary": "#bc000c",
+    28→            "on-primary-fixed": "#001b3c",
+    29→            "surface-container-highest": "#d8e3fb",
+    30→            "surface-bright": "#f9f9ff",
+    31→            "on-surface-variant": "#424751",
+    32→            "inverse-surface": "#263143",
+    33→            "surface-container-low": "#f0f3ff",
+    34→            "surface-variant": "#d8e3fb",
+    35→            "surface-container-high": "#dee8ff",
+    36→            "surface-container": "#e7eeff",
+    37→            "primary-fixed-dim": "#a8c8ff",
+    38→            "inverse-on-surface": "#ecf1ff",
+    39→            "on-primary-fixed-variant": "#004689",
+    40→            "tertiary-fixed-dim": "#61de92",
+    41→            "on-primary": "#ffffff",
+    42→            "tertiary-container": "#006638",
+    43→            "background": "#f9f9ff",
+    44→            "error-container": "#ffdad6",
+    45→            "surface-tint": "#1a5eac",
+    46→            "surface": "#f9f9ff",
+    47→            "on-error-container": "#93000a",
+    48→            "on-tertiary-fixed": "#00210e",
+    49→            "on-background": "#111c2d",
+    50→            "secondary-container": "#e32220",
+    51→            "outline": "#727782",
+    52→            "on-secondary": "#ffffff",
+    53→            "secondary-fixed-dim": "#ffb4aa",
+    54→            "surface-dim": "#cfdaf2",
+    55→            "inverse-primary": "#a8c8ff",
+    56→            "secondary-fixed": "#ffdad5",
+    57→            "on-tertiary": "#ffffff",
+    58→            "on-secondary-fixed": "#410001",
+    59→            "on-secondary-container": "#fffbff",
+    60→            "on-secondary-fixed-variant": "#930007",
+    61→            "on-surface": "#111c2d",
+    62→            "on-primary-container": "#b6d0ff",
+    63→            "primary-fixed": "#d5e3ff",
+    64→            "error": "#ba1a1a",
+    65→            "primary": "#00417f",
+    66→            "tertiary-fixed": "#7efbac",
+    67→            "on-error": "#ffffff"
+    68→          },
+    69→          "borderRadius": {
+    70→            "DEFAULT": "0.25rem",
+    71→            "lg": "0.5rem",
+    72→            "xl": "0.75rem",
+    73→            "full": "9999px"
+    74→          },
+    75→          "spacing": {
+    76→            "space-lg": "1.5rem",
+    77→            "space-xs": "0.25rem",
+    78→            "space-sm": "0.5rem",
+    79→            "gutter": "1rem",
+    80→            "space-xl": "2rem",
+    81→            "margin": "1rem",
+    82→            "space-md": "1rem"
+    83→          },
+    84→          "fontFamily": {
+    85→            "headline-md": ["Vazirmatn"],
+    86→            "title-lg": ["Vazirmatn"],
+    87→            "headline-lg": ["Vazirmatn"],
+    88→            "headline-xl": ["Vazirmatn"],
+    89→            "label-md": ["Vazirmatn"],
+    90→            "body-lg": ["Vazirmatn"],
+    91→            "label-lg": ["Vazirmatn"],
+    92→            "body-sm": ["Vazirmatn"],
+    93→            "body-md": ["Vazirmatn"],
+    94→            "label-sm": ["Vazirmatn"],
+    95→            "title-md": ["Vazirmatn"]
+    96→          },
+    97→          "fontSize": {
+    98→            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+    99→            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+   100→            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+   101→            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+   102→            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+   103→            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+   104→            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+   105→            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+   106→            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+   107→            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+   108→            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }]
+   109→          }
+   110→        }
+   111→      }
+   112→    };
+   113→  </script>
+   114→<style>
+   115→    body {
+   116→      font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
+   117→      -webkit-tap-highlight-color: transparent;
+   118→    }
+   119→    .material-symbols-outlined {
+   120→      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+   121→      display: inline-block;
+   122→      vertical-align: middle;
+   123→      line-height: 1;
+   124→    }
+   125→    .hide-scrollbar::-webkit-scrollbar {
+   126→      display: none;
+   127→    }
+   128→    .hide-scrollbar {
+   129→      -ms-overflow-style: none;
+   130→      scrollbar-width: none;
+   131→    }
+   132→  </style>
+   133→<style>
+   134→    body {
+   135→      min-height: max(884px, 100dvh);
+   136→    }
+   137→  </style>
+   138→  </head>
+   139→<body class="min-h-full bg-background flex flex-col antialiased selection:bg-primary-container selection:text-on-primary">
+   140→<!-- ================= TOP APP BAR (Shared Components JSON Anchor) ================= -->
+   141→<header class="flex justify-between items-center w-full px-4 h-16 sticky top-0 z-50 bg-surface shadow-sm border-b border-outline-variant/30">
+   142→<!-- Leading Control -->
+   143→<div class="flex items-center gap-2">
+   144→<button aria-label="منوی اصلی" class="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-all duration-150" type="button">
+   145→<span class="material-symbols-outlined text-primary text-[24px]">menu</span>
+   146→</button>
+   147→<div class="flex flex-col">
+   148→<span class="text-title-lg font-title-lg text-primary tracking-tight font-bold">تهران</span>
+   149→<span class="text-label-sm font-label-sm text-outline">سامانه هوشمند حمل‌ونقل ریلی</span>
+   150→</div>
+   151→</div>
+   152→<!-- Center/Brand Headline Context -->
+   153→<div class="text-center hidden sm:block">
+   154→<h1 class="text-title-md font-title-md text-on-surface font-bold">تاریخچه فعالیت مسافر</h1>
+   155→</div>
+   156→<!-- Trailing Action -->
+   157→<div class="flex items-center gap-1.5">
+   158→<button aria-label="تنظیمات و فیلترها" class="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-all duration-150" type="button">
+   159→<span class="material-symbols-outlined text-primary text-[22px]">tune</span>
+   160→</button>
+   161→<button aria-label="پاکسازی سوابق" class="w-10 h-10 rounded-full flex items-center justify-center text-secondary hover:bg-error-container/40 active:scale-95 transition-all duration-150" id="clearAllBtn" title="پاکسازی تاریخچه" type="button">
+   162→<span class="material-symbols-outlined text-secondary text-[22px]">delete_sweep</span>
+   163→</button>
+   164→</div>
+   165→</header>
+   166→<!-- ================= MAIN CONTENT CANVAS ================= -->
+   167→<main class="flex-1 w-full max-w-xl mx-auto px-4 pt-4 pb-32 flex flex-col gap-5">
+   168→<!-- Screen Title & Narrative Bar -->
+   169→<section class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/30 flex items-start justify-between relative overflow-hidden"><div class="absolute -left-6 -bottom-6 w-24 h-24 bg-primary-fixed/30 rounded-full blur-xl pointer-events-none"></div><div class="flex items-center justify-between w-full relative z-10"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shadow-md shrink-0"><span class="material-symbols-outlined text-[24px]">manage_history</span></div><div><div class="flex items-center gap-2"><h2 class="text-headline-md font-headline-md text-primary font-bold">سوابق من در مترویار</h2><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>همگام‌سازی زنده</span></div></div></div><button onclick="window.openHistoryHelpModal('راهنمای تاریخچه مسافر', 'در این بخش تمامی ایستگاه‌های مشاهده‌شده، آخرین جستجوهای مسیر و هشدارهای بیدارباش سفرهای شما به صورت امن روی دستگاه ذخیره و نمایش داده می‌شوند.')" aria-label="راهنما" class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90 shrink-0 shadow-sm" type="button"><span class="material-symbols-outlined text-[20px]">help</span></button></div></section>
+   170→<!-- 2. Activity Summary Stats (3 Compact Cards Grid) -->
+   171→<section aria-label="خلاصه آمار فعالیت مسافر">
+   172→<div class="grid grid-cols-3 gap-2.5">
+   173→<!-- Stat Card 1 -->
+   174→<div class="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
+   175→<div class="flex items-center justify-between text-outline mb-1.5">
+   176→<span class="text-label-sm font-label-sm font-semibold">بازدیدها</span>
+   177→<span class="material-symbols-outlined text-[18px] text-primary">visibility</span>
+   178→</div>
+   179→<div>
+   180→<span class="text-headline-lg font-headline-lg text-on-surface font-extrabold tracking-tight">۲۸</span>
+   181→<span class="text-label-sm font-label-sm text-outline-variant mr-1">ایستگاه</span>
+   182→</div>
+   183→<div class="mt-2 text-label-sm font-label-sm text-on-tertiary-fixed-variant flex items-center gap-0.5">
+   184→<span class="material-symbols-outlined text-[14px]">trending_up</span>
+   185→<span class="">+۱۲٪ این ماه</span>
+   186→</div>
+   187→</div>
+   188→<!-- Stat Card 2 -->
+   189→<div class="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
+   190→<div class="flex items-center justify-between text-outline mb-1.5">
+   191→<span class="text-label-sm font-label-sm font-semibold">مسیریابی</span>
+   192→<span class="material-symbols-outlined text-[18px] text-primary">route</span>
+   193→</div>
+   194→<div>
+   195→<span class="text-headline-lg font-headline-lg text-on-surface font-extrabold tracking-tight">۱۴</span>
+   196→<span class="text-label-sm font-label-sm text-outline-variant mr-1">مسیر</span>
+   197→</div>
+   198→<div class="mt-2 text-label-sm font-label-sm text-on-surface-variant">
+   199→<span class="">۹ سفر سریع</span>
+   200→</div>
+   201→</div>
+   202→<!-- Stat Card 3 -->
+   203→<div class="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
+   204→<div class="flex items-center justify-between text-outline mb-1.5">
+   205→<span class="text-label-sm font-label-sm font-semibold">ایستگاه پرتردد</span>
+   206→<span class="material-symbols-outlined text-[18px] text-secondary">favorite</span>
+   207→</div>
+   208→<div>
+   209→<div class="text-title-md font-title-md text-on-surface font-bold truncate">تئاتر شهر</div>
+   210→<span class="text-label-sm font-label-sm text-outline">تقاطع خط ۳ و ۴</span>
+   211→</div>
+   212→<div class="mt-2 text-label-sm font-label-sm text-primary font-medium">
+   213→<span class="">۸ مرتبه تردد</span>
+   214→</div>
+   215→</div>
+   216→</div>
+   217→</section>
+   218→<!-- 3. Horizontal Filter Tabs / Capsule Chips -->
+   219→<nav aria-label="فیلتر تاریخچه" class="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+   220→<button class="px-4 py-2 rounded-full text-label-lg font-label-lg bg-primary-container text-on-primary shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform" type="button">
+   221→<span class="material-symbols-outlined text-[18px]">done_all</span>
+   222→<span class="">همه سوابق</span>
+   223→<span class="bg-on-primary text-primary-container text-label-sm font-label-sm px-1.5 py-0.2 rounded-full">۲۱</span>
+   224→</button>
+   225→<button class="px-4 py-2 rounded-full text-label-lg font-label-lg bg-surface-container-lowest text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container flex items-center gap-1.5 shrink-0 active:scale-95 transition-all" type="button">
+   226→<span class="material-symbols-outlined text-[18px]">directions_subway</span>
+   227→<span class="">ایستگاه‌های بازدیدشده</span>
+   228→</button>
+   229→<button class="px-4 py-2 rounded-full text-label-lg font-label-lg bg-surface-container-lowest text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container flex items-center gap-1.5 shrink-0 active:scale-95 transition-all" type="button">
+   230→<span class="material-symbols-outlined text-[18px]">alt_route</span>
+   231→<span class="">جستجوها و مسیرها</span>
+   232→</button>
+   233→<button class="px-4 py-2 rounded-full text-label-lg font-label-lg bg-surface-container-lowest text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container flex items-center gap-1.5 shrink-0 active:scale-95 transition-all" type="button">
+   234→<span class="material-symbols-outlined text-[18px]">notifications_active</span>
+   235→<span class="">هشدارهای فعال</span>
+   236→</button>
+   237→</nav>
+   238→<!-- 4. Recently Viewed Stations Section -->
+   239→<section aria-labelledby="heading-recent-stations" class="flex flex-col gap-3">
+   240→<div class="flex items-center justify-between px-1"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span><h3 class="text-title-lg font-title-lg text-on-surface font-bold" id="heading-recent-stations">ایستگاه‌های اخیراً مشاهده‌شده</h3><button onclick="window.openHistoryHelpModal('ایستگاه‌های بازدیدشده', 'ایستگاه‌هایی که برای مشاهده جزئیات، زمان‌بندی یا امکانات رفاهی باز کرده‌اید برای دسترسی سریع‌تر در اینجا نگهداری می‌شوند.')" aria-label="راهنمای ایستگاه‌ها" class="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90" type="button"><span class="material-symbols-outlined text-[16px]">help</span></button></div><span class="text-label-md font-label-md text-outline">۴ ایستگاه اخیر</span></div>
+   241→<div class="flex flex-col gap-2.5">
+   242→<!-- Station 1: میدان انقلاب اسلامی (Line 4 Yellow) -->
+   243→<article class="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/30 shadow-sm hover:shadow-md transition-shadow relative group">
+   244→<div class="flex items-start justify-between gap-3">
+   245→<!-- Line Color Indicator Node + Station Identity -->
+   246→<div class="flex items-start gap-3">
+   247→<div class="flex flex-col items-center">
+   248→<div class="w-10 h-10 rounded-xl bg-amber-500/15 border-2 border-amber-500 flex items-center justify-center text-amber-900 font-bold text-label-lg shadow-sm">
+   249→                  ۴
+   250→                </div>
+   251→<div class="w-0.5 h-6 bg-outline-variant/30 mt-1"></div>
+   252→</div>
+   253→<div class="flex flex-col gap-1">
+   254→<div class="flex items-center gap-2">
+   255→<h4 class="text-title-md font-title-md text-on-surface font-bold">میدان انقلاب اسلامی</h4>
+   256→<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-amber-100 text-amber-900 font-medium">خط ۴ (زرد)</span>
+   257→</div>
+   258→
+   259→<!-- Micro Badges & Status -->
+   260→<div class="flex items-center flex-wrap gap-2 mt-1">
+   261→<span class="inline-flex items-center gap-1 text-label-sm font-label-sm text-tertiary bg-surface-container px-2 py-0.5 rounded-md">
+   262→<span class="material-symbols-outlined text-[15px] text-tertiary">elevator</span>
+   263→                    آسانسور فعال
+   264→                  </span>
+   265→<span class="inline-flex items-center gap-1 text-label-sm font-label-sm text-primary bg-primary-fixed/40 px-2 py-0.5 rounded-md">
+   266→<span class="material-symbols-outlined text-[15px]">timer</span>
+   267→                    سرفاصله: ۴ دقیقه
+   268→                  </span>
+   269→<span class="text-label-sm font-label-sm text-outline flex items-center gap-0.5">
+   270→<span class="material-symbols-outlined text-[14px]">schedule</span>
+   271→                    امروز ساعت ۱۲:۳۰
+   272→                  </span>
+   273→</div>
+   274→</div>
+   275→</div>
+   276→<!-- Action Cluster -->
+   277→<div class="flex flex-col items-end gap-2 shrink-0">
+   278→<button aria-label="حذف این مورد از تاریخچه" class="text-outline hover:text-secondary p-1 rounded-full hover:bg-surface-container active:scale-90 transition-all" type="button">
+   279→<span class="material-symbols-outlined text-[20px]">close</span>
+   280→</button>
+   281→<button class="mt-2 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md flex items-center gap-1 active:scale-95 transition-all" type="button">
+   282→<span class="">مشاهده</span>
+   283→<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+   284→</button>
+   285→</div>
+   286→</div>
+   287→</article>
+   288→<!-- Station 2: تجریش (Line 1 Red) -->
+   289→<article class="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/30 shadow-sm hover:shadow-md transition-shadow relative group">
+   290→<div class="flex items-start justify-between gap-3">
+   291→<div class="flex items-start gap-3">
+   292→<div class="flex flex-col items-center">
+   293→<div class="w-10 h-10 rounded-xl bg-secondary/10 border-2 border-secondary flex items-center justify-center text-secondary font-bold text-label-lg shadow-sm">
+   294→                  ۱
+   295→                </div>
+   296→<div class="w-0.5 h-6 bg-outline-variant/30 mt-1"></div>
+   297→</div>
+   298→<div class="flex flex-col gap-1">
+   299→<div class="flex items-center gap-2">
+   300→<h4 class="text-title-md font-title-md text-on-surface font-bold">تجریش</h4>
+   301→<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-error-container/40 text-on-error-container font-medium">خط ۱ (قرمز)</span>
+   302→</div>
+   303→
+   304→<div class="flex items-center flex-wrap gap-2 mt-1">
+   305→<span class="inline-flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">
+   306→<span class="material-symbols-outlined text-[15px]">local_taxi</span>
+   307→                    پایانه تاکسی برون‌شهری
+   308→                  </span>
+   309→<span class="inline-flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">
+   310→<span class="material-symbols-outlined text-[15px]">atm</span>
+   311→                    خودپرداز فعال
+   312→                  </span>
+   313→<span class="text-label-sm font-label-sm text-outline flex items-center gap-0.5">
+   314→<span class="material-symbols-outlined text-[14px]">schedule</span>
+   315→                    دیروز ساعت ۱۸:۱۵
+   316→                  </span>
+   317→</div>
+   318→</div>
+   319→</div>
+   320→<div class="flex flex-col items-end gap-2 shrink-0">
+   321→<button aria-label="حذف این مورد از تاریخچه" class="text-outline hover:text-secondary p-1 rounded-full hover:bg-surface-container active:scale-90 transition-all" type="button">
+   322→<span class="material-symbols-outlined text-[20px]">close</span>
+   323→</button>
+   324→<button class="mt-2 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md flex items-center gap-1 active:scale-95 transition-all" type="button">
+   325→<span class="">مشاهده</span>
+   326→<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+   327→</button>
+   328→</div>
+   329→</div>
+   330→</article>
+   331→<!-- Station 3: دروازه دولت (Line 1 & 4 Interchange) -->
+   332→<article class="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/30 shadow-sm hover:shadow-md transition-shadow relative group">
+   333→<div class="flex items-start justify-between gap-3">
+   334→<div class="flex items-start gap-3">
+   335→<div class="flex flex-col items-center">
+   336→<!-- Multi-line Interchange Badge -->
+   337→<div class="w-10 h-10 rounded-xl bg-surface-container-high border-2 border-primary flex items-center justify-center relative shadow-sm overflow-hidden">
+   338→<span class="absolute top-0 right-0 w-1/2 h-full bg-secondary"></span>
+   339→<span class="absolute top-0 left-0 w-1/2 h-full bg-amber-500"></span>
+   340→<span class="relative z-10 text-on-primary text-[11px] font-bold">۱×۴</span>
+   341→</div>
+   342→<div class="w-0.5 h-6 bg-outline-variant/30 mt-1"></div>
+   343→</div>
+   344→<div class="flex flex-col gap-1">
+   345→<div class="flex items-center gap-2">
+   346→<h4 class="text-title-md font-title-md text-on-surface font-bold">دروازه دولت</h4>
+   347→<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-primary-fixed text-primary font-medium">ایستگاه تقاطعی مهم</span>
+   348→</div>
+   349→
+   350→<div class="flex items-center flex-wrap gap-2 mt-1">
+   351→<span class="inline-flex items-center gap-1 text-label-sm font-label-sm text-primary bg-primary-fixed/30 px-2 py-0.5 rounded-md">
+   352→<span class="material-symbols-outlined text-[15px]">swap_horiz</span>
+   353→                    تعویض خط کمتر از ۳ دقیقه
+   354→                  </span>
+   355→<span class="text-label-sm font-label-sm text-outline flex items-center gap-0.5">
+   356→<span class="material-symbols-outlined text-[14px]">schedule</span>
+   357→                    ۳ روز پیش
+   358→                  </span>
+   359→</div>
+   360→</div>
+   361→</div>
+   362→<div class="flex flex-col items-end gap-2 shrink-0">
+   363→<button aria-label="حذف این مورد از تاریخچه" class="text-outline hover:text-secondary p-1 rounded-full hover:bg-surface-container active:scale-90 transition-all" type="button">
+   364→<span class="material-symbols-outlined text-[20px]">close</span>
+   365→</button>
+   366→<button class="mt-2 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md flex items-center gap-1 active:scale-95 transition-all" type="button">
+   367→<span class="">مشاهده</span>
+   368→<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+   369→</button>
+   370→</div>
+   371→</div>
+   372→</article>
+   373→<!-- Station 4: تئاتر شهر (Line 3 & 4 Interchange) -->
+   374→<article class="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/30 shadow-sm hover:shadow-md transition-shadow relative group">
+   375→<div class="flex items-start justify-between gap-3">
+   376→<div class="flex items-start gap-3">
+   377→<div class="flex flex-col items-center">
+   378→<div class="w-10 h-10 rounded-xl bg-surface-container-high border-2 border-primary flex items-center justify-center relative shadow-sm overflow-hidden">
+   379→<span class="absolute top-0 right-0 w-1/2 h-full bg-cyan-600"></span>
+   380→<span class="absolute top-0 left-0 w-1/2 h-full bg-amber-500"></span>
+   381→<span class="relative z-10 text-on-primary text-[11px] font-bold">۳×۴</span>
+   382→</div>
+   383→</div>
+   384→<div class="flex flex-col gap-1">
+   385→<div class="flex items-center gap-2">
+   386→<h4 class="text-title-md font-title-md text-on-surface font-bold">تئاتر شهر</h4>
+   387→<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface-variant font-medium">خط ۳ و ۴</span>
+   388→</div>
+   389→
+   390→<div class="flex items-center flex-wrap gap-2 mt-1">
+   391→<span class="inline-flex items-center gap-1 text-label-sm font-label-sm text-tertiary bg-surface-container px-2 py-0.5 rounded-md">
+   392→<span class="material-symbols-outlined text-[15px]">store</span>
+   393→                    غرفه‌های فعال
+   394→                  </span>
+   395→<span class="text-label-sm font-label-sm text-outline flex items-center gap-0.5">
+   396→<span class="material-symbols-outlined text-[14px]">schedule</span>
+   397→                    ۵ روز پیش
+   398→                  </span>
+   399→</div>
+   400→</div>
+   401→</div>
+   402→<div class="flex flex-col items-end gap-2 shrink-0">
+   403→<button aria-label="حذف این مورد از تاریخچه" class="text-outline hover:text-secondary p-1 rounded-full hover:bg-surface-container active:scale-90 transition-all" type="button">
+   404→<span class="material-symbols-outlined text-[20px]">close</span>
+   405→</button>
+   406→<button class="mt-2 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md flex items-center gap-1 active:scale-95 transition-all" type="button">
+   407→<span class="">مشاهده</span>
+   408→<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+   409→</button>
+   410→</div>
+   411→</div>
+   412→</article>
+   413→</div>
+   414→</section>
+   415→<!-- 5. Recent Route Searches & Trips Section -->
+   416→<section aria-labelledby="heading-recent-routes" class="flex flex-col gap-3 mt-1">
+   417→<div class="flex items-center justify-between px-1"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-primary-container"></span><h3 class="text-title-lg font-title-lg text-on-surface font-bold" id="heading-recent-routes">آخرین مسیرها و جستجوهای ثبت‌شده</h3><button onclick="window.openHistoryHelpModal('مسیرها و هشدارهای سفر', 'تاریخچه مسیرهای طی‌شده و هشدارهای بیدارباش نزدیک به ایستگاه مقصد را می‌توانید مستقیماً از اینجا مجدداً فعال نمایید.')" aria-label="راهنمای مسیرها" class="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90" type="button"><span class="material-symbols-outlined text-[16px]">help</span></button></div><span class="text-label-md font-label-md text-outline">۳ مورد اخیر</span></div>
+   418→<div class="flex flex-col gap-2.5">
+   419→<!-- Route Card 1: Enghelab to Tajrish -->
+   420→<article class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-sm hover:border-primary-container/40 transition-all">
+   421→<div class="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+   422→<div class="flex items-center gap-2">
+   423→<span class="material-symbols-outlined text-primary text-[20px]">route</span>
+   424→<span class="text-title-md font-title-md text-on-surface font-bold">میدان انقلاب اسلامی</span>
+   425→<span class="material-symbols-outlined text-outline-variant text-[18px]">arrow_back</span>
+   426→<span class="text-title-md font-title-md text-on-surface font-bold">تجریش</span>
+   427→</div>
+   428→<span class="text-label-sm font-label-sm text-outline">امروز</span>
+   429→</div>
+   430→<div class="flex items-center justify-between pt-3">
+   431→<div class="flex items-center gap-3 text-body-sm font-body-sm text-on-surface-variant">
+   432→<div class="flex items-center gap-1 text-primary font-semibold">
+   433→<span class="material-symbols-outlined text-[16px]">timer</span>
+   434→<span class="">۲۴ دقیقه</span>
+   435→</div>
+   436→<div class="flex items-center gap-1 text-on-surface-variant">
+   437→<span class="material-symbols-outlined text-[16px] text-amber-500">transfer_within_a_station</span>
+   438→<span class="">۱ تعویض (دروازه دولت)</span>
+   439→</div>
+   440→</div>
+   441→<button class="px-3.5 py-1.5 rounded-lg bg-primary-container text-on-primary text-label-md font-label-lg flex items-center gap-1.5 shadow-sm active:scale-95 transition-all" type="button">
+   442→<span class="material-symbols-outlined text-[16px]">navigation</span>
+   443→<span class="">مسیریابی مجدد</span>
+   444→</button>
+   445→</div>
+   446→</article>
+   447→<!-- Route Card 2: Sadeghiyeh to Farhangsara -->
+   448→<article class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-sm hover:border-primary-container/40 transition-all">
+   449→<div class="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+   450→<div class="flex items-center gap-2">
+   451→<span class="material-symbols-outlined text-primary text-[20px]">route</span>
+   452→<span class="text-title-md font-title-md text-on-surface font-bold">تهران (صادقیه)</span>
+   453→<span class="material-symbols-outlined text-outline-variant text-[18px]">arrow_back</span>
+   454→<span class="text-title-md font-title-md text-on-surface font-bold">فرهنگسرا</span>
+   455→</div>
+   456→<span class="text-label-sm font-label-sm text-outline">۲ روز پیش</span>
+   457→</div>
+   458→<div class="flex items-center justify-between pt-3">
+   459→<div class="flex items-center gap-3 text-body-sm font-body-sm text-on-surface-variant">
+   460→<div class="flex items-center gap-1 text-primary font-semibold">
+   461→<span class="material-symbols-outlined text-[16px]">timer</span>
+   462→<span class="">۴۲ دقیقه</span>
+   463→</div>
+   464→<div class="flex items-center gap-1 text-tertiary">
+   465→<span class="material-symbols-outlined text-[16px]">straight</span>
+   466→<span class="">خط ۲ مستقیم (بدون تعویض)</span>
+   467→</div>
+   468→</div>
+   469→<button class="px-3.5 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary text-label-md font-label-lg flex items-center gap-1.5 active:scale-95 transition-all" type="button">
+   470→<span class="material-symbols-outlined text-[16px]">navigation</span>
+   471→<span class="">مسیریابی سریع</span>
+   472→</button>
+   473→</div>
+   474→</article>
+   475→<!-- Route Card 3: Alarm Alert for Sarsabz Station -->
+   476→<article class="bg-surface-container-low rounded-xl p-3.5 border border-primary/20 shadow-sm flex items-center justify-between">
+   477→<div class="flex items-center gap-3">
+   478→<div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
+   479→<span class="material-symbols-outlined text-[22px]">alarm</span>
+   480→</div>
+   481→<div>
+   482→<div class="flex items-center gap-2">
+   483→<h4 class="text-title-md font-title-md text-on-surface font-bold">بیدارباش سفر: ایستگاه سرسبز</h4>
+   484→<span class="px-2 py-0.2 rounded text-label-sm font-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant">فعال</span>
+   485→</div>
+   486→<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">
+   487→                هشدار زنگ صوتی ۳۰۰ متر قبل از رسیدن قطار به ایستگاه • ساعت ۰۸:۲۰
+   488→              </p>
+   489→</div>
+   490→</div>
+   491→<div class="flex items-center gap-1">
+   492→<button aria-label="لغو یا مدیریت هشدار" class="text-outline hover:text-secondary p-1.5 rounded-full hover:bg-surface-container active:scale-90 transition-all" type="button">
+   493→<span class="material-symbols-outlined text-[20px]">notifications_off</span>
+   494→</button>
+   495→</div>
+   496→</article>
+   497→</div>
+   498→</section>
+   499→<!-- Discrete Civic Banner Slot (Design Guidance compliant) -->
+   500→<section aria-label="پیام سامانه" class="w-full rounded-xl bg-surface-container-low border border-outline-variant/30 p-3 flex items-center justify-between text-on-surface-variant">
+   501→<div class="flex items-center gap-2.5">
+   502→<span class="material-symbols-outlined text-primary text-[20px]">verified_user</span>
+   503→<div class="flex flex-col">
+   504→<span class="text-label-md font-label-md font-bold text-on-surface">کارت بلیت متروی خود را متصل کنید</span>
+   505→<span class="text-body-sm font-body-sm text-outline">ثبت خودکار تراکنش‌ها و تردد ایستگاهی با NFC</span>
+   506→</div>
+   507→</div>
+   508→<span class="text-label-sm font-label-sm bg-surface-container-highest px-2 py-1 rounded text-primary font-medium">خدمت شهری</span>
+   509→</section>
+   510→<!-- 6. Privacy & History Options (Settings & Auto-save switch) -->
+   511→<section aria-labelledby="privacy-heading" class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-sm flex flex-col gap-4"><div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[22px]">shield</span><h3 class="text-title-md font-title-md text-on-surface font-bold" id="privacy-heading">تنظیمات حریم خصوصی و تاریخچه</h3></div><button onclick="window.openHistoryHelpModal('حریم خصوصی و ذخیره‌سازی', 'اطلاعات سوابق تنها در حافظه محلی مرورگر دستگاه شما ذخیره شده و هیچ داده شخصی به سرورهای خارجی ارسال نمی‌شود.')" aria-label="راهنمای حریم خصوصی" class="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90" type="button"><span class="material-symbols-outlined text-[16px]">help</span></button></div><div class="flex items-center justify-between pt-1"><div class="flex flex-col gap-0.5"><span class="text-label-lg font-label-lg text-on-surface font-semibold">ذخیره خودکار تاریخچه بازدیدها</span><span class="text-body-sm font-body-sm text-outline">ذخیره‌سازی سریع ایستگاه‌ها و مسیرها در حافظه دستگاه</span></div><label class="relative inline-flex items-center cursor-pointer select-none"><input checked="" class="sr-only peer" id="autoSaveToggle" type="checkbox"><div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div></label></div><div class="border-t border-outline-variant/20 pt-3 flex items-center justify-between"><span class="text-body-sm font-body-sm text-on-surface-variant">مدیریت و پاکسازی سوابق</span><button class="text-label-md font-label-lg text-secondary hover:text-on-secondary-fixed-variant flex items-center gap-1 active:scale-95 transition-all" type="button"><span class="material-symbols-outlined text-[18px]">delete_forever</span><span class="">پاک‌کردن کل تاریخچه</span></button></div></section>
+   512→</main>
+   513→<!-- ================= BOTTOM NAVIGATION BAR (Shared Components JSON Anchor) ================= -->
+   514→<!-- 
+   515→    Immutable tokens from JSON:
+   516→    label_texts: ["خانه", "خطوط و نقشه", "ایستگاه‌ها"]
+   517→    icons: ["home", "map", "directions_subway"]
+   518→    Active tab determination: Current screen is traveler activity / stations visited history -> Maps to "ایستگاه‌ها"
+   519→    style_active_navigation: "flex flex-col items-center justify-center bg-primary-container text-on-primary rounded-xl px-4 py-1.5 transition-colors"
+   520→    style_inactive_navigation: "flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 transition-colors"
+   521→    style_shadows_and_elevation: "shadow-[0_-4px_16px_rgba(15,23,42,0.04)]"
+   522→    style_shell_layout: "fixed bottom-0 left-0 right-0 w-full z-50 flex justify-around items-center px-4 py-2"
+   523→    style_bg_color: "bg-surface/95 backdrop-blur-md"
+   524→  -->
+   525→<nav aria-label="ناوبری اصلی برنامه" class="fixed bottom-5 left-4 right-4 max-w-sm mx-auto z-50 h-16 px-3 flex items-center justify-between bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-100">
+   526→  <!-- Item 1: خانه (Rightmost in RTL) -->
+   527→  <a href="#home" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 transition-colors active:scale-95 duration-150">
+   528→    <span class="material-symbols-outlined text-[24px]">home</span>
+   529→    <span class="text-label-sm font-label-sm mt-0.5">خانه</span>
+   530→  </a>
+   531→  <!-- Item 2: خطوط و نقشه (Center) -->
+   532→  <a href="#lines-map" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 transition-colors active:scale-95 duration-150">
+   533→    <span class="material-symbols-outlined text-[24px]">map</span>
+   534→    <span class="text-label-sm font-label-sm mt-0.5">خطوط و نقشه</span>
+   535→  </a>
+   536→  <!-- Item 3: ایستگاه‌ها (Active tab - Leftmost in RTL) -->
+   537→  <a href="#stations" aria-current="page" class="flex items-center gap-1.5 bg-[#0d58a6] text-white rounded-full px-4 py-2 transition-all active:scale-95 duration-150 shadow-sm">
+   538→    <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">directions_subway</span>
+   539→    <span class="text-label-sm font-label-sm font-bold">ایستگاه‌ها</span>
+   540→  </a>
+   541→</nav>
+   542→<!-- Interactive feedback micro-script -->
+   543→<script>
+   544→    document.addEventListener('DOMContentLoaded', () => {
+   545→      // Toggle handling
+   546→      const toggle = document.getElementById('autoSaveToggle');
+   547→      if (toggle) {
+   548→        toggle.addEventListener('change', (e) => {
+   549→          const status = e.target.checked ? 'فعال شد' : 'غیرفعال شد';
+   550→          console.log(`ذخیره خودکار سوابق: ${status}`);
+   551→        });
+   552→      }
+   553→
+   554→      // Close station item micro-interaction
+   555→      const closeButtons = document.querySelectorAll('button[aria-label="حذف این مورد از تاریخچه"]');
+   556→      closeButtons.forEach(btn => {
+   557→        btn.addEventListener('click', (e) => {
+   558→          const card = e.target.closest('article');
+   559→          if (card) {
+   560→            card.style.opacity = '0';
+   561→            card.style.transform = 'scale(0.95)';
+   562→            card.style.transition = 'all 0.2s ease-out';
+   563→            setTimeout(() => {
+   564→              card.remove();
+   565→            }, 200);
+   566→          }
+   567→        });
+   568→      });
+   569→    });
+   570→  </script>
+   571→
+   572→
+   573→
+   574→
+   575→<div id="historyHelpModal" class="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200 px-4"><div id="historyHelpBox" class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/30 shadow-xl max-w-sm w-full transform scale-95 transition-all duration-200 flex flex-col gap-3"><div class="flex items-center justify-between border-b border-outline-variant/20 pb-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">info</span></div><h4 id="helpModalTitle" class="text-title-md font-title-md text-on-surface font-bold">راهنمای تاریخچه</h4></div><button onclick="window.closeHistoryHelpModal()" aria-label="بستن" class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container active:scale-90 transition-all" type="button"><span class="material-symbols-outlined text-[20px]">close</span></button></div><p id="helpModalDesc" class="text-body-md font-body-md text-on-surface-variant leading-relaxed">توضیحات تکمیلی این بخش...</p><div class="flex items-center justify-end pt-2"><button onclick="window.closeHistoryHelpModal()" class="px-4 py-2 rounded-xl bg-primary text-on-primary text-label-md font-label-md active:scale-95 transition-all shadow-sm" type="button">متوجه شدم</button></div></div></div><script>window.openHistoryHelpModal = function(title, desc) { const m = document.getElementById('historyHelpModal'); const b = document.getElementById('historyHelpBox'); if (m && b) { document.getElementById('helpModalTitle').textContent = title || 'راهنمای تاریخچه'; document.getElementById('helpModalDesc').textContent = desc || ''; m.classList.remove('opacity-0', 'pointer-events-none'); m.classList.add('opacity-100'); b.classList.remove('scale-95'); b.classList.add('scale-100'); } }; window.closeHistoryHelpModal = function() { const m = document.getElementById('historyHelpModal'); const b = document.getElementById('historyHelpBox'); if (m && b) { m.classList.remove('opacity-100'); m.classList.add('opacity-0', 'pointer-events-none'); b.classList.remove('scale-100'); b.classList.add('scale-95'); } }; document.getElementById('historyHelpModal')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) window.closeHistoryHelpModal(); });</script></body></html>
