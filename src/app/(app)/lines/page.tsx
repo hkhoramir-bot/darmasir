@@ -28,7 +28,7 @@ function statusChip(line: LineDef): { label: string; dot: string; text: string }
   if (line.status === "closed") return { label: "مسدود", dot: "bg-error", text: "text-error" };
   if (line.status === "delay") return { label: "تاخیر", dot: "bg-error", text: "text-error" };
   if (line.status === "crowded" || crowdingNow(line.id) === "busy")
-    return { label: "ازدحام", dot: "bg-amber-500", text: "text-amber-600" };
+    return { label: "ازدحام", dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" };
   return { label: "فعال", dot: "bg-tertiary", text: "text-tertiary" };
 }
 
@@ -82,7 +82,7 @@ function LineCard({
               {line.badges?.map((b) => (
                 <span
                   key={b}
-                  className="bg-amber-100 text-amber-800 text-[11px] px-1.5 py-0.5 rounded font-medium"
+                  className="bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 text-[11px] px-1.5 py-0.5 rounded font-medium"
                 >
                   {b}
                 </span>

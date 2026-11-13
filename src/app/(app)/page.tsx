@@ -365,7 +365,7 @@ export default function Page() {
                 className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
                 type="button"
               >
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 group-hover:bg-blue-100 text-primary flex items-center justify-center transition-colors shadow-sm relative">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 group-hover:bg-blue-100 dark:bg-primary/10 dark:group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm relative">
                   <MI name="groups" size={24} />
                   <span className="absolute top-1 left-1 w-2 h-2 rounded-full bg-emerald-500"></span>
                 </div>

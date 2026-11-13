@@ -231,7 +231,7 @@ export default function LineDetailPage() {
                       </div>
                       {isInterchange && (
                         <div className="flex items-center gap-1 mt-1 flex-wrap">
-                          <span className="text-[9px] font-bold text-cyan-800 bg-cyan-50 px-1.5 py-0.5 rounded-full">
+                          <span className="text-[9px] font-bold text-cyan-800 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/15 px-1.5 py-0.5 rounded-full">
                             تقاطعی
                           </span>
                           {others.map((ol) => {

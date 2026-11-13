@@ -278,6 +278,22 @@ html {
 
   /* رنگ خطای نقشه */
   --color-metro-error: #ff8a80;
+
+  /* رنگ‌های fixed (کارت‌های آیکون و نشان‌ها) — در تاریک به کانتینرهای
+     تیره هم‌خانواده تبدیل می‌شوند تا کاشی‌ها و چیپ‌ها خوانا بمانند.
+     (روشنایی کافی برای متن/آیکون روشن روی خودشان) */
+  --color-primary-fixed: #1e3050;
+  --color-primary-fixed-dim: #a8c8ff;
+  --color-on-primary-fixed: #d5e3ff;
+  --color-on-primary-fixed-variant: #a8c8ff;
+  --color-secondary-fixed: #5c1f1e;
+  --color-secondary-fixed-dim: #ffb4ab;
+  --color-on-secondary-fixed: #ffdad6;
+  --color-on-secondary-fixed-variant: #ffb4ab;
+  --color-tertiary-fixed: #1d5136;
+  --color-tertiary-fixed-dim: #61de92;
+  --color-on-tertiary-fixed: #c9f5db;
+  --color-on-tertiary-fixed-variant: #a7e8c0;
 }
 
 @theme inline {

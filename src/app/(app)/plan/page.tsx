@@ -42,17 +42,17 @@ const TRANSFER_WALK_MIN = 2;
 
 /* رنگ روشن برای نشان خط (مطابق الگوی صفحات دیگر متروجو) */
 const LINE_CHIP: Record<string, string> = {
-  l1: "bg-red-50 text-red-800",
-  l2: "bg-blue-50 text-blue-800",
-  l3: "bg-cyan-50 text-cyan-800",
-  l4: "bg-yellow-50 text-yellow-800",
-  l5: "bg-green-50 text-green-800",
-  l6: "bg-pink-50 text-pink-800",
-  l7: "bg-purple-50 text-purple-800",
-  k1: "bg-sky-50 text-sky-800",
-  m1: "bg-orange-50 text-orange-800",
-  m2: "bg-teal-50 text-teal-800",
-  e1: "bg-lime-50 text-lime-800",
+  l1: "bg-red-50 text-red-800 dark:bg-red-500/15 dark:text-red-300",
+  l2: "bg-blue-50 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300",
+  l3: "bg-cyan-50 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300",
+  l4: "bg-yellow-50 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300",
+  l5: "bg-green-50 text-green-800 dark:bg-green-500/15 dark:text-green-300",
+  l6: "bg-pink-50 text-pink-800 dark:bg-pink-500/15 dark:text-pink-300",
+  l7: "bg-purple-50 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300",
+  k1: "bg-sky-50 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300",
+  m1: "bg-orange-50 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300",
+  m2: "bg-teal-50 text-teal-800 dark:bg-teal-500/15 dark:text-teal-300",
+  e1: "bg-lime-50 text-lime-800 dark:bg-lime-500/15 dark:text-lime-300",
 };
 
 function lineChipCls(lineId: string) {
@@ -65,7 +65,7 @@ function chipFor(station: StationDef): { cls: string; label: string } {
       .map((l) => getLine(l.lineId)?.number ?? 0)
       .filter((n) => n > 0)
       .sort((a, b) => a - b);
-    return { cls: "bg-cyan-50 text-cyan-800", label: `تقاطع خط ${nums.map((n) => toFa(n)).join(" و ")}` };
+    return { cls: "bg-cyan-50 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300", label: `تقاطع خط ${nums.map((n) => toFa(n)).join(" و ")}` };
   }
   const lineId = station.lines[0]?.lineId ?? "";
   return { cls: lineChipCls(lineId), label: `خط ${toFa(getLine(lineId)?.number ?? 0)}` };
@@ -73,9 +73,9 @@ function chipFor(station: StationDef): { cls: string; label: string } {
 
 /* رنگ برچسب شلوغی سکو */
 const CROWD_CHIP: Record<CrowdLevel, string> = {
-  quiet: "bg-emerald-50 text-emerald-700",
-  moderate: "bg-amber-50 text-amber-700",
-  busy: "bg-red-50 text-red-700",
+  quiet: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+  moderate: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+  busy: "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300",
 };
 
 /* ---------------------------- اسکلت بارگذاری ---------------------------- */

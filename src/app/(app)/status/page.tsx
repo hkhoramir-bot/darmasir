@@ -52,16 +52,16 @@ const WAGON_STYLE: Record<
   crowded: {
     box: "bg-amber-500/10 border border-amber-500/40",
     icon: "groups",
-    iconCls: "text-amber-600",
+    iconCls: "text-amber-600 dark:text-amber-400",
     label: "شلوغ",
-    labelCls: "text-amber-700",
+    labelCls: "text-amber-700 dark:text-amber-300",
   },
   medium: {
     box: "bg-yellow-500/10 border border-yellow-500/40",
     icon: "group",
-    iconCls: "text-yellow-600",
+    iconCls: "text-yellow-600 dark:text-yellow-400",
     label: "متوسط",
-    labelCls: "text-yellow-700",
+    labelCls: "text-yellow-700 dark:text-yellow-300",
   },
   ok: {
     box: "bg-tertiary-fixed/20 border border-tertiary/40",
@@ -73,9 +73,9 @@ const WAGON_STYLE: Record<
   empty: {
     box: "bg-emerald-500/10 border border-emerald-500/40",
     icon: "person",
-    iconCls: "text-emerald-600",
+    iconCls: "text-emerald-600 dark:text-emerald-400",
     label: "خالی",
-    labelCls: "text-emerald-700",
+    labelCls: "text-emerald-700 dark:text-emerald-300",
   },
 };
 
@@ -108,7 +108,7 @@ const STATUS_META: Record<
   },
   crowded: {
     accent: "border-r-[#e65100]",
-    badgeCls: "bg-orange-500/10 text-orange-700",
+    badgeCls: "bg-orange-500/10 text-orange-700 dark:text-orange-300",
     label: "ازدحام مسافر",
     eta: "پس از ساعات اوج",
     note: "ترجیحاً از واگن‌های میانی استفاده کنید.",
@@ -768,7 +768,7 @@ export default function StatusPage() {
               <button
                 type="button"
                 onClick={() => showReport("گزارش شما ثبت شد.")}
-                className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-surface-container-low hover:bg-yellow-500/10 border border-yellow-500/40 text-yellow-700 font-bold text-label-md transition-all active:scale-95"
+                className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-surface-container-low hover:bg-yellow-500/10 border border-yellow-500/40 text-yellow-700 dark:text-yellow-300 font-bold text-label-md transition-all active:scale-95"
               >
                 <MI name="sentiment_neutral" size={18} />
                 متوسط
@@ -803,7 +803,7 @@ export default function StatusPage() {
               <button
                 type="button"
                 onClick={() => showReport("گزارش تهویه (گرم) ثبت شد.")}
-                className="flex-1 py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-amber-500/10 border border-amber-500/40 text-amber-700 font-bold text-label-sm transition-all active:scale-95 flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-amber-500/10 border border-amber-500/40 text-amber-700 dark:text-amber-300 font-bold text-label-sm transition-all active:scale-95 flex items-center justify-center gap-1"
               >
                 <MI name="thermostat" size={15} />
                 گرم
