@@ -46,10 +46,9 @@ html {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  /* نسخه ۱۱ — زیرمجموعه بازسازی‌شده با «همهٔ» ۱۳۳ آیکون استفاده‌شده در اپ
-     (نسخه ۹ فهرست کهنه داشت و ۳۳ آیکون مثل restart_alt/navigation/favorite
-     به‌صورت متن خام نمایش داده می‌شد) */
-  src: url("/fonts/material-symbols-subset.woff2?v=12") format("woff2");
+  /* نسخه ۱۳ — زیرمجموعه با «همهٔ» ۱۳۴ آیکون استفاده‌شده در اپ
+     (نسخه ۱۲ کلیدهای چشم visibility/visibility_off را نداشت) */
+  src: url("/fonts/material-symbols-subset.woff2?v=13") format("woff2");
 }
 
 /* ============================================================

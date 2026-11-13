@@ -23,6 +23,10 @@ import { MI } from "./ui";
 interface MetroMapProps {
   onStationSelect?: (stationId: string) => void;
   highlightStations?: string[];
+  /** خطوط خاموش‌شده با کلید چشم — ذخیره‌شده در تنظیمات (localStorage) */
+  hiddenLineIds?: string[];
+  /** تغییر وضعیت چشم هر خط */
+  onToggleLine?: (lineId: string) => void;
   className?: string;
 }
 
@@ -39,12 +43,69 @@ const STALE_POINTER_MS = 1500; // اشاره‌گر بدون هیچ رویداد
 
 const TEHRAN_LINES = LINES.filter((l) => l.cityId === "tehran");
 
-/* ایستگاه‌های تبادلی (اشتراک دو خط یا بیشتر) — ثابت و مستقل از رندر */
-const INTERCHANGE_IDS = new Set(
-  MAP_LINES.flatMap((ml) => ml.stations).filter(
-    (id) => MAP_LINES.filter((ml) => ml.stations.includes(id)).length > 1
-  )
-);
+/* ---------- خطوط نمایان، ایستگاه‌های تبادلی و رنگ هر ایستگاه ----------
+   خطوط خاموش‌شده (کلید چشم) در «همه» محاسبات کنار گذاشته می‌شوند:
+   مسیر خط، ایستگاه‌های انحصاری آن، برچسب‌ها و نشان‌ها. ایستگاه مشترکی
+   که تنها یک خطِ نمایان دارد، دیگر تبادلی حساب نمی‌شود. */
+function computeVisibleStats(hidden: Set<string>) {
+  const lines = MAP_LINES.filter((ml) => !hidden.has(ml.lineId));
+  const stationIds = new Set<string>();
+  const count = new Map<string, number>();
+  const color = new Map<string, string>();
+  for (const ml of lines) {
+    for (const id of ml.stations) {
+      stationIds.add(id);
+      count.set(id, (count.get(id) ?? 0) + 1);
+      if (!color.has(id)) color.set(id, ml.color);
+    }
+  }
+  const inter = new Set([...count.entries()].filter(([, n]) => n > 1).map(([id]) => id));
+  return { lines, stationIds, inter, color };
+}
+
+/* ---------- شبکه اشغال «بدنه خطوط» برای جلوگیری از افتادن متن روی خط ----------
+   سلول‌هایی که مرکزشان کمتر از GRID_PAD از هر قطعه خط فاصله دارد علامت
+   می‌خورند؛ برچسب‌ها پیش از جای‌گذاری با این شبکه چک می‌شوند. */
+const GRID_CELL = 12;
+const GRID_PAD = 8;
+
+function buildStrokeGrid(lines: { stations: string[] }[]) {
+  const gw = Math.ceil(MAP_CANVAS.w / GRID_CELL);
+  const gh = Math.ceil(MAP_CANVAS.h / GRID_CELL);
+  const grid = new Uint8Array(gw * gh);
+  const ptSegDist = (
+    px: number, py: number,
+    ax: number, ay: number, bx: number, by: number
+  ): number => {
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+    return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+  };
+  for (const ml of lines) {
+    const pts: { x: number; y: number }[] = [];
+    for (const id of ml.stations) {
+      const s = MAP_STATION_BY_ID.get(id);
+      if (s) pts.push(s);
+    }
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      const c0x = Math.max(0, Math.floor((Math.min(a.x, b.x) - GRID_PAD) / GRID_CELL));
+      const c1x = Math.min(gw - 1, Math.floor((Math.max(a.x, b.x) + GRID_PAD) / GRID_CELL));
+      const c0y = Math.max(0, Math.floor((Math.min(a.y, b.y) - GRID_PAD) / GRID_CELL));
+      const c1y = Math.min(gh - 1, Math.floor((Math.max(a.y, b.y) + GRID_PAD) / GRID_CELL));
+      for (let cy = c0y; cy <= c1y; cy++) {
+        for (let cx = c0x; cx <= c1x; cx++) {
+          const px = cx * GRID_CELL + GRID_CELL / 2;
+          const py = cy * GRID_CELL + GRID_CELL / 2;
+          if (ptSegDist(px, py, a.x, a.y, b.x, b.y) <= GRID_PAD) grid[cy * gw + cx] = 1;
+        }
+      }
+    }
+  }
+  return { grid, gw, gh };
+}
 
 /** نقاط هر خط به‌صورت رشته points برای polyline */
 function linePoints(stations: string[]): string {
@@ -124,6 +185,8 @@ type LocateState =
 export default function MetroMap({
   onStationSelect,
   highlightStations,
+  hiddenLineIds,
+  onToggleLine,
   className = "",
 }: MetroMapProps) {
   const [t, setT] = useState<Transform>({ scale: 1, tx: 0, ty: 0 });
@@ -131,6 +194,11 @@ export default function MetroMap({
   const [locate, setLocate] = useState<LocateState>({ kind: "idle" });
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [fontsTick, setFontsTick] = useState(0);
+
+  /* ---------- خطوط نمایان (کلید چشم) + شبکه اشغال خطوط ---------- */
+  const hiddenSet = useMemo(() => new Set(hiddenLineIds ?? []), [hiddenLineIds]);
+  const visible = useMemo(() => computeVisibleStats(hiddenSet), [hiddenSet]);
+  const strokeGrid = useMemo(() => buildStrokeGrid(visible.lines), [visible.lines]);
 
   /* ---------- آینه همزمان ترنسفورم — جلوگیری از رقابت با React ---------- */
   const tRef = useRef<Transform>({ scale: 1, tx: 0, ty: 0 });
@@ -514,10 +582,14 @@ export default function MetroMap({
   }, [commit]);
 
   const highlighted = useMemo(() => {
-    const set = new Set(highlightStations ?? []);
-    if (locate.kind === "ok") set.add(locate.stationId);
+    const set = new Set<string>();
+    for (const id of highlightStations ?? []) {
+      // ایستگاه‌های خطوط خاموش رندر نمی‌شوند
+      if (visible.stationIds.has(id)) set.add(id);
+    }
+    if (locate.kind === "ok" && visible.stationIds.has(locate.stationId)) set.add(locate.stationId);
     return set;
-  }, [highlightStations, locate]);
+  }, [highlightStations, locate, visible.stationIds]);
 
   /* ============================================================
      موتور برچسب‌ها — مقیاس «فضای صفحه»:
@@ -528,8 +600,32 @@ export default function MetroMap({
      ۳. فقط اگر با برچسب مهم‌تری همپوشانی نداشته باشد نمایش
         داده می‌شود — با نزدیک‌تر شدن (زوم بیشتر) برچسب‌های
         بیشتری جا می‌گیرند و ظاهر می‌شوند
+     ۴. روی «بدنه خطوط» نمی‌افتد (شبکه اشغال خطوط) و در صورت
+        کمبود جا، بالای/پایین ایستگاه هم امتحان می‌شود
      ============================================================ */
   const fit = box.w > 0 && box.h > 0 ? Math.min(box.w / MAP_CANVAS.w, box.h / MAP_CANVAS.h) : 0;
+
+  /** چک اشغال خطوط — جعبه برچسب (فضای صفحه) به فضای بوم برگردانده می‌شود */
+  const hitsStroke = useCallback(
+    (b: Box) => {
+      const { grid, gw, gh } = strokeGrid;
+      const cx0 = (b.x0 - t.tx) / t.scale;
+      const cy0 = (b.y0 - t.ty) / t.scale;
+      const cx1 = (b.x1 - t.tx) / t.scale;
+      const cy1 = (b.y1 - t.ty) / t.scale;
+      const c0x = Math.max(0, Math.floor(cx0 / GRID_CELL));
+      const c1x = Math.min(gw - 1, Math.floor(cx1 / GRID_CELL));
+      const c0y = Math.max(0, Math.floor(cy0 / GRID_CELL));
+      const c1y = Math.min(gh - 1, Math.floor(cy1 / GRID_CELL));
+      for (let cy = c0y; cy <= c1y; cy++) {
+        for (let cx = c0x; cx <= c1x; cx++) {
+          if (grid[cy * gw + cx]) return true;
+        }
+      }
+      return false;
+    },
+    [strokeGrid, t.scale, t.tx, t.ty]
+  );
 
   const labelLayout = useMemo(() => {
     const empty: { labels: LabelItem[]; badges: BadgeItem[] } = { labels: [], badges: [] };
@@ -552,7 +648,7 @@ export default function MetroMap({
       if (x1 <= x0 || y1 <= y0) return null;
       return { x0, y0, x1, y1 };
     };
-    const legendZone = htmlZone(10, 10, 158, legendOpen ? 185 : 40);
+    const legendZone = htmlZone(10, 10, 158, legendOpen ? (onToggleLine ? 240 : 185) : 40);
     if (legendZone) boxes.push(legendZone);
     // ستون دکمه‌های شناور پایین-چپ (۴ دکمه ۳۶px با فاصله)
     const controlsZone = htmlZone(8, box.h - 196, 44, 188);
@@ -561,7 +657,7 @@ export default function MetroMap({
     /* ---------- نشان شماره خطوط (اندازه ثابت، پشته‌ای در ایستگاه مشترک) ---------- */
     const badges: BadgeItem[] = [];
     const badgeN = new Map<string, number>();
-    for (const ml of MAP_LINES) {
+    for (const ml of visible.lines) {
       for (const id of [ml.stations[0], ml.stations[ml.stations.length - 1]]) {
         const s = MAP_STATION_BY_ID.get(id);
         if (!s) continue;
@@ -598,7 +694,7 @@ export default function MetroMap({
     /* ---------- ناحیه حفاظتی نشان بزرگ ایستگاه‌های تبادلی ---------- */
     const interExcl: { id: string; box: Box }[] = [];
     for (const s of MAP_STATIONS) {
-      if (!INTERCHANGE_IDS.has(s.id)) continue;
+      if (!visible.inter.has(s.id)) continue;
       const half = 6.4 * t.scale + 3 / fit;
       const X = s.x * t.scale + t.tx;
       const Y = s.y * t.scale + t.ty;
@@ -612,9 +708,10 @@ export default function MetroMap({
         (e) => e.id !== selfId && b.x0 < e.box.x1 && b.x1 > e.box.x0 && b.y0 < e.box.y1 && b.y1 > e.box.y0
       );
 
-    /* ---------- برچسب‌ها به ترتیب اولویت (تبادلی ← پرچم‌دار ← عادی) ---------- */
-    const cands = MAP_STATIONS.map((s: MapStation) => {
-      const isInter = INTERCHANGE_IDS.has(s.id);
+    /* ---------- برچسب‌ها به ترتیب اولویت (تبادلی ← پرچم‌دار ← عادی) ----------
+       فقط ایستگاه‌های خطوط نمایان */
+    const cands = MAP_STATIONS.filter((s: MapStation) => visible.stationIds.has(s.id)).map((s: MapStation) => {
+      const isInter = visible.inter.has(s.id);
       const prio = highlighted.has(s.id)
         ? 1000
         : isInter && s.label
@@ -643,30 +740,37 @@ export default function MetroMap({
       // جهت متن فارسی rtl است: anchor «end» یعنی لبه چپ متن در x
       const prefRight = s.x <= MAP_CANVAS.w / 2;
       const sides: ("right" | "left")[] = prefRight ? ["right", "left"] : ["left", "right"];
+      // اگر در دو طرفِ هم‌سطح جا نشد: بالای و پایین ایستگاه هم امتحان می‌شود
+      const dyOptions = [0, hVb + 6, -(hVb + 6)];
 
-      for (const side of sides) {
-        const bx0 = side === "right" ? X + gapVb : X - gapVb - wVb;
-        const by0 = Y - hVb / 2;
-        const b: Box = { x0: bx0, y0: by0, x1: bx0 + wVb, y1: by0 + hVb };
-        if (b.x0 < 1 || b.x1 > MAP_CANVAS.w - 1 || b.y0 < 1 || b.y1 > MAP_CANVAS.h - 1) continue;
-        if (overlaps(b) || hitsInterchange(b, s.id)) continue;
-        boxes.push(b);
-        labels.push({
-          id: s.id,
-          name: s.name,
-          x: side === "right" ? X + gapVb : X - gapVb,
-          y: Y + toVb(fontPx * 0.35),
-          anchor: side === "right" ? "end" : "start",
-          fontSize: toVb(fontPx),
-          weight,
-          halo: toVb(major ? 3.4 : 2.8),
-        });
-        break;
+      let placed = false;
+      for (const dy of dyOptions) {
+        for (const side of sides) {
+          const bx0 = side === "right" ? X + gapVb : X - gapVb - wVb;
+          const by0 = Y + dy - hVb / 2;
+          const b: Box = { x0: bx0, y0: by0, x1: bx0 + wVb, y1: by0 + hVb };
+          if (b.x0 < 1 || b.x1 > MAP_CANVAS.w - 1 || b.y0 < 1 || b.y1 > MAP_CANVAS.h - 1) continue;
+          if (overlaps(b) || hitsInterchange(b, s.id) || hitsStroke(b)) continue;
+          boxes.push(b);
+          labels.push({
+            id: s.id,
+            name: s.name,
+            x: side === "right" ? X + gapVb : X - gapVb,
+            y: Y + dy + toVb(fontPx * 0.35),
+            anchor: side === "right" ? "end" : "start",
+            fontSize: toVb(fontPx),
+            weight,
+            halo: toVb(major ? 3.4 : 2.8),
+          });
+          placed = true;
+          break;
+        }
+        if (placed) break;
       }
     }
 
     return { labels, badges };
-  }, [t, fit, fontsTick, highlighted, legendOpen, box.w, box.h]);
+  }, [t, fit, fontsTick, highlighted, legendOpen, box.w, box.h, visible, hitsStroke, onToggleLine]);
 
   return (
     <div className={`relative overflow-hidden rounded-2xl ${className}`}>
@@ -692,8 +796,8 @@ export default function MetroMap({
         <rect width={MAP_CANVAS.w} height={MAP_CANVAS.h} fill="url(#map-grid)" />
 
         <g transform={`translate(${t.tx} ${t.ty}) scale(${t.scale})`}>
-          {/* خطوط — هر خط با زیرلایه روشن تا در تقاطع‌ها از هم جدا دیده شوند */}
-          {MAP_LINES.map((ml) => (
+          {/* خطوط — فقط خطوط نمایان (کلید چشم)؛ هر خط با زیرلایه روشن */}
+          {visible.lines.map((ml) => (
             <g key={ml.lineId}>
               <polyline
                 points={linePoints(ml.stations)}
@@ -714,11 +818,13 @@ export default function MetroMap({
             </g>
           ))}
 
-          {/* ایستگاه‌ها — فقط نشان‌ها؛ برچسب‌ها در لایه جداگانه پایین رندر می‌شوند */}
+          {/* ایستگاه‌ها — فقط ایستگاه‌های خطوط نمایان؛ حلقه با رنگ خط (سبک نقشه کلاسیک) */}
           {MAP_STATIONS.map((s) => {
-            const isInter = INTERCHANGE_IDS.has(s.id);
+            if (!visible.stationIds.has(s.id)) return null;
+            const isInter = visible.inter.has(s.id);
             const isHi = highlighted.has(s.id);
             const r = isInter ? 7.2 : 5.2;
+            const ringColor = visible.color.get(s.id) ?? "var(--mq-ink)";
             return (
               <g
                 key={s.id}
@@ -737,8 +843,8 @@ export default function MetroMap({
                   cy={s.y}
                   r={isHi ? 7.4 : r}
                   fill={isHi ? "#0d58a6" : "var(--mq-card)"}
-                  stroke={isHi ? "#0d58a6" : "var(--mq-ink)"}
-                  strokeWidth={isHi ? 2.6 : 1.7}
+                  stroke={isHi ? "#0d58a6" : isInter ? "var(--mq-ink)" : ringColor}
+                  strokeWidth={isHi ? 2.6 : isInter ? 1.7 : 2.4}
                 />
               </g>
             );
@@ -826,15 +932,46 @@ export default function MetroMap({
           />
         </button>
         {legendOpen && (
-          <div className="fade-in px-2.5 pb-2 grid grid-cols-1 gap-1 border-t border-metro-outline-var/50 pt-1.5">
-            {TEHRAN_LINES.map((l) => (
-              <div key={l.id} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
-                <span className="text-[9px] font-semibold text-metro-ink truncate">
-                  {l.name} — {l.terminals[0]} / {l.terminals[1]}
-                </span>
-              </div>
-            ))}
+          <div className="fade-in px-2.5 pb-2 grid grid-cols-1 gap-0.5 border-t border-metro-outline-var/50 pt-1.5">
+            {onToggleLine && hiddenSet.size > 0 && (
+              <button
+                type="button"
+                onClick={() => TEHRAN_LINES.forEach((l) => hiddenSet.has(l.id) && onToggleLine(l.id))}
+                className="flex items-center justify-center gap-1 w-full h-6 rounded-lg bg-metro-primary-c/10 text-[9px] font-bold text-metro-primary-c active:scale-95 transition-all mb-1"
+              >
+                <MI name="visibility" size={12} />
+                نمایش همه خطوط
+              </button>
+            )}
+            {TEHRAN_LINES.map((l) => {
+              const isHidden = hiddenSet.has(l.id);
+              const eyeBtn = onToggleLine ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleLine(l.id);
+                  }}
+                  aria-label={isHidden ? `نمایش ${l.name}` : `پنهان کردن ${l.name}`}
+                  aria-pressed={!isHidden}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 active:scale-90 transition-all text-metro-primary-c hover:bg-surface-container"
+                >
+                  <MI name={isHidden ? "visibility_off" : "visibility"} size={15} className={isHidden ? "text-outline-variant" : ""} />
+                </button>
+              ) : null;
+              return (
+                <div
+                  key={l.id}
+                  className={`flex items-center gap-1.5 rounded-lg px-0.5 transition-opacity ${isHidden ? "opacity-45" : ""}`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
+                  <span className={`text-[9px] font-semibold text-metro-ink truncate ${isHidden ? "line-through" : ""}`}>
+                    {l.name} — {l.terminals[0]} / {l.terminals[1]}
+                  </span>
+                  {eyeBtn}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
