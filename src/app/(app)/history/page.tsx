@@ -747,7 +747,7 @@ export default function HistoryPage() {
               {lastTrip && (
                 <article className="bg-surface-container-low rounded-xl p-3.5 border border-primary/20 shadow-sm flex items-center justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary dark:text-on-primary-fixed-variant shrink-0">
                       <MI name="alarm" size={22} />
                     </div>
                     <div className="min-w-0">
@@ -873,7 +873,7 @@ export default function HistoryPage() {
         >
           <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+              <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary dark:text-on-primary-fixed-variant">
                 <MI name="info" size={20} />
               </div>
               <h4 className="text-title-md text-on-surface font-bold">{help?.title ?? "راهنمای تاریخچه"}</h4>

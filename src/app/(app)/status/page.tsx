@@ -728,12 +728,12 @@ export default function StatusPage() {
           <div className="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/40 shadow-sm space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+                <div className="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-primary dark:text-on-primary-fixed-variant">
                   <MI name="how_to_vote" size={15} />
                 </div>
                 <h3 className="text-title-md font-bold text-on-surface">ثبت گزارش شلوغی مسافر</h3>
               </div>
-              <span className="text-label-sm font-bold text-primary bg-primary-fixed/40 px-2 py-0.5 rounded-md">
+              <span className="text-label-sm font-bold text-primary bg-primary-fixed/40 dark:bg-primary/20 dark:text-primary-fixed-dim px-2 py-0.5 rounded-md">
                 واگن {toFa(wagon)}
               </span>
             </div>
@@ -787,7 +787,7 @@ export default function StatusPage() {
               <button
                 type="button"
                 onClick={() => showReport("گزارش تهویه (خنک) ثبت شد.")}
-                className="flex-1 py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-primary-fixed/40 border border-primary/30 text-primary font-bold text-label-sm transition-all active:scale-95 flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-2 rounded-lg bg-surface-container-low hover:bg-primary-fixed/40 dark:hover:bg-primary/20 border border-primary/30 text-primary font-bold dark:text-primary-fixed-dim text-label-sm transition-all active:scale-95 flex items-center justify-center gap-1"
               >
                 <MI name="ac_unit" size={15} />
                 خنک

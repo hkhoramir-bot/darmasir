@@ -219,7 +219,7 @@ export default function LinesPage() {
             onClick={() => router.push("/map")}
             className="bg-surface-container-lowest border border-outline-variant/50 hover:border-primary-container p-2.5 rounded-xl flex flex-col items-center justify-center gap-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] active:scale-95 transition-all text-center"
           >
-            <div className="w-9 h-9 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
+            <div className="w-9 h-9 rounded-xl bg-primary-fixed flex items-center justify-center text-primary dark:text-on-primary-fixed-variant">
               <MI name="picture_as_pdf" size={20} />
             </div>
             <span className="text-xs text-on-surface font-medium leading-tight">نقشه PDF و راهنما</span>

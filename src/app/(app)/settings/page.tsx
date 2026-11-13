@@ -12,8 +12,8 @@ import { useVoicePrefs } from "@/lib/voice-settings";
    بازطراحی دقیقاً بر اساس طرح _1/code.html
    ============================================================ */
 
-const APP_VERSION = "4.8.8";
-const APK_HREF = "/metrojo-4.8.8.apk";
+const APP_VERSION = "4.8.9";
+const APK_HREF = "/metrojo-4.8.9.apk";
 
 /* ------------------- کلیدهای ذخیره‌سازی روی دستگاه ------------------- */
 const NOTIFY_LINES_KEY = "metrojo-notify-lines";
@@ -211,7 +211,7 @@ export default function SettingsPage() {
               <MI name="notifications_active" size={20} />
               <h2 className="text-sm font-bold text-on-surface">بخش هشدارها و اعلانات</h2>
             </div>
-            <span className="text-label-sm text-tertiary-container bg-tertiary-fixed/30 px-2 py-0.5 rounded-full">
+            <span className="text-label-sm text-tertiary bg-tertiary-fixed/30 px-2 py-0.5 rounded-full">
               سیستم فعال
             </span>
           </div>
@@ -252,7 +252,7 @@ export default function SettingsPage() {
               type="button"
               onClick={checkUpdate}
               disabled={updateState !== "idle"}
-              className="px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary rounded-lg text-label-md font-bold border border-outline-variant/40 flex items-center gap-1 active:scale-95 transition-all disabled:opacity-80 shrink-0"
+              className="px-3 py-1 bg-surface-container-low hover:bg-surface-container text-primary dark:text-primary-fixed-dim rounded-lg text-label-md font-bold border border-outline-variant/40 flex items-center gap-1 active:scale-95 transition-all disabled:opacity-80 shrink-0"
             >
               {updateState === "checking" ? (
                 <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -285,7 +285,7 @@ export default function SettingsPage() {
               <MI name="record_voice_over" size={20} />
               <h2 className="text-sm font-bold text-on-surface">دستیار صوتی و صدا</h2>
             </div>
-            <span className="text-label-sm text-primary bg-primary-fixed/50 px-2 py-0.5 rounded-full">
+            <span className="text-label-sm text-primary bg-primary-fixed/50 dark:bg-primary/20 dark:text-primary-fixed-dim px-2 py-0.5 rounded-full">
               هوشمند
             </span>
           </div>
@@ -307,7 +307,7 @@ export default function SettingsPage() {
           <div className="py-1 space-y-2">
             <div className="flex justify-between items-center">
               <p className="text-sm font-medium text-on-surface">حساسیت ورودی صدا و میکروفون</p>
-              <span className="text-label-sm text-primary font-bold">
+              <span className="text-label-sm text-primary font-bold dark:text-primary-fixed-dim">
                 {gainLabel(micGain)} ({toFa(micGain)}٪)
               </span>
             </div>
@@ -339,7 +339,7 @@ export default function SettingsPage() {
                 aria-pressed={prefs.gender === "female"}
                 className={`px-2.5 py-1 rounded-md transition-all ${
                   prefs.gender === "female"
-                    ? "bg-surface-container-lowest text-primary shadow-xs font-bold"
+                    ? "bg-surface-container-lowest text-primary shadow-xs font-bold dark:text-primary-fixed-dim"
                     : "text-on-surface-variant hover:text-on-surface"
                 }`}
               >
@@ -351,7 +351,7 @@ export default function SettingsPage() {
                 aria-pressed={prefs.gender === "male"}
                 className={`px-2.5 py-1 rounded-md transition-all ${
                   prefs.gender === "male"
-                    ? "bg-surface-container-lowest text-primary shadow-xs font-bold"
+                    ? "bg-surface-container-lowest text-primary shadow-xs font-bold dark:text-primary-fixed-dim"
                     : "text-on-surface-variant hover:text-on-surface"
                 }`}
               >
@@ -465,7 +465,7 @@ export default function SettingsPage() {
             <a
               dir="ltr"
               href="tel:02191000000"
-              className="text-label-md text-primary font-bold bg-primary-fixed/40 px-2 py-1 rounded-md shrink-0 active:scale-95 transition-all"
+              className="text-label-md text-primary font-bold dark:text-primary-fixed-dim bg-primary-fixed/40 dark:bg-primary/20 px-2 py-1 rounded-md shrink-0 active:scale-95 transition-all"
             >
               ۰۲۱-۹۱۰۰۰۰۰۰
             </a>
@@ -525,7 +525,7 @@ export default function SettingsPage() {
               </div>
               <a
                 href={APK_HREF}
-                download="metrojo-4.8.8.apk"
+                download="metrojo-4.8.9.apk"
                 className="bg-primary text-white px-3 py-2 rounded-lg text-label-md font-bold flex items-center gap-1 active:scale-95 transition-all shrink-0"
               >
                 <MI name="download_for_offline" size={15} />

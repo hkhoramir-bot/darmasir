@@ -391,7 +391,7 @@ export default function SavedPage() {
               <MI name="explore" size={20} className="text-primary" />
               <span>مسیرهای اصلی</span>
             </h3>
-            <span className="text-label-sm text-tertiary-container bg-surface-container px-2 py-0.5 rounded-full font-bold">
+            <span className="text-label-sm text-tertiary-container bg-surface-container px-2 py-0.5 rounded-full font-bold dark:text-tertiary-fixed-dim">
               {toFa(routes.length)} مقصد فعال
             </span>
           </div>
@@ -517,7 +517,7 @@ export default function SavedPage() {
                       <div className="flex items-center justify-between bg-surface-container/60 rounded-lg px-3 py-2 mt-3 mb-3 text-body-sm">
                         <span className="text-on-surface">
                           سرفاصله {fromLine.name}:{" "}
-                          <strong className="text-tertiary-container font-bold">
+                          <strong className="text-tertiary-container font-bold dark:text-tertiary-fixed-dim">
                             {toFa(headwayAt(fromLine, nowMin))} دقیقه
                           </strong>
                         </span>
@@ -634,8 +634,8 @@ export default function SavedPage() {
                             arrivals.map((a, i) => (
                               <span key={a.name} className="flex items-center gap-1">
                                 {i > 0 && <span className="text-outline mr-1.5">•</span>}
-                                {i === 0 && <MI name="train" size={14} className="text-tertiary-container" />}
-                                <span className={i === 0 ? "text-tertiary-container font-semibold" : "text-on-surface"}>
+                                {i === 0 && <MI name="train" size={14} className="text-tertiary-container dark:text-tertiary-fixed-dim" />}
+                                <span className={i === 0 ? "text-tertiary-container font-semibold dark:text-tertiary-fixed-dim" : "text-on-surface"}>
                                   {a.name}: {toFa(a.min ?? 0)} دقیقه
                                 </span>
                               </span>
@@ -739,7 +739,7 @@ export default function SavedPage() {
               </div>
             </div>
             <a
-              href="/metrojo-4.8.8.apk"
+              href="/metrojo-4.8.9.apk"
               download
               className="px-3 py-1.5 bg-primary-container text-on-primary rounded-lg text-label-md shrink-0 active:scale-95 transition-all"
             >

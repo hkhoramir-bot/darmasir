@@ -396,7 +396,7 @@ function LegStartRow({ leg }: { leg: RouteLeg }) {
               خط {toFa(line?.number ?? 0)}
             </span>
           </div>
-          <span className="text-label-sm font-label-sm text-primary font-bold bg-primary-fixed/40 px-2 py-0.5 rounded-full flex-shrink-0">
+          <span className="text-label-sm font-label-sm text-primary font-bold bg-primary-fixed/40 dark:bg-primary/20 dark:text-primary-fixed-dim px-2 py-0.5 rounded-full flex-shrink-0">
             مبدأ
           </span>
         </div>
