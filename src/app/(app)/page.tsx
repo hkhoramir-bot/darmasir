@@ -15,6 +15,7 @@ import {
 import type { StationDef } from "@/lib/metro-data";
 import { nearestStationTo } from "@/lib/station-geo";
 import { useVoiceSearch } from "@/components/metro/voice";
+import { getCurrentGeo } from "@/lib/geo";
 import JourneyCard from "@/components/metro/journey-card";
 
 /* ============================================================
@@ -149,19 +150,14 @@ export default function Page() {
   /* ---- موقعیت مکانی برای «ایستگاه جاری» ---- */
   useEffect(() => {
     let alive = true;
-    if (typeof navigator !== "undefined" && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          // موقعیت‌های ناعدد (دقت پایین) باعث «ایستگاه اشتباه» می‌شدند
-          const acc = pos.coords.accuracy ?? Infinity;
-          if (acc > 900) return;
-          const n = nearestStationTo(pos.coords.latitude, pos.coords.longitude);
-          if (alive && n) setNear({ id: n.id, name: n.name });
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
+    void (async () => {
+      // موقعیت‌های ناعدد (دقت پایین) باعث «ایستگاه اشتباه» می‌شدند
+      const fix = await getCurrentGeo(10000);
+      if (!alive || !fix) return;
+      if ((fix.accuracy ?? Infinity) > 900) return;
+      const n = nearestStationTo(fix.lat, fix.lng);
+      if (n) setNear({ id: n.id, name: n.name });
+    })();
     return () => {
       alive = false;
     };

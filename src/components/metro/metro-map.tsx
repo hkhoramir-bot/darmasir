@@ -9,6 +9,7 @@ import {
   type MapStation,
 } from "@/lib/map-geometry";
 import { nearestStationTo } from "@/lib/station-geo";
+import { getCurrentGeo, requestGeoPermission } from "@/lib/geo";
 import { LINES, toFa } from "@/lib/metro-data";
 import { MI } from "./ui";
 
@@ -468,45 +469,43 @@ export default function MetroMap({
     } catch {
       /* حافظه در دسترس نیست — ادامه */
     }
-    if (!("geolocation" in navigator)) {
-      setLocate({ kind: "error", message: "مرورگر از موقعیت‌یابی پشتیبانی نمی‌کند" });
-      return;
-    }
     setLocate({ kind: "busy" });
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        const near = nearestStationTo(latitude, longitude);
-        if (!near) {
-          setLocate({ kind: "far" });
-          return;
-        }
-        const st = MAP_STATION_BY_ID.get(near.id);
-        if (!st) {
-          setLocate({ kind: "far" });
-          return;
-        }
-        setLocate({
-          kind: "ok",
-          stationId: near.id,
-          stationName: near.name,
-          distanceM: near.distanceM,
-          accuracyM: typeof accuracy === "number" ? Math.round(accuracy) : null,
-        });
-        // بزرگ‌نمایی روی ایستگاه
-        zoomToStation(st.x, st.y);
-      },
-      (err) => {
-        setLocate({
-          kind: "error",
-          message:
-            err.code === err.PERMISSION_DENIED
-              ? "دسترسی موقعیت مکانی داده نشد"
-              : "موقعیت مکانی در دسترس نیست",
-        });
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
+    void (async () => {
+      // روی اندروید مجوز لحظه‌ای با دیالوگ سیستم گرفته می‌شود
+      const perm = await requestGeoPermission();
+      if (perm === "denied") {
+        setLocate({ kind: "error", message: "دسترسی موقعیت مکانی داده نشد" });
+        return;
+      }
+      if (perm === "unavailable") {
+        setLocate({ kind: "error", message: "مرورگر از موقعیت‌یابی پشتیبانی نمی‌کند" });
+        return;
+      }
+      const fix = await getCurrentGeo(15000);
+      if (!fix) {
+        setLocate({ kind: "error", message: "موقعیت مکانی در دسترس نیست" });
+        return;
+      }
+      const near = nearestStationTo(fix.lat, fix.lng);
+      if (!near) {
+        setLocate({ kind: "far" });
+        return;
+      }
+      const st = MAP_STATION_BY_ID.get(near.id);
+      if (!st) {
+        setLocate({ kind: "far" });
+        return;
+      }
+      setLocate({
+        kind: "ok",
+        stationId: near.id,
+        stationName: near.name,
+        distanceM: near.distanceM,
+        accuracyM: fix.accuracy,
+      });
+      // بزرگ‌نمایی روی ایستگاه
+      zoomToStation(st.x, st.y);
+    })();
   }, [locate.kind, zoomToStation]);
 
   const resetView = useCallback(() => {

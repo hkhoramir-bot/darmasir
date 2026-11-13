@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getStation, toFa } from "@/lib/metro-data";
 import { nearestStationTo } from "@/lib/station-geo";
+import { clearGeoWatch, getCurrentGeo, watchGeo, type GeoWatchId } from "@/lib/geo";
 import {
   MINUTES_PER_STATION,
   remainingMinutesOf,
@@ -68,7 +69,7 @@ export default function JourneyMonitor() {
 
   const [gpsDenied, setGpsDenied] = useState(false);
   const [gpsLive, setGpsLive] = useState(false);
-  const watchIdRef = useRef<number | null>(null);
+  const watchIdRef = useRef<GeoWatchId | null>(null);
   const journeyRef = useRef<ActiveJourney | null>(null);
   const announcedRef = useRef(false);
   const announcerRef = useRef(announcer);
@@ -126,41 +127,44 @@ export default function JourneyMonitor() {
   );
 
   /* ---------- رصد زنده GPS در طول سفر فعال ----------
+     روی اندروید با پلاگین نیتیو (اجازه لحظه‌ای درست کار می‌کند)
+     و در مرورگر با API استاندارد — همان منطق تشخیص و اعلام
      وابستگی فقط «وجود سفر» است؛ هر بروزرسانی ایستگاه، پایش را
      از نو شروع نمی‌کند */
   const hasJourney = !!journey;
   useEffect(() => {
-    if (!hasJourney || typeof navigator === "undefined" || !navigator.geolocation) {
+    if (!hasJourney) {
       return;
     }
     announcedRef.current = false;
     let alive = true;
 
     // تثبیت سریع اولین موقعیت — اعلام سریع از همان ابتدا
-    navigator.geolocation.getCurrentPosition(
-      (pos) => handleFix(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? null),
-      (err) => {
-        if (!alive) return;
-        if (err.code === err.PERMISSION_DENIED) setGpsDenied(true);
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-    );
+    void getCurrentGeo(12000).then((fix) => {
+      if (!alive) return;
+      if (!fix) return;
+      handleFix(fix.lat, fix.lng, fix.accuracy);
+    });
 
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => handleFix(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? null),
-      (err) => {
+    void watchGeo(
+      (fix) => {
         if (!alive) return;
-        if (err.code === err.PERMISSION_DENIED) setGpsDenied(true);
+        setGpsDenied(false);
+        handleFix(fix.lat, fix.lng, fix.accuracy);
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
-    );
+      (kind) => {
+        if (!alive) return;
+        if (kind === "denied") setGpsDenied(true);
+      }
+    ).then((id) => {
+      watchIdRef.current = id;
+      if (id) setGpsLive(true);
+    });
 
     return () => {
       alive = false;
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
+      clearGeoWatch(watchIdRef.current);
+      watchIdRef.current = null;
       setGpsLive(false);
     };
   }, [hasJourney, handleFix]);

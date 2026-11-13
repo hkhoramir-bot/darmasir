@@ -20,6 +20,7 @@ import {
   type TimetableRow,
 } from "@/lib/metro-data";
 import { nearestStationTo } from "@/lib/station-geo";
+import { getCurrentGeo } from "@/lib/geo";
 import { MI, PageHeader } from "@/components/metro/shell";
 import { useAnnouncer } from "@/components/metro/voice";
 import { useToast } from "@/hooks/use-toast";
@@ -294,18 +295,15 @@ function StationDetail({ station }: { station: StationDef }) {
 
   /* ---------- نزدیک‌ترین ایستگاه به موقعیت کاربر (GPS) ---------- */
   useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
     let alive = true;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const r = nearestStationTo(pos.coords.latitude, pos.coords.longitude);
-        if (alive && r && r.id === station.id && r.distanceM < 1000) {
-          setNearest({ distanceM: Math.round(r.distanceM / 10) * 10 });
-        }
-      },
-      () => {},
-      { timeout: 8000, maximumAge: 120000 }
-    );
+    void (async () => {
+      const fix = await getCurrentGeo(8000);
+      if (!alive || !fix) return;
+      const r = nearestStationTo(fix.lat, fix.lng);
+      if (r && r.id === station.id && r.distanceM < 1000) {
+        setNearest({ distanceM: Math.round(r.distanceM / 10) * 10 });
+      }
+    })();
     return () => {
       alive = false;
     };
