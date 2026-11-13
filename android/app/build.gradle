@@ -1,5 +1,17 @@
 apply plugin: 'com.android.application'
 
+/* ------------------------------------------------------------
+   امضای پایدار متروجو — keystore ثابت داخل مخزن
+   نکته: کلید debug خودکار ماشین قابل حذف‌شدن است؛ از این پس
+   همه buildTypes با این keystore امضا می‌شوند تا به‌روزرسانی
+   روی نسخه‌های نصب‌شده بدون uninstall انجام شود.
+   ------------------------------------------------------------ */
+def metrojoKeystoreProps = new Properties()
+def keystorePropsFile = rootProject.file("keystore.properties")
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { metrojoKeystoreProps.load(it) }
+}
+
 android {
     namespace = "ir.metrojo.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +28,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!*.apk'
         }
     }
+    signingConfigs {
+        metrojo {
+            storeFile rootProject.file(metrojoKeystoreProps.getProperty("storeFile", "keystore/metrojo.keystore.pkcs12"))
+            storeType metrojoKeystoreProps.getProperty("storeType", "PKCS12")
+            storePassword metrojoKeystoreProps.getProperty("storePassword", "")
+            keyAlias metrojoKeystoreProps.getProperty("keyAlias", "metrojo")
+            keyPassword metrojoKeystoreProps.getProperty("keyPassword", "")
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.metrojo
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.metrojo
         }
     }
 }
