@@ -16,6 +16,9 @@ import type { StationDef } from "@/lib/metro-data";
 import { nearestStationTo } from "@/lib/station-geo";
 import { useVoiceSearch } from "@/components/metro/voice";
 import { getCurrentGeoBest } from "@/lib/geo";
+import { parseVoiceRoute } from "@/lib/voice-intent";
+import { useJourney } from "@/lib/journey";
+import { useToast } from "@/hooks/use-toast";
 import JourneyCard from "@/components/metro/journey-card";
 
 /* ============================================================
@@ -74,6 +77,7 @@ export default function Page() {
   useInitCity();
   const router = useRouter();
   const city = useShell((s) => s.city);
+  const { toast } = useToast();
 
   /** محتوای وابسته به زمان (قطار بعدی) فقط بعد از mount رندر می‌شود */
   const mounted = useSyncExternalStore(
@@ -95,6 +99,8 @@ export default function Page() {
      بهترین دقت از چند تلاش گرفته می‌شود و تا رسیدن موقعیت قابل‌اعتماد،
      به‌جای ایستگاهِ پیش‌فرضِ احتمالاً اشتباه، «در حال یافتن موقعیت» دیده می‌شود */
   const [near, setNear] = useState<{ id: string; name: string } | null>(null);
+  const [nearAlt, setNearAlt] = useState<{ name: string; distanceM: number } | null>(null);
+  const [fixAcc, setFixAcc] = useState<number | null>(null);
   const [geoNote, setGeoNote] = useState<string | null>(null);
 
   /* ---- مسیرهای روزمره ---- */
@@ -156,21 +162,27 @@ export default function Page() {
   useEffect(() => {
     let alive = true;
     void (async () => {
-      // بهترین موقعیت از چند تلاش — اولی فوری (کش دستگاه)، بقیه دقیق
-      const fix = await getCurrentGeoBest(3, 8000, 450);
+      // همگرایی GPS تا دقت خوب — fixهای اولیه ناعدد باعث
+      // «ایستگاه اشتباه» می‌شدند (پایانه جنوب به‌جای علی‌آباد)
+      const fix = await getCurrentGeoBest(3, 8000, 450, 25000);
       if (!alive) return;
       if (!fix) {
         setGeoNote("دسترسی موقعیت مکانی در دسترس نیست");
         return;
       }
-      // موقعیت خیلی ناعدد = ایستگاه اشتباه نمایش داده می‌شد — صادقانه می‌گوییم
-      if ((fix.accuracy ?? Infinity) > 700) {
-        setGeoNote("دقت موقعیت کم است — ایستگاه نزدیک نامطمئن");
+      setFixAcc(fix.accuracy);
+      const n = nearestStationTo(fix.lat, fix.lng);
+      if (!n) {
+        setGeoNote("در محدوده ایستگاه‌های مترو نیستید");
         return;
       }
-      const n = nearestStationTo(fix.lat, fix.lng);
-      if (n) setNear({ id: n.id, name: n.name });
-      else setGeoNote("در محدوده ایستگاه‌های مترو نیستید");
+      setNear({ id: n.id, name: n.name });
+      // دقت متوسط (۴۵۰ تا ۸۰۰ متر) — گزینه دوم هم صادقانه اعلام می‌شود
+      if (n.alternative && (fix.accuracy ?? Infinity) > 450 && n.alternative.distanceM < 2500) {
+        setNearAlt({ name: n.alternative.name, distanceM: n.alternative.distanceM });
+      } else {
+        setNearAlt(null);
+      }
     })();
     return () => {
       alive = false;
@@ -212,28 +224,68 @@ export default function Page() {
   const handleVoiceResult = useCallback(
     (text: string) => {
       setVoiceResult(text);
-      // الگوی «از X تا/به Y»
-      const m = text.match(/از\s+([^،,تابه]+?)\s+(?:تا|به)\s+(.+)$/);
-      if (m) {
-        const from = stations.find((s) => m[1].trim() && s.name.includes(m[1].trim()));
-        const to = stations.find((s) => m[2].trim() && s.name.includes(m[2].trim()));
-        if (from) {
-          setOriginText(from.name);
-          setOriginId(from.id);
-        }
-        if (to) {
-          setDestText(to.name);
-          setDestId(to.id);
-        }
-        if (from && to) return;
+      const intent = parseVoiceRoute(text, stations);
+      if (!intent.matched) {
+        toast({
+          title: "ایستگاهی شناسایی نشد",
+          description: "مثلاً بگویید: «از علی‌آباد تا تجریش» یا «میخوام برم میدان آزادی»",
+        });
+        return;
       }
-      const single = stations.find((s) => text.includes(s.name));
-      if (single) {
-        setDestText(single.name);
-        setDestId(single.id);
+
+      /* قفل مسیریابی تکراری — وقتی سفر فعالی در جریان است */
+      const active = useJourney.getState().journey;
+      const journeyRunning =
+        active && active.currentIndex < active.path.length - 1;
+      if (journeyRunning && (intent.fromId || intent.toId) && (intent.fromId || intent.originFromHere)) {
+        toast({
+          title: "سفر فعالی در جریان است",
+          description: "برای مسیریابی جدید، ابتدا سفر فعلی را از پایین همین صفحه پایان دهید",
+        });
+        return;
+      }
+
+      /* مبدأ هوشمند: «از اینجا» یا نبود مبدأ در جمله → ایستگاه فعلی GPS */
+      const fromId = intent.fromId ?? (intent.originFromHere ? (near?.id ?? null) : null);
+      const fromName =
+        intent.fromId
+          ? (stations.find((s) => s.id === intent.fromId)?.name ?? null)
+          : intent.originFromHere
+            ? (near?.name ?? null)
+            : null;
+      const toId = intent.toId;
+      const toName = intent.toId ? (stations.find((s) => s.id === intent.toId)?.name ?? null) : null;
+
+      if (toId) {
+        setDestText(toName ?? "");
+        setDestId(toId);
+      }
+      if (fromId) {
+        setOriginText(fromName ?? "");
+        setOriginId(fromId);
+      }
+
+      if (fromId && toId) {
+        toast({
+          title: "مبدأ و مقصد صوتی شناسایی شد",
+          description: `${fromName} → ${toName} — مسیریابی باز می‌شود`,
+        });
+        router.push(`/plan?from=${fromId}&to=${toId}`);
+      } else if (toId) {
+        toast({
+          title: "مقصد صوتی ثبت شد",
+          description: intent.originFromHere && !near
+            ? "برای تعیین مبدأ باید موقعیت مکانی در دسترس باشد"
+            : `مقصد: ${toName}${fromId ? ` — مبدأ: ${fromName}` : " — مبدأ را انتخاب کنید"}`,
+        });
+      } else if (fromId) {
+        toast({
+          title: "مبدأ صوتی ثبت شد",
+          description: `مبدأ: ${fromName} — حالا مقصد را بگویید یا انتخاب کنید`,
+        });
       }
     },
-    [stations]
+    [stations, near, router, toast]
   );
 
   const voice = useVoiceSearch(handleVoiceResult);
@@ -254,10 +306,19 @@ export default function Page() {
   );
 
   const openPlan = useCallback(() => {
+    /* وقتی سفر فعالی در جریان است، مسیریابی جدید قفل است */
+    const active = useJourney.getState().journey;
+    if (active && active.currentIndex < active.path.length - 1) {
+      toast({
+        title: "سفر فعالی در جریان است",
+        description: "برای مسیریابی جدید، ابتدا سفر فعلی را از پایین صفحه پایان دهید",
+      });
+      return;
+    }
     if (originId && destId) router.push(`/plan?from=${originId}&to=${destId}`);
     else if (originId) router.push(`/plan?from=${originId}`);
     else router.push("/plan");
-  }, [originId, destId, router]);
+  }, [originId, destId, router, toast]);
 
   const voiceStatusText = voice.listening
     ? "در حال گوش دادن..."
@@ -312,7 +373,7 @@ export default function Page() {
                 {voice.error ? "صدای شما شنیده نشد" : voiceStatusText}
               </h2>
               <p className="text-xs text-outline">
-                {voice.error ? voice.errorKind === "blocked" ? "اجازه میکروفن را بدهید یا در تب جدید باز کنید" : "دستگاه شما از جستجوی صوتی پشتیبانی نمی‌کند" : "نام ایستگاه مبدأ و مقصد را بگویید"}
+                {voice.error ? voice.errorKind === "blocked" ? "اجازه میکروفن را بدهید یا در تب جدید باز کنید" : "دستگاه شما از جستجوی صوتی پشتیبانی نمی‌کند" : "مثلاً: «از علی‌آباد تا تجریش میخوام برم»"}
               </p>
               <div className="pt-1">
                 <button
@@ -588,6 +649,11 @@ export default function Page() {
                 <span className="text-[11px] font-bold text-primary truncate">
                   {liveInfo?.stationName ?? geoNote ?? "در حال یافتن موقعیت…"}
                 </span>
+                {nearAlt && fixAcc !== null && fixAcc > 450 && (
+                  <span className="text-[9px] text-outline shrink-0" title="دقت GPS متوسط است — ایستگاه دوم احتمالی">
+                    یا {nearAlt.name}؟
+                  </span>
+                )}
               </div>
               {mounted && liveInfo?.text && (
                 <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full shrink-0">

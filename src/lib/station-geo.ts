@@ -238,6 +238,9 @@ export interface NearestStationResult {
   id: string;
   name: string;
   distanceM: number;
+  /** گزینه دوم نزدیک — وقتی دقت GPS متوسط است برای مقایسه
+      نمایش داده می‌شود تا ایستگاه اشتباه با اطمینان اعلام نشود */
+  alternative?: NearestStationResult;
 }
 
 /** نزدیک‌ترین ایستگاه مترو به یک مختصات — null یعنی خارج از محدوده شبکه */
@@ -246,14 +249,48 @@ export function nearestStationTo(
   lng: number,
   maxDistanceM = 2500
 ): NearestStationResult | null {
+  const r = nearestAmong(lat, lng, null, maxDistanceM);
+  return r;
+}
+
+function nearestAmong(
+  lat: number,
+  lng: number,
+  onlyIds: string[] | null,
+  maxDistanceM: number
+): NearestStationResult | null {
   let best: { id: string; d: number } | null = null;
-  for (const [id, g] of APPROX_STATION_GEO) {
-    const d = haversineM(lat, lng, g.lat, g.lng);
-    if (!best || d < best.d) best = { id, d };
+  let second: { id: string; d: number } | null = null;
+  const consider = (id: string, d: number) => {
+    if (!best || d < best.d) {
+      second = best;
+      best = { id, d };
+    } else if (!second || d < second.d) {
+      second = { id, d };
+    }
+  };
+  if (onlyIds) {
+    for (const id of onlyIds) {
+      const g = APPROX_STATION_GEO.get(id);
+      if (!g) continue;
+      consider(id, haversineM(lat, lng, g.lat, g.lng));
+    }
+  } else {
+    for (const [id, g] of APPROX_STATION_GEO) {
+      consider(id, haversineM(lat, lng, g.lat, g.lng));
+    }
   }
   if (!best || best.d > maxDistanceM) return null;
   const name = MAP_STATION_BY_ID.get(best.id)?.name ?? best.id;
-  return { id: best.id, name, distanceM: best.d };
+  const result: NearestStationResult = { id: best.id, name, distanceM: best.d };
+  if (second && second.d <= maxDistanceM) {
+    result.alternative = {
+      id: second.id,
+      name: MAP_STATION_BY_ID.get(second.id)?.name ?? second.id,
+      distanceM: second.d,
+    };
+  }
+  return result;
 }
 
 /** نزدیک‌ترین ایستگاه «از میان ایستگاه‌های مسیر سفر» — تشخیص دقیق‌تر:
@@ -265,14 +302,5 @@ export function nearestAmongStations(
   stationIds: string[],
   maxDistanceM = 2500
 ): NearestStationResult | null {
-  let best: { id: string; d: number } | null = null;
-  for (const id of stationIds) {
-    const g = APPROX_STATION_GEO.get(id);
-    if (!g) continue;
-    const d = haversineM(lat, lng, g.lat, g.lng);
-    if (!best || d < best.d) best = { id, d };
-  }
-  if (!best || best.d > maxDistanceM) return null;
-  const name = MAP_STATION_BY_ID.get(best.id)?.name ?? best.id;
-  return { id: best.id, name, distanceM: best.d };
+  return nearestAmong(lat, lng, stationIds, maxDistanceM);
 }

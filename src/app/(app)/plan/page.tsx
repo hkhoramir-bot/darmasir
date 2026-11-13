@@ -861,6 +861,16 @@ function PlanInner() {
 
   const startTrip = async () => {
     if (!plan || !fromStation || !toStation || starting) return;
+    /* قفل مسیریابی تکراری — تا وقتی سفر فعال به پایان نرسیده */
+    const active = useJourney.getState().journey;
+    if (active && active.currentIndex < active.path.length - 1) {
+      toast({
+        title: "سفر فعالی در جریان است",
+        description: "برای مسیریابی جدید، ابتدا از صفحه اصلی سفر فعلی را پایان دهید",
+        variant: "destructive",
+      });
+      return;
+    }
     setStarting(true);
     try {
       const res = await fetch("/api/history", {
@@ -902,6 +912,12 @@ function PlanInner() {
       }
       setStarting(false);
       // بازگشت به صفحه اصلی — کارت سفر فعال آنجا نمایش داده می‌شود
+      // فلگ اسکرول: صفحه اصلی خودکار روی کارت سفر فعال اسکرول می‌کند
+      try {
+        sessionStorage.setItem("metrojo-scroll-journey", "1");
+      } catch {
+        /* حافظه در دسترس نیست */
+      }
       router.push("/");
     }
   };

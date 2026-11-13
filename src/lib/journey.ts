@@ -184,6 +184,7 @@ export const useJourney = create<JourneyState>((set, get) => ({
     const next: ActiveJourney = {
       ...j,
       currentStationId: stationId,
+      currentStationName: getStation(stationId)?.name ?? null,
       currentIndex: idx,
       source: "manual",
       anchorIndex: idx,

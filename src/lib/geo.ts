@@ -74,22 +74,44 @@ export async function getCurrentGeo(timeoutMs = 15000, maxAgeMs = 0): Promise<Ge
   });
 }
 
+const sleepMs = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 /** بهترین موقعیت از چند تلاش — موقعیت‌های ناعدد (شبکه/IP) باعث
-    «نمایش ایستگاه اشتباه» می‌شدند؛ اینجا بهترین دقت برنده است و
-    به‌محض رسیدن به دقت خوب، تلاش‌های بعدی لازم نیست */
+    «نمایش ایستگاه اشتباه» می‌شدند (مثلاً پایانه جنوب به‌جای علی‌آباد:
+    fixهای اولیه GPS قبل از همگرایی، خطای واقعی ۱ تا ۲ کیلومتری دارند
+    حتی وقتی «دقت» ادعایی متوسط است).
+    راه‌حل: watch پیوسته — fixهای اولیه به‌مرور با fixهای دقیق‌تر
+    جایگزین می‌شوند و به‌محض رسیدن به دقت خوب برمی‌گردیم. */
 export async function getCurrentGeoBest(
   attempts = 3,
   timeoutMs = 8000,
-  goodAccuracyM = 450
+  goodAccuracyM = 450,
+  maxWaitMs = 25000
 ): Promise<GeoFix | null> {
+  const deadline = Date.now() + maxWaitMs;
   let best: GeoFix | null = null;
-  for (let i = 0; i < attempts; i++) {
-    // تلاش اول اجازه دارد از کش دستگاه استفاده کند — پاسخ فوری
-    const fix = await getCurrentGeo(timeoutMs, i === 0 ? 30000 : 0);
-    if (fix) {
+  const isGood = () => (best?.accuracy ?? Infinity) <= goodAccuracyM;
+
+  /* ---------- مسیر اصلی: watch پیوسته تا همگرایی ---------- */
+  const id = await watchGeo(
+    (fix) => {
       if (!best || (fix.accuracy ?? Infinity) < (best.accuracy ?? Infinity)) best = fix;
-      if ((best.accuracy ?? Infinity) <= goodAccuracyM) break;
+    },
+    () => {
+      /* خطای رصد — مسیر پشتیبان پایین جبران می‌کند */
     }
+  );
+  if (id) {
+    while (Date.now() < deadline && !isGood()) await sleepMs(500);
+    clearGeoWatch(id);
+    if (best && isGood()) return best;
+  }
+
+  /* ---------- مسیر پشتیبان: چند تلاش مجزا ---------- */
+  for (let i = 0; i < attempts && Date.now() < deadline; i++) {
+    const fix = await getCurrentGeo(timeoutMs, i === 0 ? 10000 : 0);
+    if (fix && (!best || (fix.accuracy ?? Infinity) < (best.accuracy ?? Infinity))) best = fix;
+    if (isGood()) break;
   }
   return best;
 }

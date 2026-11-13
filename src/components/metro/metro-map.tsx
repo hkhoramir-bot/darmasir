@@ -179,7 +179,15 @@ interface Box {
 type LocateState =
   | { kind: "idle" }
   | { kind: "busy" }
-  | { kind: "ok"; stationId: string; stationName: string; distanceM: number; accuracyM: number | null }
+  | {
+      kind: "ok";
+      stationId: string;
+      stationName: string;
+      distanceM: number;
+      accuracyM: number | null;
+      altName?: string;
+      altDistanceM?: number;
+    }
   | { kind: "far" }
   | { kind: "error"; message: string };
 
@@ -550,9 +558,9 @@ export default function MetroMap({
         setLocate({ kind: "error", message: "مرورگر از موقعیت‌یابی پشتیبانی نمی‌کند" });
         return;
       }
-      // بهترین موقعیت از چند تلاش — موقعیت ناعدد شبکه/IP باعث
-      // «نمایش مکان اشتباه» می‌شد؛ دقت خیلی کم صادقانه رد می‌شود
-      const fix = await getCurrentGeoBest(3, 8000, 450);
+      // همگرایی GPS تا دقت خوب — fixهای اولیه ناعدد باعث
+      // «نمایش مکان اشتباه» می‌شد؛ توقف زودهنگام نداریم
+      const fix = await getCurrentGeoBest(3, 8000, 450, 25000);
       if (!fix) {
         setLocate({ kind: "error", message: "موقعیت مکانی در دسترس نیست" });
         return;
@@ -580,6 +588,8 @@ export default function MetroMap({
         stationName: near.name,
         distanceM: near.distanceM,
         accuracyM: fix.accuracy,
+        altName: near.alternative?.name,
+        altDistanceM: near.alternative?.distanceM,
       });
       // بزرگ‌نمایی روی ایستگاه
       zoomToStation(st.x, st.y);
@@ -1004,8 +1014,11 @@ export default function MetroMap({
           <MI name="near_me" size={15} className="text-metro-primary-c shrink-0" />
           <span className="text-[10px] font-bold text-metro-ink truncate">
             نزدیک‌ترین ایستگاه: {locate.stationName} (حدود {toFa(Math.round(locate.distanceM / 50) * 50)} متر
+            {locate.altName && locate.altDistanceM !== undefined && locate.accuracyM !== null && locate.accuracyM > 450
+              ? ` — یا ${locate.altName}؟`
+              : ""}
             {locate.accuracyM !== null && locate.accuracyM > 100
-              ? ` — دقت GPS کم: ±${toFa(Math.round(locate.accuracyM / 50) * 50)} متر`
+              ? ` — دقت GPS: ±${toFa(Math.round(locate.accuracyM / 50) * 50)} متر`
               : ""}
             )
           </span>

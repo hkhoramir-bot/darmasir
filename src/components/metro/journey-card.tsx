@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { getStation, toFa } from "@/lib/metro-data";
 import {
   remainingMinutesOf,
@@ -9,13 +9,26 @@ import {
 } from "@/lib/journey";
 import { MI } from "@/components/metro/shell";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 /* ============================================================
    کارت فشرده «سفر فعال» در صفحه اصلی — نوار خطی افقی
    فقط نام ایستگاه‌ها کنار هم، از ایستگاه فعلی تا مقصد،
    روی یک ریل افقی به رنگ خط مترو + برچسب «ایستگاه بعدی».
-   لمس هر ایستگاه = اصلاح دستی ایستگاه فعلی (برای داخل تونل).
+   اصلاح موقعیت: دکمه واضح «اصلاح موقعیت» + دیالوگ انتخاب
+   ایستگاه فعلی (برای داخل تونل که GPS اعلام نمی‌کند) —
+   لمس مستقیم ایستگاه روی نوار هم همچنان کار می‌کند.
+   بعد از شروع سفر از صفحه مسیریابی، صفحه اصلی خودکار
+   روی همین کارت اسکرول می‌کند (فلگ sessionStorage).
    ============================================================ */
+
+const SCROLL_FLAG_KEY = "metrojo-scroll-journey";
 
 export default function JourneyCard() {
   const journey = useJourney((s) => s.journey);
@@ -23,9 +36,27 @@ export default function JourneyCard() {
   const endJourney = useJourney((s) => s.end);
   const { toast } = useToast();
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const cardRef = useRef<HTMLElement | null>(null);
+
   const remainingStations = journey ? remainingStationsOf(journey) : 0;
   const remainingMin = journey ? remainingMinutesOf(journey) : 0;
   const arrived = journey ? journey.currentIndex === journey.path.length - 1 : false;
+
+  /* اسکرول خودکار روی کارت سفر — وقتی تازه از صفحه مسیریابی آمده‌ایم */
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(SCROLL_FLAG_KEY) === "1") {
+        sessionStorage.removeItem(SCROLL_FLAG_KEY);
+        const t = window.setTimeout(() => {
+          cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 450);
+        return () => window.clearTimeout(t);
+      }
+    } catch {
+      /* حافظه در دسترس نیست */
+    }
+  }, []);
 
   if (!journey) return null;
 
@@ -43,10 +74,12 @@ export default function JourneyCard() {
     setCurrentManual(stationId);
     const name = getStation(stationId)?.name ?? "";
     toast({ title: "ایستگاه فعلی بروزرسانی شد", description: name });
+    setPickerOpen(false);
   };
 
   return (
     <section
+      ref={cardRef}
       className="bg-surface-container-lowest rounded-2xl border border-primary/25 shadow-sm overflow-hidden"
       aria-label="سفر فعال"
     >
@@ -77,6 +110,18 @@ export default function JourneyCard() {
             {journey.fromName} ← {journey.toName}
           </p>
         </div>
+        {/* دکمه اصلاح موقعیت — واضح و قابل کشف */}
+        {!arrived && (
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            aria-label="اصلاح موقعیت فعلی"
+            className="h-7 px-2 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary flex items-center gap-1 shrink-0 active:scale-95 transition-transform"
+          >
+            <MI name="my_location" size={13} />
+            اصلاح موقعیت
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -198,9 +243,70 @@ export default function JourneyCard() {
         </span>
       </div>
 
-      <p className="px-3 pb-1.5 text-[8.5px] text-outline-variant">
-        لمس هر ایستگاه = اصلاح ایستگاه فعلی شما
-      </p>
+      {/* ---------- دیالوگ اصلاح موقعیت فعلی ---------- */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-md rounded-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <MI name="my_location" size={18} className="text-primary shrink-0" />
+              اصلاح موقعیت فعلی
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              ایستگاهی که الان در آن هستید را انتخاب کنید — بعد از تونل یا وقتی GPS دقت ندارد، اینجا می‌توانید موقعیت را دستی درست کنید
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[46vh] overflow-y-auto pretty-scroll -mx-1 px-1 space-y-1">
+            {journey.path.map((sid, i) => {
+              const st = getStation(sid);
+              const isCurrent = i === cur;
+              const isDest = i === journey.path.length - 1;
+              const nextLeg = journey.legs[(journey.legIndexOf[i] ?? 0) + 1];
+              const isTransfer = journey.transferAt.includes(i) && !isDest;
+              return (
+                <button
+                  key={`${sid}-${i}`}
+                  type="button"
+                  onClick={() => onPick(sid)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-right transition-colors ${
+                    isCurrent
+                      ? "bg-primary/10 border-primary/40"
+                      : "bg-surface-container-lowest border-outline-variant/30 hover:bg-surface-container"
+                  }`}
+                >
+                  <span className="w-6 h-6 rounded-full bg-surface-container text-[10px] font-bold text-outline flex items-center justify-center shrink-0">
+                    {toFa(i + 1)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={`block text-sm truncate ${
+                        isCurrent
+                          ? "font-extrabold text-primary"
+                          : isDest
+                            ? "font-bold text-error"
+                            : "font-medium text-on-surface"
+                      }`}
+                    >
+                      {st?.name ?? sid}
+                    </span>
+                    {isTransfer && nextLeg && (
+                      <span className="text-[9px] font-bold text-primary flex items-center gap-0.5 mt-0.5">
+                        <MI name="swap_horiz" size={10} className="shrink-0" />
+                        تعویض به خط {toFa(nextLeg.number)}
+                      </span>
+                    )}
+                  </span>
+                  {isCurrent && (
+                    <span className="flex items-center gap-1 text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full shrink-0">
+                      <MI name="my_location" size={11} className="shrink-0" />
+                      موقعیت فعلی
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
