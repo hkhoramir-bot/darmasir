@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
 import {
@@ -38,6 +38,9 @@ const SUGGESTED_PILLS: { label: string; id: string }[] = [
   { label: "صادقیه", id: "sadeghieh" },
 ];
 
+/** تشخیص mount شدن — برای جلوگیری از hydration mismatch در محتوای زمان‌دار */
+const subscribeNoop = () => () => {};
+
 function stationsOf(id: string): StationDef | undefined {
   return getStation(id);
 }
@@ -69,6 +72,13 @@ export default function Page() {
   useInitCity();
   const router = useRouter();
   const city = useShell((s) => s.city);
+
+  /** محتوای وابسته به زمان (قطار بعدی) فقط بعد از mount رندر می‌شود */
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
 
   /* ---- مسیریاب ---- */
   const [originText, setOriginText] = useState("میدان انقلاب اسلامی");
@@ -545,12 +555,12 @@ export default function Page() {
                 <span className="text-[11px] text-outline shrink-0">ایستگاه جاری:</span>
                 <span className="text-[11px] font-bold text-primary truncate">{liveInfo?.stationName ?? "—"}</span>
               </div>
-              {liveInfo?.text && (
+              {mounted && liveInfo?.text && (
                 <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full shrink-0">
                   {liveInfo.text}
                 </span>
               )}
-              {liveInfo?.out && (
+              {mounted && liveInfo?.out && (
                 <span className="text-[10px] font-bold text-error bg-error-container/60 px-2 py-0.5 rounded-full shrink-0">
                   خارج از ساعات سرویس
                 </span>

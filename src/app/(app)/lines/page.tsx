@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
   CITIES,
@@ -24,10 +24,14 @@ import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
    ============================================================ */
 
 /** وضعیت خط → رنگ و برچسب چیپ (فعال سبز / ازدحام کهربایی / تاخیر و مسدود قرمز) */
-function statusChip(line: LineDef): { label: string; dot: string; text: string } {
+/** زمان ثابت برای رندر اول (سرور و کلاینت یکسان) — جلوگیری از hydration mismatch */
+const FIXED_NOW = new Date(2024, 0, 15, 10, 30, 0);
+const subscribeNoop = () => () => {};
+
+function statusChip(line: LineDef, now: Date): { label: string; dot: string; text: string } {
   if (line.status === "closed") return { label: "مسدود", dot: "bg-error", text: "text-error" };
   if (line.status === "delay") return { label: "تاخیر", dot: "bg-error", text: "text-error" };
-  if (line.status === "crowded" || crowdingNow(line.id) === "busy")
+  if (line.status === "crowded" || crowdingNow(line.id, now) === "busy")
     return { label: "ازدحام", dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" };
   return { label: "فعال", dot: "bg-tertiary", text: "text-tertiary" };
 }
@@ -47,13 +51,15 @@ function interchangeLineChips(lineId: string): LineDef[] {
 function LineCard({
   line,
   nowMin,
+  now,
   onOpen,
 }: {
   line: LineDef;
   nowMin: number;
+  now: Date;
   onOpen: () => void;
 }) {
-  const st = statusChip(line);
+  const st = statusChip(line, now);
   const stationCount = stationsOfLine(line.id).length;
   const headway = headwayAt(line, nowMin);
   const interchanges = interchangeLineChips(line.id);
@@ -158,7 +164,15 @@ export default function LinesPage() {
   }, [query, city]);
 
   const listRef = useRef<HTMLElement>(null);
-  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+  /** محاسبات زمان‌دار فقط بعد از mount با زمان واقعی؛ پیش از آن زمان ثابت */
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
+  const now = mounted ? new Date() : FIXED_NOW;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
 
   return (
     <>
@@ -326,6 +340,7 @@ export default function LinesPage() {
               key={line.id}
               line={line}
               nowMin={nowMin}
+              now={now}
               onOpen={() => router.push(`/lines/${line.id}`)}
             />
           ))}

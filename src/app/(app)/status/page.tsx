@@ -21,6 +21,9 @@ import {
 
 const subscribeNoop = () => () => {};
 
+/** زمان ثابت برای رندر اول (سرور و کلاینت یکسان) — جلوگیری از hydration mismatch */
+const FIXED_NOW = new Date(2024, 0, 15, 10, 30, 0);
+
 const pad = (n: number) => String(n).padStart(2, "0");
 const clockFa = (d: Date) => toFa(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
 const minsOf = (hm: string) => {
@@ -161,7 +164,6 @@ export default function StatusPage() {
     () => true,
     () => false
   );
-  void mounted;
 
   /* ---------- ساعت زنده (بروزرسانی هر دقیقه) ---------- */
   const [clock, setClock] = useState("");
@@ -230,11 +232,12 @@ export default function StatusPage() {
   /* ---------- محاسبات زنده شبکه تهران ---------- */
   const data = useMemo(() => {
     const tehranLines = LINES.filter((l) => l.cityId === "tehran");
-    const d = new Date();
+    // تا پیش از mount زمان ثابت — رندر سرور و اولین رندر کلاینت یکسان می‌ماند
+    const d = mounted ? new Date() : FIXED_NOW;
     const nowMin = d.getHours() * 60 + d.getMinutes();
 
     const crowdById: Record<string, CrowdLevel> = {};
-    for (const l of tehranLines) crowdById[l.id] = crowdingNow(l.id);
+    for (const l of tehranLines) crowdById[l.id] = crowdingNow(l.id, d);
 
     // درصد روانی شبکه: خطوط عادی یا با ازدحام غیر «شلوغ»
     const smooth = tehranLines.filter(
@@ -298,7 +301,7 @@ export default function StatusPage() {
       startMins,
       events,
     };
-  }, [clock]);
+  }, [mounted, clock]);
 
   const {
     tehranLines,
