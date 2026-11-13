@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Fragment } from "react";
 import { getStation, toFa } from "@/lib/metro-data";
 import {
   remainingMinutesOf,
@@ -11,12 +11,10 @@ import { MI } from "@/components/metro/shell";
 import { useToast } from "@/hooks/use-toast";
 
 /* ============================================================
-   کارت «سفر فعال» در صفحه اصلی — نمایش ایستگاه‌به‌ایستگاه
-   وقتی مسیری از صفحه مسیریابی شروع شود، این کارت بالای صفحه
-   اصلی ظاهر می‌شود: مسیر کامل با ایستگاه‌ها، جایگاه فعلی شما
-   (GPS یا دستی)، ایستگاه تعویض خط و شمارش تا مقصد.
-   لمس هر ایستگاه = اصلاح دستی ایستگاه فعلی (برای داخل تونل
-   که GPS اعلام نمی‌کند).
+   کارت فشرده «سفر فعال» در صفحه اصلی — نوار خطی افقی
+   فقط نام ایستگاه‌ها کنار هم، از ایستگاه فعلی تا مقصد،
+   روی یک ریل افقی به رنگ خط مترو + برچسب «ایستگاه بعدی».
+   لمس هر ایستگاه = اصلاح دستی ایستگاه فعلی (برای داخل تونل).
    ============================================================ */
 
 export default function JourneyCard() {
@@ -29,17 +27,16 @@ export default function JourneyCard() {
   const remainingMin = journey ? remainingMinutesOf(journey) : 0;
   const arrived = journey ? journey.currentIndex === journey.path.length - 1 : false;
 
-  /* همیشه ایستگاه فعلی در دید باشد — بدون دست‌کاری دستی اسکرول کاربر */
-  const currentRowRef = useRef<HTMLButtonElement | null>(null);
-  const curIdx = journey?.currentIndex ?? -1;
-  const curStationId = journey?.currentStationId ?? null;
-  useEffect(() => {
-    currentRowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [curStationId, curIdx]);
-
   if (!journey) return null;
 
   const cur = journey.currentIndex;
+
+  /* ایستگاه‌های باقی‌مانده: از ایستگاه فعلی (یا مبدأ تا مشخص شدن موقعیت) تا مقصد */
+  const startIdx = cur >= 0 ? cur : 0;
+  const remainingPath = journey.path.slice(startIdx);
+
+  const nextSid = cur >= 0 ? journey.path[cur + 1] : journey.path[0];
+  const nextName = nextSid ? (getStation(nextSid)?.name ?? null) : null;
 
   const onPick = (stationId: string) => {
     if (!journey) return;
@@ -54,9 +51,9 @@ export default function JourneyCard() {
       aria-label="سفر فعال"
     >
       {/* ---------- سربرگ سفر ---------- */}
-      <div className="bg-primary/8 dark:bg-primary/15 px-4 py-3 flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
-          <MI name="near_me" size={19} />
+      <div className="bg-primary/8 dark:bg-primary/15 px-3.5 py-2.5 flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
+          <MI name="near_me" size={17} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
@@ -69,19 +66,14 @@ export default function JourneyCard() {
                 GPS زنده
               </span>
             )}
-            {journey.source === "estimate" && (
+            {journey.source === "estimate" && !arrived && (
               <span className="text-[9px] font-bold text-outline bg-surface-container dark:bg-surface-container-high px-1.5 py-0.5 rounded-full flex items-center gap-1">
                 <MI name="schedule" size={11} className="shrink-0" />
                 پیش‌بینی زمانی
               </span>
             )}
-            {arrived && (
-              <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 dark:bg-tertiary-fixed/25 px-1.5 py-0.5 rounded-full">
-                رسیدید
-              </span>
-            )}
           </div>
-          <p className="text-xs font-bold text-on-surface truncate mt-0.5">
+          <p className="text-[11px] font-bold text-on-surface truncate mt-0.5">
             {journey.fromName} ← {journey.toName}
           </p>
         </div>
@@ -92,146 +84,122 @@ export default function JourneyCard() {
             toast({ title: "سفر پایان یافت" });
           }}
           aria-label="پایان سفر"
-          className="h-8 px-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/40 text-[10px] font-bold text-error flex items-center gap-1 shrink-0 active:scale-95 transition-transform"
+          className="h-7 px-2 rounded-lg bg-surface-container-lowest border border-outline-variant/40 text-[10px] font-bold text-error flex items-center gap-1 shrink-0 active:scale-95 transition-transform"
         >
-          <MI name="stop_circle" size={14} />
+          <MI name="stop_circle" size={13} />
           پایان سفر
         </button>
       </div>
 
-      {/* ---------- نشان خطوط ---------- */}
-      <div className="px-4 pt-2.5 flex flex-wrap items-center gap-1.5">
-        {journey.legs.map((leg, i) => (
-          <span
-            key={`${leg.lineId}-${i}`}
-            className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-            style={{ backgroundColor: leg.color, color: leg.textOnColor }}
-          >
-            خط {toFa(leg.number)}
-          </span>
-        ))}
-        <span className="text-[10px] text-outline mr-auto">
-          حدود {toFa(journey.totalMinutes)} دقیقه • {toFa(journey.totalStations)} ایستگاه
-        </span>
-      </div>
-
       {/* ---------- پیام رسیدن ---------- */}
       {arrived && (
-        <div className="mx-4 mt-2.5 rounded-xl bg-tertiary-fixed/25 dark:bg-tertiary-fixed/15 border border-tertiary/30 px-3 py-2 flex items-center gap-2">
-          <MI name="celebration" size={17} className="text-tertiary shrink-0" />
+        <div className="mx-3.5 mt-2 rounded-xl bg-tertiary-fixed/25 dark:bg-tertiary-fixed/15 border border-tertiary/30 px-3 py-1.5 flex items-center gap-2">
+          <MI name="celebration" size={15} className="text-tertiary shrink-0" />
           <span className="text-[11px] font-bold text-tertiary">
-            به {journey.toName} رسیدید — سفر با موفقیت پایان یافت
+            به {journey.toName} رسیدید
           </span>
         </div>
       )}
 
-      {/* ---------- فهرست ایستگاه‌به‌ایستگاه ---------- */}
-      <div className="px-2.5 pt-2 pb-1">
-        <div className="max-h-72 overflow-y-auto pretty-scroll py-1">
-          {journey.path.map((sid, i) => {
-            const st = getStation(sid);
-            const isCurrent = i === cur;
-            const isPast = cur >= 0 && i < cur;
-            const isDest = i === journey.path.length - 1;
-            const isTransfer = journey.transferAt.includes(i);
-            const leg = journey.legs[journey.legIndexOf[i] ?? 0] ?? journey.legs[0];
-            const nextLeg = journey.legs[(journey.legIndexOf[i] ?? 0) + 1];
-            return (
-              <button
-                key={`${sid}-${i}`}
-                type="button"
-                ref={i === cur ? currentRowRef : undefined}
-                onClick={() => onPick(sid)}
-                className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-right transition-colors ${
-                  isCurrent ? "bg-primary/10" : "hover:bg-surface-container"
-                }`}
-                aria-current={isCurrent ? "true" : undefined}
-              >
-                {/* ستون نشانگر */}
-                <span className="flex flex-col items-center shrink-0 self-stretch">
-                  <span
-                    className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 ${
-                      isCurrent
-                        ? "border-primary bg-primary shadow-[0_0_0_3px] shadow-primary/25 animate-pulse"
-                        : isPast
-                          ? "border-transparent"
-                          : "border-outline-variant bg-surface-container-lowest"
-                    }`}
-                    style={isPast ? { backgroundColor: leg.color } : isDest ? { borderColor: leg.color } : undefined}
-                  />
-                  {i < journey.path.length - 1 && (
-                    <span
-                      className="w-[2px] flex-1 min-h-4 my-0.5 rounded-full"
-                      style={{ backgroundColor: isPast ? leg.color : "var(--color-outline-variant)" }}
-                    />
-                  )}
-                </span>
-
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 flex-wrap">
-                    <span
-                      className={`text-xs truncate ${
-                        isCurrent
-                          ? "font-extrabold text-primary"
-                          : isPast
-                            ? "text-outline line-through decoration-1"
-                            : "font-bold text-on-surface"
-                      }`}
+      {/* ---------- نوار خطی افقی ایستگاه‌ها — از ایستگاه فعلی تا مقصد ---------- */}
+      {!arrived && (
+        <div className="px-2.5 pt-2.5">
+          <div className="overflow-x-auto no-scrollbar">
+            <div className="flex items-start min-w-max pb-1 pt-0.5 px-1.5">
+              {remainingPath.map((sid, k) => {
+                const i = startIdx + k;
+                const st = getStation(sid);
+                const isCurrent = i === cur;
+                const isDest = i === journey.path.length - 1;
+                const leg = journey.legs[journey.legIndexOf[i] ?? 0] ?? journey.legs[0];
+                const nextLeg = journey.legs[(journey.legIndexOf[i] ?? 0) + 1];
+                const isTransfer = journey.transferAt.includes(i) && !isDest;
+                return (
+                  <Fragment key={`${sid}-${i}`}>
+                    {/* قطعه ریل بین ایستگاه‌ها — به رنگ خط */}
+                    {k > 0 && (
+                      <span
+                        className="h-[3px] w-4 rounded-full mt-[5px] shrink-0"
+                        style={{ backgroundColor: leg.color }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onPick(sid)}
+                      className="flex flex-col items-center gap-1 w-[58px] shrink-0 group"
+                      aria-current={isCurrent ? "true" : undefined}
+                      title={`تنظیم «${st?.name ?? sid}» به‌عنوان ایستگاه فعلی`}
                     >
-                      {st?.name ?? sid}
-                    </span>
-                    {isCurrent && (
-                      <span className="text-[9px] font-bold text-on-primary bg-primary px-1.5 py-0.5 rounded-full shrink-0">
-                        ایستگاه فعلی
+                      {/* نقطه روی ریل */}
+                      <span
+                        className={`w-3 h-3 rounded-full border-2 shrink-0 ${
+                          isCurrent
+                            ? "border-primary bg-primary shadow-[0_0_0_3px] shadow-primary/25 animate-pulse"
+                            : "bg-surface-container-lowest"
+                        }`}
+                        style={
+                          isCurrent
+                            ? undefined
+                            : isDest
+                              ? { borderColor: leg.color, backgroundColor: leg.color }
+                              : { borderColor: leg.color }
+                        }
+                      />
+                      {/* نام ایستگاه */}
+                      <span
+                        className={`text-[9px] leading-[1.25] text-center line-clamp-2 break-words ${
+                          isCurrent
+                            ? "font-extrabold text-primary"
+                            : isDest
+                              ? "font-bold text-error"
+                              : "font-medium text-on-surface-variant group-hover:text-on-surface"
+                        }`}
+                      >
+                        {st?.name ?? sid}
                       </span>
-                    )}
-                    {isDest && !arrived && (
-                      <span className="text-[9px] font-bold text-error bg-error-container/60 px-1.5 py-0.5 rounded-full shrink-0">
-                        مقصد
-                      </span>
-                    )}
-                  </span>
-                  {(isTransfer || i === 0) && (
-                    <span className="flex items-center gap-1 mt-0.5">
-                      <MI name="swap_horiz" size={11} className="text-outline shrink-0" />
-                      <span className="text-[9px] text-outline">
-                        {i === 0
-                          ? `سوار خط ${toFa(leg.number)} شوید`
-                          : `تعویض به خط ${toFa(nextLeg?.number ?? leg.number)}`}
-                      </span>
-                    </span>
-                  )}
-                </span>
-
-                {!isCurrent && !isPast && (
-                  <MI name="radio_button_unchecked" size={13} className="text-outline-variant/60 shrink-0" />
-                )}
-                {isCurrent && <MI name="my_location" size={14} className="text-primary shrink-0" />}
-                {isPast && <MI name="check" size={13} className="text-tertiary shrink-0" />}
-              </button>
-            );
-          })}
+                      {/* برچسب تعویض خط */}
+                      {isTransfer && nextLeg ? (
+                        <span className="flex items-center gap-0.5 text-[8px] font-bold text-primary bg-primary/10 px-1 py-px rounded-full">
+                          <MI name="swap_horiz" size={9} className="shrink-0" />
+                          خط {toFa(nextLeg.number)}
+                        </span>
+                      ) : (
+                        <span className="h-[13px]" aria-hidden="true" />
+                      )}
+                    </button>
+                  </Fragment>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ---------- پایین کارت: شمارش تا مقصد ---------- */}
-      <div className="border-t border-outline-variant/30 px-4 py-2 flex items-center justify-between text-[10px]">
-        <span className="flex items-center gap-1.5 text-outline font-medium">
-          <MI name="route" size={13} className="text-primary" />
-          {arrived
-            ? "مقصد"
-            : `${toFa(remainingStations)} ایستگاه تا ${journey.toName}`}
+      {/* ---------- نوار پایین: ایستگاه بعدی + شمارش تا مقصد ---------- */}
+      <div className="border-t border-outline-variant/30 px-3 py-1.5 flex items-center justify-between gap-2 text-[10px]">
+        <span className="flex items-center gap-1 font-bold text-primary min-w-0">
+          <MI name="my_location" size={12} className="shrink-0" />
+          <span className="truncate">
+            {arrived
+              ? "مقصد"
+              : cur < 0
+                ? "در انتظار موقعیت…"
+                : nextName
+                  ? `ایستگاه بعدی: ${nextName}`
+                  : "مقصد"}
+          </span>
         </span>
-        {!arrived && cur >= 0 && (
-          <span className="font-bold text-primary">حدود {toFa(remainingMin)} دقیقه</span>
-        )}
-        {cur < 0 && (
-          <span className="font-bold text-outline">در انتظار موقعیت…</span>
-        )}
+        <span className="shrink-0 font-medium text-outline flex items-center gap-1">
+          <MI name="route" size={12} className="text-primary shrink-0" />
+          {arrived
+            ? journey.toName
+            : `${toFa(remainingStations)} ایستگاه • حدود ${toFa(remainingMin)} دقیقه`}
+        </span>
       </div>
 
-      <p className="px-4 pb-2.5 text-[9px] text-outline-variant leading-relaxed">
-        با GPS یا بر پایه زمان‌بندی سفر، رسیدن قطار به هر ایستگاه اعلام می‌شود؛ اگر جای شما اشتباه بود، ایستگاه فعلی را لمس کنید.
+      <p className="px-3 pb-1.5 text-[8.5px] text-outline-variant">
+        لمس هر ایستگاه = اصلاح ایستگاه فعلی شما
       </p>
     </section>
   );

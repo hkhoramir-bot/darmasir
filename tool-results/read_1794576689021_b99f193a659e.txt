@@ -1,0 +1,612 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+     4→import { useRouter } from "next/navigation";
+     5→import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
+     6→import {
+     7→  computeRoute,
+     8→  getLine,
+     9→  getStation,
+    10→  nextArrivalsBoth,
+    11→  searchStations,
+    12→  stationsOfLine,
+    13→  toFa,
+    14→} from "@/lib/metro-data";
+    15→import type { StationDef } from "@/lib/metro-data";
+    16→import { nearestStationTo } from "@/lib/station-geo";
+    17→import { useVoiceSearch } from "@/components/metro/voice";
+    18→import { getCurrentGeoBest } from "@/lib/geo";
+    19→import JourneyCard from "@/components/metro/journey-card";
+    20→
+    21→/* ============================================================
+    22→   خانه متروجو — بازسازی دقیق طبق طرح Stitch (_16/code.html)
+    23→   بخش‌ها: بنر تبلیغ، دستیار صوتی، دسترسی سریع، مسیریاب زنده
+    24→   ============================================================ */
+    25→
+    26→interface DailyRouteRow {
+    27→  id: string;
+    28→  kind: string;
+    29→  label: string;
+    30→  fromStationId: string;
+    31→  fromName: string;
+    32→  toStationId: string;
+    33→  toName: string;
+    34→}
+    35→
+    36→const SUGGESTED_PILLS: { label: string; id: string }[] = [
+    37→  { label: "تجریش", id: "tajrish" },
+    38→  { label: "بهشتی", id: "beheshti" },
+    39→  { label: "دروازه دولت", id: "dowlat" },
+    40→  { label: "صادقیه", id: "sadeghieh" },
+    41→];
+    42→
+    43→/** تشخیص mount شدن — برای جلوگیری از hydration mismatch در محتوای زمان‌دار */
+    44→const subscribeNoop = () => () => {};
+    45→
+    46→function stationsOf(id: string): StationDef | undefined {
+    47→  return getStation(id);
+    48→}
+    49→
+    50→/** چیپ نام خط — با رنگ رسمی خط */
+    51→function LineChips({ stationId }: { stationId: string }) {
+    52→  const st = getStation(stationId);
+    53→  if (!st) return null;
+    54→  return (
+    55→    <span className="flex gap-1 shrink-0">
+    56→      {st.lines.slice(0, 2).map((l) => {
+    57→        const line = getLine(l.lineId);
+    58→        if (!line) return null;
+    59→        return (
+    60→          <span
+    61→            key={l.lineId}
+    62→            className="text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
+    63→            style={{ backgroundColor: line.color, color: line.textOnColor }}
+    64→          >
+    65→            {line.name}
+    66→          </span>
+    67→        );
+    68→      })}
+    69→    </span>
+    70→  );
+    71→}
+    72→
+    73→export default function Page() {
+    74→  useInitCity();
+    75→  const router = useRouter();
+    76→  const city = useShell((s) => s.city);
+    77→
+    78→  /** محتوای وابسته به زمان (قطار بعدی) فقط بعد از mount رندر می‌شود */
+    79→  const mounted = useSyncExternalStore(
+    80→    subscribeNoop,
+    81→    () => true,
+    82→    () => false
+    83→  );
+    84→
+    85→  /* ---- مسیریاب ---- */
+    86→  const [originText, setOriginText] = useState("میدان انقلاب اسلامی");
+    87→  const [destText, setDestText] = useState("تجریش");
+    88→  const [originId, setOriginId] = useState<string | null>("enghelab-sq");
+    89→  const [destId, setDestId] = useState<string | null>("tajrish");
+    90→  const [dropFor, setDropFor] = useState<"origin" | "destination" | null>(null);
+    91→  const [swapped, setSwapped] = useState(false);
+    92→
+    93→  /* ---- ایستگاه جاری (GPS) ----
+    94→     موقعیت ناعدد (شبکه/IP) باعث «نمایش ایستگاه اشتباه» می‌شد؛
+    95→     بهترین دقت از چند تلاش گرفته می‌شود و تا رسیدن موقعیت قابل‌اعتماد،
+    96→     به‌جای ایستگاهِ پیش‌فرضِ احتمالاً اشتباه، «در حال یافتن موقعیت» دیده می‌شود */
+    97→  const [near, setNear] = useState<{ id: string; name: string } | null>(null);
+    98→  const [geoNote, setGeoNote] = useState<string | null>(null);
+    99→
+   100→  /* ---- مسیرهای روزمره ---- */
+   101→  const [daily, setDaily] = useState<DailyRouteRow[]>([]);
+   102→
+   103→  /* ---- وضعیت صوت ---- */
+   104→  const [voiceResult, setVoiceResult] = useState<string | null>(null);
+   105→  const originRef = useRef<HTMLInputElement>(null);
+   106→  const destRef = useRef<HTMLInputElement>(null);
+   107→
+   108→  const stations = useMemo(
+   109→    () => searchStations({ cityId: city === "isfahan" ? "isfahan" : city === "mashhad" ? "mashhad" : "tehran" }),
+   110→    [city]
+   111→  );
+   112→
+   113→  const suggestions = useMemo(() => {
+   114→    const q = dropFor === "origin" ? originText : destText;
+   115→    if (!dropFor) return [];
+   116→    const base = q.trim() ? stations.filter((s) => s.name.includes(q.trim())) : stations;
+   117→    const featured = base.filter((s) => s.featured);
+   118→    return (featured.length >= 3 ? featured : base).slice(0, 6);
+   119→  }, [dropFor, originText, destText, stations]);
+   120→
+   121→  const plan = useMemo(
+   122→    () => (originId && destId && originId !== destId ? computeRoute(originId, destId, "fastest") : null),
+   123→    [originId, destId]
+   124→  );
+   125→
+   126→  /* ---- ایستگاه بعدی برای نوار وضعیت زنده — فقط با موقعیت واقعی ---- */
+   127→  const liveInfo = useMemo(() => {
+   128→    if (!near) return null;
+   129→    const sid = near.id;
+   130→    const st = getStation(sid);
+   131→    if (!st || st.lines.length === 0) return null;
+   132→    const lineId = st.lines[0].lineId;
+   133→    const idx = st.lines[0].order;
+   134→    const list = stationsOfLine(lineId);
+   135→    const dirs = nextArrivalsBoth(lineId, sid);
+   136→    const withMin = dirs.map((d, k) => ({ ...d, k })).filter((d) => d.minutes.length > 0);
+   137→    if (!withMin.length) return { stationName: st.name, text: null, out: dirs.length > 0 && dirs[0].outOfService };
+   138→    const best = withMin.reduce((a, b) => (a.minutes[0] <= b.minutes[0] ? a : b));
+   139→    const adj = best.k === 0 ? list[idx + 1] : list[idx - 1];
+   140→    return {
+   141→      stationName: st.name,
+   142→      text: `ایستگاه بعدی: ${adj?.name ?? best.to} (${toFa(best.minutes[0])} دقیقه)`,
+   143→      out: false,
+   144→    };
+   145→  }, [near]);
+   146→
+   147→  /* ---- دریافت مسیرهای روزمره ---- */
+   148→  useEffect(() => {
+   149→    fetch("/api/daily-routes")
+   150→      .then((r) => (r.ok ? r.json() : { routes: [] }))
+   151→      .then((d) => setDaily(d.routes ?? []))
+   152→      .catch(() => {});
+   153→  }, []);
+   154→
+   155→  /* ---- موقعیت مکانی برای «ایستگاه جاری» ---- */
+   156→  useEffect(() => {
+   157→    let alive = true;
+   158→    void (async () => {
+   159→      // بهترین موقعیت از چند تلاش — اولی فوری (کش دستگاه)، بقیه دقیق
+   160→      const fix = await getCurrentGeoBest(3, 8000, 450);
+   161→      if (!alive) return;
+   162→      if (!fix) {
+   163→        setGeoNote("دسترسی موقعیت مکانی در دسترس نیست");
+   164→        return;
+   165→      }
+   166→      // موقعیت خیلی ناعدد = ایستگاه اشتباه نمایش داده می‌شد — صادقانه می‌گوییم
+   167→      if ((fix.accuracy ?? Infinity) > 700) {
+   168→        setGeoNote("دقت موقعیت کم است — ایستگاه نزدیک نامطمئن");
+   169→        return;
+   170→      }
+   171→      const n = nearestStationTo(fix.lat, fix.lng);
+   172→      if (n) setNear({ id: n.id, name: n.name });
+   173→      else setGeoNote("در محدوده ایستگاه‌های مترو نیستید");
+   174→    })();
+   175→    return () => {
+   176→      alive = false;
+   177→    };
+   178→  }, []);
+   179→
+   180→  /* ---- انتخاب ایستگاه از دراپ‌داون ---- */
+   181→  const selectStation = useCallback((which: "origin" | "destination", st: StationDef) => {
+   182→    if (which === "origin") {
+   183→      setOriginText(st.name);
+   184→      setOriginId(st.id);
+   185→    } else {
+   186→      setDestText(st.name);
+   187→      setDestId(st.id);
+   188→    }
+   189→    setDropFor(null);
+   190→  }, []);
+   191→
+   192→  const clearStation = useCallback((which: "origin" | "destination") => {
+   193→    if (which === "origin") {
+   194→      setOriginText("");
+   195→      setOriginId(null);
+   196→      originRef.current?.focus();
+   197→    } else {
+   198→      setDestText("");
+   199→      setDestId(null);
+   200→      destRef.current?.focus();
+   201→    }
+   202→  }, []);
+   203→
+   204→  const swap = useCallback(() => {
+   205→    setOriginText(destText);
+   206→    setDestText(originText);
+   207→    setOriginId(destId);
+   208→    setDestId(originId);
+   209→    setSwapped((v) => !v);
+   210→  }, [originText, destText, originId, destId]);
+   211→
+   212→  const handleVoiceResult = useCallback(
+   213→    (text: string) => {
+   214→      setVoiceResult(text);
+   215→      // الگوی «از X تا/به Y»
+   216→      const m = text.match(/از\s+([^،,تابه]+?)\s+(?:تا|به)\s+(.+)$/);
+   217→      if (m) {
+   218→        const from = stations.find((s) => m[1].trim() && s.name.includes(m[1].trim()));
+   219→        const to = stations.find((s) => m[2].trim() && s.name.includes(m[2].trim()));
+   220→        if (from) {
+   221→          setOriginText(from.name);
+   222→          setOriginId(from.id);
+   223→        }
+   224→        if (to) {
+   225→          setDestText(to.name);
+   226→          setDestId(to.id);
+   227→        }
+   228→        if (from && to) return;
+   229→      }
+   230→      const single = stations.find((s) => text.includes(s.name));
+   231→      if (single) {
+   232→        setDestText(single.name);
+   233→        setDestId(single.id);
+   234→      }
+   235→    },
+   236→    [stations]
+   237→  );
+   238→
+   239→  const voice = useVoiceSearch(handleVoiceResult);
+   240→
+   241→  const applyDailyRoute = useCallback(
+   242→    (kind: "home" | "work") => {
+   243→      const r = daily.find((d) => d.kind === kind);
+   244→      if (r) {
+   245→        setOriginText(r.fromName);
+   246→        setOriginId(r.fromStationId);
+   247→        setDestText(r.toName);
+   248→        setDestId(r.toStationId);
+   249→      } else {
+   250→        router.push("/saved");
+   251→      }
+   252→    },
+   253→    [daily, router]
+   254→  );
+   255→
+   256→  const openPlan = useCallback(() => {
+   257→    if (originId && destId) router.push(`/plan?from=${originId}&to=${destId}`);
+   258→    else if (originId) router.push(`/plan?from=${originId}`);
+   259→    else router.push("/plan");
+   260→  }, [originId, destId, router]);
+   261→
+   262→  const voiceStatusText = voice.listening
+   263→    ? "در حال گوش دادن..."
+   264→    : voice.busy
+   265→      ? "در حال پردازش..."
+   266→      : voiceResult
+   267→        ? voiceResult
+   268→        : "لمس کنید و صحبت کنید";
+   269→
+   270→  return (
+   271→    <>
+   272→      <AppBar />
+   273→      <main className="flex-1 w-full max-w-md mx-auto px-4 pt-3 pb-28">
+   274→        <div className="space-y-4">
+   275→          {/* 0. کارت سفر فعال — نمایش ایستگاه‌به‌ایستگاه مسیر جاری */}
+   276→          <JourneyCard />
+   277→
+   278→          {/* 1. بنر تبلیغات */}
+   279→          <section className="bg-gradient-to-l from-primary/5 via-surface-container-low to-surface-container-lowest rounded-2xl p-4 border border-primary/20 shadow-sm relative overflow-hidden group">
+   280→            <div className="flex items-center justify-center py-2 text-center text-xs font-medium text-outline">
+   281→              <MI name="campaign" size={16} className="ml-1.5" />
+   282→              بخش تبلیغ
+   283→            </div>
+   284→          </section>
+   285→
+   286→          {/* 2. دستیار صوتی */}
+   287→          <section className="bg-gradient-to-b from-surface-container-lowest to-surface-container-low rounded-2xl p-5 border border-outline-variant/40 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
+   288→            {/* هاله محیطی */}
+   289→            <div className="absolute -top-12 -left-12 w-44 h-44 bg-primary-fixed/40 rounded-full blur-2xl pointer-events-none"></div>
+   290→            <div className="absolute -bottom-10 -right-10 w-44 h-44 bg-tertiary-fixed/30 rounded-full blur-2xl pointer-events-none"></div>
+   291→
+   292→            <div className="relative w-28 h-28 flex items-center justify-center my-1.5">
+   293→              <div className="pulse-wave-1 absolute inset-0 rounded-full bg-primary-fixed/60"></div>
+   294→              <div className="pulse-wave-2 absolute inset-2 rounded-full bg-primary-fixed/40"></div>
+   295→              <button
+   296→                onClick={() => {
+   297→                  setVoiceResult(null);
+   298→                  if (voice.listening) voice.stop();
+   299→                  else voice.start();
+   300→                }}
+   301→                aria-label="جستجوی صوتی"
+   302→                className={`relative z-10 w-20 h-20 rounded-full bg-primary-container text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 ${
+   303→                  voice.listening ? "ring-4 ring-primary/30" : ""
+   304→                }`}
+   305→              >
+   306→                <MI name={voice.listening ? "graphic_eq" : "mic"} size={36} />
+   307→              </button>
+   308→            </div>
+   309→            <div className="space-y-1.5 mt-1">
+   310→              <h2
+   311→                className={`text-base font-bold transition-colors ${
+   312→                  voice.error ? "text-error" : "text-on-surface"
+   313→                }`}
+   314→              >
+   315→                {voice.error ? "صدای شما شنیده نشد" : voiceStatusText}
+   316→              </h2>
+   317→              <p className="text-xs text-outline">
+   318→                {voice.error ? voice.errorKind === "blocked" ? "اجازه میکروفن را بدهید یا در تب جدید باز کنید" : "دستگاه شما از جستجوی صوتی پشتیبانی نمی‌کند" : "نام ایستگاه مبدأ و مقصد را بگویید"}
+   319→              </p>
+   320→              <div className="pt-1">
+   321→                <button
+   322→                  onClick={() => {
+   323→                    setOriginText("میدان انقلاب اسلامی");
+   324→                    setOriginId("enghelab-sq");
+   325→                    setDestText("تجریش");
+   326→                    setDestId("tajrish");
+   327→                  }}
+   328→                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium cursor-pointer hover:bg-primary/20 transition-colors"
+   329→                >
+   330→                  <MI name="chat_bubble" size={15} />
+   331→                  «از اینجا تا تجریش چقدر راهه؟»
+   332→                </button>
+   333→              </div>
+   334→            </div>
+   335→          </section>
+   336→
+   337→          {/* 3. دسترسی سریع مسافر */}
+   338→          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+   339→            <div className="flex items-center justify-between">
+   340→              <div className="flex items-center gap-2">
+   341→                <MI name="electric_bolt" size={20} className="text-primary" />
+   342→                <h3 className="font-bold text-xs text-on-surface">دسترسی سریع مسافر</h3>
+   343→              </div>
+   344→              <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+   345→                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+   346→                بروزرسانی زنده
+   347→              </span>
+   348→            </div>
+   349→            <div className="grid grid-cols-5 gap-2 text-center pt-1">
+   350→              <button
+   351→                onClick={() => applyDailyRoute("home")}
+   352→                className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   353→                type="button"
+   354→              >
+   355→                <div className="w-12 h-12 rounded-2xl bg-primary/10 group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm">
+   356→                  <MI name="home" size={24} />
+   357→                </div>
+   358→                <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">به خانه</span>
+   359→              </button>
+   360→              <button
+   361→                onClick={() => applyDailyRoute("work")}
+   362→                className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   363→                type="button"
+   364→              >
+   365→                <div className="w-12 h-12 rounded-2xl bg-tertiary-fixed/50 group-hover:bg-tertiary-fixed text-tertiary flex items-center justify-center transition-colors shadow-sm">
+   366→                  <MI name="work" size={24} />
+   367→                </div>
+   368→                <span className="text-[11px] font-medium text-on-surface group-hover:text-tertiary truncate w-full">محل کار</span>
+   369→              </button>
+   370→              <button
+   371→                onClick={() => router.push("/map")}
+   372→                className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   373→                type="button"
+   374→              >
+   375→                <div className="w-12 h-12 rounded-2xl bg-primary-fixed/50 group-hover:bg-primary-fixed text-primary flex items-center justify-center transition-colors shadow-sm">
+   376→                  <MI name="download_for_offline" size={24} />
+   377→                </div>
+   378→                <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">نقشه آفلاین</span>
+   379→              </button>
+   380→              <button
+   381→                onClick={() => router.push("/lines")}
+   382→                className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   383→                type="button"
+   384→              >
+   385→                <div className="w-12 h-12 rounded-2xl bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-colors shadow-sm">
+   386→                  <MI name="schedule" size={24} />
+   387→                </div>
+   388→                <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">زمان‌بندی</span>
+   389→              </button>
+   390→              <button
+   391→                onClick={() => router.push("/status")}
+   392→                className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
+   393→                type="button"
+   394→              >
+   395→                <div className="w-12 h-12 rounded-2xl bg-blue-50 group-hover:bg-blue-100 dark:bg-primary/10 dark:group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm relative">
+   396→                  <MI name="groups" size={24} />
+   397→                  <span className="absolute top-1 left-1 w-2 h-2 rounded-full bg-emerald-500"></span>
+   398→                </div>
+   399→                <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">شلوغی سکو</span>
+   400→              </button>
+   401→            </div>
+   402→          </section>
+   403→
+   404→          {/* 4. مسیریاب سریع روزانه */}
+   405→          <section className="bg-surface-container-lowest rounded-2xl p-3.5 border border-outline-variant/40 shadow-sm space-y-3">
+   406→            <div className="flex items-center justify-between">
+   407→              <div className="flex items-center gap-1.5">
+   408→                <MI name="route" size={18} className="text-primary" />
+   409→                <h3 className="font-bold text-xs text-on-surface">محاسبه دقیق زمان سفر و ایستگاه جاری</h3>
+   410→              </div>
+   411→              <span
+   412→                id="routeLineBadge"
+   413→                className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0"
+   414→              >
+   415→                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+   416→                {plan ? `${plan.legs[0].lineName} به ${plan.legs[plan.legs.length - 1].lineName}` : "خطوط مترو"}
+   417→              </span>
+   418→            </div>
+   419→
+   420→            {/* ورودی مبدأ و مقصد + دکمه جابجایی */}
+   421→            <div className="relative bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/30 flex items-center gap-2">
+   422→              <div className="flex-1 space-y-2 min-w-0">
+   423→                {/* ردیف مبدأ */}
+   424→                <div className="relative flex items-center gap-2.5 bg-surface-container-lowest rounded-lg px-3 py-2 border border-outline-variant/30 shadow-sm">
+   425→                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+   426→                  <div className="flex-1 flex flex-col justify-center min-w-0">
+   427→                    <span className="text-xs text-outline leading-tight font-bold">مبدأ</span>
+   428→                    <input
+   429→                      ref={originRef}
+   430→                      value={originText}
+   431→                      onChange={(e) => {
+   432→                        setOriginText(e.target.value);
+   433→                        setOriginId(null);
+   434→                        setDropFor("origin");
+   435→                      }}
+   436→                      onFocus={() => setDropFor("origin")}
+   437→                      placeholder="انتخاب ایستگاه مبدأ..."
+   438→                      type="text"
+   439→                      className="w-full bg-transparent text-sm font-bold text-on-surface focus:outline-none border-none p-0 mt-0.5"
+   440→                      aria-label="ایستگاه مبدأ"
+   441→                    />
+   442→                  </div>
+   443→                  <button
+   444→                    onClick={() => clearStation("origin")}
+   445→                    aria-label="پاک کردن مبدأ"
+   446→                    className="text-outline hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors shrink-0"
+   447→                    type="button"
+   448→                  >
+   449→                    <MI name="close" size={15} />
+   450→                  </button>
+   451→                  {dropFor === "origin" && suggestions.length > 0 && (
+   452→                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1 z-50 text-xs max-h-56 overflow-y-auto pretty-scroll">
+   453→                      {suggestions.map((s) => (
+   454→                        <button
+   455→                          key={s.id}
+   456→                          onClick={() => selectStation("origin", s)}
+   457→                          className="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between gap-2"
+   458→                          type="button"
+   459→                        >
+   460→                          <span className="truncate">{s.name}</span>
+   461→                          <LineChips stationId={s.id} />
+   462→                        </button>
+   463→                      ))}
+   464→                    </div>
+   465→                  )}
+   466→                </div>
+   467→
+   468→                {/* ردیف مقصد */}
+   469→                <div className="relative flex items-center gap-2.5 bg-surface-container-lowest rounded-lg px-3 py-2 border border-outline-variant/30 shadow-sm">
+   470→                  <span className="w-2.5 h-2.5 rounded-full bg-red-600 shrink-0"></span>
+   471→                  <div className="flex-1 flex flex-col justify-center min-w-0">
+   472→                    <span className="text-xs text-outline leading-tight font-bold">مقصد</span>
+   473→                    <input
+   474→                      ref={destRef}
+   475→                      value={destText}
+   476→                      onChange={(e) => {
+   477→                        setDestText(e.target.value);
+   478→                        setDestId(null);
+   479→                        setDropFor("destination");
+   480→                      }}
+   481→                      onFocus={() => setDropFor("destination")}
+   482→                      placeholder="انتخاب ایستگاه مقصد..."
+   483→                      type="text"
+   484→                      className="w-full bg-transparent text-sm font-bold text-on-surface focus:outline-none border-none p-0 mt-0.5"
+   485→                      aria-label="ایستگاه مقصد"
+   486→                    />
+   487→                  </div>
+   488→                  <button
+   489→                    onClick={() => clearStation("destination")}
+   490→                    aria-label="پاک کردن مقصد"
+   491→                    className="text-outline hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors shrink-0"
+   492→                    type="button"
+   493→                  >
+   494→                    <MI name="close" size={15} />
+   495→                  </button>
+   496→                  {dropFor === "destination" && suggestions.length > 0 && (
+   497→                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1 z-50 text-xs max-h-56 overflow-y-auto pretty-scroll">
+   498→                      {suggestions.map((s) => (
+   499→                        <button
+   500→                          key={s.id}
+   501→                          onClick={() => selectStation("destination", s)}
+   502→                          className="w-full text-right px-3 py-2 hover:bg-surface-container text-on-surface flex items-center justify-between gap-2"
+   503→                          type="button"
+   504→                        >
+   505→                          <span className="truncate">{s.name}</span>
+   506→                          <LineChips stationId={s.id} />
+   507→                        </button>
+   508→                      ))}
+   509→                    </div>
+   510→                  )}
+   511→                </div>
+   512→              </div>
+   513→
+   514→              {/* دکمه جابجایی مبدأ و مقصد */}
+   515→              <div className="flex items-center justify-center shrink-0">
+   516→                <button
+   517→                  aria-label="جابجایی مبدأ و مقصد"
+   518→                  onClick={swap}
+   519→                  className="w-10 h-10 rounded-full bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/40 shadow-sm flex items-center justify-center text-primary active:scale-90 transition-all duration-300 ease-in-out focus:outline-none"
+   520→                  type="button"
+   521→                >
+   522→                  <MI name="swap_vert" size={20} className={swapped ? "rotate-180 transition-transform duration-300" : "transition-transform duration-300"} />
+   523→                </button>
+   524→              </div>
+   525→            </div>
+   526→
+   527→            {/* پیشنهادهای سریع */}
+   528→            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+   529→              <span className="text-xs text-outline font-medium shrink-0">پیشنهادی:</span>
+   530→              {SUGGESTED_PILLS.map((p) => (
+   531→                <button
+   532→                  key={p.id}
+   533→                  onClick={() => {
+   534→                    const st = stationsOf(p.id);
+   535→                    if (st) selectStation("destination", st);
+   536→                  }}
+   537→                  className="px-2.5 py-0.5 rounded-full bg-surface-container-low hover:bg-surface-container text-xs font-medium text-on-surface-variant border border-outline-variant/30 transition-colors shrink-0"
+   538→                  type="button"
+   539→                >
+   540→                  {p.label}
+   541→                </button>
+   542→              ))}
+   543→            </div>
+   544→
+   545→            {/* دکمه مسیریابی — نمایش مسیر انتخاب‌شده */}
+   546→            <button
+   547→              onClick={openPlan}
+   548→              className={`w-full h-12 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-md ${
+   549→                originId && destId
+   550→                  ? "bg-primary text-on-primary shadow-primary/30"
+   551→                  : "bg-surface-container-lowest text-primary border border-primary/40 shadow-none hover:bg-surface-container"
+   552→              }`}
+   553→              type="button"
+   554→              aria-label="مسیریابی و نمایش مسیر"
+   555→            >
+   556→              <MI name="directions" size={20} />
+   557→              {originId && destId
+   558→                ? `مسیریابی ${originText !== "" && destText !== "" ? `از ${originText} به ${destText}` : ""}`
+   559→                : "انتخاب مبدأ و مقصد برای مسیریابی"}
+   560→              <MI name="chevron_left" size={18} className="opacity-80" />
+   561→            </button>
+   562→
+   563→            {/* آمار ریز سفر */}
+   564→            <button
+   565→              onClick={openPlan}
+   566→              className="grid grid-cols-3 gap-2 text-center py-1 border-y border-outline-variant/20 w-full cursor-pointer"
+   567→              type="button"
+   568→              aria-label="مشاهده جزئیات مسیر"
+   569→            >
+   570→              <div className="flex flex-col items-center justify-center">
+   571→                <span className="text-xs text-outline">مدت تقریبی</span>
+   572→                <span className="text-base font-bold text-primary">{plan ? `${toFa(plan.totalMinutes)} دقیقه` : "—"}</span>
+   573→              </div>
+   574→              <div className="flex flex-col items-center justify-center">
+   575→                <span className="text-xs text-outline">تعداد ایستگاه</span>
+   576→                <span className="text-base font-bold text-primary">{plan ? toFa(plan.totalStations) : "—"}</span>
+   577→              </div>
+   578→              <div className="flex flex-col items-center justify-center">
+   579→                <span className="text-xs text-outline">تبادل خط</span>
+   580→                <span className="text-base font-bold text-primary">
+   581→                  {plan ? (plan.transfers > 0 ? `${toFa(plan.transfers)} تعویض` : "بدون تعویض") : "—"}
+   582→                </span>
+   583→              </div>
+   584→            </button>
+   585→
+   586→            {/* وضعیت زنده ایستگاه */}
+   587→            <div className="bg-surface-container-low rounded-xl px-2.5 py-1.5 flex items-center justify-between text-xs gap-2">
+   588→              <div className="flex items-center gap-1.5 font-medium text-on-surface min-w-0">
+   589→                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+   590→                <span className="text-[11px] text-outline shrink-0">ایستگاه جاری:</span>
+   591→                <span className="text-[11px] font-bold text-primary truncate">
+   592→                  {liveInfo?.stationName ?? geoNote ?? "در حال یافتن موقعیت…"}
+   593→                </span>
+   594→              </div>
+   595→              {mounted && liveInfo?.text && (
+   596→                <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full shrink-0">
+   597→                  {liveInfo.text}
+   598→                </span>
+   599→              )}
+   600→              {mounted && liveInfo?.out && (
+   601→                <span className="text-[10px] font-bold text-error bg-error-container/60 px-2 py-0.5 rounded-full shrink-0">
+   602→                  خارج از ساعات سرویس
+   603→                </span>
+   604→              )}
+   605→            </div>
+   606→          </section>
+   607→        </div>
+   608→      </main>
+   609→    </>
+   610→  );
+   611→}
+   612→

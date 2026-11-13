@@ -881,7 +881,7 @@ function PlanInner() {
     } catch {
       toast({
         title: "ثبت سفر ناموفق بود",
-        description: "به ناوبری روی نقشه ادامه می‌دهیم",
+        description: "سفر فعال شد و در صفحه اصلی دنبال می‌شود",
         variant: "destructive",
       });
     } finally {
@@ -901,7 +901,8 @@ function PlanInner() {
           .catch(() => {});
       }
       setStarting(false);
-      router.push(`/map?from=${fromStation.id}&to=${toStation.id}`);
+      // بازگشت به صفحه اصلی — کارت سفر فعال آنجا نمایش داده می‌شود
+      router.push("/");
     }
   };
 
