@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getStation, toFa } from "@/lib/metro-data";
-import { nearestStationTo } from "@/lib/station-geo";
+import { nearestAmongStations } from "@/lib/station-geo";
 import { clearGeoWatch, getCurrentGeo, watchGeo, type GeoWatchId } from "@/lib/geo";
 import {
+  GPS_STALE_MS,
   MINUTES_PER_STATION,
   remainingMinutesOf,
   remainingStationsOf,
@@ -27,8 +28,9 @@ import { useAnnouncer } from "@/components/metro/voice";
    کاربر همیشه می‌تواند ایستگاه فعلی را دستی اصلاح کند.
    ============================================================ */
 
-const SNAP_RADIUS_M = 450; // شعاع نسبت‌دادن موقعیت به ایستگاه
+const SNAP_RADIUS_M = 450; // شعاع نسبت‌دادن موقعیت به ایستگاه مسیر
 const MAX_ACCURACY_FOR_DETECT = 300; // بالاتر از این = GPS ناعدد، تشخیص نمی‌کنیم
+const TICK_MS = 4000; // دوره تیک پیش‌بینی زمانی سفر
 
 /** عدد فارسی برای جمله‌های صوتی */
 function faWord(n: number): string {
@@ -72,6 +74,7 @@ export default function JourneyMonitor() {
   const watchIdRef = useRef<GeoWatchId | null>(null);
   const journeyRef = useRef<ActiveJourney | null>(null);
   const announcedRef = useRef(false);
+  const announcedIdxRef = useRef(-2); // آخرین اندیس اعلام‌شده (GPS یا پیش‌بینی)
   const announcerRef = useRef(announcer);
 
   useEffect(() => {
@@ -99,13 +102,10 @@ export default function JourneyMonitor() {
         setGpsInfo(accuracy);
         return;
       }
-      const near = nearestStationTo(lat, lng, SNAP_RADIUS_M);
+      // نزدیک‌ترین ایستگاه فقط از میان ایستگاه‌های «همین مسیر» —
+      // ایستگاه خط موازی دیگر نباید سفر را منحرف کند
+      const near = nearestAmongStations(lat, lng, j.path, SNAP_RADIUS_M);
       if (!near) {
-        setGpsInfo(accuracy);
-        return;
-      }
-      // فقط ایستگاه‌های روی مسیر سفر موقعیت را تعیین می‌کنند
-      if (!j.path.includes(near.id)) {
         setGpsInfo(accuracy);
         return;
       }
@@ -115,11 +115,13 @@ export default function JourneyMonitor() {
         // اولین تثبیت موقعیت سفر — اعلام موقعیت فعلی
         if (!announcedRef.current) {
           announcedRef.current = true;
+          announcedIdxRef.current = res.newIndex;
           speak(`شما در ایستگاه ${res.stationName} هستید.`);
         }
         return;
       }
       if (res.newIndex !== res.prevIndex) {
+        announcedIdxRef.current = res.newIndex;
         speak(arrivalText(j, res.newIndex));
       }
     },
@@ -139,10 +141,10 @@ export default function JourneyMonitor() {
     announcedRef.current = false;
     let alive = true;
 
-    // تثبیت سریع اولین موقعیت — اعلام سریع از همان ابتدا
-    void getCurrentGeo(12000).then((fix) => {
-      if (!alive) return;
-      if (!fix) return;
+    // تثبیت «سریع» اولین موقعیت — اجازه استفاده از آخرین موقعیت
+    // کش‌شده دستگاه (حداکثر ۳۰ ثانیه) تا اعلام بلافاصله شروع شود
+    void getCurrentGeo(8000, 30000).then((fix) => {
+      if (!alive || !fix) return;
       handleFix(fix.lat, fix.lng, fix.accuracy);
     });
 
@@ -168,6 +170,25 @@ export default function JourneyMonitor() {
       setGpsLive(false);
     };
   }, [hasJourney, handleFix]);
+
+  /* ---------- تیک پیش‌بینی زمانی سفر ----------
+     وقتی GPS تازه نیست (تونل، دقت پایین، خاموش)، سفر بر اساس
+     میانگین زمان بین ایستگاه‌ها جلو می‌رود و رسیدن به هر ایستگاه
+     (مخصوصاً تعویض خط و مقصد) اعلام می‌شود — این همان چیزی است
+     که «هشدار مقصد» را در تونل هم واقعی می‌کند */
+  useEffect(() => {
+    if (!hasJourney) return;
+    const tickOnce = () => {
+      const advanced = useJourney.getState().tick();
+      if (!advanced) return;
+      const idx = advanced.currentIndex;
+      if (idx === announcedIdxRef.current) return;
+      announcedIdxRef.current = idx;
+      speak(arrivalText(advanced, idx));
+    };
+    const iv = setInterval(tickOnce, TICK_MS);
+    return () => clearInterval(iv);
+  }, [hasJourney, speak]);
 
   /* ---------- بیدارباش مقصد — در آستانه تنظیم‌شده ---------- */
   useEffect(() => {

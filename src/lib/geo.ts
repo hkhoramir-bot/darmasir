@@ -43,15 +43,16 @@ export async function requestGeoPermission(): Promise<GeoPerm> {
   }
 }
 
-/** یک‌بار گرفتن موقعیت — با GPS دقیق و بدون کش */
-export async function getCurrentGeo(timeoutMs = 15000): Promise<GeoFix | null> {
+/** یک‌بار گرفتن موقعیت — با GPS دقیق؛ maxAgeMs>0 اجازه استفاده از
+    آخرین موقعیت کش‌شده دستگاه را می‌دهد (اولین تشخیص «سریع») */
+export async function getCurrentGeo(timeoutMs = 15000, maxAgeMs = 0): Promise<GeoFix | null> {
   if (isNative()) {
     try {
       const { Geolocation } = await import("@capacitor/geolocation");
       const pos = await Geolocation.getCurrentPosition({
         enableHighAccuracy: true,
         timeout: timeoutMs,
-        maximumAge: 0,
+        maximumAge: maxAgeMs,
       });
       return {
         lat: pos.coords.latitude,
@@ -68,9 +69,29 @@ export async function getCurrentGeo(timeoutMs = 15000): Promise<GeoFix | null> {
       (p) =>
         resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy ?? null }),
       () => resolve(null),
-      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: maxAgeMs }
     );
   });
+}
+
+/** بهترین موقعیت از چند تلاش — موقعیت‌های ناعدد (شبکه/IP) باعث
+    «نمایش ایستگاه اشتباه» می‌شدند؛ اینجا بهترین دقت برنده است و
+    به‌محض رسیدن به دقت خوب، تلاش‌های بعدی لازم نیست */
+export async function getCurrentGeoBest(
+  attempts = 3,
+  timeoutMs = 8000,
+  goodAccuracyM = 450
+): Promise<GeoFix | null> {
+  let best: GeoFix | null = null;
+  for (let i = 0; i < attempts; i++) {
+    // تلاش اول اجازه دارد از کش دستگاه استفاده کند — پاسخ فوری
+    const fix = await getCurrentGeo(timeoutMs, i === 0 ? 30000 : 0);
+    if (fix) {
+      if (!best || (fix.accuracy ?? Infinity) < (best.accuracy ?? Infinity)) best = fix;
+      if ((best.accuracy ?? Infinity) <= goodAccuracyM) break;
+    }
+  }
+  return best;
 }
 
 /** رصد زنده موقعیت — برای اعلام سریع رسیدن قطار به ایستگاه */

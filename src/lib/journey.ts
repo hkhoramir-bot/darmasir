@@ -39,19 +39,29 @@ export interface ActiveJourney {
   currentStationId: string | null;
   currentStationName: string | null;
   currentIndex: number; // -1 یعنی نامشخص
-  source: "gps" | "manual" | null;
+  source: "gps" | "manual" | "estimate" | null;
   lastGpsAt: number | null;
   gpsAccuracyM: number | null;
   alarmOn: boolean;
   alarmMinutes: number;
   voiceOn: boolean;
   alarmFired: boolean;
+  /* ---------- لنگر پیش‌بینی زمانی ----------
+     وقتی GPS در تونل در دسترس نیست، سفر بر اساس زمان پیش می‌رود:
+     از «آخرین ایستگاه تأییدشده» (لنگر) به‌ازای MINUTES_PER_STATION
+     یک ایستگاه جلو می‌رویم و به‌محض تأیید GPS اصلاح می‌شود */
+  anchorIndex: number; // آخرین اندیس تأییدشده (GPS/دستی) — -1 یعنی هنوز هیچ
+  anchorAt: number; // زمان تأیید لنگر (ms)
 }
 
 const STORAGE_KEY = "metrojo-active-journey";
 
 /** میانگین دقیقه سفر بین دو ایستگاه متوالی — برای آستانه بیدارباش */
 export const MINUTES_PER_STATION = 2.2;
+/** توقف اولیه در مبدأ (سوار شدن و حرکت قطار) قبل از اولین پیش‌بینی */
+export const BOARDING_GRACE_MS = 45_000;
+/** اگر GPS این مدت خبر ندهد، پیش‌بینی زمانی جای آن را می‌گیرد */
+export const GPS_STALE_MS = 120_000;
 
 /** برآورد دقیقه باقی‌مانده تا مقصد */
 export function remainingMinutesOf(j: ActiveJourney): number {
@@ -102,6 +112,8 @@ interface JourneyState {
   setAlarm: (on: boolean, minutes: number) => void;
   setVoice: (on: boolean) => void;
   markAlarmFired: () => void;
+  /** تیک پیش‌بینی زمانی — هر چند ثانیه از پایشگر صدا زده می‌شود */
+  tick: () => ActiveJourney | null;
 }
 
 function persist(j: ActiveJourney | null) {
@@ -125,7 +137,15 @@ export const useJourney = create<JourneyState>((set, get) => ({
       if (raw) {
         const j = JSON.parse(raw) as ActiveJourney;
         if (j && Array.isArray(j.path) && j.path.length > 1) {
-          set({ journey: { ...j, currentIndex: typeof j.currentIndex === "number" ? j.currentIndex : -1 } });
+          // سفرهای ذخیره‌شده با نسخه‌های قبلی — لنگر پیش‌بینی ساخته می‌شود
+          const cur = typeof j.currentIndex === "number" ? j.currentIndex : -1;
+          const fixed: ActiveJourney = {
+            ...j,
+            currentIndex: cur,
+            anchorIndex: typeof j.anchorIndex === "number" ? j.anchorIndex : cur,
+            anchorAt: typeof j.anchorAt === "number" ? j.anchorAt : Date.now(),
+          };
+          set({ journey: fixed });
         }
       }
     } catch {
@@ -144,6 +164,8 @@ export const useJourney = create<JourneyState>((set, get) => ({
       lastGpsAt: null,
       gpsAccuracyM: null,
       alarmFired: false,
+      anchorIndex: -1,
+      anchorAt: Date.now(),
     };
     set({ journey: j });
     persist(j);
@@ -164,6 +186,8 @@ export const useJourney = create<JourneyState>((set, get) => ({
       currentStationId: stationId,
       currentIndex: idx,
       source: "manual",
+      anchorIndex: idx,
+      anchorAt: Date.now(),
     };
     set({ journey: next });
     persist(next);
@@ -184,6 +208,10 @@ export const useJourney = create<JourneyState>((set, get) => ({
       source: "gps",
       lastGpsAt: Date.now(),
       gpsAccuracyM: accuracyM,
+      // لنگر پیش‌بینی روی آخرین تأیید GPS می‌نشیند؛ حتی اگر قطار
+      // داخل ایستگاه متوقف باشد، پیش‌بینی از جلوتر نمی‌پرد
+      anchorIndex: idx,
+      anchorAt: Date.now(),
     };
     set({ journey: next });
     persist(next);
@@ -220,6 +248,41 @@ export const useJourney = create<JourneyState>((set, get) => ({
     const next: ActiveJourney = { ...j, alarmFired: true };
     set({ journey: next });
     persist(next);
+  },
+
+  /** تیک پیش‌بینی زمانی حرکت قطار — در نبود GPS تازه:
+      از آخرین لنگر (تأییدشده با GPS/دستی یا مبدأ سفر) به‌ازای هر
+      MINUTES_PER_STATION دقیقه یک ایستگاه جلو می‌رود؛ هرگز از
+      اندیس تأییدشده عقب‌تر نمی‌شود و از مقصد عبور نمی‌کند */
+  tick: () => {
+    const j = get().journey;
+    if (!j) return null;
+    const last = j.path.length - 1;
+    if (j.currentIndex >= last) return null;
+
+    // GPS تازه؟ جای پیش‌بینی را نمی‌گیرد — قطار زیر چشم GPS است
+    const gpsFresh = j.source === "gps" && j.lastGpsAt !== null && Date.now() - j.lastGpsAt < GPS_STALE_MS;
+    if (gpsFresh) return null;
+
+    const anchorIdx = j.anchorIndex >= 0 ? j.anchorIndex : 0;
+    const anchorAt = j.anchorIndex >= 0 ? j.anchorAt : j.startedAt + BOARDING_GRACE_MS;
+    const perStationMs = MINUTES_PER_STATION * 60_000;
+    const elapsed = Date.now() - anchorAt;
+    if (elapsed < perStationMs) return null;
+    const predicted = Math.min(last, anchorIdx + Math.floor(elapsed / perStationMs));
+    if (predicted <= j.currentIndex) return null;
+
+    const sid = j.path[predicted];
+    const next: ActiveJourney = {
+      ...j,
+      currentIndex: predicted,
+      currentStationId: sid,
+      currentStationName: getStation(sid)?.name ?? null,
+      source: "estimate",
+    };
+    set({ journey: next });
+    persist(next);
+    return next;
   },
 }));
 

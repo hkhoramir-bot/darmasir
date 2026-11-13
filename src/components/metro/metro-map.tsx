@@ -9,7 +9,7 @@ import {
   type MapStation,
 } from "@/lib/map-geometry";
 import { nearestStationTo } from "@/lib/station-geo";
-import { getCurrentGeo, requestGeoPermission } from "@/lib/geo";
+import { getCurrentGeoBest, requestGeoPermission } from "@/lib/geo";
 import { LINES, toFa } from "@/lib/metro-data";
 import { MI } from "./ui";
 
@@ -67,7 +67,8 @@ function computeVisibleStats(hidden: Set<string>) {
    سلول‌هایی که مرکزشان کمتر از GRID_PAD از هر قطعه خط فاصله دارد علامت
    می‌خورند؛ برچسب‌ها پیش از جای‌گذاری با این شبکه چک می‌شوند. */
 const GRID_CELL = 12;
-const GRID_PAD = 8;
+const GRID_PAD = 11; // برچسب حداقل این فاصله را از محور خط حفظ می‌کند
+const MINOR_LABEL_SCALE = 1.25; // برچسب ایستگاه‌های کوچک فقط با بزرگ‌نمایی کافی
 
 function buildStrokeGrid(lines: { stations: string[] }[]) {
   const gw = Math.ceil(MAP_CANVAS.w / GRID_CELL);
@@ -549,9 +550,18 @@ export default function MetroMap({
         setLocate({ kind: "error", message: "مرورگر از موقعیت‌یابی پشتیبانی نمی‌کند" });
         return;
       }
-      const fix = await getCurrentGeo(15000);
+      // بهترین موقعیت از چند تلاش — موقعیت ناعدد شبکه/IP باعث
+      // «نمایش مکان اشتباه» می‌شد؛ دقت خیلی کم صادقانه رد می‌شود
+      const fix = await getCurrentGeoBest(3, 8000, 450);
       if (!fix) {
         setLocate({ kind: "error", message: "موقعیت مکانی در دسترس نیست" });
+        return;
+      }
+      if ((fix.accuracy ?? Infinity) > 1000) {
+        setLocate({
+          kind: "error",
+          message: `دقت موقعیت بسیار کم است (±${toFa(Math.round((fix.accuracy ?? 0) / 50) * 50)} متر) — کنار پنجره یا زیر آسمان باز امتحان کنید`,
+        });
         return;
       }
       const near = nearestStationTo(fix.lat, fix.lng);
@@ -691,25 +701,30 @@ export default function MetroMap({
       }
     }
 
-    /* ---------- ناحیه حفاظتی نشان بزرگ ایستگاه‌های تبادلی ---------- */
-    const interExcl: { id: string; box: Box }[] = [];
+    /* ---------- ناحیه حفاظتی «همه» ایستگاه‌های نمایان ----------
+       هیچ برچسبی نباید روی دایره هیچ ایستگاهی بنشیند — نه فقط تبادلی‌ها */
+    const dotExcl: { id: string; box: Box }[] = [];
     for (const s of MAP_STATIONS) {
-      if (!visible.inter.has(s.id)) continue;
-      const half = 6.4 * t.scale + 3 / fit;
+      if (!visible.stationIds.has(s.id)) continue;
+      const isInter = visible.inter.has(s.id);
+      const half = (isInter ? 6.4 : 5.2) * t.scale + 3.5 / fit;
       const X = s.x * t.scale + t.tx;
       const Y = s.y * t.scale + t.ty;
-      interExcl.push({
+      dotExcl.push({
         id: s.id,
         box: { x0: X - half, y0: Y - half, x1: X + half, y1: Y + half },
       });
     }
-    const hitsInterchange = (b: Box, selfId: string) =>
-      interExcl.some(
+    const hitsDot = (b: Box, selfId: string) =>
+      dotExcl.some(
         (e) => e.id !== selfId && b.x0 < e.box.x1 && b.x1 > e.box.x0 && b.y0 < e.box.y1 && b.y1 > e.box.y0
       );
 
     /* ---------- برچسب‌ها به ترتیب اولویت (تبادلی ← پرچم‌دار ← عادی) ----------
-       فقط ایستگاه‌های خطوط نمایان */
+       فقط ایستگاه‌های خطوط نمایان؛ در نمای کلی (زوم کم) فقط ایستگاه‌های
+       مهم برچسب می‌گیرند تا نقشه شلوغ به نظر نرسد — با بزرگ‌نمایی،
+       برچسب ایستگاه‌های کوچک هم به‌تدریج ظاهر می‌شود */
+    const showMinor = t.scale >= MINOR_LABEL_SCALE;
     const cands = MAP_STATIONS.filter((s: MapStation) => visible.stationIds.has(s.id)).map((s: MapStation) => {
       const isInter = visible.inter.has(s.id);
       const prio = highlighted.has(s.id)
@@ -722,7 +737,7 @@ export default function MetroMap({
               ? 300
               : 200;
       return { s, prio, major: isInter || s.label };
-    }).sort((a, b) => b.prio - a.prio);
+    }).sort((a, b) => b.prio - a.prio).filter(({ s, major }) => major || showMinor || highlighted.has(s.id));
 
     const labels: LabelItem[] = [];
     for (const { s, prio, major } of cands) {
@@ -741,7 +756,8 @@ export default function MetroMap({
       const prefRight = s.x <= MAP_CANVAS.w / 2;
       const sides: ("right" | "left")[] = prefRight ? ["right", "left"] : ["left", "right"];
       // اگر در دو طرفِ هم‌سطح جا نشد: بالای و پایین ایستگاه هم امتحان می‌شود
-      const dyOptions = [0, hVb + 6, -(hVb + 6)];
+      const stepDy = hVb + 6;
+      const dyOptions = [0, stepDy, -stepDy, stepDy * 2, -(stepDy * 2), stepDy * 3, -(stepDy * 3)];
 
       let placed = false;
       for (const dy of dyOptions) {
@@ -750,7 +766,7 @@ export default function MetroMap({
           const by0 = Y + dy - hVb / 2;
           const b: Box = { x0: bx0, y0: by0, x1: bx0 + wVb, y1: by0 + hVb };
           if (b.x0 < 1 || b.x1 > MAP_CANVAS.w - 1 || b.y0 < 1 || b.y1 > MAP_CANVAS.h - 1) continue;
-          if (overlaps(b) || hitsInterchange(b, s.id) || hitsStroke(b)) continue;
+          if (overlaps(b) || hitsDot(b, s.id) || hitsStroke(b)) continue;
           boxes.push(b);
           labels.push({
             id: s.id,

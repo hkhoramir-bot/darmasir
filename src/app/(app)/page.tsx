@@ -15,7 +15,7 @@ import {
 import type { StationDef } from "@/lib/metro-data";
 import { nearestStationTo } from "@/lib/station-geo";
 import { useVoiceSearch } from "@/components/metro/voice";
-import { getCurrentGeo } from "@/lib/geo";
+import { getCurrentGeoBest } from "@/lib/geo";
 import JourneyCard from "@/components/metro/journey-card";
 
 /* ============================================================
@@ -90,8 +90,12 @@ export default function Page() {
   const [dropFor, setDropFor] = useState<"origin" | "destination" | null>(null);
   const [swapped, setSwapped] = useState(false);
 
-  /* ---- ایستگاه جاری (GPS) ---- */
+  /* ---- ایستگاه جاری (GPS) ----
+     موقعیت ناعدد (شبکه/IP) باعث «نمایش ایستگاه اشتباه» می‌شد؛
+     بهترین دقت از چند تلاش گرفته می‌شود و تا رسیدن موقعیت قابل‌اعتماد،
+     به‌جای ایستگاهِ پیش‌فرضِ احتمالاً اشتباه، «در حال یافتن موقعیت» دیده می‌شود */
   const [near, setNear] = useState<{ id: string; name: string } | null>(null);
+  const [geoNote, setGeoNote] = useState<string | null>(null);
 
   /* ---- مسیرهای روزمره ---- */
   const [daily, setDaily] = useState<DailyRouteRow[]>([]);
@@ -119,9 +123,10 @@ export default function Page() {
     [originId, destId]
   );
 
-  /* ---- ایستگاه بعدی برای نوار وضعیت زنده ---- */
+  /* ---- ایستگاه بعدی برای نوار وضعیت زنده — فقط با موقعیت واقعی ---- */
   const liveInfo = useMemo(() => {
-    const sid = near?.id ?? "dowlat";
+    if (!near) return null;
+    const sid = near.id;
     const st = getStation(sid);
     if (!st || st.lines.length === 0) return null;
     const lineId = st.lines[0].lineId;
@@ -151,12 +156,21 @@ export default function Page() {
   useEffect(() => {
     let alive = true;
     void (async () => {
-      // موقعیت‌های ناعدد (دقت پایین) باعث «ایستگاه اشتباه» می‌شدند
-      const fix = await getCurrentGeo(10000);
-      if (!alive || !fix) return;
-      if ((fix.accuracy ?? Infinity) > 900) return;
+      // بهترین موقعیت از چند تلاش — اولی فوری (کش دستگاه)، بقیه دقیق
+      const fix = await getCurrentGeoBest(3, 8000, 450);
+      if (!alive) return;
+      if (!fix) {
+        setGeoNote("دسترسی موقعیت مکانی در دسترس نیست");
+        return;
+      }
+      // موقعیت خیلی ناعدد = ایستگاه اشتباه نمایش داده می‌شد — صادقانه می‌گوییم
+      if ((fix.accuracy ?? Infinity) > 700) {
+        setGeoNote("دقت موقعیت کم است — ایستگاه نزدیک نامطمئن");
+        return;
+      }
       const n = nearestStationTo(fix.lat, fix.lng);
       if (n) setNear({ id: n.id, name: n.name });
+      else setGeoNote("در محدوده ایستگاه‌های مترو نیستید");
     })();
     return () => {
       alive = false;
@@ -574,7 +588,9 @@ export default function Page() {
               <div className="flex items-center gap-1.5 font-medium text-on-surface min-w-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                 <span className="text-[11px] text-outline shrink-0">ایستگاه جاری:</span>
-                <span className="text-[11px] font-bold text-primary truncate">{liveInfo?.stationName ?? "—"}</span>
+                <span className="text-[11px] font-bold text-primary truncate">
+                  {liveInfo?.stationName ?? geoNote ?? "در حال یافتن موقعیت…"}
+                </span>
               </div>
               {mounted && liveInfo?.text && (
                 <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full shrink-0">

@@ -69,6 +69,12 @@ export default function JourneyCard() {
                 GPS زنده
               </span>
             )}
+            {journey.source === "estimate" && (
+              <span className="text-[9px] font-bold text-outline bg-surface-container dark:bg-surface-container-high px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                <MI name="schedule" size={11} className="shrink-0" />
+                پیش‌بینی زمانی
+              </span>
+            )}
             {arrived && (
               <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed/40 dark:bg-tertiary-fixed/25 px-1.5 py-0.5 rounded-full">
                 رسیدید
@@ -225,7 +231,7 @@ export default function JourneyCard() {
       </div>
 
       <p className="px-4 pb-2.5 text-[9px] text-outline-variant leading-relaxed">
-        با GPS یا اینترنت، رسیدن قطار به هر ایستگاه خودکار اعلام می‌شود؛ اگر جای شما اشتباه بود، ایستگاه فعلی را لمس کنید.
+        با GPS یا بر پایه زمان‌بندی سفر، رسیدن قطار به هر ایستگاه اعلام می‌شود؛ اگر جای شما اشتباه بود، ایستگاه فعلی را لمس کنید.
       </p>
     </section>
   );

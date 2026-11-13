@@ -255,3 +255,24 @@ export function nearestStationTo(
   const name = MAP_STATION_BY_ID.get(best.id)?.name ?? best.id;
   return { id: best.id, name, distanceM: best.d };
 }
+
+/** نزدیک‌ترین ایستگاه «از میان ایستگاه‌های مسیر سفر» — تشخیص دقیق‌تر:
+    اگر نزدیک‌ترین ایستگاه کل شبکه روی خط موازی دیگری باشد، سفر
+    اشتباه رها می‌شد؛ اینجا فقط ایستگاه‌های خود مسیر دیده می‌شوند */
+export function nearestAmongStations(
+  lat: number,
+  lng: number,
+  stationIds: string[],
+  maxDistanceM = 2500
+): NearestStationResult | null {
+  let best: { id: string; d: number } | null = null;
+  for (const id of stationIds) {
+    const g = APPROX_STATION_GEO.get(id);
+    if (!g) continue;
+    const d = haversineM(lat, lng, g.lat, g.lng);
+    if (!best || d < best.d) best = { id, d };
+  }
+  if (!best || best.d > maxDistanceM) return null;
+  const name = MAP_STATION_BY_ID.get(best.id)?.name ?? best.id;
+  return { id: best.id, name, distanceM: best.d };
+}
