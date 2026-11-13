@@ -12,8 +12,8 @@ import { useVoicePrefs } from "@/lib/voice-settings";
    بازطراحی دقیقاً بر اساس طرح _1/code.html
    ============================================================ */
 
-const APP_VERSION = "4.8.11";
-const APK_HREF = "/metrojo-4.8.11.apk";
+const APP_VERSION = "4.8.16";
+const APK_HREF = "/metrojo-4.8.16.apk";
 
 /* ------------------- کلیدهای ذخیره‌سازی روی دستگاه ------------------- */
 const NOTIFY_LINES_KEY = "metrojo-notify-lines";
@@ -525,7 +525,7 @@ export default function SettingsPage() {
               </div>
               <a
                 href={APK_HREF}
-                download="metrojo-4.8.11.apk"
+                download="metrojo-4.8.16.apk"
                 className="bg-primary text-white px-3 py-2 rounded-lg text-label-md font-bold flex items-center gap-1 active:scale-95 transition-all shrink-0"
               >
                 <MI name="download_for_offline" size={15} />
