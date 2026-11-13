@@ -19,8 +19,8 @@ export function ApkDownloadCard() {
 
   return (
     <a
-      href="/metrojo-4.8.11.apk"
-      download="metrojo-4.8.11.apk"
+      href="/metrojo-4.8.12.apk"
+      download="metrojo-4.8.12.apk"
       className="flex items-center gap-3 bg-primary text-white rounded-2xl px-4 py-3 shadow-md active:scale-[0.98] transition-transform"
       aria-label="دانلود نسخه اندروید متروجو"
     >

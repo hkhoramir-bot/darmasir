@@ -116,7 +116,7 @@ interface Box {
 type LocateState =
   | { kind: "idle" }
   | { kind: "busy" }
-  | { kind: "ok"; stationId: string; stationName: string; distanceM: number }
+  | { kind: "ok"; stationId: string; stationName: string; distanceM: number; accuracyM: number | null }
   | { kind: "far" }
   | { kind: "error"; message: string };
 
@@ -475,7 +475,7 @@ export default function MetroMap({
     setLocate({ kind: "busy" });
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
+        const { latitude, longitude, accuracy } = pos.coords;
         const near = nearestStationTo(latitude, longitude);
         if (!near) {
           setLocate({ kind: "far" });
@@ -486,7 +486,13 @@ export default function MetroMap({
           setLocate({ kind: "far" });
           return;
         }
-        setLocate({ kind: "ok", stationId: near.id, stationName: near.name, distanceM: near.distanceM });
+        setLocate({
+          kind: "ok",
+          stationId: near.id,
+          stationName: near.name,
+          distanceM: near.distanceM,
+          accuracyM: typeof accuracy === "number" ? Math.round(accuracy) : null,
+        });
         // بزرگ‌نمایی روی ایستگاه
         zoomToStation(st.x, st.y);
       },
@@ -499,7 +505,7 @@ export default function MetroMap({
               : "موقعیت مکانی در دسترس نیست",
         });
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }, [locate.kind, zoomToStation]);
 
@@ -679,8 +685,8 @@ export default function MetroMap({
         aria-label="نقشه شماتیک شبکه متروی تهران — با دو انگشت بزرگ‌نمایی کنید"
       >
         <defs>
-          <pattern id="map-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-            <path d="M 28 0 L 0 0 0 28" fill="none" stroke="var(--mq-map-grid)" strokeWidth="0.7" />
+          <pattern id="map-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="var(--mq-map-grid)" strokeWidth="0.7" />
           </pattern>
         </defs>
         <rect width={MAP_CANVAS.w} height={MAP_CANVAS.h} fill="var(--mq-map-bg)" />
@@ -694,7 +700,7 @@ export default function MetroMap({
                 points={linePoints(ml.stations)}
                 fill="none"
                 stroke="var(--mq-map-bg)"
-                strokeWidth={10.5}
+                strokeWidth={12}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -702,7 +708,7 @@ export default function MetroMap({
                 points={linePoints(ml.stations)}
                 fill="none"
                 stroke={ml.color}
-                strokeWidth={7}
+                strokeWidth={8}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -713,7 +719,7 @@ export default function MetroMap({
           {MAP_STATIONS.map((s) => {
             const isInter = INTERCHANGE_IDS.has(s.id);
             const isHi = highlighted.has(s.id);
-            const r = isInter ? 6.4 : 4.6;
+            const r = isInter ? 7.2 : 5.2;
             return (
               <g
                 key={s.id}
@@ -724,16 +730,16 @@ export default function MetroMap({
                 }}
                 className="cursor-pointer"
               >
-                <circle cx={s.x} cy={s.y} r={15} fill="transparent" />
-                {isInter && <circle cx={s.x} cy={s.y} r={r + 3} fill="var(--mq-card)" opacity={0.95} />}
+                <circle cx={s.x} cy={s.y} r={16} fill="transparent" />
+                {isInter && <circle cx={s.x} cy={s.y} r={r + 3.4} fill="var(--mq-card)" opacity={0.95} />}
                 {isHi && <circle cx={s.x} cy={s.y} r={13} fill="#0d58a6" opacity={0.18} className="map-pulse" />}
                 <circle
                   cx={s.x}
                   cy={s.y}
-                  r={isHi ? 6.5 : r}
+                  r={isHi ? 7.4 : r}
                   fill={isHi ? "#0d58a6" : "var(--mq-card)"}
                   stroke={isHi ? "#0d58a6" : "var(--mq-ink)"}
-                  strokeWidth={isHi ? 2.4 : 1.6}
+                  strokeWidth={isHi ? 2.6 : 1.7}
                 />
               </g>
             );
@@ -845,7 +851,11 @@ export default function MetroMap({
         <div className="fade-in absolute top-2.5 right-2.5 max-w-[70%] bg-metro-card/95 backdrop-blur rounded-xl shadow-md border border-metro-outline-var px-3 py-1.5 flex items-center gap-2">
           <MI name="near_me" size={15} className="text-metro-primary-c shrink-0" />
           <span className="text-[10px] font-bold text-metro-ink truncate">
-            نزدیک‌ترین ایستگاه: {locate.stationName} (حدود {toFa(Math.round(locate.distanceM / 50) * 50)} متر)
+            نزدیک‌ترین ایستگاه: {locate.stationName} (حدود {toFa(Math.round(locate.distanceM / 50) * 50)} متر
+            {locate.accuracyM !== null && locate.accuracyM > 100
+              ? ` — دقت GPS کم: ±${toFa(Math.round(locate.accuracyM / 50) * 50)} متر`
+              : ""}
+            )
           </span>
           <button
             onClick={() => setLocate({ kind: "idle" })}

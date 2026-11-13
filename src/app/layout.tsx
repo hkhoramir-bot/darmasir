@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/metro/pwa";
 import { NativeApiBridge } from "@/components/metro/native-bridge";
 import { ThemeProvider } from "@/components/metro/theme-provider";
+import JourneyMonitor from "@/components/metro/journey-monitor";
 
 export const metadata: Metadata = {
   title: "متروجو | دستیار صوتی و ناوبری مترو",
@@ -52,6 +53,7 @@ export default function RootLayout({
           <Toaster />
           <PwaRegister />
           <NativeApiBridge />
+          <JourneyMonitor />
         </ThemeProvider>
       </body>
     </html>

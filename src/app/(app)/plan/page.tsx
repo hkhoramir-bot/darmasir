@@ -22,6 +22,7 @@ import {
 } from "@/lib/metro-data";
 import { MI, PageHeader, useShell } from "@/components/metro/shell";
 import { useAnnouncer } from "@/components/metro/voice";
+import { buildJourneyFromPlan, useJourney } from "@/lib/journey";
 import { useToast } from "@/hooks/use-toast";
 
 /* ============================================================
@@ -679,6 +680,8 @@ function PlanInner() {
       try {
         localStorage.setItem("metrojo-plan-voice", nv ? "1" : "0");
       } catch {}
+      const j = useJourney.getState().journey;
+      if (j) useJourney.getState().setVoice(nv);
       return nv;
     });
   };
@@ -699,6 +702,9 @@ function PlanInner() {
     try {
       localStorage.setItem("metrojo-plan-alarm", JSON.stringify(next));
     } catch {}
+    // سفر فعال هم بلافاصله از بیدارباش جدید پیروی می‌کند
+    const j = useJourney.getState().journey;
+    if (j) useJourney.getState().setAlarm(next.on, next.minutes);
   };
 
   const qFrom = searchParams.get("from");
@@ -871,9 +877,6 @@ function PlanInner() {
           title: "سفر در تاریخچه ثبت شد",
           description: `${fromStation.name} → ${toStation.name}`,
         });
-        announcer
-          .announce(`ناوبری آغاز شد. مدت سفر حدود ${toFa(Math.round(plan.totalMinutes))} دقیقه`)
-          .catch(() => {});
       }
     } catch {
       toast({
@@ -882,6 +885,21 @@ function PlanInner() {
         variant: "destructive",
       });
     } finally {
+      // سفر فعال مستقل از ثبت تاریخچه شروع می‌شود:
+      // کارت ایستگاه‌به‌ایستگاه در صفحه اصلی + پایش GPS + اعلام صوتی
+      const args = buildJourneyFromPlan(plan, fromStation.id, toStation.id, alarm.on, alarm.minutes, voiceOn);
+      if (args) {
+        useJourney.getState().start(args);
+        toast({
+          title: "سفر فعال شد",
+          description: "در صفحه اصلی ایستگاه‌به‌ایستگاه نمایش داده می‌شود",
+        });
+        announcer
+          .announce(
+            `ناوبری آغاز شد. مدت سفر حدود ${toFa(Math.round(plan.totalMinutes))} دقیقه. رسیدن به هر ایستگاه اعلام می‌شود`
+          )
+          .catch(() => {});
+      }
       setStarting(false);
       router.push(`/map?from=${fromStation.id}&to=${toStation.id}`);
     }
@@ -1069,6 +1087,10 @@ function PlanInner() {
                     <span className="text-label-lg font-label-lg text-on-surface font-bold">بیدارباش مقصد</span>
                     <p className="text-body-sm font-body-sm text-outline truncate">
                       هشدار {toFa(alarm.minutes)} دقیقه پیش از رسیدن به {toStation?.name ?? "مقصد"}
+                    </p>
+                    <p className="text-[10px] text-outline-variant mt-0.5 flex items-center gap-1">
+                      <MI name="satellite_alt" size={12} className="shrink-0" />
+                      با رصد GPS/اینترنت، رسیدن به هر ایستگاه لحظه‌ای اعلام می‌شود
                     </p>
                   </div>
                 </div>

@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LINES, toFa, getStation, headwayAt, type StationDef } from "@/lib/metro-data";
+import { remainingMinutesOf, remainingStationsOf, useJourney } from "@/lib/journey";
 import { PageHeader, MI } from "@/components/metro/shell";
 import MetroMap from "@/components/metro/metro-map";
+import { useToast } from "@/hooks/use-toast";
 
 /* ============================================================
    نقشه تعاملی شبکه — پینچ/جابجایی روان، انتخاب ایستگاه با
@@ -19,7 +21,23 @@ const GESTURE_TIPS: { icon: string; text: string }[] = [
 
 export default function MapPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [selected, setSelected] = useState<StationDef | null>(null);
+  const journey = useJourney((s) => s.journey);
+  const hydrate = useJourney((s) => s.hydrate);
+  const endJourney = useJourney((s) => s.end);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  const jNext = useMemo(() => {
+    if (!journey || journey.currentIndex < 0) return null;
+    const last = journey.path.length - 1;
+    if (journey.currentIndex >= last) return null;
+    return getStation(journey.path[journey.currentIndex + 1])?.name ?? null;
+  }, [journey]);
+
   const tehranLines = LINES.filter((l) => l.cityId === "tehran");
 
   const selHeadway = useMemo(() => {
@@ -45,10 +63,50 @@ export default function MapPage() {
       <PageHeader title="نقشه تعاملی مترو" subtitle="بزرگ‌نمایی، جابجایی و انتخاب ایستگاه" />
 
       <main className="flex-1 w-full pb-28 pt-3">
+        {/* ================= نوار سفر فعال ================= */}
+        {journey && (
+          <div className="mx-4 mb-3 bg-surface-container-lowest rounded-2xl border border-primary/25 shadow-sm px-3.5 py-2.5 flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
+              <MI name="near_me" size={18} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-primary flex items-center gap-1">
+                سفر فعال
+                {journey.source === "gps" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                )}
+              </p>
+              <p className="text-[11px] font-bold text-on-surface truncate">
+                {journey.currentStationName
+                  ? `ایستگاه فعلی: ${journey.currentStationName}${jNext ? ` • بعدی: ${jNext}` : " • رسیدید"}`
+                  : `${journey.fromName} ← ${journey.toName}`}
+              </p>
+              <p className="text-[9px] text-outline">
+                {journey.currentIndex < 0
+                  ? "در انتظار موقعیت GPS — یا از صفحه اصلی دستی تنظیم کنید"
+                  : `${toFa(remainingStationsOf(journey))} ایستگاه مانده • حدود ${toFa(remainingMinutesOf(journey))} دقیقه`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                endJourney();
+                toast({ title: "سفر پایان یافت" });
+              }}
+              aria-label="پایان سفر"
+              className="h-8 px-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/40 text-[10px] font-bold text-error flex items-center gap-1 shrink-0 active:scale-95 transition-transform"
+            >
+              <MI name="stop_circle" size={14} />
+              پایان
+            </button>
+          </div>
+        )}
+
         {/* ================= بوم نقشه ================= */}
         <div className="mx-4 bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
           <MetroMap
             className="h-[560px] w-full"
+            highlightStations={journey?.path}
             onStationSelect={(stationId) => {
               const st = getStation(stationId);
               if (st) setSelected(st);

@@ -15,6 +15,7 @@ import {
 import type { StationDef } from "@/lib/metro-data";
 import { nearestStationTo } from "@/lib/station-geo";
 import { useVoiceSearch } from "@/components/metro/voice";
+import JourneyCard from "@/components/metro/journey-card";
 
 /* ============================================================
    خانه متروجو — بازسازی دقیق طبق طرح Stitch (_16/code.html)
@@ -151,11 +152,14 @@ export default function Page() {
     if (typeof navigator !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          // موقعیت‌های ناعدد (دقت پایین) باعث «ایستگاه اشتباه» می‌شدند
+          const acc = pos.coords.accuracy ?? Infinity;
+          if (acc > 900) return;
           const n = nearestStationTo(pos.coords.latitude, pos.coords.longitude);
           if (alive && n) setNear({ id: n.id, name: n.name });
         },
         () => {},
-        { timeout: 8000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     }
     return () => {
@@ -258,6 +262,9 @@ export default function Page() {
       <AppBar />
       <main className="flex-1 w-full max-w-md mx-auto px-4 pt-3 pb-28">
         <div className="space-y-4">
+          {/* 0. کارت سفر فعال — نمایش ایستگاه‌به‌ایستگاه مسیر جاری */}
+          <JourneyCard />
+
           {/* 1. بنر تبلیغات */}
           <section className="bg-gradient-to-l from-primary/5 via-surface-container-low to-surface-container-lowest rounded-2xl p-4 border border-primary/20 shadow-sm relative overflow-hidden group">
             <div className="flex items-center justify-center py-2 text-center text-xs font-medium text-outline">
