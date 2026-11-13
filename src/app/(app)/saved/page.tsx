@@ -739,7 +739,7 @@ export default function SavedPage() {
               </div>
             </div>
             <a
-              href="/metrojo-4.8.10.apk"
+              href="/metrojo-4.8.11.apk"
               download
               className="px-3 py-1.5 bg-primary-container text-on-primary rounded-lg text-label-md shrink-0 active:scale-95 transition-all"
             >
