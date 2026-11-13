@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AMENITIES, getLine, getStation, nextArrivalsBoth, toFa } from "@/lib/metro-data";
+import { AMENITIES, faMoney, getLine, getStation, nextArrivalsBoth, toFa } from "@/lib/metro-data";
 import { MI, PageHeader } from "@/components/metro/shell";
 import { useToast } from "@/hooks/use-toast";
 
@@ -325,31 +325,33 @@ export default function HistoryPage() {
       <main className="flex-1 w-full max-w-xl mx-auto px-4 pt-4 pb-32 flex flex-col gap-5">
         {/* ---------------- ۱. هیرو سوابق من ---------------- */}
         {loading ? (
-          <div className="h-[68px] rounded-2xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
+          <div className="h-[148px] rounded-3xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
         ) : (
-          <section className="relative overflow-hidden rounded-2xl p-4 shadow-md bg-primary-container bg-gradient-to-tl from-primary via-primary-container to-primary-container text-white">
-            <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
-            <div className="flex items-center justify-between w-full relative z-10">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-11 h-11 rounded-xl bg-white/15 text-white flex items-center justify-center shadow-md shrink-0">
-                  <MI name="work_history" size={24} />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-headline-md text-white font-bold">سوابق من در متروجو</h2>
-                    {heroStatus.live ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant">
-                        <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" />
-                        {heroStatus.text}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm bg-white/15 text-white">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" />
-                        {heroStatus.text}
-                      </span>
-                    )}
-                  </div>
-                </div>
+          <section
+            aria-label="خلاصه فعالیت"
+            className="relative overflow-hidden rounded-3xl p-4 shadow-lg bg-gradient-to-tl from-primary via-primary-container to-primary text-white"
+          >
+            <div className="absolute -left-8 -bottom-10 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -right-10 -top-12 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
+
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center shadow-md shrink-0">
+                <MI name="work_history" size={24} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base font-bold text-white">سوابق من در متروجو</h2>
+                <p
+                  className={`text-[11px] mt-1 inline-flex items-center gap-1.5 max-w-full ${
+                    heroStatus.live ? "text-emerald-200" : "text-white/80"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      heroStatus.live ? "bg-emerald-300 animate-pulse" : "bg-white/60"
+                    }`}
+                  />
+                  <span className="truncate">{heroStatus.text}</span>
+                </p>
               </div>
               <button
                 type="button"
@@ -365,101 +367,59 @@ export default function HistoryPage() {
                 <MI name="help" size={20} />
               </button>
             </div>
-          </section>
-        )}
 
-        {/* ---------------- ۲. خلاصه آمار (۳ کارت) ---------------- */}
-        {loading ? (
-          <div className="grid grid-cols-3 gap-2.5">
-            <div className="h-28 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
-            <div className="h-28 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
-            <div className="h-28 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
-          </div>
-        ) : (
-          <section aria-label="خلاصه آمار فعالیت مسافر">
-            <div className="grid grid-cols-3 gap-2.5">
-              {/* بازدیدها */}
-              <div className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
-                <div className="flex items-center justify-between text-outline mb-1.5">
-                  <span className="text-label-sm font-semibold">بازدیدها</span>
-                  <MI name="visibility" size={18} className="text-primary" />
-                </div>
-                <div>
-                  <span className="text-headline-lg text-on-surface font-extrabold tracking-tight">
-                    {toFa(uniqueStations)}
-                  </span>
-                  <span className="text-label-sm text-outline-variant mr-1">ایستگاه</span>
-                </div>
-                <div className="mt-2 text-label-sm text-on-tertiary-fixed-variant flex items-center gap-0.5">
-                  <MI name="trending_up" size={14} />
-                  <span>{toFa(totalRefs)} مراجعه</span>
-                </div>
+            {/* آمار فشرده داخل هیرو */}
+            <div className="relative z-10 mt-3.5 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl bg-white/10 backdrop-blur-sm px-2 py-2.5 text-center">
+                <div className="text-title-lg font-extrabold tracking-tight">{toFa(trips.length)}</div>
+                <div className="text-[10px] text-white/80 mt-0.5">سفر ثبت‌شده</div>
               </div>
-
-              {/* مسیریابی‌ها */}
-              <div className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
-                <div className="flex items-center justify-between text-outline mb-1.5">
-                  <span className="text-label-sm font-semibold">مسیریابی</span>
-                  <MI name="route" size={18} className="text-primary" />
+              <div className="rounded-2xl bg-white/10 backdrop-blur-sm px-2 py-2.5 text-center">
+                <div className="text-title-lg font-extrabold tracking-tight">
+                  {toFa(stats?.minutes ?? 0)}
                 </div>
-                <div>
-                  <span className="text-headline-lg text-on-surface font-extrabold tracking-tight">
-                    {toFa(trips.length)}
-                  </span>
-                  <span className="text-label-sm text-outline-variant mr-1">مسیر</span>
-                </div>
-                <div className="mt-2 text-label-sm text-on-surface-variant">
-                  <span>{toFa(thisYearTrips)} سفر امسال</span>
-                </div>
+                <div className="text-[10px] text-white/80 mt-0.5">دقیقه سفر</div>
               </div>
-
-              {/* ایستگاه نشان‌شده */}
-              <div className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
-                <div className="flex items-center justify-between text-outline mb-1.5">
-                  <span className="text-label-sm font-semibold">ایستگاه نشان‌شده</span>
-                  <MI name="favorite" size={18} className="text-secondary" />
-                </div>
-                <div>
-                  <div className="text-title-md text-on-surface font-bold truncate">
-                    {topFav ? topFav.name : "—"}
-                  </div>
-                  <span className="text-label-sm text-outline">
-                    {topFav
-                      ? topFav.lines.length > 1
-                        ? `تقاطع خط ${topFav.lines.map((l) => toFa(l.number)).join(" و ")}`
-                        : `خط ${toFa(topFav.lines[0]?.number ?? 0)}`
-                      : "هنوز نشان نشده"}
-                  </span>
-                </div>
-                <div className="mt-2 text-label-sm text-primary font-medium">
-                  <span>{toFa(favIds.size)} نشان‌شده</span>
-                </div>
+              <div className="rounded-2xl bg-white/10 backdrop-blur-sm px-2 py-2.5 text-center">
+                <div className="text-title-lg font-extrabold tracking-tight">{toFa(uniqueStations)}</div>
+                <div className="text-[10px] text-white/80 mt-0.5">ایستگاه بازدیدشده</div>
               </div>
             </div>
           </section>
         )}
 
-        {/* ---------------- ۳. قرص‌های فیلتر ---------------- */}
+        {/* ---------------- ۳. قرص‌های دسترسی سریع ---------------- */}
         {!loading && (
-          <nav aria-label="فیلتر تاریخچه" className="flex items-center gap-2 overflow-x-auto pb-1 pretty-scroll">
+          <nav aria-label="دسترسی سریع تاریخچه" className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
             <button
               type="button"
-              onClick={() => router.push("/saved")}
-              className="px-4 py-2 rounded-full text-label-lg bg-primary-container text-on-primary shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform"
+              onClick={scrollToRecents}
+              className="px-3.5 py-2 rounded-full text-label-md bg-primary-container text-on-primary shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform font-semibold"
             >
-              <MI name="done_all" size={18} />
-              <span>سابقه سفارش</span>
-              <span className="bg-on-primary text-primary-container text-label-sm px-1.5 py-0.5 rounded-full">
-                {toFa(trips.length)}
+              <MI name="directions_subway" size={16} />
+              <span>ایستگاه‌های بازدیدشده</span>
+              <span className="bg-on-primary/20 text-on-primary text-[10px] px-1.5 py-0.5 rounded-full">
+                {toFa(recents.length)}
               </span>
             </button>
             <button
               type="button"
-              onClick={scrollToRecents}
-              className="px-4 py-2 rounded-full text-label-lg bg-surface-container-lowest text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container flex items-center gap-1.5 shrink-0 active:scale-95 transition-all"
+              onClick={() => router.push("/saved")}
+              className="px-3.5 py-2 rounded-full text-label-md bg-surface-container-lowest text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container flex items-center gap-1.5 shrink-0 active:scale-95 transition-all font-semibold"
             >
-              <MI name="directions_subway" size={18} />
-              <span>ایستگاه‌های بازدیدشده</span>
+              <MI name="done_all" size={16} className="text-primary" />
+              <span>نشان‌شده‌ها</span>
+              <span className="bg-surface-container text-primary text-[10px] px-1.5 py-0.5 rounded-full">
+                {toFa(favIds.size)}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/plan")}
+              className="px-3.5 py-2 rounded-full text-label-md bg-surface-container-lowest text-primary border border-primary/30 hover:bg-surface-container flex items-center gap-1.5 shrink-0 active:scale-95 transition-all font-semibold"
+            >
+              <MI name="north_east" size={16} />
+              <span>سفر جدید</span>
             </button>
           </nav>
         )}
@@ -505,12 +465,12 @@ export default function HistoryPage() {
           <section
             ref={recentsRef}
             aria-labelledby="heading-recent-stations"
-            className="flex flex-col gap-3 scroll-mt-20"
+            className="flex flex-col gap-2.5 scroll-mt-24"
           >
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-                <h3 id="heading-recent-stations" className="text-title-lg text-on-surface font-bold">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                <h3 id="heading-recent-stations" className="text-title-md text-on-surface font-bold">
                   ایستگاه‌های اخیراً مشاهده‌شده
                 </h3>
                 <button
@@ -524,146 +484,99 @@ export default function HistoryPage() {
                   }
                   className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90"
                 >
-                  <MI name="help" size={16} />
+                  <MI name="help" size={15} />
                 </button>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-label-md text-outline">{toFa(recents.length)} ایستگاه اخیر</span>
-                <button
-                  type="button"
-                  aria-label="بازنشانی فهرست"
-                  title="بازنشانی فهرست"
-                  onClick={() => setHiddenRecents(new Set())}
-                  className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90"
-                >
-                  <MI name="restart_alt" size={16} />
-                </button>
+              <button
+                type="button"
+                aria-label="بازنشانی فهرست"
+                title="بازنشانی فهرست"
+                onClick={() => setHiddenRecents(new Set())}
+                className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90"
+              >
+                <MI name="restart_alt" size={15} />
+              </button>
+            </div>
+
+            {recents.length === 0 ? (
+              <p className="text-label-md text-outline text-center py-3">موردی برای نمایش نیست</p>
+            ) : (
+              <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+                {recents.map((r) => {
+                  const lines = r.lineIds;
+                  const single = lines.length === 1 ? getLine(lines[0]) : null;
+                  return (
+                    <article
+                      key={r.stationId}
+                      className="shrink-0 w-[172px] rounded-2xl bg-surface-container-lowest border border-outline-variant/40 shadow-sm p-3 relative overflow-hidden hover:border-primary/30 transition-all"
+                    >
+                      <button
+                        type="button"
+                        aria-label="حذف این مورد از تاریخچه"
+                        onClick={() => removeRecent(r.stationId)}
+                        className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-outline-variant hover:text-secondary hover:bg-surface-container active:scale-90 transition-all z-10"
+                      >
+                        <MI name="close" size={14} />
+                      </button>
+
+                      {single ? (
+                        <div
+                          className="w-9 h-9 rounded-xl border-2 flex items-center justify-center font-bold text-label-lg shadow-sm"
+                          style={{
+                            backgroundColor: `${single.color}1f`,
+                            borderColor: single.color,
+                            color: blendDark(single.color, 0.45),
+                          }}
+                        >
+                          {toFa(single.number)}
+                        </div>
+                      ) : (
+                        <div className="w-9 h-9 rounded-xl bg-surface-container-high border-2 border-primary flex items-center justify-center relative shadow-sm overflow-hidden">
+                          <span
+                            className="absolute top-0 right-0 w-1/2 h-full"
+                            style={{ backgroundColor: getLine(lines[0]).color }}
+                          />
+                          <span
+                            className="absolute top-0 left-0 w-1/2 h-full"
+                            style={{ backgroundColor: getLine(lines[1] ?? lines[0]).color }}
+                          />
+                          <span
+                            className="relative z-10 text-white text-[10px] font-bold"
+                            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}
+                          >
+                            {toFa(getLine(lines[0]).number)}×{toFa(getLine(lines[1] ?? lines[0]).number)}
+                          </span>
+                        </div>
+                      )}
+
+                      <h4 className="mt-2 text-[13px] font-bold text-on-surface truncate">{r.name}</h4>
+                      <p className="text-[10px] text-outline mt-0.5 flex items-center gap-1">
+                        <MI name="schedule" size={11} />
+                        {relShort(r.date)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/stations/${r.stationId}`)}
+                        className="mt-2 w-full h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"
+                      >
+                        مشاهده
+                        <MI name="chevron_left" size={13} />
+                      </button>
+                    </article>
+                  );
+                })}
               </div>
-            </div>
-
-            <div className="flex flex-col gap-2.5">
-              {recents.length === 0 && (
-                <p className="text-label-md text-outline text-center py-3">موردی برای نمایش نیست</p>
-              )}
-              {recents.map((r) => {
-                const lines = r.lineIds;
-                const single = lines.length === 1 ? getLine(lines[0]) : null;
-                const amenities = (getStation(r.stationId)?.amenities ?? []).slice(0, 2);
-                return (
-                  <article
-                    key={r.stationId}
-                    className="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/30 shadow-sm hover:shadow-md transition-shadow relative group"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      {/* گره رنگ خط + هویت ایستگاه */}
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className="flex flex-col items-center shrink-0">
-                          {single ? (
-                            <div
-                              className="w-10 h-10 rounded-xl border-2 flex items-center justify-center font-bold text-label-lg shadow-sm"
-                              style={{
-                                backgroundColor: `${single.color}1f`,
-                                borderColor: single.color,
-                                color: blendDark(single.color, 0.45),
-                              }}
-                            >
-                              {toFa(single.number)}
-                            </div>
-                          ) : (
-                            <div className="w-10 h-10 rounded-xl bg-surface-container-high border-2 border-primary flex items-center justify-center relative shadow-sm overflow-hidden">
-                              <span
-                                className="absolute top-0 right-0 w-1/2 h-full"
-                                style={{ backgroundColor: getLine(lines[0]).color }}
-                              />
-                              <span
-                                className="absolute top-0 left-0 w-1/2 h-full"
-                                style={{ backgroundColor: getLine(lines[1] ?? lines[0]).color }}
-                              />
-                              <span
-                                className="relative z-10 text-white text-[11px] font-bold"
-                                style={{ textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}
-                              >
-                                {toFa(getLine(lines[0]).number)}×{toFa(getLine(lines[1] ?? lines[0]).number)}
-                              </span>
-                            </div>
-                          )}
-                          <div className="w-0.5 h-6 bg-outline-variant/30 mt-1" />
-                        </div>
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-title-md text-on-surface font-bold">{r.name}</h4>
-                            {single ? (
-                              <span
-                                className="px-2 py-0.5 rounded text-label-sm font-medium"
-                                style={{
-                                  backgroundColor: `${single.color}26`,
-                                  color: blendDark(single.color, 0.45),
-                                }}
-                              >
-                                خط {toFa(single.number)}
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded text-label-sm font-medium bg-surface-container-high text-on-surface-variant">
-                                خط {lines.map((l) => toFa(getLine(l).number)).join(" و ")}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* نشان‌های ریز امکانات و زمان */}
-                          <div className="flex items-center flex-wrap gap-2 mt-1">
-                            {amenities.map((a, i) => (
-                              <span
-                                key={a}
-                                className={`inline-flex items-center gap-1 text-label-sm px-2 py-0.5 rounded-md ${
-                                  i === 0 ? "text-tertiary bg-surface-container" : "text-on-surface-variant bg-surface-container"
-                                }`}
-                              >
-                                <MI name={AMENITIES[a as keyof typeof AMENITIES]?.icon ?? "check_circle"} size={15} />
-                                {AMENITIES[a as keyof typeof AMENITIES]?.label ?? "امکانات فعال"}
-                              </span>
-                            ))}
-                            <span className="text-label-sm text-outline flex items-center gap-0.5">
-                              <MI name="schedule" size={14} />
-                              {relTime(r.date)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* خوشه عملیات */}
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <button
-                          type="button"
-                          aria-label="حذف این مورد از تاریخچه"
-                          onClick={() => removeRecent(r.stationId)}
-                          className="text-outline hover:text-secondary p-1 rounded-full hover:bg-surface-container active:scale-90 transition-all"
-                        >
-                          <MI name="close" size={20} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/stations/${r.stationId}`)}
-                          className="mt-2 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary text-label-md flex items-center gap-1 active:scale-95 transition-all"
-                        >
-                          <span>مشاهده</span>
-                          <MI name="chevron_left" size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+            )}
           </section>
         )}
 
         {/* ---------------- ۵. آخرین مسیرها و جستجوهای ثبت‌شده ---------------- */}
         {!loading && !loadError && trips.length > 0 && (
-          <section aria-labelledby="heading-recent-routes" className="flex flex-col gap-3 mt-1">
+          <section aria-labelledby="heading-recent-routes" className="flex flex-col gap-2.5 mt-1">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary-container" />
-                <h3 id="heading-recent-routes" className="text-title-lg text-on-surface font-bold">
+                <span className="w-2 h-2 rounded-full bg-primary-container" />
+                <h3 id="heading-recent-routes" className="text-title-md text-on-surface font-bold">
                   آخرین مسیرها و جستجوهای ثبت‌شده
                 </h3>
                 <button
@@ -677,67 +590,87 @@ export default function HistoryPage() {
                   }
                   className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90"
                 >
-                  <MI name="help" size={16} />
+                  <MI name="help" size={15} />
                 </button>
               </div>
-              <span className="text-label-md text-outline">{toFa(Math.min(10, trips.length))} مورد اخیر</span>
+              <span className="text-[11px] text-outline">{toFa(Math.min(10, trips.length))} مورد اخیر</span>
             </div>
 
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2">
               {trips.slice(0, 10).map((t) => {
-                const firstLegColor = getLine(getStation(t.fromStationId)?.lines[0]?.lineId ?? "").color;
+                const cFrom = getLine(getStation(t.fromStationId)?.lines[0]?.lineId ?? "").color;
+                const cTo = getLine(getStation(t.toStationId)?.lines[0]?.lineId ?? "").color;
                 return (
                   <article
                     key={t.id}
-                    className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-sm hover:border-primary-container/40 transition-all"
+                    className="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-sm p-3 hover:border-primary/30 transition-all"
                   >
-                    <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="shrink-0" style={{ color: firstLegColor }}>
-                          <MI name="route" size={20} />
-                        </span>
-                        <span className="text-title-md text-on-surface font-bold truncate">{t.fromName}</span>
-                        <MI name="arrow_back" size={18} className="text-outline-variant shrink-0" />
-                        <span className="text-title-md text-on-surface font-bold truncate">{t.toName}</span>
+                    <div className="flex items-center gap-3">
+                      {/* ریل مبدأ به مقصد */}
+                      <div className="flex flex-col items-center shrink-0" aria-hidden>
+                        <span
+                          className="w-2.5 h-2.5 rounded-full border-2 border-surface-container-lowest"
+                          style={{ backgroundColor: cFrom }}
+                        />
+                        <span className="w-[2px] h-6 bg-outline-variant/50 rounded-full my-0.5" />
+                        <span
+                          className="w-2.5 h-2.5 rounded-full border-2 border-surface-container-lowest"
+                          style={{ backgroundColor: cTo }}
+                        />
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <span className="text-label-sm text-outline">{relShort(t.createdAt)}</span>
-                        <button
-                          type="button"
-                          aria-label="حذف این سفر از تاریخچه"
-                          onClick={() => deleteTrip(t.id)}
-                          className="text-outline hover:text-secondary p-1 rounded-full hover:bg-surface-container active:scale-90 transition-all"
-                        >
-                          <MI name="close" size={18} />
-                        </button>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-bold text-on-surface truncate leading-5">{t.fromName}</p>
+                        <p className="text-[13px] font-bold text-on-surface truncate leading-5 mt-1.5">{t.toName}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="text-[10px] text-outline flex items-center gap-1">
+                          <MI name="schedule" size={12} />
+                          {relShort(t.createdAt)}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => replayTrip(t)}
+                            aria-label={`مسیریابی مجدد از ${t.fromName} به ${t.toName}`}
+                            className="px-2.5 h-8 rounded-lg bg-primary text-on-primary text-[11px] font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
+                          >
+                            <MI name="north_east" size={14} />
+                            مسیر
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="حذف این سفر از تاریخچه"
+                            onClick={() => deleteTrip(t.id)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-outline-variant hover:text-secondary hover:bg-surface-container active:scale-90 transition-all"
+                          >
+                            <MI name="close" size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between pt-3">
-                      <div className="flex items-center gap-3 text-body-sm text-on-surface-variant">
-                        <div className="flex items-center gap-1 text-primary font-semibold">
-                          <MI name="timer" size={16} />
-                          <span>{toFa(t.minutes)} دقیقه</span>
-                        </div>
+
+                    <div className="mt-2.5 pt-2.5 border-t border-outline-variant/20 flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container text-[11px] font-bold text-primary">
+                        <MI name="timer" size={13} />
+                        {toFa(t.minutes)} دقیقه
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container text-[11px] font-medium text-on-surface-variant">
                         {t.transfers === 0 ? (
-                          <div className="flex items-center gap-1 text-tertiary">
-                            <MI name="straight" size={16} />
-                            <span>مستقیم (بدون تعویض)</span>
-                          </div>
+                          <>
+                            <MI name="straight" size={13} className="text-tertiary" />
+                            مستقیم
+                          </>
                         ) : (
-                          <div className="flex items-center gap-1 text-on-surface-variant">
-                            <MI name="transfer_within_a_station" size={16} className="text-tertiary" />
-                            <span>{toFa(t.transfers)} تعویض</span>
-                          </div>
+                          <>
+                            <MI name="transfer_within_a_station" size={13} className="text-tertiary" />
+                            {toFa(t.transfers)} تعویض
+                          </>
                         )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => replayTrip(t)}
-                        className="px-3.5 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all shrink-0"
-                      >
-                        <MI name="north_east" size={16} />
-                        <span>مسیریابی مجدد</span>
-                      </button>
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container text-[11px] font-medium text-on-surface-variant mr-auto">
+                        <MI name="payments" size={13} className="text-primary" />
+                        {faMoney(t.fare)} تومان
+                      </span>
                     </div>
                   </article>
                 );
@@ -745,18 +678,18 @@ export default function HistoryPage() {
 
               {/* بیدارباش سفر */}
               {lastTrip && (
-                <article className="bg-surface-container-low rounded-xl p-3.5 border border-primary/20 shadow-sm flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary dark:text-on-primary-fixed-variant shrink-0">
-                      <MI name="alarm" size={22} />
+                <article className="bg-surface-container-low rounded-2xl p-3 border border-primary/20 shadow-sm flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-primary-fixed flex items-center justify-center text-primary dark:text-on-primary-fixed-variant shrink-0">
+                      <MI name="alarm" size={20} />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-title-md text-on-surface font-bold truncate">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-[13px] text-on-surface font-bold truncate">
                           بیدارباش سفر: {lastTrip.toName}
                         </h4>
                         <span
-                          className={`px-2 py-0.5 rounded text-label-sm ${
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                             wakeOn
                               ? "bg-tertiary-fixed text-on-tertiary-fixed-variant"
                               : "bg-surface-container-high text-outline"
@@ -765,9 +698,8 @@ export default function HistoryPage() {
                           {wakeOn ? "فعال" : "غیرفعال"}
                         </span>
                       </div>
-                      <p className="text-body-sm text-on-surface-variant mt-0.5">
-                        هشدار دقیق {toFa(lastTrip.minutes)} دقیقه قبل از رسیدن قطار به ایستگاه مقصد • ساعت{" "}
-                        {wakeClock}
+                      <p className="text-[11px] text-on-surface-variant mt-0.5 truncate">
+                        هشدار {toFa(lastTrip.minutes)} دقیقه قبل از رسیدن • ساعت {wakeClock}
                       </p>
                     </div>
                   </div>

@@ -28,6 +28,9 @@ FULL = ROOT / "public/fonts/material-symbols-outlined.woff2"
 OUT = ROOT / "public/fonts/material-symbols-subset.woff2"
 
 STATIC_RX = re.compile(r'(?:MI\s+name|name)\s*=\s*"([a-z_0-9]+)"')
+# نام‌های شرطی داخل expression: name={cond ? "x" : "y"}
+EXPR_RX = re.compile(r'\bname\s*=\s*\{([^}]*)\}')
+STR_RX = re.compile(r'"([a-z_0-9]+)"')
 DATA_RX = re.compile(r'\bicon:\s*"([a-z_0-9]+)"')
 
 
@@ -37,6 +40,8 @@ def collect_icons() -> list[str]:
         src = path.read_text(encoding="utf-8")
         icons.update(STATIC_RX.findall(src))
         icons.update(DATA_RX.findall(src))
+        for expr in EXPR_RX.findall(src):
+            icons.update(STR_RX.findall(expr))
     return sorted(icons)
 
 

@@ -528,6 +528,24 @@ export default function Page() {
               ))}
             </div>
 
+            {/* دکمه مسیریابی — نمایش مسیر انتخاب‌شده */}
+            <button
+              onClick={openPlan}
+              className={`w-full h-12 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-md ${
+                originId && destId
+                  ? "bg-primary text-on-primary shadow-primary/30"
+                  : "bg-surface-container-lowest text-primary border border-primary/40 shadow-none hover:bg-surface-container"
+              }`}
+              type="button"
+              aria-label="مسیریابی و نمایش مسیر"
+            >
+              <MI name="directions" size={20} />
+              {originId && destId
+                ? `مسیریابی ${originText !== "" && destText !== "" ? `از ${originText} به ${destText}` : ""}`
+                : "انتخاب مبدأ و مقصد برای مسیریابی"}
+              <MI name="chevron_left" size={18} className="opacity-80" />
+            </button>
+
             {/* آمار ریز سفر */}
             <button
               onClick={openPlan}

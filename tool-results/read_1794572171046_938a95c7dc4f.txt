@@ -1,0 +1,950 @@
+     1→"use client";
+     2→
+     3→import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+     4→import { useRouter } from "next/navigation";
+     5→import { AMENITIES, getLine, getStation, nextArrivalsBoth, toFa } from "@/lib/metro-data";
+     6→import { MI, PageHeader } from "@/components/metro/shell";
+     7→import { useToast } from "@/hooks/use-toast";
+     8→
+     9→/* ============================================================
+    10→   تاریخچه فعالیت مسافر — بازطراحی دقیق بر اساس ui/_11/code.html
+    11→   سوابق، آمار، ایستگاه‌های بازدیدشده، آخرین مسیرها، بیدارباش سفر
+    12→   ============================================================ */
+    13→
+    14→interface Trip {
+    15→  id: string;
+    16→  fromStationId: string;
+    17→  fromName: string;
+    18→  toStationId: string;
+    19→  toName: string;
+    20→  minutes: number;
+    21→  transfers: number;
+    22→  fare: number;
+    23→  pref: string;
+    24→  createdAt: string;
+    25→}
+    26→
+    27→interface HistoryStats {
+    28→  count: number;
+    29→  minutes: number;
+    30→  fare: number;
+    31→  topFrom: string | null;
+    32→}
+    33→
+    34→interface FavLine {
+    35→  id: string;
+    36→  number: number;
+    37→  name: string;
+    38→  color: string;
+    39→  textOnColor: string;
+    40→}
+    41→
+    42→interface FavStation {
+    43→  id: string;
+    44→  name: string;
+    45→  isInterchange: boolean;
+    46→  lines: FavLine[];
+    47→  amenities: string[];
+    48→  favoritedAt: string;
+    49→}
+    50→
+    51→interface RecentStation {
+    52→  stationId: string;
+    53→  name: string;
+    54→  lineIds: string[];
+    55→  date: string;
+    56→}
+    57→
+    58→/* ------------------------------ کمکی‌ها ------------------------------ */
+    59→
+    60→function clockFa(d: Date): string {
+    61→  return toFa(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+    62→}
+    63→
+    64→function dayDiff(iso: string): number {
+    65→  const d = new Date(iso);
+    66→  if (Number.isNaN(d.getTime())) return 99;
+    67→  const now = new Date();
+    68→  const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    69→  const n0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    70→  return Math.round((n0 - d0) / 86400000);
+    71→}
+    72→
+    73→/** «امروز ساعت ۱۲:۳۰» / «دیروز ساعت ۱۸:۱۵» / «۳ روز پیش» */
+    74→function relTime(iso: string): string {
+    75→  const d = new Date(iso);
+    76→  const diff = dayDiff(iso);
+    77→  if (diff <= 0) return `امروز ساعت ${clockFa(d)}`;
+    78→  if (diff === 1) return `دیروز ساعت ${clockFa(d)}`;
+    79→  return `${toFa(diff)} روز پیش`;
+    80→}
+    81→
+    82→/** «امروز» / «دیروز» / «۲ روز پیش» */
+    83→function relShort(iso: string): string {
+    84→  const diff = dayDiff(iso);
+    85→  if (diff <= 0) return "امروز";
+    86→  if (diff === 1) return "دیروز";
+    87→  return `${toFa(diff)} روز پیش`;
+    88→}
+    89→
+    90→/** تیره‌کردن رنگ خط برای متن چیپ روی زمینه همان رنگ با شفافیت کم */
+    91→function blendDark(hex: string, t: number): string {
+    92→  const m = hex.replace("#", "");
+    93→  const r = parseInt(m.slice(0, 2), 16);
+    94→  const g = parseInt(m.slice(2, 4), 16);
+    95→  const b = parseInt(m.slice(4, 6), 16);
+    96→  const f = (v: number) => Math.round(v * (1 - t));
+    97→  return `rgb(${f(r)}, ${f(g)}, ${f(b)})`;
+    98→}
+    99→
+   100→export default function HistoryPage() {
+   101→  const router = useRouter();
+   102→  const { toast } = useToast();
+   103→
+   104→  const [trips, setTrips] = useState<Trip[]>([]);
+   105→  const [stats, setStats] = useState<HistoryStats | null>(null);
+   106→  const [favs, setFavs] = useState<FavStation[]>([]);
+   107→  const [loading, setLoading] = useState(true);
+   108→  const [loadError, setLoadError] = useState(false);
+   109→  const [confirmAll, setConfirmAll] = useState(false);
+   110→  const [deleting, setDeleting] = useState(false);
+   111→  const [hiddenRecents, setHiddenRecents] = useState<Set<string>>(new Set());
+   112→  const [help, setHelp] = useState<{ title: string; desc: string } | null>(null);
+   113→  const [wakeOn, setWakeOn] = useState(true);
+   114→  const [autoSave, setAutoSave] = useState(true);
+   115→  const recentsRef = useRef<HTMLElement>(null);
+   116→
+   117→  /* ---------- داده ---------- */
+   118→  const loadData = useCallback(async () => {
+   119→    setLoading(true);
+   120→    setLoadError(false);
+   121→    try {
+   122→      const [hRes, fRes] = await Promise.all([fetch("/api/history"), fetch("/api/favorites")]);
+   123→      if (!hRes.ok) throw new Error("history failed");
+   124→      const hData = (await hRes.json()) as { trips: Trip[]; stats: HistoryStats };
+   125→      setTrips(Array.isArray(hData.trips) ? hData.trips : []);
+   126→      setStats(hData.stats ?? null);
+   127→      if (fRes.ok) {
+   128→        const fData = (await fRes.json()) as { favorites?: FavStation[] };
+   129→        setFavs(Array.isArray(fData.favorites) ? fData.favorites : []);
+   130→      }
+   131→      setHiddenRecents(new Set());
+   132→    } catch {
+   133→      setLoadError(true);
+   134→    } finally {
+   135→      setLoading(false);
+   136→    }
+   137→  }, []);
+   138→
+   139→  useEffect(() => {
+   140→    loadData();
+   141→  }, [loadData]);
+   142→
+   143→  /* ---------- تنظیمات محلی (حافظه دستگاه) ---------- */
+   144→  useEffect(() => {
+   145→    try {
+   146→      setAutoSave(localStorage.getItem("metrojo-history-autosave") !== "0");
+   147→      setWakeOn(localStorage.getItem("metrojo-wake") !== "0");
+   148→    } catch {}
+   149→  }, []);
+   150→
+   151→  const toggleAutoSave = () => {
+   152→    setAutoSave((v) => {
+   153→      const nv = !v;
+   154→      try {
+   155→        localStorage.setItem("metrojo-history-autosave", nv ? "1" : "0");
+   156→      } catch {}
+   157→      return nv;
+   158→    });
+   159→  };
+   160→
+   161→  const toggleWake = () => {
+   162→    setWakeOn((v) => {
+   163→      const nv = !v;
+   164→      try {
+   165→        localStorage.setItem("metrojo-wake", nv ? "1" : "0");
+   166→      } catch {}
+   167→      return nv;
+   168→    });
+   169→  };
+   170→
+   171→  const openHelp = (title: string, desc: string) => setHelp({ title, desc });
+   172→
+   173→  /* ---------- مشتق‌ها ---------- */
+   174→  const lastTrip = trips[0];
+   175→
+   176→  const favIds = useMemo(() => new Set(favs.map((f) => f.id)), [favs]);
+   177→  const topFav = favs[0];
+   178→
+   179→  const uniqueStations = useMemo(() => {
+   180→    const s = new Set<string>();
+   181→    trips.forEach((t) => {
+   182→      s.add(t.fromStationId);
+   183→      s.add(t.toStationId);
+   184→    });
+   185→    return s.size;
+   186→  }, [trips]);
+   187→
+   188→  const totalRefs = useMemo(() => trips.length * 2, [trips]);
+   189→
+   190→  const thisYearTrips = useMemo(() => {
+   191→    const y = new Date().getFullYear();
+   192→    return trips.filter((t) => new Date(t.createdAt).getFullYear() === y).length;
+   193→  }, [trips]);
+   194→
+   195→  /** اتحاد ایستگاه‌های مبدأ/مقصد آخرین سفرها — حداکثر ۴ مورد */
+   196→  const recents = useMemo(() => {
+   197→    const seen = new Set<string>(hiddenRecents);
+   198→    const out: RecentStation[] = [];
+   199→    outer: for (const t of trips) {
+   200→      for (const sid of [t.fromStationId, t.toStationId]) {
+   201→        if (seen.has(sid)) continue;
+   202→        const st = getStation(sid);
+   203→        if (!st) continue;
+   204→        seen.add(sid);
+   205→        out.push({ stationId: sid, name: st.name, lineIds: st.lines.map((l) => l.lineId), date: t.createdAt });
+   206→        if (out.length >= 4) break outer;
+   207→      }
+   208→    }
+   209→    return out;
+   210→  }, [trips, hiddenRecents]);
+   211→
+   212→  /** وضعیت زنده قطار از ایستگاه آخرین سفر — برای چیپ سبز هیرو */
+   213→  const heroStatus = useMemo(() => {
+   214→    if (!lastTrip) return { live: false, text: "هنوز سفری ثبت نشده است" };
+   215→    const st = getStation(lastTrip.fromStationId);
+   216→    const lineId = st?.lines[0]?.lineId;
+   217→    if (!lineId) return { live: false, text: "آماده ثبت سفر بعدی" };
+   218→    const arrs = nextArrivalsBoth(lineId, lastTrip.fromStationId);
+   219→    const live = arrs.find((a) => !a.outOfService && a.minutes.length > 0);
+   220→    if (live) return { live: true, text: `قطار بعدی ${toFa(live.minutes[0])} دقیقه — به سمت ${live.to}` };
+   221→    return { live: false, text: "خارج از ساعات سرویس" };
+   222→  }, [lastTrip]);
+   223→
+   224→  /** ساعت تخمینی رسیدن به مقصد آخرین سفر — برای بیدارباش */
+   225→  const wakeClock = useMemo(() => {
+   226→    if (!lastTrip) return "";
+   227→    const st = getStation(lastTrip.toStationId);
+   228→    const lineId = st?.lines[0]?.lineId;
+   229→    let mins: number | null = null;
+   230→    if (lineId) {
+   231→      const arrs = nextArrivalsBoth(lineId, lastTrip.toStationId);
+   232→      const live = arrs.find((a) => !a.outOfService && a.minutes.length > 0);
+   233→      if (live) mins = live.minutes[0];
+   234→    }
+   235→    const base = mins != null ? Date.now() + mins * 60000 : new Date(lastTrip.createdAt).getTime() + lastTrip.minutes * 60000;
+   236→    return clockFa(new Date(base));
+   237→  }, [lastTrip]);
+   238→
+   239→  /* ---------- اکشن‌ها ---------- */
+   240→  const deleteAll = async () => {
+   241→    if (deleting) return;
+   242→    setDeleting(true);
+   243→    try {
+   244→      const res = await fetch("/api/history?all=1", { method: "DELETE" });
+   245→      if (!res.ok) throw new Error("delete failed");
+   246→      setTrips([]);
+   247→      setStats(null);
+   248→      setHiddenRecents(new Set());
+   249→      setConfirmAll(false);
+   250→      toast({ title: "تاریخچه پاک شد", description: "همه سفرهای ثبت‌شده حذف شدند" });
+   251→    } catch {
+   252→      toast({ title: "حذف تاریخچه ناموفق بود", description: "لطفاً دوباره تلاش کنید", variant: "destructive" });
+   253→    } finally {
+   254→      setDeleting(false);
+   255→    }
+   256→  };
+   257→
+   258→  const deleteTrip = async (id: string) => {
+   259→    try {
+   260→      const res = await fetch(`/api/history?id=${id}`, { method: "DELETE" });
+   261→      if (!res.ok) throw new Error("delete failed");
+   262→      setTrips((prev) => prev.filter((t) => t.id !== id));
+   263→      setStats((prev) => (prev ? { ...prev, count: Math.max(0, prev.count - 1) } : prev));
+   264→      toast({ title: "سفر حذف شد", description: "این مسیر از تاریخچه پاک شد" });
+   265→    } catch {
+   266→      toast({ title: "حذف سفر ناموفق بود", description: "لطفاً دوباره تلاش کنید", variant: "destructive" });
+   267→    }
+   268→  };
+   269→
+   270→  /** حذف ایستگاه اخیر — اگر نشان‌شده باشد از علاقه‌مندی‌ها حذف می‌شود، وگرنه فقط ردیف پنهان می‌شود */
+   271→  const removeRecent = async (sid: string) => {
+   272→    setHiddenRecents((prev) => new Set(prev).add(sid));
+   273→    if (favIds.has(sid)) {
+   274→      try {
+   275→        const res = await fetch(`/api/favorites?stationId=${sid}`, { method: "DELETE" });
+   276→        if (!res.ok) throw new Error("delete failed");
+   277→        setFavs((prev) => prev.filter((f) => f.id !== sid));
+   278→        toast({ title: "از نشان‌شده‌ها حذف شد", description: getStation(sid)?.name ?? "" });
+   279→      } catch {
+   280→        toast({ title: "حذف نشان‌شده ناموفق بود", description: "لطفاً دوباره تلاش کنید", variant: "destructive" });
+   281→      }
+   282→    }
+   283→  };
+   284→
+   285→  const scrollToRecents = () => {
+   286→    recentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+   287→  };
+   288→
+   289→  const replayTrip = (t: Trip) => {
+   290→    router.push(`/plan?from=${t.fromStationId}&to=${t.toStationId}`);
+   291→  };
+   292→
+   293→  /* ============================================================
+   294→     رندر
+   295→     ============================================================ */
+   296→  return (
+   297→    <>
+   298→      <PageHeader
+   299→        title="تاریخچه فعالیت"
+   300→        subtitle="سابقه هوشمند حمل‌ونقل ریلی"
+   301→        actions={
+   302→          <>
+   303→            <button
+   304→              type="button"
+   305→              aria-label="بارگذاری دوباره"
+   306→              onClick={loadData}
+   307→              className="w-10 h-10 flex items-center justify-center rounded-full text-primary hover:bg-surface-container active:scale-95 transition-all"
+   308→            >
+   309→              <MI name="refresh" size={22} />
+   310→            </button>
+   311→            <button
+   312→              type="button"
+   313→              aria-label="پاکسازی سوابق"
+   314→              title="پاکسازی تاریخچه"
+   315→              disabled={trips.length === 0}
+   316→              onClick={() => setConfirmAll(true)}
+   317→              className="w-10 h-10 flex items-center justify-center rounded-full text-secondary hover:bg-error-container/40 active:scale-95 transition-all disabled:opacity-40"
+   318→            >
+   319→              <MI name="delete_sweep" size={22} />
+   320→            </button>
+   321→          </>
+   322→        }
+   323→      />
+   324→
+   325→      <main className="flex-1 w-full max-w-xl mx-auto px-4 pt-4 pb-32 flex flex-col gap-5">
+   326→        {/* ---------------- ۱. هیرو سوابق من ---------------- */}
+   327→        {loading ? (
+   328→          <div className="h-[68px] rounded-2xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
+   329→        ) : (
+   330→          <section className="relative overflow-hidden rounded-2xl p-4 shadow-md bg-primary-container bg-gradient-to-tl from-primary via-primary-container to-primary-container text-white">
+   331→            <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
+   332→            <div className="flex items-center justify-between w-full relative z-10">
+   333→              <div className="flex items-center gap-3 min-w-0">
+   334→                <div className="w-11 h-11 rounded-xl bg-white/15 text-white flex items-center justify-center shadow-md shrink-0">
+   335→                  <MI name="work_history" size={24} />
+   336→                </div>
+   337→                <div className="min-w-0">
+   338→                  <div className="flex items-center gap-2 flex-wrap">
+   339→                    <h2 className="text-headline-md text-white font-bold">سوابق من در متروجو</h2>
+   340→                    {heroStatus.live ? (
+   341→                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant">
+   342→                        <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" />
+   343→                        {heroStatus.text}
+   344→                      </span>
+   345→                    ) : (
+   346→                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm bg-white/15 text-white">
+   347→                        <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" />
+   348→                        {heroStatus.text}
+   349→                      </span>
+   350→                    )}
+   351→                  </div>
+   352→                </div>
+   353→              </div>
+   354→              <button
+   355→                type="button"
+   356→                aria-label="راهنما"
+   357→                onClick={() =>
+   358→                  openHelp(
+   359→                    "راهنمای تاریخچه مسافر",
+   360→                    "در این بخش تمامی ایستگاه‌های مشاهده‌شده، آخرین جستجوهای مسیر و هشدارهای بیدارباش سفرهای شما به صورت امن روی دستگاه ذخیره و نمایش داده می‌شوند."
+   361→                  )
+   362→                }
+   363→                className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-all active:scale-90 shrink-0 shadow-sm"
+   364→              >
+   365→                <MI name="help" size={20} />
+   366→              </button>
+   367→            </div>
+   368→          </section>
+   369→        )}
+   370→
+   371→        {/* ---------------- ۲. خلاصه آمار (۳ کارت) ---------------- */}
+   372→        {loading ? (
+   373→          <div className="grid grid-cols-3 gap-2.5">
+   374→            <div className="h-28 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
+   375→            <div className="h-28 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
+   376→            <div className="h-28 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
+   377→          </div>
+   378→        ) : (
+   379→          <section aria-label="خلاصه آمار فعالیت مسافر">
+   380→            <div className="grid grid-cols-3 gap-2.5">
+   381→              {/* بازدیدها */}
+   382→              <div className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
+   383→                <div className="flex items-center justify-between text-outline mb-1.5">
+   384→                  <span className="text-label-sm font-semibold">بازدیدها</span>
+   385→                  <MI name="visibility" size={18} className="text-primary" />
+   386→                </div>
+   387→                <div>
+   388→                  <span className="text-headline-lg text-on-surface font-extrabold tracking-tight">
+   389→                    {toFa(uniqueStations)}
+   390→                  </span>
+   391→                  <span className="text-label-sm text-outline-variant mr-1">ایستگاه</span>
+   392→                </div>
+   393→                <div className="mt-2 text-label-sm text-on-tertiary-fixed-variant flex items-center gap-0.5">
+   394→                  <MI name="trending_up" size={14} />
+   395→                  <span>{toFa(totalRefs)} مراجعه</span>
+   396→                </div>
+   397→              </div>
+   398→
+   399→              {/* مسیریابی‌ها */}
+   400→              <div className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
+   401→                <div className="flex items-center justify-between text-outline mb-1.5">
+   402→                  <span className="text-label-sm font-semibold">مسیریابی</span>
+   403→                  <MI name="route" size={18} className="text-primary" />
+   404→                </div>
+   405→                <div>
+   406→                  <span className="text-headline-lg text-on-surface font-extrabold tracking-tight">
+   407→                    {toFa(trips.length)}
+   408→                  </span>
+   409→                  <span className="text-label-sm text-outline-variant mr-1">مسیر</span>
+   410→                </div>
+   411→                <div className="mt-2 text-label-sm text-on-surface-variant">
+   412→                  <span>{toFa(thisYearTrips)} سفر امسال</span>
+   413→                </div>
+   414→              </div>
+   415→
+   416→              {/* ایستگاه نشان‌شده */}
+   417→              <div className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-sm flex flex-col justify-between hover:border-primary/40 transition-colors">
+   418→                <div className="flex items-center justify-between text-outline mb-1.5">
+   419→                  <span className="text-label-sm font-semibold">ایستگاه نشان‌شده</span>
+   420→                  <MI name="favorite" size={18} className="text-secondary" />
+   421→                </div>
+   422→                <div>
+   423→                  <div className="text-title-md text-on-surface font-bold truncate">
+   424→                    {topFav ? topFav.name : "—"}
+   425→                  </div>
+   426→                  <span className="text-label-sm text-outline">
+   427→                    {topFav
+   428→                      ? topFav.lines.length > 1
+   429→                        ? `تقاطع خط ${topFav.lines.map((l) => toFa(l.number)).join(" و ")}`
+   430→                        : `خط ${toFa(topFav.lines[0]?.number ?? 0)}`
+   431→                      : "هنوز نشان نشده"}
+   432→                  </span>
+   433→                </div>
+   434→                <div className="mt-2 text-label-sm text-primary font-medium">
+   435→                  <span>{toFa(favIds.size)} نشان‌شده</span>
+   436→                </div>
+   437→              </div>
+   438→            </div>
+   439→          </section>
+   440→        )}
+   441→
+   442→        {/* ---------------- ۳. قرص‌های فیلتر ---------------- */}
+   443→        {!loading && (
+   444→          <nav aria-label="فیلتر تاریخچه" className="flex items-center gap-2 overflow-x-auto pb-1 pretty-scroll">
+   445→            <button
+   446→              type="button"
+   447→              onClick={() => router.push("/saved")}
+   448→              className="px-4 py-2 rounded-full text-label-lg bg-primary-container text-on-primary shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform"
+   449→            >
+   450→              <MI name="done_all" size={18} />
+   451→              <span>سابقه سفارش</span>
+   452→              <span className="bg-on-primary text-primary-container text-label-sm px-1.5 py-0.5 rounded-full">
+   453→                {toFa(trips.length)}
+   454→              </span>
+   455→            </button>
+   456→            <button
+   457→              type="button"
+   458→              onClick={scrollToRecents}
+   459→              className="px-4 py-2 rounded-full text-label-lg bg-surface-container-lowest text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container flex items-center gap-1.5 shrink-0 active:scale-95 transition-all"
+   460→            >
+   461→              <MI name="directions_subway" size={18} />
+   462→              <span>ایستگاه‌های بازدیدشده</span>
+   463→            </button>
+   464→          </nav>
+   465→        )}
+   466→
+   467→        {/* ---------------- خطای بارگذاری ---------------- */}
+   468→        {!loading && loadError && (
+   469→          <section className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/40 shadow-sm flex flex-col items-center gap-3 text-center">
+   470→            <MI name="wifi_off" size={32} className="text-error" />
+   471→            <p className="text-xs font-bold text-on-surface">بارگذاری تاریخچه ناموفق بود</p>
+   472→            <button
+   473→              type="button"
+   474→              onClick={loadData}
+   475→              className="bg-primary-container text-white rounded-xl font-bold text-xs px-5 py-2 shadow-sm active:scale-95 transition-all"
+   476→            >
+   477→              تلاش دوباره
+   478→            </button>
+   479→          </section>
+   480→        )}
+   481→
+   482→        {!loading && !loadError && trips.length === 0 && (
+   483→          /* ---------------- حالت خالی ---------------- */
+   484→          <section className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/30 shadow-sm flex flex-col items-center gap-3 text-center">
+   485→            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+   486→              <MI name="route" size={30} />
+   487→            </div>
+   488→            <p className="text-title-md text-on-surface font-bold">هنوز سفری ثبت نشده است</p>
+   489→            <p className="text-body-sm text-outline">
+   490→              اولین سفر خود را از مسیریاب متروجو ثبت کنید تا سوابق اینجا نمایش داده شود
+   491→            </p>
+   492→            <button
+   493→              type="button"
+   494→              onClick={() => router.push("/plan")}
+   495→              className="px-5 py-2.5 rounded-xl bg-primary text-on-primary text-label-lg font-bold shadow-sm active:scale-95 transition-all flex items-center gap-1.5"
+   496→            >
+   497→              <MI name="north_east" size={16} />
+   498→              <span>شروع مسیریابی</span>
+   499→            </button>
+   500→          </section>
+   501→        )}
+   502→
+   503→        {/* ---------------- ۴. ایستگاه‌های اخیراً مشاهده‌شده ---------------- */}
+   504→        {!loading && !loadError && trips.length > 0 && (
+   505→          <section
+   506→            ref={recentsRef}
+   507→            aria-labelledby="heading-recent-stations"
+   508→            className="flex flex-col gap-3 scroll-mt-20"
+   509→          >
+   510→            <div className="flex items-center justify-between px-1">
+   511→              <div className="flex items-center gap-2">
+   512→                <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+   513→                <h3 id="heading-recent-stations" className="text-title-lg text-on-surface font-bold">
+   514→                  ایستگاه‌های اخیراً مشاهده‌شده
+   515→                </h3>
+   516→                <button
+   517→                  type="button"
+   518→                  aria-label="راهنمای ایستگاه‌ها"
+   519→                  onClick={() =>
+   520→                    openHelp(
+   521→                      "ایستگاه‌های بازدیدشده",
+   522→                      "ایستگاه‌هایی که برای مشاهده جزئیات، زمان‌بندی یا امکانات رفاهی باز کرده‌اید برای دسترسی سریع‌تر در اینجا نگهداری می‌شوند."
+   523→                    )
+   524→                  }
+   525→                  className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90"
+   526→                >
+   527→                  <MI name="help" size={16} />
+   528→                </button>
+   529→              </div>
+   530→              <div className="flex items-center gap-1.5">
+   531→                <span className="text-label-md text-outline">{toFa(recents.length)} ایستگاه اخیر</span>
+   532→                <button
+   533→                  type="button"
+   534→                  aria-label="بازنشانی فهرست"
+   535→                  title="بازنشانی فهرست"
+   536→                  onClick={() => setHiddenRecents(new Set())}
+   537→                  className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90"
+   538→                >
+   539→                  <MI name="restart_alt" size={16} />
+   540→                </button>
+   541→              </div>
+   542→            </div>
+   543→
+   544→            <div className="flex flex-col gap-2.5">
+   545→              {recents.length === 0 && (
+   546→                <p className="text-label-md text-outline text-center py-3">موردی برای نمایش نیست</p>
+   547→              )}
+   548→              {recents.map((r) => {
+   549→                const lines = r.lineIds;
+   550→                const single = lines.length === 1 ? getLine(lines[0]) : null;
+   551→                const amenities = (getStation(r.stationId)?.amenities ?? []).slice(0, 2);
+   552→                return (
+   553→                  <article
+   554→                    key={r.stationId}
+   555→                    className="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/30 shadow-sm hover:shadow-md transition-shadow relative group"
+   556→                  >
+   557→                    <div className="flex items-start justify-between gap-3">
+   558→                      {/* گره رنگ خط + هویت ایستگاه */}
+   559→                      <div className="flex items-start gap-3 min-w-0">
+   560→                        <div className="flex flex-col items-center shrink-0">
+   561→                          {single ? (
+   562→                            <div
+   563→                              className="w-10 h-10 rounded-xl border-2 flex items-center justify-center font-bold text-label-lg shadow-sm"
+   564→                              style={{
+   565→                                backgroundColor: `${single.color}1f`,
+   566→                                borderColor: single.color,
+   567→                                color: blendDark(single.color, 0.45),
+   568→                              }}
+   569→                            >
+   570→                              {toFa(single.number)}
+   571→                            </div>
+   572→                          ) : (
+   573→                            <div className="w-10 h-10 rounded-xl bg-surface-container-high border-2 border-primary flex items-center justify-center relative shadow-sm overflow-hidden">
+   574→                              <span
+   575→                                className="absolute top-0 right-0 w-1/2 h-full"
+   576→                                style={{ backgroundColor: getLine(lines[0]).color }}
+   577→                              />
+   578→                              <span
+   579→                                className="absolute top-0 left-0 w-1/2 h-full"
+   580→                                style={{ backgroundColor: getLine(lines[1] ?? lines[0]).color }}
+   581→                              />
+   582→                              <span
+   583→                                className="relative z-10 text-white text-[11px] font-bold"
+   584→                                style={{ textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}
+   585→                              >
+   586→                                {toFa(getLine(lines[0]).number)}×{toFa(getLine(lines[1] ?? lines[0]).number)}
+   587→                              </span>
+   588→                            </div>
+   589→                          )}
+   590→                          <div className="w-0.5 h-6 bg-outline-variant/30 mt-1" />
+   591→                        </div>
+   592→                        <div className="flex flex-col gap-1 min-w-0">
+   593→                          <div className="flex items-center gap-2 flex-wrap">
+   594→                            <h4 className="text-title-md text-on-surface font-bold">{r.name}</h4>
+   595→                            {single ? (
+   596→                              <span
+   597→                                className="px-2 py-0.5 rounded text-label-sm font-medium"
+   598→                                style={{
+   599→                                  backgroundColor: `${single.color}26`,
+   600→                                  color: blendDark(single.color, 0.45),
+   601→                                }}
+   602→                              >
+   603→                                خط {toFa(single.number)}
+   604→                              </span>
+   605→                            ) : (
+   606→                              <span className="px-2 py-0.5 rounded text-label-sm font-medium bg-surface-container-high text-on-surface-variant">
+   607→                                خط {lines.map((l) => toFa(getLine(l).number)).join(" و ")}
+   608→                              </span>
+   609→                            )}
+   610→                          </div>
+   611→
+   612→                          {/* نشان‌های ریز امکانات و زمان */}
+   613→                          <div className="flex items-center flex-wrap gap-2 mt-1">
+   614→                            {amenities.map((a, i) => (
+   615→                              <span
+   616→                                key={a}
+   617→                                className={`inline-flex items-center gap-1 text-label-sm px-2 py-0.5 rounded-md ${
+   618→                                  i === 0 ? "text-tertiary bg-surface-container" : "text-on-surface-variant bg-surface-container"
+   619→                                }`}
+   620→                              >
+   621→                                <MI name={AMENITIES[a as keyof typeof AMENITIES]?.icon ?? "check_circle"} size={15} />
+   622→                                {AMENITIES[a as keyof typeof AMENITIES]?.label ?? "امکانات فعال"}
+   623→                              </span>
+   624→                            ))}
+   625→                            <span className="text-label-sm text-outline flex items-center gap-0.5">
+   626→                              <MI name="schedule" size={14} />
+   627→                              {relTime(r.date)}
+   628→                            </span>
+   629→                          </div>
+   630→                        </div>
+   631→                      </div>
+   632→
+   633→                      {/* خوشه عملیات */}
+   634→                      <div className="flex flex-col items-end gap-2 shrink-0">
+   635→                        <button
+   636→                          type="button"
+   637→                          aria-label="حذف این مورد از تاریخچه"
+   638→                          onClick={() => removeRecent(r.stationId)}
+   639→                          className="text-outline hover:text-secondary p-1 rounded-full hover:bg-surface-container active:scale-90 transition-all"
+   640→                        >
+   641→                          <MI name="close" size={20} />
+   642→                        </button>
+   643→                        <button
+   644→                          type="button"
+   645→                          onClick={() => router.push(`/stations/${r.stationId}`)}
+   646→                          className="mt-2 px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary text-label-md flex items-center gap-1 active:scale-95 transition-all"
+   647→                        >
+   648→                          <span>مشاهده</span>
+   649→                          <MI name="chevron_left" size={16} />
+   650→                        </button>
+   651→                      </div>
+   652→                    </div>
+   653→                  </article>
+   654→                );
+   655→              })}
+   656→            </div>
+   657→          </section>
+   658→        )}
+   659→
+   660→        {/* ---------------- ۵. آخرین مسیرها و جستجوهای ثبت‌شده ---------------- */}
+   661→        {!loading && !loadError && trips.length > 0 && (
+   662→          <section aria-labelledby="heading-recent-routes" className="flex flex-col gap-3 mt-1">
+   663→            <div className="flex items-center justify-between px-1">
+   664→              <div className="flex items-center gap-2">
+   665→                <span className="w-2.5 h-2.5 rounded-full bg-primary-container" />
+   666→                <h3 id="heading-recent-routes" className="text-title-lg text-on-surface font-bold">
+   667→                  آخرین مسیرها و جستجوهای ثبت‌شده
+   668→                </h3>
+   669→                <button
+   670→                  type="button"
+   671→                  aria-label="راهنمای مسیرها"
+   672→                  onClick={() =>
+   673→                    openHelp(
+   674→                      "مسیرها و هشدارهای سفر",
+   675→                      "تاریخچه مسیرهای طی‌شده و هشدارهای بیدارباش نزدیک به ایستگاه مقصد را می‌توانید مستقیماً از اینجا مجدداً فعال نمایید."
+   676→                    )
+   677→                  }
+   678→                  className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90"
+   679→                >
+   680→                  <MI name="help" size={16} />
+   681→                </button>
+   682→              </div>
+   683→              <span className="text-label-md text-outline">{toFa(Math.min(10, trips.length))} مورد اخیر</span>
+   684→            </div>
+   685→
+   686→            <div className="flex flex-col gap-2.5">
+   687→              {trips.slice(0, 10).map((t) => {
+   688→                const firstLegColor = getLine(getStation(t.fromStationId)?.lines[0]?.lineId ?? "").color;
+   689→                return (
+   690→                  <article
+   691→                    key={t.id}
+   692→                    className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-sm hover:border-primary-container/40 transition-all"
+   693→                  >
+   694→                    <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+   695→                      <div className="flex items-center gap-2 min-w-0">
+   696→                        <span className="shrink-0" style={{ color: firstLegColor }}>
+   697→                          <MI name="route" size={20} />
+   698→                        </span>
+   699→                        <span className="text-title-md text-on-surface font-bold truncate">{t.fromName}</span>
+   700→                        <MI name="arrow_back" size={18} className="text-outline-variant shrink-0" />
+   701→                        <span className="text-title-md text-on-surface font-bold truncate">{t.toName}</span>
+   702→                      </div>
+   703→                      <div className="flex items-center gap-1 shrink-0">
+   704→                        <span className="text-label-sm text-outline">{relShort(t.createdAt)}</span>
+   705→                        <button
+   706→                          type="button"
+   707→                          aria-label="حذف این سفر از تاریخچه"
+   708→                          onClick={() => deleteTrip(t.id)}
+   709→                          className="text-outline hover:text-secondary p-1 rounded-full hover:bg-surface-container active:scale-90 transition-all"
+   710→                        >
+   711→                          <MI name="close" size={18} />
+   712→                        </button>
+   713→                      </div>
+   714→                    </div>
+   715→                    <div className="flex items-center justify-between pt-3">
+   716→                      <div className="flex items-center gap-3 text-body-sm text-on-surface-variant">
+   717→                        <div className="flex items-center gap-1 text-primary font-semibold">
+   718→                          <MI name="timer" size={16} />
+   719→                          <span>{toFa(t.minutes)} دقیقه</span>
+   720→                        </div>
+   721→                        {t.transfers === 0 ? (
+   722→                          <div className="flex items-center gap-1 text-tertiary">
+   723→                            <MI name="straight" size={16} />
+   724→                            <span>مستقیم (بدون تعویض)</span>
+   725→                          </div>
+   726→                        ) : (
+   727→                          <div className="flex items-center gap-1 text-on-surface-variant">
+   728→                            <MI name="transfer_within_a_station" size={16} className="text-tertiary" />
+   729→                            <span>{toFa(t.transfers)} تعویض</span>
+   730→                          </div>
+   731→                        )}
+   732→                      </div>
+   733→                      <button
+   734→                        type="button"
+   735→                        onClick={() => replayTrip(t)}
+   736→                        className="px-3.5 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all shrink-0"
+   737→                      >
+   738→                        <MI name="north_east" size={16} />
+   739→                        <span>مسیریابی مجدد</span>
+   740→                      </button>
+   741→                    </div>
+   742→                  </article>
+   743→                );
+   744→              })}
+   745→
+   746→              {/* بیدارباش سفر */}
+   747→              {lastTrip && (
+   748→                <article className="bg-surface-container-low rounded-xl p-3.5 border border-primary/20 shadow-sm flex items-center justify-between gap-2">
+   749→                  <div className="flex items-center gap-3 min-w-0">
+   750→                    <div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary dark:text-on-primary-fixed-variant shrink-0">
+   751→                      <MI name="alarm" size={22} />
+   752→                    </div>
+   753→                    <div className="min-w-0">
+   754→                      <div className="flex items-center gap-2 flex-wrap">
+   755→                        <h4 className="text-title-md text-on-surface font-bold truncate">
+   756→                          بیدارباش سفر: {lastTrip.toName}
+   757→                        </h4>
+   758→                        <span
+   759→                          className={`px-2 py-0.5 rounded text-label-sm ${
+   760→                            wakeOn
+   761→                              ? "bg-tertiary-fixed text-on-tertiary-fixed-variant"
+   762→                              : "bg-surface-container-high text-outline"
+   763→                          }`}
+   764→                        >
+   765→                          {wakeOn ? "فعال" : "غیرفعال"}
+   766→                        </span>
+   767→                      </div>
+   768→                      <p className="text-body-sm text-on-surface-variant mt-0.5">
+   769→                        هشدار دقیق {toFa(lastTrip.minutes)} دقیقه قبل از رسیدن قطار به ایستگاه مقصد • ساعت{" "}
+   770→                        {wakeClock}
+   771→                      </p>
+   772→                    </div>
+   773→                  </div>
+   774→                  <button
+   775→                    type="button"
+   776→                    aria-label="لغو یا مدیریت هشدار"
+   777→                    onClick={toggleWake}
+   778→                    className={`p-1.5 rounded-full hover:bg-surface-container active:scale-90 transition-all shrink-0 ${
+   779→                      wakeOn ? "text-outline hover:text-secondary" : "text-primary"
+   780→                    }`}
+   781→                  >
+   782→                    <MI name={wakeOn ? "notifications_off" : "notifications_active"} size={20} />
+   783→                  </button>
+   784→                </article>
+   785→              )}
+   786→            </div>
+   787→          </section>
+   788→        )}
+   789→
+   790→        {/* ---------------- ۶. بنر خدمت شهری (کارت بلیت) ---------------- */}
+   791→        <section
+   792→          aria-label="پیام سامانه"
+   793→          className="w-full rounded-xl bg-surface-container-low border border-outline-variant/30 p-3 flex items-center justify-between text-on-surface-variant"
+   794→        >
+   795→          <div className="flex items-center gap-2.5 min-w-0">
+   796→            <MI name="verified_user" size={20} className="text-primary shrink-0" />
+   797→            <div className="flex flex-col min-w-0">
+   798→              <span className="text-label-md font-bold text-on-surface">کارت بلیت متروی خود را متصل کنید</span>
+   799→              <span className="text-body-sm text-outline">ثبت خودکار تراکنش‌ها و تردد ایستگاهی با NFC</span>
+   800→            </div>
+   801→          </div>
+   802→          <span className="text-label-sm bg-surface-container-highest px-2 py-1 rounded text-primary font-medium shrink-0">
+   803→            خدمت شهری
+   804→          </span>
+   805→        </section>
+   806→
+   807→        {/* ---------------- ۷. تنظیمات حریم خصوصی و تاریخچه ---------------- */}
+   808→        <section
+   809→          aria-labelledby="privacy-heading"
+   810→          className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-sm flex flex-col gap-4"
+   811→        >
+   812→          <div className="flex items-center justify-between">
+   813→            <div className="flex items-center gap-2">
+   814→              <MI name="shield" size={22} className="text-primary" />
+   815→              <h3 id="privacy-heading" className="text-title-md text-on-surface font-bold">
+   816→                تنظیمات حریم خصوصی و تاریخچه
+   817→              </h3>
+   818→            </div>
+   819→            <button
+   820→              type="button"
+   821→              aria-label="راهنمای حریم خصوصی"
+   822→              onClick={() =>
+   823→                openHelp(
+   824→                  "حریم خصوصی و ذخیره‌سازی",
+   825→                  "اطلاعات سوابق تنها در حافظه محلی مرورگر دستگاه شما ذخیره شده و هیچ داده شخصی به سرورهای خارجی ارسال نمی‌شود."
+   826→                )
+   827→              }
+   828→              className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-highest text-primary flex items-center justify-center transition-all active:scale-90"
+   829→            >
+   830→              <MI name="help" size={16} />
+   831→            </button>
+   832→          </div>
+   833→
+   834→          <div className="flex items-center justify-between pt-1">
+   835→            <div className="flex flex-col gap-0.5">
+   836→              <span className="text-label-lg text-on-surface font-semibold">ذخیره خودکار تاریخچه بازدیدها</span>
+   837→              <span className="text-body-sm text-outline">ذخیره‌سازی سریع ایستگاه‌ها و مسیرها در حافظه دستگاه</span>
+   838→            </div>
+   839→            <label className="relative inline-flex items-center cursor-pointer select-none">
+   840→              <input type="checkbox" className="sr-only peer" checked={autoSave} onChange={toggleAutoSave} />
+   841→              <div className="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container" />
+   842→            </label>
+   843→          </div>
+   844→
+   845→          <div className="border-t border-outline-variant/20 pt-3 flex items-center justify-between">
+   846→            <span className="text-body-sm text-on-surface-variant">مدیریت و پاکسازی سوابق</span>
+   847→            <button
+   848→              type="button"
+   849→              disabled={trips.length === 0}
+   850→              onClick={() => setConfirmAll(true)}
+   851→              className="text-label-md font-bold text-error hover:opacity-80 flex items-center gap-1 active:scale-95 transition-all disabled:opacity-40"
+   852→            >
+   853→              <MI name="clear_all" size={18} />
+   854→              <span>پاک‌کردن کل تاریخچه</span>
+   855→            </button>
+   856→          </div>
+   857→        </section>
+   858→      </main>
+   859→
+   860→      {/* ---------------- مودال راهنما ---------------- */}
+   861→      <div
+   862→        className={`fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-200 px-4 ${
+   863→          help ? "opacity-100" : "opacity-0 pointer-events-none"
+   864→        }`}
+   865→        onClick={(e) => {
+   866→          if (e.target === e.currentTarget) setHelp(null);
+   867→        }}
+   868→      >
+   869→        <div
+   870→          className={`bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/30 shadow-xl max-w-sm w-full transform transition-all duration-200 flex flex-col gap-3 ${
+   871→            help ? "scale-100" : "scale-95"
+   872→          }`}
+   873→        >
+   874→          <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+   875→            <div className="flex items-center gap-2">
+   876→              <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary dark:text-on-primary-fixed-variant">
+   877→                <MI name="info" size={20} />
+   878→              </div>
+   879→              <h4 className="text-title-md text-on-surface font-bold">{help?.title ?? "راهنمای تاریخچه"}</h4>
+   880→            </div>
+   881→            <button
+   882→              type="button"
+   883→              aria-label="بستن"
+   884→              onClick={() => setHelp(null)}
+   885→              className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container active:scale-90 transition-all"
+   886→            >
+   887→              <MI name="close" size={20} />
+   888→            </button>
+   889→          </div>
+   890→          <p className="text-body-md text-on-surface-variant leading-relaxed">
+   891→            {help?.desc ?? "توضیحات تکمیلی این بخش..."}
+   892→          </p>
+   893→          <div className="flex items-center justify-end pt-2">
+   894→            <button
+   895→              type="button"
+   896→              onClick={() => setHelp(null)}
+   897→              className="px-4 py-2 rounded-xl bg-primary text-on-primary text-label-md font-bold active:scale-95 transition-all shadow-sm"
+   898→            >
+   899→              متوجه شدم
+   900→            </button>
+   901→          </div>
+   902→        </div>
+   903→      </div>
+   904→
+   905→      {/* ---------------- مودال تأیید پاک‌کردن کل تاریخچه ---------------- */}
+   906→      <div
+   907→        className={`fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-200 px-4 ${
+   908→          confirmAll ? "opacity-100" : "opacity-0 pointer-events-none"
+   909→        }`}
+   910→        onClick={(e) => {
+   911→          if (e.target === e.currentTarget) setConfirmAll(false);
+   912→        }}
+   913→      >
+   914→        <div
+   915→          className={`bg-error-container rounded-2xl p-5 shadow-xl max-w-sm w-full transform transition-all duration-200 flex flex-col gap-3 ${
+   916→            confirmAll ? "scale-100" : "scale-95"
+   917→          }`}
+   918→        >
+   919→          <div className="flex items-center gap-2 border-b border-on-error-container/20 pb-3">
+   920→            <div className="w-9 h-9 rounded-full bg-error/15 flex items-center justify-center text-on-error-container">
+   921→              <MI name="delete_sweep" size={20} />
+   922→            </div>
+   923→            <h4 className="text-title-md text-on-error-container font-bold">پاک‌کردن کل تاریخچه</h4>
+   924→          </div>
+   925→          <p className="text-body-md text-on-error-container leading-relaxed">
+   926→            همه سفرها و سوابق ثبت‌شده حذف می‌شوند. این عمل بازگشت‌پذیر نیست.
+   927→          </p>
+   928→          <div className="flex items-center justify-end gap-2 pt-2">
+   929→            <button
+   930→              type="button"
+   931→              onClick={() => setConfirmAll(false)}
+   932→              className="px-4 py-2 rounded-xl bg-surface-container-lowest text-on-surface text-label-md font-bold active:scale-95 transition-all shadow-sm"
+   933→            >
+   934→              انصراف
+   935→            </button>
+   936→            <button
+   937→              type="button"
+   938→              onClick={deleteAll}
+   939→              disabled={deleting}
+   940→              className="px-4 py-2 rounded-xl bg-error text-on-error text-label-md font-bold active:scale-95 transition-all shadow-sm disabled:opacity-60"
+   941→            >
+   942→              {deleting ? "..." : "پاک‌کردن"}
+   943→            </button>
+   944→          </div>
+   945→        </div>
+   946→      </div>
+   947→    </>
+   948→  );
+   949→}
+   950→
