@@ -1,0 +1,502 @@
+   565→        await api("lines/duplicate", { method: "POST", body: { id: Number(b.dataset.dup) } });
+   566→        toast(`خط «${b.dataset.name}» تکثیر شد (غیرفعال)`, "ok2"); load();
+   567→      }));
+   568→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openLineForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+   569→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   570→        confirmDialog(`خط «${b.dataset.name}» و ایستگاه‌هایش حذف شوند؟`, async () => {
+   571→          await api(`lines/${b.dataset.del}`, { method: "DELETE" });
+   572→          toast("خط حذف شد", "ok2"); load();
+   573→        })));
+   574→    }
+   575→  };
+   576→  const reorderLine = async (id, dir) => {
+   577→    const r = await api("lines/reorder", { method: "POST", body: { id, dir } });
+   578→    if (!r.moved) { toast("جابه‌جایی ممکن نیست — به انتهای فهرست است", "err"); return; }
+   579→    load();
+   580→  };
+   581→  document.getElementById("l-mode").onchange = (e) => { mode = e.target.value; load(); };
+   582→  const addBtn = document.getElementById("l-add");
+   583→  if (addBtn) addBtn.onclick = () => openLineForm(null, load);
+   584→  await load();
+   585→}
+   586→
+   587→function openLineForm(line, after) {
+   588→  const isEdit = !!line;
+   589→  const close = modal(isEdit ? "ویرایش خط" : "خط جدید", `
+   590→    <div class="field"><label>نام خط</label><input id="f-name" value="${esc(line?.name || "")}" placeholder="مثلاً خط ۱" /></div>
+   591→    <div class="field"><label>دسته</label>
+   592→      <select id="f-mode">
+   593→        <option value="metro" ${line?.mode === "metro" ? "selected" : ""}>مترو</option>
+   594→        <option value="bus" ${line?.mode === "bus" ? "selected" : ""}>اتوبوس</option>
+   595→        <option value="brt" ${line?.mode === "brt" ? "selected" : ""}>اتوبوس تندرو</option>
+   596→      </select></div>
+   597→    <div class="grid cols-2">
+   598→      <div class="field"><label>شماره</label><input id="f-number" type="number" value="${line?.number ?? ""}" /></div>
+   599→      <div class="field"><label>رنگ (hex)</label><input id="f-color" value="${esc(line?.color || "#009640")}" placeholder="#009640" /></div>
+   600→    </div>
+   601→    <div class="field"><label>سرخط‌ها</label><input id="f-terminals" value="${esc(line?.terminals || "")}" placeholder="مبدأ|مقصد" /><span class="hint">دو سرخط را با «|» جدا کنید</span></div>
+   602→    <div class="field"><label>جهت</label><input id="f-direction" value="${esc(line?.direction || "")}" placeholder="مثلاً شمال - جنوب" /></div>
+   603→    <div class="field"><label>وضعیت</label>
+   604→      <select id="f-active"><option value="1" ${!line || line.is_active ? "selected" : ""}>فعال</option><option value="0" ${line && !line.is_active ? "selected" : ""}>غیرفعال</option></select></div>`,
+   605→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   606→  document.getElementById("f-cancel").onclick = close;
+   607→  document.getElementById("f-save").onclick = async () => {
+   608→    const body = {
+   609→      name: document.getElementById("f-name").value.trim(),
+   610→      mode: document.getElementById("f-mode").value,
+   611→      number: document.getElementById("f-number").value,
+   612→      color: document.getElementById("f-color").value.trim(),
+   613→      terminals: document.getElementById("f-terminals").value.trim(),
+   614→      direction: document.getElementById("f-direction").value.trim(),
+   615→      is_active: Number(document.getElementById("f-active").value),
+   616→    };
+   617→    if (!body.name) { toast("نام خط الزامی است", "err"); return; }
+   618→    try {
+   619→      await api(isEdit ? `lines/${line.id}` : "lines", { method: isEdit ? "PUT" : "POST", body });
+   620→      toast(isEdit ? "خط بروزرسانی شد" : "خط اضافه شد", "ok2");
+   621→      close(); after ? after() : renderPage("lines");
+   622→    } catch (ex) { toast(ex.message, "err"); }
+   623→  };
+   624→}
+   625→
+   626→/* ---------- ایستگاه‌ها ---------- */
+   627→
+   628→async function pageStations(host) {
+   629→  const writable = can("operator");
+   630→  const lines = await api("lines");
+   631→  if (!lines.length) { host.innerHTML = `${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط و مختصات جغرافیایی.")}<div class="card"><div class="empty"><span class="material">location_off</span>ابتدا یک خط ثبت کنید</div></div>`; return; }
+   632→  host.innerHTML = `
+   633→    ${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط، ترتیب قرارگیری و مختصات جغرافیایی.",
+   634→      `${writable ? `<button class="btn" id="s-bulk"><span class="material">playlist_add</span><span>افزودن گروهی</span></button>
+   635→      <button class="btn btn-primary" id="s-add"><span class="material">add</span><span>ایستگاه جدید</span></button>` : ""}`)}
+   636→    <div class="toolbar">
+   637→      <select id="s-line">${lines.map((l) => `<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select>
+   638→      <span class="toolbar-note" id="s-count"></span>
+   639→    </div>
+   640→    <div id="s-table"></div>`;
+   641→  const load = async () => {
+   642→    const lineId = Number(document.getElementById("s-line").value);
+   643→    const rows = await api(`stations?line_id=${lineId}`);
+   644→    document.getElementById("s-count").textContent = `${faNum(rows.length)} ایستگاه در این خط`;
+   645→    document.getElementById("s-table").innerHTML = rows.length ? `
+   646→      <div class="tbl-wrap"><table class="tbl">
+   647→        <thead><tr><th>ترتیب</th><th>نام ایستگاه</th><th>عرض جغرافیایی</th><th>طول جغرافیایی</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+   648→        <tbody>
+   649→          ${rows.map((s) => `
+   650→            <tr>
+   651→              <td><span class="order-chip">${faNum(s.order_index)}</span></td>
+   652→              <td><b>${esc(s.name)}</b></td>
+   653→              <td>${s.lat ?? "—"}</td>
+   654→              <td>${s.lng ?? "—"}</td>
+   655→              <td><span class="badge ${s.is_active ? "ok" : "off"}">${s.is_active ? "فعال" : "غیرفعال"}</span></td>
+   656→              ${writable ? `<td><div class="acts">
+   657→                <button class="icon-btn" data-up="${s.id}" title="انتقال به بالا"><span class="material">arrow_upward</span></button>
+   658→                <button class="icon-btn" data-down="${s.id}" title="انتقال به پایین"><span class="material">arrow_downward</span></button>
+   659→                <button class="icon-btn" data-edit="${s.id}" title="ویرایش / انتقال به خط دیگر"><span class="material">edit</span></button>
+   660→                <button class="icon-btn danger" data-del="${s.id}" data-name="${esc(s.name)}" title="حذف ایستگاه"><span class="material">delete</span></button>
+   661→              </div></td>` : ""}
+   662→            </tr>`).join("")}
+   663→        </tbody>
+   664→      </table></div>` : `<div class="card"><div class="empty"><span class="material">location_off</span>ایستگاهی در این خط ثبت نشده است</div></div>`;
+   665→    if (writable) {
+   666→      document.querySelectorAll("[data-up]").forEach((b) => (b.onclick = async () => {
+   667→        const r = await api("stations/reorder", { method: "POST", body: { id: Number(b.dataset.up), dir: "up" } });
+   668→        if (!r.moved) { toast("به بالای فهرست رسیده است", "err"); return; }
+   669→        load();
+   670→      }));
+   671→      document.querySelectorAll("[data-down]").forEach((b) => (b.onclick = async () => {
+   672→        const r = await api("stations/reorder", { method: "POST", body: { id: Number(b.dataset.down), dir: "down" } });
+   673→        if (!r.moved) { toast("به پایین فهرست رسیده است", "err"); return; }
+   674→        load();
+   675→      }));
+   676→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openStationForm(rows.find((x) => x.id === Number(b.dataset.edit)), load, lines)));
+   677→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   678→        confirmDialog(`ایستگاه «${b.dataset.name}» حذف شود؟`, async () => {
+   679→          await api(`stations/${b.dataset.del}`, { method: "DELETE" });
+   680→          toast("ایستگاه حذف شد", "ok2"); load();
+   681→        })));
+   682→    }
+   683→  };
+   684→  document.getElementById("s-line").onchange = load;
+   685→  if (writable) {
+   686→    document.getElementById("s-add").onclick = () => openStationForm(null, load, lines);
+   687→    document.getElementById("s-bulk").onclick = () => openStationBulk(load, lines);
+   688→  }
+   689→  await load();
+   690→}
+   691→
+   692→/* افزودن گروهی ایستگاه — هر خط یک نام */
+   693→function openStationBulk(after, lines) {
+   694→  const lineId = document.getElementById("s-line").value;
+   695→  const close = modal("افزودن گروهی ایستگاه", `
+   696→    <div class="field"><label>خط مقصد</label>
+   697→      <select id="b-line">${lines.map((l) => `<option value="${l.id}" ${String(l.id) === String(lineId) ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
+   698→    <div class="field"><label>نام ایستگاه‌ها (هر خط یک نام — به ترتیب مسیر)</label>
+   699→      <textarea id="b-names" rows="8" placeholder="مثلاً:
+   700→کهریزک
+   701→حرم مطهر
+   702→شهید بهشتی"></textarea>
+   703→      <span class="hint">نام‌های تکراری در همان خط به‌صورت خودکار رد می‌شوند. ترتیب به‌طور خودکار ادامه پیدا می‌کند.</span></div>`,
+   704→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">افزودن همه</button>`);
+   705→  document.getElementById("f-cancel").onclick = close;
+   706→  document.getElementById("f-save").onclick = async () => {
+   707→    const names = document.getElementById("b-names").value.trim();
+   708→    if (!names) { toast("حداقل یک نام وارد کنید", "err"); return; }
+   709→    try {
+   710→      const r = await api("stations/bulk", { method: "POST", body: { line_id: Number(document.getElementById("b-line").value), names } });
+   711→      toast(`${faNum(r.added)} ایستگاه افزوده شد${r.skipped ? ` — ${faNum(r.skipped)} تکراری رد شد` : ""}`, "ok2");
+   712→      close(); after();
+   713→    } catch (ex) { toast(ex.message, "err"); }
+   714→  };
+   715→}
+   716→
+   717→function openStationForm(station, after, lines) {
+   718→  const isEdit = !!station;
+   719→  const curLine = isEdit ? station.line_id : Number(document.getElementById("s-line").value);
+   720→  const close = modal(isEdit ? "ویرایش ایستگاه" : "ایستگاه جدید", `
+   721→    <div class="field"><label>خط</label>
+   722→      <select id="f-line">${lines.map((l) => `<option value="${l.id}" ${l.id === curLine ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select>
+   723→      ${isEdit ? '<span class="hint">با تغییر خط، ایستگاه به خط مقصد منتقل می‌شود.</span>' : ""}</div>
+   724→    <div class="field"><label>نام ایستگاه</label><input id="f-name" value="${esc(station?.name || "")}" placeholder="مثلاً تجریش" /></div>
+   725→    <div class="grid cols-2">
+   726→      <div class="field"><label>عرض جغرافیایی (اختیاری)</label><input id="f-lat" value="${station?.lat ?? ""}" style="direction:ltr" placeholder="35.7999" /></div>
+   727→      <div class="field"><label>طول جغرافیایی (اختیاری)</label><input id="f-lng" value="${station?.lng ?? ""}" style="direction:ltr" placeholder="51.4343" /></div>
+   728→    </div>
+   729→    <div class="field"><label>ترتیب</label><input id="f-order" type="number" value="${station?.order_index ?? 0}" /></div>
+   730→    <div class="field"><label>وضعیت</label>
+   731→      <select id="f-active"><option value="1" ${!station || station.is_active ? "selected" : ""}>فعال</option><option value="0" ${station && !station.is_active ? "selected" : ""}>غیرفعال</option></select></div>`,
+   732→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   733→  document.getElementById("f-cancel").onclick = close;
+   734→  document.getElementById("f-save").onclick = async () => {
+   735→    const body = {
+   736→      line_id: Number(document.getElementById("f-line").value),
+   737→      name: document.getElementById("f-name").value.trim(),
+   738→      lat: document.getElementById("f-lat").value,
+   739→      lng: document.getElementById("f-lng").value,
+   740→      order_index: document.getElementById("f-order").value,
+   741→      is_active: Number(document.getElementById("f-active").value),
+   742→    };
+   743→    if (!body.name) { toast("نام ایستگاه الزامی است", "err"); return; }
+   744→    try {
+   745→      await api(isEdit ? `stations/${station.id}` : "stations", { method: isEdit ? "PUT" : "POST", body });
+   746→      toast(isEdit ? "ایستگاه بروزرسانی شد" : "ایستگاه اضافه شد", "ok2");
+   747→      close(); after();
+   748→    } catch (ex) { toast(ex.message, "err"); }
+   749→  };
+   750→}
+   751→
+   752→/* ---------- تبلیغات ---------- */
+   753→
+   754→const AD_PLACE_META = {
+   755→  home: { icon: "view_carousel", cls: "" },
+   756→  map: { icon: "map", cls: "alt" },
+   757→  plan: { icon: "alt_route", cls: "warn2" },
+   758→  station: { icon: "location_on", cls: "alt" },
+   759→  line: { icon: "route", cls: "" },
+   760→  splash: { icon: "launch", cls: "warn2" },
+   761→  drawer: { icon: "menu", cls: "alt" },
+   762→};
+   763→
+   764→async function pageAds(host) {
+   765→  const writable = can("operator");
+   766→  const [rows, stats] = await Promise.all([api("ads"), api("ads/stats?days=14")]);
+   767→  const isLive = (a) => a.is_active && (!a.ends_at || new Date(a.ends_at) > Date.now()) && (!a.starts_at || new Date(a.starts_at) <= Date.now());
+   768→  const isScheduled = (a) => a.is_active && a.starts_at && new Date(a.starts_at) > Date.now();
+   769→  const isExpired = (a) => !isLive(a) && !isScheduled(a);
+   770→  const TABS = [
+   771→    ["all", "همه کمپین‌ها", () => true],
+   772→    ["live", "در حال نمایش", isLive],
+   773→    ["scheduled", "زمان‌بندی‌شده", isScheduled],
+   774→    ["expired", "منقضی / بایگانی", isExpired],
+   775→  ];
+   776→  let tab = "all";
+   777→  let placeFilter = "";
+   778→  let searchQ = "";
+   779→  const selected = new Set();
+   780→
+   781→  const totalImp = rows.reduce((s, a) => s + (a.impressions || 0), 0);
+   782→  const totalClk = rows.reduce((s, a) => s + (a.clicks || 0), 0);
+   783→  const avgCtr = totalImp ? ((totalClk / totalImp) * 100) : 0;
+   784→  const liveCount = rows.filter(isLive).length;
+   785→
+   786→  host.innerHTML = `
+   787→    ${pageHead("تبلیغات و بنرها", "پیکربندی کمپین‌های درون‌برنامه‌ای، اولویت‌بندی نمایش، زمان‌بندی و تحلیل عملکرد؛ خاموش‌کردن تبلیغ بدون انتشار نسخه جدید اپلیکیشن.",
+   788→      writable ? `<button class="btn btn-primary" id="a-add"><span class="material">add</span><span>ایجاد کمپین / بنر جدید</span></button>` : "")}
+   789→    <div class="kpi-grid kpi-grid-5">
+   790→      ${kpi("کل کمپین‌ها", "campaign", rows.length, "کمپین ثبت‌شده در پایگاه داده", "t-primary")}
+   791→      ${kpi("در حال نمایش", "play_circle", liveCount, "کمپین فعال در اپ", "t-tertiary")}
+   792→      ${kpi("نمایش‌ها", "visibility", totalImp, "مجموع نمایش در همه کمپین‌ها", "t-surface")}
+   793→      ${kpi("کلیک‌ها", "ads_click", totalClk, "مجموع کلیک ثبت‌شده", "t-dim")}
+   794→      ${kpi("میانگین CTR", "query_stats", avgCtr.toLocaleString("fa-IR", { maximumFractionDigits: 1 }) + "٪", "نسبت کلیک به نمایش", "t-primary")}
+   795→    </div>
+   796→    <div class="tbl-card">
+   797→      <div class="tabbar" id="a-tabs">
+   798→        ${TABS.map(([id, lbl, fn]) => `<button class="tab ${id === tab ? "active" : ""}" data-tab="${id}">${lbl} (${faNum(rows.filter(fn).length)})</button>`).join("")}
+   799→      </div>
+   800→      <div class="tbl-toolbar">
+   801→        <input id="a-q" placeholder="جست‌وجوی عنوان یا تبلیغ‌دهنده…" style="min-width:200px" />
+   802→        <select id="a-place">
+   803→          <option value="">همه جایگاه‌ها</option>
+   804→          ${Object.keys(AD_PLACE_META).map((p) => `<option value="${p}">${PLACE_LABEL[p]}</option>`).join("")}
+   805→        </select>
+   806→        <span class="spacer"></span>
+   807→        <button class="btn btn-sm" id="a-csv"><span class="material">download</span><span>خروجی CSV</span></button>
+   808→      </div>
+   809→      <div class="bulkbar" id="a-bulkbar" hidden>
+   810→        <span class="bulkbar-count" id="a-selcount">۰ انتخاب شده</span>
+   811→        ${writable ? `
+   812→        <button class="btn btn-sm" id="b-activate"><span class="material">play_circle</span><span>فعال‌سازی</span></button>
+   813→        <button class="btn btn-sm" id="b-deactivate"><span class="material">pause_circle</span><span>غیرفعال‌سازی</span></button>
+   814→        <button class="btn btn-sm btn-danger" id="b-delete"><span class="material">delete</span><span>حذف</span></button>` : ""}
+   815→        <button class="btn btn-sm" id="b-clear">لغو انتخاب</button>
+   816→      </div>
+   817→      <div id="a-table"></div>
+   818→      <div class="tbl-foot" id="a-foot"></div>
+   819→    </div>`;
+   820→
+   821→  const renderTable = () => {
+   822→    const fn = (TABS.find((t) => t[0] === tab) || TABS[0])[2];
+   823→    let filtered = rows.filter(fn);
+   824→    if (placeFilter) filtered = filtered.filter((a) => a.placement === placeFilter);
+   825→    if (searchQ) filtered = filtered.filter((a) => (a.title + " " + (a.advertiser || "")).includes(searchQ));
+   826→    const bulkbar = document.getElementById("a-bulkbar");
+   827→    bulkbar.hidden = selected.size === 0;
+   828→    document.getElementById("a-selcount").textContent = `${faNum(selected.size)} انتخاب شده`;
+   829→    document.getElementById("a-table").innerHTML = filtered.length ? `
+   830→    <div class="tbl-wrap"><table class="tbl">
+   831→      <thead><tr>
+   832→        ${writable ? '<th class="cell-center"><input type="checkbox" id="a-selall" aria-label="انتخاب همه" /></th>' : ""}
+   833→        <th>عنوان و تصویر بنر</th><th>جایگاه نمایش در اپ</th><th>بازه زمانی</th><th class="cell-center">اولویت</th><th class="cell-center">وضعیت زنده</th><th>آمار کلیک / نمایش</th>${writable ? '<th class="cell-center">عملیات</th>' : ""}
+   834→      </tr></thead>
+   835→      <tbody>
+   836→        ${filtered.map((a) => {
+   837→          const live = isLive(a);
+   838→          const ctr = a.impressions ? (a.clicks / a.impressions) * 100 : 0;
+   839→          const fill = Math.min(Math.max(ctr * 20, 4), 100);
+   840→          const meta = AD_PLACE_META[a.placement] || { icon: "info", cls: "" };
+   841→          return `<tr>
+   842→            ${writable ? `<td class="cell-center"><input type="checkbox" class="row-sel" data-sel="${a.id}" ${selected.has(a.id) ? "checked" : ""} aria-label="انتخاب ${esc(a.title)}" /></td>` : ""}
+   843→            <td>
+   844→              <div class="cell-media">
+   845→                ${a.image_url ? `<img class="thumb" src="${esc(a.image_url)}" alt="تصویر بنر ${esc(a.title)}" onerror="this.style.display='none'" />` : `<div class="thumb thumb-empty"><span class="material">campaign</span></div>`}
+   846→                <div>
+   847→                  <b>${esc(a.title)}</b>
+   848→                  ${a.badge ? `<span class="badge info" style="margin-inline-start:4px">${esc(a.badge)}</span>` : ""}
+   849→                  <span class="cell-sub">شناسه: #AD-${String(a.id).padStart(4, "0")}${a.advertiser ? " — تبلیغ‌دهنده: " + esc(a.advertiser) : ""}</span>
+   850→                </div>
+   851→              </div>
+   852→            </td>
+   853→            <td><span class="placement-chip ${meta.cls}"><span class="material">${meta.icon}</span>${PLACE_LABEL[a.placement] || a.placement}</span></td>
+   854→            <td class="cell-range">
+   855→              <span>${a.starts_at ? faTime(a.starts_at) : "بدون شروع"}</span>
+   856→              <span class="m-live" style="display:block">تا ${a.ends_at ? faTime(a.ends_at) : "پایان نامحدود"}</span>
+   857→            </td>
+   858→            <td class="cell-center"><span class="order-chip">${faNum(a.priority || 0)}</span></td>
+   859→            <td class="cell-center">
+   860→              ${writable ? `<label class="switch"><input type="checkbox" data-toggle="${a.id}" ${a.is_active ? "checked" : ""} aria-label="وضعیت ${esc(a.title)}" /><span class="knob"></span></label>` : `<span class="badge ${live ? "ok" : "off"}">${live ? "در حال نمایش" : "خاموش"}</span>`}
+   861→            </td>
+   862→            <td>
+   863→              <div class="cell-meter">
+   864→                <div class="meter-row"><span class="m-imp">${faNum(a.impressions)} نمایش</span><span class="m-ctr">${faNum(a.clicks)} کلیک (${ctr.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪)</span></div>
+   865→                <div class="meter"><div class="meter-fill ${ctr >= 4 ? "good" : ctr < 1 ? "low" : ""}" style="width:${fill}%"></div></div>
+   866→              </div>
+   867→            </td>
+   868→            ${writable ? `<td class="cell-center"><div class="acts" style="justify-content:center">
+   869→              <button class="icon-btn" data-imp="${a.id}" title="ثبت نمایش آزمایشی"><span class="material">visibility</span></button>
+   870→              <button class="icon-btn" data-clk="${a.id}" title="ثبت کلیک آزمایشی"><span class="material">ads_click</span></button>
+   871→              <button class="icon-btn" data-dup="${a.id}" title="تکثیر کمپین"><span class="material">content_copy</span></button>
+   872→              <button class="icon-btn" data-reset="${a.id}" title="بازنشانی آمار"><span class="material">restart_alt</span></button>
+   873→              <button class="icon-btn" data-edit="${a.id}" title="ویرایش بنر"><span class="material">edit</span></button>
+   874→              <button class="icon-btn danger" data-del="${a.id}" data-name="${esc(a.title)}" title="حذف بنر"><span class="material">delete</span></button>
+   875→            </div></td>` : ""}
+   876→          </tr>`;
+   877→        }).join("")}
+   878→      </tbody>
+   879→    </table></div>` : `<div class="empty"><span class="material">campaign</span>در این دسته کمپینی ثبت نشده است</div>`;
+   880→    document.getElementById("a-foot").textContent = `نمایش ${faNum(filtered.length)} از مجموع ${faNum(rows.length)} کمپین ثبت‌شده در پایگاه داده`;
+   881→
+   882→    document.querySelectorAll(".row-sel").forEach((el) => (el.onchange = () => {
+   883→      const id = Number(el.dataset.sel);
+   884→      if (el.checked) selected.add(id); else selected.delete(id);
+   885→      bulkbar.hidden = selected.size === 0;
+   886→      document.getElementById("a-selcount").textContent = `${faNum(selected.size)} انتخاب شده`;
+   887→    }));
+   888→    const selAll = document.getElementById("a-selall");
+   889→    if (selAll) selAll.onchange = () => {
+   890→      filtered.forEach((a) => (selAll.checked ? selected.add(a.id) : selected.delete(a.id)));
+   891→      document.querySelectorAll(".row-sel").forEach((el) => (el.checked = selAll.checked));
+   892→      bulkbar.hidden = selected.size === 0;
+   893→      document.getElementById("a-selcount").textContent = `${faNum(selected.size)} انتخاب شده`;
+   894→    };
+   895→
+   896→    if (writable) {
+   897→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openAdForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+   898→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   899→        confirmDialog(`تبلیغ «${b.dataset.name}» حذف شود؟`, async () => {
+   900→          await api(`ads/${b.dataset.del}`, { method: "DELETE" });
+   901→          toast("تبلیغ حذف شد", "ok2"); renderPage("ads");
+   902→        })));
+   903→      document.querySelectorAll("[data-dup]").forEach((b) => (b.onclick = async () => {
+   904→        await api(`ads/${b.dataset.dup}/duplicate`, { method: "POST" });
+   905→        toast("کمپین تکثیر شد (خاموش) — عنوان با پسوند «کپی»", "ok2"); renderPage("ads");
+   906→      }));
+   907→      document.querySelectorAll("[data-reset]").forEach((b) => (b.onclick = () =>
+   908→        confirmDialog("آمار نمایش و کلیک این کمپین به صفر بازنشانی شود؟", async () => {
+   909→          await api(`ads/${b.dataset.reset}/reset-stats`, { method: "POST" });
+   910→          toast("آمار کمپین بازنشانی شد", "ok2"); renderPage("ads");
+   911→        })));
+   912→      document.querySelectorAll("[data-imp]").forEach((b) => (b.onclick = async () => {
+   913→        await api(`ads/${b.dataset.imp}/track`, { method: "POST", body: { type: "impression" } });
+   914→        toast("نمایش ثبت شد", "ok2"); renderPage("ads");
+   915→      }));
+   916→      document.querySelectorAll("[data-clk]").forEach((b) => (b.onclick = async () => {
+   917→        await api(`ads/${b.dataset.clk}/track`, { method: "POST", body: { type: "click" } });
+   918→        toast("کلیک ثبت شد", "ok2"); renderPage("ads");
+   919→      }));
+   920→      document.querySelectorAll("[data-toggle]").forEach((el) => (el.onchange = async () => {
+   921→        const ad = rows.find((x) => x.id === Number(el.dataset.toggle));
+   922→        try {
+   923→          await api(`ads/${el.dataset.toggle}`, { method: "PUT", body: { is_active: el.checked ? 1 : 0 } });
+   924→          toast(el.checked ? "تبلیغ فعال شد" : "تبلیغ خاموش شد", "ok2");
+   925→        } catch (ex) {
+   926→          toast(ex.message, "err");
+   927→        }
+   928→        if (ad) ad.is_active = el.checked ? 1 : 0;
+   929→        renderTable();
+   930→      }));
+   931→    }
+   932→  };
+   933→
+   934→  document.getElementById("a-tabs").querySelectorAll(".tab").forEach((b) => (b.onclick = () => {
+   935→    tab = b.dataset.tab;
+   936→    document.querySelectorAll("#a-tabs .tab").forEach((x) => x.classList.toggle("active", x === b));
+   937→    renderTable();
+   938→  }));
+   939→  document.getElementById("a-q").oninput = (e) => { searchQ = e.target.value.trim(); renderTable(); };
+   940→  document.getElementById("a-place").onchange = (e) => { placeFilter = e.target.value; renderTable(); };
+   941→  document.getElementById("a-csv").onclick = () => {
+   942→    csvExport("darmasir-ads.csv", ["شناسه", "عنوان", "تبلیغ‌دهنده", "جایگاه", "اولویت", "نمایش", "کلیک", "CTR٪", "فعال", "شروع", "پایان"],
+   943→      rows.map((a) => [
+   944→        `AD-${String(a.id).padStart(4, "0")}`, a.title, a.advertiser || "", PLACE_LABEL[a.placement] || a.placement,
+   945→        a.priority || 0, a.impressions, a.clicks, a.impressions ? ((a.clicks / a.impressions) * 100).toFixed(2) : "0",
+   946→        a.is_active ? "بله" : "خیر", faTime(a.starts_at), faTime(a.ends_at),
+   947→      ]));
+   948→  };
+   949→  document.getElementById("b-clear").onclick = () => { selected.clear(); renderTable(); };
+   950→  if (writable) {
+   951→    document.getElementById("b-activate").onclick = () => bulkAds("activate", selected, rows);
+   952→    document.getElementById("b-deactivate").onclick = () => bulkAds("deactivate", selected, rows);
+   953→    document.getElementById("b-delete").onclick = () =>
+   954→      confirmDialog(`${faNum(selected.size)} کمپین انتخاب‌شده حذف شود؟ این عملیات بازگشت‌پذیر نیست.`, () => bulkAds("delete", selected, rows));
+   955→    document.getElementById("a-add").onclick = () => openAdForm(null);
+   956→  }
+   957→  renderTable();
+   958→}
+   959→
+   960→async function bulkAds(action, selected, rows) {
+   961→  const ids = [...selected];
+   962→  if (!ids.length) { toast("کمپینی انتخاب نشده است", "err"); return; }
+   963→  try {
+   964→    const r = await api("ads/bulk", { method: "POST", body: { action, ids } });
+   965→    toast(`${faNum(r.affected)} کمپین ${action === "activate" ? "فعال" : action === "deactivate" ? "غیرفعال" : "حذف"} شد`, "ok2");
+   966→    selected.clear();
+   967→    renderPage("ads");
+   968→  } catch (ex) { toast(ex.message, "err"); }
+   969→}
+   970→
+   971→/* پیش‌نمایش زنده بنر داخل فرم */
+   972→function adPreviewHtml(a) {
+   973→  const meta = AD_PLACE_META[a.placement] || { icon: "info" };
+   974→  return `
+   975→  <div class="preview-banner">
+   976→    ${a.image_url ? `<img src="${esc(a.image_url)}" alt="تصویر بنر ${esc(a.title || "")}" onerror="this.style.display='none'" />` : ""}
+   977→    <div class="pb-body">
+   978→      <div class="pb-row">
+   979→        ${a.badge ? `<span class="pb-badge">${esc(a.badge)}</span>` : ""}
+   980→        <span class="pb-place"><span class="material">${meta.icon}</span>${PLACE_LABEL[a.placement] || ""}</span>
+   981→      </div>
+   982→      <b class="pb-title">${esc(a.title || "عنوان بنر تبلیغ")}</b>
+   983→      ${a.subtitle ? `<span class="pb-sub">${esc(a.subtitle)}</span>` : ""}
+   984→      ${a.cta_text ? `<span class="pb-cta">${esc(a.cta_text)}<span class="material">chevron_left</span></span>` : ""}
+   985→    </div>
+   986→  </div>`;
+   987→}
+   988→
+   989→function openAdForm(ad) {
+   990→  const isEdit = !!ad;
+   991→  const dt = (v) => v ? new Date(v).toISOString().slice(0, 16) : "";
+   992→  const close = modal(isEdit ? "ویرایش تبلیغ" : "تبلیغ جدید", `
+   993→    <div class="field"><label>عنوان</label><input id="f-title" value="${esc(ad?.title || "")}" placeholder="مثلاً بنر فروشگاه X" /></div>
+   994→    <div class="field"><label>متن کوتاه بنر (اختیاری)</label><input id="f-subtitle" value="${esc(ad?.subtitle || "")}" placeholder="یک جمله معرفی کوتاه" /></div>
+   995→    <div class="grid cols-2">
+   996→      <div class="field"><label>برچسب (اختیاری)</label><input id="f-badge" value="${esc(ad?.badge || "")}" placeholder="مثلاً پیشنهاد ویژه" /></div>
+   997→      <div class="field"><label>تبلیغ‌دهنده (اختیاری)</label><input id="f-advertiser" value="${esc(ad?.advertiser || "")}" placeholder="نام کسب‌وکار" /></div>
+   998→    </div>
+   999→    <div class="field"><label>آدرس تصویر</label><input id="f-img" value="${esc(ad?.image_url || "")}" placeholder="https://…" style="direction:ltr" /></div>
+  1000→    <div class="grid cols-2">
+  1001→      <div class="field"><label>لینک مقصد</label><input id="f-link" value="${esc(ad?.link_url || "")}" placeholder="https://…" style="direction:ltr" /></div>
+  1002→      <div class="field"><label>متن دکمه فراخوان (اختیاری)</label><input id="f-cta" value="${esc(ad?.cta_text || "")}" placeholder="مثلاً مشاهده" /></div>
+  1003→    </div>
+  1004→    <div class="field"><label>محل نمایش</label>
+  1005→      <select id="f-place">
+  1006→        ${Object.keys(AD_PLACE_META).map((p) => `<option value="${p}" ${(ad?.placement || "home") === p ? "selected" : ""}>${PLACE_LABEL[p]}</option>`).join("")}
+  1007→      </select></div>
+  1008→    <div class="field"><label>اولویت نمایش (۰ تا ۱۰۰ — بالاتر = زودتر)</label>
+  1009→      <input id="f-priority" type="number" min="0" max="100" value="${ad?.priority ?? 10}" /></div>
+  1010→    <div class="field"><label>بازه نمایش</label>
+  1011→      <div class="grid cols-2">
+  1012→        <input id="f-start" type="datetime-local" value="${dt(ad?.starts_at)}" aria-label="شروع نمایش" />
+  1013→        <input id="f-end" type="datetime-local" value="${dt(ad?.ends_at)}" aria-label="پایان نمایش" />
+  1014→      </div>
+  1015→      <div class="presets">
+  1016→        <button type="button" class="btn btn-sm" data-preset="now">شروع: همین حالا</button>
+  1017→        <button type="button" class="btn btn-sm" data-preset="7d">تا ۷ روز بعد</button>
+  1018→        <button type="button" class="btn btn-sm" data-preset="30d">تا ۳۰ روز بعد</button>
+  1019→        <button type="button" class="btn btn-sm" data-preset="today">تا پایان امروز</button>
+  1020→        <button type="button" class="btn btn-sm" data-preset="clear">پاک‌کردن بازه</button>
+  1021→      </div></div>
+  1022→    <div class="field"><label>وضعیت</label>
+  1023→      <select id="f-active"><option value="1" ${ad?.is_active ? "selected" : ""}>فعال</option><option value="0" ${!ad || !ad.is_active ? "selected" : ""}>خاموش</option></select></div>
+  1024→    <div class="field"><label>پیش‌نمایش بنر در اپلیکیشن</label><div id="f-preview">${adPreviewHtml(ad || {})}</div></div>`,
+  1025→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+  1026→
+  1027→  const readForm = () => ({
+  1028→    title: document.getElementById("f-title").value.trim(),
+  1029→    subtitle: document.getElementById("f-subtitle").value.trim(),
+  1030→    badge: document.getElementById("f-badge").value.trim(),
+  1031→    advertiser: document.getElementById("f-advertiser").value.trim(),
+  1032→    image_url: document.getElementById("f-img").value.trim(),
+  1033→    link_url: document.getElementById("f-link").value.trim(),
+  1034→    cta_text: document.getElementById("f-cta").value.trim(),
+  1035→    placement: document.getElementById("f-place").value,
+  1036→    is_active: Number(document.getElementById("f-active").value),
+  1037→  });
+  1038→  const refreshPreview = () => { document.getElementById("f-preview").innerHTML = adPreviewHtml(readForm()); };
+  1039→  ["f-title", "f-subtitle", "f-badge", "f-advertiser", "f-img", "f-cta", "f-place"].forEach((id) => {
+  1040→    document.getElementById(id).addEventListener("input", refreshPreview);
+  1041→  });
+  1042→
+  1043→  document.querySelectorAll("[data-preset]").forEach((b) => (b.onclick = () => {
+  1044→    const now = new Date();
+  1045→    const start = document.getElementById("f-start");
+  1046→    const end = document.getElementById("f-end");
+  1047→    const set = (el, d) => { el.value = d ? new Date(d).toISOString().slice(0, 16) : ""; };
+  1048→    const fmtLocal = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  1049→    switch (b.dataset.preset) {
+  1050→      case "now": start.value = fmtLocal(now); break;
+  1051→      case "7d": { if (!start.value) start.value = fmtLocal(now); const e2 = new Date(now.getTime() + 7 * 86400000); end.value = fmtLocal(e2); break; }
+  1052→      case "30d": { if (!start.value) start.value = fmtLocal(now); const e2 = new Date(now.getTime() + 30 * 86400000); end.value = fmtLocal(e2); break; }
+  1053→      case "today": { if (!start.value) start.value = fmtLocal(now); const e2 = new Date(now); e2.setHours(23, 59, 0, 0); end.value = fmtLocal(e2); break; }
+  1054→      case "clear": start.value = ""; end.value = ""; break;
+  1055→    }
+  1056→  }));
+  1057→
+  1058→  document.getElementById("f-cancel").onclick = close;
+  1059→  document.getElementById("f-save").onclick = async () => {
+  1060→    const body = readForm();
+  1061→    body.priority = document.getElementById("f-priority").value;
+  1062→    body.starts_at = document.getElementById("f-start").value ? new Date(document.getElementById("f-start").value).toISOString() : null;
+  1063→    body.ends_at = document.getElementById("f-end").value ? new Date(document.getElementById("f-end").value).toISOString() : null;
+  1064→    if (!body.title) { toast("عنوان الزامی است", "err"); return; }
+
+[showing lines 565-1064 of 1521; use offset=1065 with limit to continue reading]

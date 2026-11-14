@@ -52,6 +52,13 @@ CREATE TABLE IF NOT EXISTS app_users (
   created_at TEXT NOT NULL,
   last_seen TEXT
 );
+CREATE TABLE IF NOT EXISTS cities (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE NOT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  sort INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS lines (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   mode TEXT NOT NULL DEFAULT 'metro',
@@ -60,6 +67,7 @@ CREATE TABLE IF NOT EXISTS lines (
   color TEXT NOT NULL DEFAULT '#009640',
   terminals TEXT,
   direction TEXT,
+  city_id INTEGER REFERENCES cities(id) ON DELETE SET NULL,
   is_active INTEGER NOT NULL DEFAULT 1,
   sort INTEGER NOT NULL DEFAULT 0
 );
@@ -69,6 +77,7 @@ CREATE TABLE IF NOT EXISTS stations (
   name TEXT NOT NULL,
   lat REAL,
   lng REAL,
+  city_id INTEGER REFERENCES cities(id) ON DELETE SET NULL,
   order_index INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1
 );
@@ -134,6 +143,16 @@ CREATE TABLE IF NOT EXISTS ad_stats_daily (
 );
 `);
 
+/* ---------------- مهاجرت شهر (idempotent) — تعیین شهر برای خطوط و ایستگاه‌ها ---------------- */
+
+const linesCols = (db.query("PRAGMA table_info(lines)").all() as any[]).map((c) => c.name);
+if (!linesCols.includes("city_id"))
+  db.exec("ALTER TABLE lines ADD COLUMN city_id INTEGER REFERENCES cities(id) ON DELETE SET NULL");
+
+const stationsCols = (db.query("PRAGMA table_info(stations)").all() as any[]).map((c) => c.name);
+if (!stationsCols.includes("city_id"))
+  db.exec("ALTER TABLE stations ADD COLUMN city_id INTEGER REFERENCES cities(id) ON DELETE SET NULL");
+
 export const now = () => new Date().toISOString();
 
 export function bumpApiStats() {
@@ -195,11 +214,23 @@ export function seed() {
     ins.run("support_message", "پشتیبانی درمسیر در خدمت شماست", t);
   }
 
+  const cityCount = (db.query("SELECT COUNT(*) AS c FROM cities").get() as any).c;
+  if (cityCount === 0) {
+    // شهرهای دارای شبکه حمل‌ونقل ریلی در ایران — قابل افزودن از صفحه «شهرها»
+    const ins = db.prepare("INSERT INTO cities (name, sort, created_at) VALUES (?,?,?)");
+    ["تهران", "کرج", "مشهد", "اصفهان", "شیراز", "تبریز"].forEach((name, i) =>
+      ins.run(name, i, now())
+    );
+  }
+
+  const cityIdByName = (name: string) =>
+    ((db.query("SELECT id FROM cities WHERE name = ?").get(name) as any) ?? {}).id ?? null;
+
   const lineCount = (db.query("SELECT COUNT(*) AS c FROM lines").get() as any).c;
   if (lineCount === 0) {
     // داده واقعی از هسته داده مترو (src/lib/metro-data.ts)
     const ins = db.prepare(
-      "INSERT INTO lines (mode, number, name, color, terminals, direction, is_active, sort) VALUES (?,?,?,?,?,?,1,?)"
+      "INSERT INTO lines (mode, number, name, color, terminals, direction, city_id, is_active, sort) VALUES (?,?,?,?,?,?,?,1,?)"
     );
     const tehran: [number, string, string, string, string][] = [
       [1, "خط ۱", "#e52421", "کهریزک|تجریش", "شمال - جنوب"],
@@ -210,21 +241,25 @@ export function seed() {
       [6, "خط ۶", "#d82572", "شهدای دولت‌آباد|شهید آرمان علی‌وردی", "شمال غرب - جنوب شرق"],
       [7, "خط ۷", "#7d2382", "ورزشگاه تختی|میدان کتاب", "شمال - جنوب"],
     ];
+    const TEHRAN = cityIdByName("تهران");
+    const KARAJ = cityIdByName("کرج");
+    const MASHHAD = cityIdByName("مشهد");
+    const ISFAHAN = cityIdByName("اصفهان");
     tehran.forEach(([n, name, color, terms, dir], i) =>
-      ins.run("metro", n, name, color, terms, dir, i)
+      ins.run("metro", n, name, color, terms, dir, TEHRAN, i)
     );
-    ins.run("metro", 1, "مترو کرج — خط ۱", "#009640", "آیت‌الله طالقانی|چهل‌وپنج متری گلشهر", "غرب - شرق", 7);
-    ins.run("metro", 1, "مترو مشهد — خط ۱", "#009640", "وکیل‌آباد|فرودگاه شهید هاشمی‌نژاد", "شمال غرب - جنوب شرق", 8);
-    ins.run("metro", 2, "مترو مشهد — خط ۲", "#e52421", "طبرسی|شهید فکوری", "شمال غرب - جنوب شرق", 9);
-    ins.run("metro", 1, "مترو اصفهان — خط ۱", "#009640", "قدس|دفاع مقدس", "شمال - جنوب", 10);
+    ins.run("metro", 1, "مترو کرج — خط ۱", "#009640", "آیت‌الله طالقانی|چهل‌وپنج متری گلشهر", "غرب - شرق", KARAJ, 7);
+    ins.run("metro", 1, "مترو مشهد — خط ۱", "#009640", "وکیل‌آباد|فرودگاه شهید هاشمی‌نژاد", "شمال غرب - جنوب شرق", MASHHAD, 8);
+    ins.run("metro", 2, "مترو مشهد — خط ۲", "#e52421", "طبرسی|شهید فکوری", "شمال غرب - جنوب شرق", MASHHAD, 9);
+    ins.run("metro", 1, "مترو اصفهان — خط ۱", "#009640", "قدس|دفاع مقدس", "شمال - جنوب", ISFAHAN, 10);
 
     const st = db.prepare(
-      "INSERT INTO stations (line_id, name, order_index) VALUES (?,?,?)"
+      "INSERT INTO stations (line_id, name, order_index, city_id) VALUES (?,?,?,(SELECT city_id FROM lines WHERE id = ?))"
     );
     const rows = db.query("SELECT id, terminals FROM lines").all() as any[];
     for (const r of rows) {
       const terms = (r.terminals ?? "").split("|").filter(Boolean);
-      terms.forEach((name: string, i: number) => st.run(r.id, name, i));
+      terms.forEach((name: string, i: number) => st.run(r.id, name, i, r.id));
     }
   }
 
@@ -342,6 +377,29 @@ export function seed() {
   ensureSetting("force_update_version", "");
   ensureSetting("store_link", "https://cafebazaar.ir/app/ir.metrojo.app");
   ensureSetting("default_city", "تهران");
+
+  /* اتصال خودکار داده‌های قدیمی به شهرها — فقط وقتی خط بی‌شهر وجود دارد (idempotent) */
+  const unassignedLines = (db.query("SELECT COUNT(*) AS c FROM lines WHERE city_id IS NULL").get() as any).c;
+  if (unassignedLines > 0) {
+    const map: Record<string, number | null> = {};
+    (db.query("SELECT id, name FROM cities").all() as any[]).forEach((c) => (map[c.name] = c.id));
+    const detect = (name: string) => {
+      if (name.includes("کرج")) return map["کرج"];
+      if (name.includes("مشهد")) return map["مشهد"];
+      if (name.includes("اصفهان")) return map["اصفهان"];
+      if (name.includes("شیراز")) return map["شیراز"];
+      if (name.includes("تبریز")) return map["تبریز"];
+      return map["تهران"]; // پیش‌فرض: تهران
+    };
+    const upd = db.prepare("UPDATE lines SET city_id = ? WHERE id = ?");
+    (db.query("SELECT id, name FROM lines WHERE city_id IS NULL").all() as any[]).forEach((l) =>
+      upd.run(detect(l.name), l.id)
+    );
+    // ایستگاه‌های بی‌شهر از شهر خط خودشان پیروی می‌کنند
+    db.exec(
+      "UPDATE stations SET city_id = (SELECT l.city_id FROM lines l WHERE l.id = stations.line_id) WHERE city_id IS NULL"
+    );
+  }
 }
 
 seed();

@@ -159,6 +159,72 @@ async function route(
     return ok({ logged_out: true });
   }
 
+  /* ---------- cities (شهرها) ---------- */
+  if (seg[0] === "cities") {
+    if (method === "GET") {
+      const rows = db
+        .query(
+          `SELECT c.*,
+                  (SELECT COUNT(*) FROM lines l WHERE l.city_id = c.id) AS lines_count,
+                  (SELECT COUNT(*) FROM stations s WHERE s.city_id = c.id) AS stations_count
+           FROM cities c ORDER BY c.sort, c.id`
+        )
+        .all();
+      return ok(rows);
+    }
+    const guard = requireRole(admin, "operator");
+    if (guard) return guard;
+    if (method === "POST") {
+      const name = str(body.name, 60);
+      if (!name) return fail("BAD_INPUT", "نام شهر الزامی است");
+      const maxSort = (db.query("SELECT COALESCE(MAX(sort),0) AS m FROM cities").get() as any).m;
+      try {
+        const r = db
+          .prepare("INSERT INTO cities (name, sort, created_at) VALUES (?,?,?)")
+          .run(name, Number(body.sort) || maxSort + 1, now());
+        changeLog("city", Number(r.lastInsertRowid), "create", admin.display_name, name);
+        audit(admin.id, admin.display_name, "city_create", name, ip);
+        return ok({ id: Number(r.lastInsertRowid) }, 201);
+      } catch {
+        return fail("DUPLICATE", "این شهر قبلاً ثبت شده است", 409);
+      }
+    }
+    const id = Number(seg[1]);
+    if (!id) return fail("NOT_FOUND", "شهر یافت نشد", 404);
+    if (method === "PUT") {
+      const cur = db.prepare("SELECT * FROM cities WHERE id = ?").get(id) as any;
+      if (!cur) return fail("NOT_FOUND", "شهر یافت نشد", 404);
+      const name = body.name !== undefined ? str(body.name, 60) || cur.name : cur.name;
+      try {
+        db.prepare("UPDATE cities SET name = ?, is_active = ?, sort = ? WHERE id = ?").run(
+          name,
+          body.is_active === undefined ? cur.is_active : body.is_active ? 1 : 0,
+          body.sort !== undefined ? Number(body.sort) || cur.sort : cur.sort,
+          id
+        );
+        changeLog("city", id, "update", admin.display_name, name);
+        audit(admin.id, admin.display_name, "city_update", name, ip);
+        return ok({ updated: true });
+      } catch {
+        return fail("DUPLICATE", "شهر دیگری با همین نام وجود دارد", 409);
+      }
+    }
+    if (method === "DELETE") {
+      const usedLines = (db.query("SELECT COUNT(*) AS c FROM lines WHERE city_id = ?").get(id) as any).c;
+      const usedStations = (db.query("SELECT COUNT(*) AS c FROM stations WHERE city_id = ?").get(id) as any).c;
+      if (usedLines > 0 || usedStations > 0)
+        return fail(
+          "IN_USE",
+          `این شهر به ${usedLines} خط و ${usedStations} ایستگاه متصل است؛ ابتدا آن‌ها را به شهر دیگر منتقل کنید`,
+          409
+        );
+      db.prepare("DELETE FROM cities WHERE id = ?").run(id);
+      changeLog("city", id, "delete", admin.display_name);
+      audit(admin.id, admin.display_name, "city_delete", `#${id}`, ip);
+      return ok({ deleted: true });
+    }
+  }
+
   /* ---------- dashboard ---------- */
   if (path === "dashboard" && method === "GET") {
     const q = (sql: string) => (db.query(sql).get() as any).c ?? 0;
@@ -179,6 +245,16 @@ async function route(
       trips_total: q("SELECT COALESCE(SUM(trips_count),0) AS c FROM app_users"),
       lines_active: q("SELECT COUNT(*) AS c FROM lines WHERE is_active = 1"),
       stations_total: q("SELECT COUNT(*) AS c FROM stations"),
+      cities_total: q("SELECT COUNT(*) AS c FROM cities WHERE is_active = 1"),
+      lines_by_city: db
+        .query(
+          `SELECT c.name AS city, COUNT(l.id) AS lines,
+                  (SELECT COUNT(*) FROM stations s JOIN lines l2 ON l2.id = s.line_id
+                    WHERE l2.city_id = c.id AND s.is_active = 1) AS stations
+           FROM cities c LEFT JOIN lines l ON l.city_id = c.id AND l.is_active = 1
+           WHERE c.is_active = 1 GROUP BY c.id ORDER BY c.sort, c.id`
+        )
+        .all(),
       ads_active: (
         db
           .query("SELECT COUNT(*) AS c FROM ads WHERE is_active = 1 AND (ends_at IS NULL OR ends_at > ?)")
@@ -304,12 +380,21 @@ async function route(
   if (seg[0] === "lines") {
     if (method === "GET") {
       const mode = str(url.searchParams.get("mode") ?? "", 10);
+      const cityId = Number(url.searchParams.get("city_id")) || null;
       const baseSql =
-        "SELECT l.*, (SELECT COUNT(*) FROM stations s WHERE s.line_id = l.id AND s.is_active = 1) AS station_count FROM lines l";
-      const rows = mode
-        ? db.prepare(`${baseSql} WHERE l.mode = ? ORDER BY l.sort`).all(mode)
-        : db.prepare(`${baseSql} ORDER BY l.sort`).all();
-      return ok(rows);
+        "SELECT l.*, c.name AS city_name, (SELECT COUNT(*) FROM stations s WHERE s.line_id = l.id AND s.is_active = 1) AS station_count FROM lines l LEFT JOIN cities c ON c.id = l.city_id";
+      const wh: string[] = [];
+      const args: any[] = [];
+      if (mode) {
+        wh.push("l.mode = ?");
+        args.push(mode);
+      }
+      if (cityId) {
+        wh.push("l.city_id = ?");
+        args.push(cityId);
+      }
+      const where = wh.length ? ` WHERE ${wh.join(" AND ")}` : "";
+      return ok(db.prepare(`${baseSql}${where} ORDER BY l.sort`).all(...args));
     }
     const guard = requireRole(admin, "operator");
     if (guard) return guard;
@@ -338,9 +423,9 @@ async function route(
       const maxSort = (db.query("SELECT COALESCE(MAX(sort),0) AS m FROM lines").get() as any).m;
       const r = db
         .prepare(
-          "INSERT INTO lines (mode, number, name, color, terminals, direction, is_active, sort) VALUES (?,?,?,?,?,?,0,?)"
+          "INSERT INTO lines (mode, number, name, color, terminals, direction, city_id, is_active, sort) VALUES (?,?,?,?,?,?,?,0,?)"
         )
-        .run(cur.mode, cur.number, `${cur.name} (کپی)`, cur.color, cur.terminals, cur.direction, maxSort + 1);
+        .run(cur.mode, cur.number, `${cur.name} (کپی)`, cur.color, cur.terminals, cur.direction, cur.city_id ?? null, maxSort + 1);
       changeLog("line", Number(r.lastInsertRowid), "create", admin.display_name, `${cur.name} (کپی)`);
       audit(admin.id, admin.display_name, "line_create", `تکثیر ${cur.name}`, ip);
       return ok({ id: Number(r.lastInsertRowid) }, 201);
@@ -348,9 +433,12 @@ async function route(
     if (method === "POST") {
       const name = str(body.name, 80);
       if (!name) return fail("BAD_INPUT", "نام خط الزامی است");
+      const cityId = Number(body.city_id) || null;
+      if (cityId && !db.query("SELECT id FROM cities WHERE id = ?").get(cityId))
+        return fail("NOT_FOUND", "شهر انتخاب‌شده یافت نشد", 404);
       const r = db
         .prepare(
-          "INSERT INTO lines (mode, number, name, color, terminals, direction, is_active, sort) VALUES (?,?,?,?,?,?,?,?)"
+          "INSERT INTO lines (mode, number, name, color, terminals, direction, city_id, is_active, sort) VALUES (?,?,?,?,?,?,?,?,?)"
         )
         .run(
           ["metro", "bus", "brt"].includes(body.mode) ? body.mode : "metro",
@@ -359,6 +447,7 @@ async function route(
           /^#[0-9a-fA-F]{6}$/.test(body.color ?? "") ? body.color : "#009640",
           str(body.terminals, 120) || null,
           str(body.direction, 60) || null,
+          cityId,
           body.is_active === 0 ? 0 : 1,
           Number(body.sort) || 0
         );
@@ -372,8 +461,11 @@ async function route(
       const cur = db.prepare("SELECT * FROM lines WHERE id = ?").get(id) as any;
       if (!cur) return fail("NOT_FOUND", "خط یافت نشد", 404);
       const next = { ...cur, ...body, name: body.name !== undefined ? str(body.name, 80) || cur.name : cur.name };
+      const nextCityId = body.city_id !== undefined ? Number(body.city_id) || null : cur.city_id ?? null;
+      if (nextCityId && !db.query("SELECT id FROM cities WHERE id = ?").get(nextCityId))
+        return fail("NOT_FOUND", "شهر انتخاب‌شده یافت نشد", 404);
       db.prepare(
-        "UPDATE lines SET mode=?, number=?, name=?, color=?, terminals=?, direction=?, is_active=?, sort=? WHERE id=?"
+        "UPDATE lines SET mode=?, number=?, name=?, color=?, terminals=?, direction=?, city_id=?, is_active=?, sort=? WHERE id=?"
       ).run(
         ["metro", "bus", "brt"].includes(next.mode) ? next.mode : "metro",
         Number(next.number) || null,
@@ -381,6 +473,7 @@ async function route(
         /^#[0-9a-fA-F]{6}$/.test(next.color ?? "") ? next.color : "#009640",
         next.terminals,
         next.direction,
+        nextCityId,
         next.is_active ? 1 : 0,
         Number(next.sort) || 0,
         id
@@ -400,10 +493,16 @@ async function route(
   /* ---------- stations ---------- */
   if (seg[0] === "stations") {
     if (method === "GET") {
-      const lineId = Number(url.searchParams.get("line_id"));
-      const rows = lineId
-        ? db.prepare("SELECT * FROM stations WHERE line_id = ? ORDER BY order_index").all(lineId)
-        : db.prepare("SELECT * FROM stations ORDER BY line_id, order_index LIMIT 500").all();
+      const lineId = Number(url.searchParams.get("line_id")) || null;
+      const cityId = Number(url.searchParams.get("city_id")) || null;
+      const baseSql =
+        "SELECT s.*, l.name AS line_name, l.color AS line_color, c.name AS city_name FROM stations s JOIN lines l ON l.id = s.line_id LEFT JOIN cities c ON c.id = s.city_id";
+      if (lineId) {
+        return ok(db.prepare(`${baseSql} WHERE s.line_id = ? ORDER BY s.order_index`).all(lineId));
+      }
+      const rows = cityId
+        ? db.prepare(`${baseSql} WHERE s.city_id = ? ORDER BY s.line_id, s.order_index LIMIT 500`).all(cityId)
+        : db.prepare(`${baseSql} ORDER BY s.line_id, s.order_index LIMIT 500`).all();
       return ok(rows);
     }
     const guard = requireRole(admin, "operator");
@@ -430,7 +529,7 @@ async function route(
       const lineId = Number(body.line_id);
       const namesRaw = typeof body.names === "string" ? body.names : "";
       if (!lineId) return fail("BAD_INPUT", "خط الزامی است");
-      const line = db.prepare("SELECT id FROM lines WHERE id = ?").get(lineId);
+      const line = db.prepare("SELECT id, city_id FROM lines WHERE id = ?").get(lineId) as any;
       if (!line) return fail("NOT_FOUND", "خط یافت نشد", 404);
       const names = namesRaw
         .split(/\n|\r|،/)
@@ -439,12 +538,12 @@ async function route(
         .slice(0, 200);
       if (!names.length) return fail("BAD_INPUT", "حداقل یک نام ایستگاه وارد کنید (هر خط یک نام)");
       const maxOrder = (db.query("SELECT COALESCE(MAX(order_index), -1) AS m FROM stations WHERE line_id = ?").get(lineId) as any).m;
-      const ins = db.prepare("INSERT INTO stations (line_id, name, order_index, is_active) VALUES (?,?,?,1)");
-      let added = 0;
+      const ins = db.prepare("INSERT INTO stations (line_id, name, order_index, is_active, city_id) VALUES (?,?,?,1,?)");
       const dup = db.prepare("SELECT id FROM stations WHERE line_id = ? AND name = ?");
+      let added = 0;
       names.forEach((name: string, i: number) => {
         if (dup.get(lineId, name)) return;
-        ins.run(lineId, name, maxOrder + 1 + i);
+        ins.run(lineId, name, maxOrder + 1 + i, line.city_id ?? null);
         added++;
       });
       changeLog("station", null, "bulk_create", admin.display_name, `${added} ایستگاه به خط #${lineId}`);
@@ -456,17 +555,23 @@ async function route(
       const name = str(body.name, 80);
       if (!lineId) return fail("BAD_INPUT", "خط الزامی است");
       if (!name) return fail("BAD_INPUT", "نام ایستگاه الزامی است");
-      const line = db.prepare("SELECT id FROM lines WHERE id = ?").get(lineId);
+      const line = db.prepare("SELECT id, city_id FROM lines WHERE id = ?").get(lineId) as any;
       if (!line) return fail("NOT_FOUND", "خط یافت نشد", 404);
+      // شهر ایستگاه: انتخاب مدیر یا به‌طور خودکار از شهر خط مقصد
+      let stationCityId = body.city_id !== undefined && body.city_id !== "" && body.city_id !== null ? Number(body.city_id) : null;
+      if (stationCityId && !db.query("SELECT id FROM cities WHERE id = ?").get(stationCityId))
+        return fail("NOT_FOUND", "شهر انتخاب‌شده یافت نشد", 404);
+      if (!stationCityId) stationCityId = line.city_id ?? null;
       const r = db
         .prepare(
-          "INSERT INTO stations (line_id, name, lat, lng, order_index, is_active) VALUES (?,?,?,?,?,?)"
+          "INSERT INTO stations (line_id, name, lat, lng, city_id, order_index, is_active) VALUES (?,?,?,?,?,?,?)"
         )
         .run(
           lineId,
           name,
           body.lat !== undefined && body.lat !== "" ? Number(body.lat) : null,
           body.lng !== undefined && body.lng !== "" ? Number(body.lng) : null,
+          stationCityId,
           Number(body.order_index) || 0,
           body.is_active === 0 ? 0 : 1
         );
@@ -480,13 +585,27 @@ async function route(
       const cur = db.prepare("SELECT * FROM stations WHERE id = ?").get(id) as any;
       if (!cur) return fail("NOT_FOUND", "ایستگاه یافت نشد", 404);
       const next = { ...cur, ...body, name: body.name !== undefined ? str(body.name, 80) || cur.name : cur.name };
+      // اگر خط عوض شد و شهر دستی انتخاب نشده، شهر از خط جدید گرفته می‌شود
+      let nextCityId = body.city_id !== undefined && body.city_id !== "" && body.city_id !== null ? Number(body.city_id) : null;
+      if (nextCityId && !db.query("SELECT id FROM cities WHERE id = ?").get(nextCityId))
+        return fail("NOT_FOUND", "شهر انتخاب‌شده یافت نشد", 404);
+      const newLineId = Number(next.line_id) || cur.line_id;
+      if (!nextCityId) {
+        if (newLineId !== cur.line_id) {
+          const newLine = db.prepare("SELECT city_id FROM lines WHERE id = ?").get(newLineId) as any;
+          nextCityId = newLine?.city_id ?? null;
+        } else {
+          nextCityId = cur.city_id ?? null;
+        }
+      }
       db.prepare(
-        "UPDATE stations SET line_id=?, name=?, lat=?, lng=?, order_index=?, is_active=? WHERE id=?"
+        "UPDATE stations SET line_id=?, name=?, lat=?, lng=?, city_id=?, order_index=?, is_active=? WHERE id=?"
       ).run(
-        Number(next.line_id) || cur.line_id,
+        newLineId,
         next.name,
         next.lat === null ? null : Number(next.lat),
         next.lng === null ? null : Number(next.lng),
+        nextCityId,
         Number(next.order_index) || 0,
         next.is_active ? 1 : 0,
         id

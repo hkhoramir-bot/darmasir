@@ -1,6 +1,6 @@
 /* ============================================================
    پنل مدیریت درمسیر — اپلیکیشن تک‌صفحه‌ای فارسی RTL
-   نسخه ۲.۵ — امکانات کامل تبلیغات، عملیات گروهی، گزارش تحلیلی
+   نسخه ۲.۶ — پشتیبانی شهر برای خطوط و ایستگاه‌ها + فیلتر شهر
    ============================================================ */
 "use strict";
 
@@ -157,6 +157,7 @@ function filterTables(q) {
 const PAGES = [
   { id: "dashboard", title: "داشبورد مدیریتی", icon: "dashboard" },
   { id: "users", title: "کاربران", icon: "group" },
+  { id: "cities", title: "شهرها", icon: "location_city" },
   { id: "lines", title: "خطوط", icon: "alt_route" },
   { id: "stations", title: "ایستگاه‌ها", icon: "location_on" },
   { id: "ads", title: "تبلیغات و بنرها", icon: "campaign" },
@@ -269,7 +270,7 @@ function layout(cur) {
         <div class="brand">
           <div class="brand-logo"><span class="material fill">subway</span></div>
           <div class="brand-txt">
-            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۵</span></div>
+            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۶</span></div>
             <span class="brand-sub">پنل مدیریت سامانه ناوبری شهری</span>
           </div>
         </div>
@@ -304,6 +305,7 @@ async function renderPage(id) {
   try {
     if (id === "dashboard") await pageDashboard(host);
     else if (id === "users") await pageUsers(host);
+    else if (id === "cities") await pageCities(host);
     else if (id === "lines") await pageLines(host);
     else if (id === "stations") await pageStations(host);
     else if (id === "ads") await pageAds(host);
@@ -373,6 +375,7 @@ function actionLabel(a) {
     password_change: "تغییر گذرواژه", session_revoke: "ابطال نشست",
     user_create: "ایجاد کاربر", user_update: "ویرایش کاربر", user_delete: "حذف کاربر", user_bulk_status: "تغییر گروهی وضعیت کاربران",
     line_create: "ایجاد خط", line_update: "ویرایش خط", line_delete: "حذف خط",
+    city_create: "ایجاد شهر", city_update: "ویرایش شهر", city_delete: "حذف شهر",
     station_create: "ایجاد ایستگاه", station_update: "ویرایش ایستگاه", station_delete: "حذف ایستگاه", station_bulk: "افزودن گروهی ایستگاه",
     ad_create: "ایجاد تبلیغ", ad_update: "ویرایش تبلیغ", ad_delete: "حذف تبلیغ",
     ad_bulk_activate: "فعال‌سازی گروهی تبلیغات", ad_bulk_deactivate: "غیرفعال‌سازی گروهی تبلیغات", ad_bulk_delete: "حذف گروهی تبلیغات",

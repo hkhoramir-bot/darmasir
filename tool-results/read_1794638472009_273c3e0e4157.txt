@@ -1,0 +1,802 @@
+     1→     1→/* ============================================================
+     2→     2→   پنل مدیریت درمسیر — اپلیکیشن تک‌صفحه‌ای فارسی RTL
+     3→     3→   نسخه ۲.۵ — امکانات کامل تبلیغات، عملیات گروهی، گزارش تحلیلی
+     4→     4→   ============================================================ */
+     5→     5→"use strict";
+     6→     6→
+     7→     7→const PORT = 3035;
+     8→     8→const TOKEN_KEY = "darmasir_admin_token";
+     9→     9→const ADMIN_KEY = "darmasir_admin_me";
+    10→    10→
+    11→    11→/* دسترسی از مسیر تمیز /admin/ یا مستقیم با ?XTransformPort=3035 */
+    12→    12→const API_BASE = location.pathname.startsWith("/admin/") ? "/admin/api/v1/" : "/api/v1/";
+    13→    13→const API_Q = window.__ASSET_Q || "";
+    14→    14→
+    15→    15→function apiPath(path) {
+    16→    16→  if (!API_Q) return API_BASE + path;
+    17→    17→  return API_BASE + path + (path.includes("?") ? API_Q.replace("?", "&") : API_Q);
+    18→    18→}
+    19→    19→
+    20→    20→/* ---------------- ابزار پایه ---------------- */
+    21→    21→
+    22→    22→function esc(s) {
+    23→    23→  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    24→    24→}
+    25→    25→
+    26→    26→function faTime(iso) {
+    27→    27→  if (!iso) return "—";
+    28→    28→  try {
+    29→    29→    return new Date(iso).toLocaleString("fa-IR", { dateStyle: "short", timeStyle: "short" });
+    30→    30→  } catch { return "—"; }
+    31→    31→}
+    32→    32→
+    33→    33→function faNum(n) {
+    34→    34→  return Number(n || 0).toLocaleString("fa-IR");
+    35→    35→}
+    36→    36→
+    37→    37→async function api(path, opts = {}) {
+    38→    38→  const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
+    39→    39→  const token = localStorage.getItem(TOKEN_KEY);
+    40→    40→  if (token) headers.Authorization = `Bearer ${token}`;
+    41→    41→  const res = await fetch(apiPath(path), {
+    42→    42→    method: opts.method || "GET",
+    43→    43→    headers,
+    44→    44→    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    45→    45→  });
+    46→    46→  const json = await res.json().catch(() => ({ ok: false, error: { code: "PARSE", message: "پاسخ نامعتبر سرور" } }));
+    47→    47→  if (!json.ok) {
+    48→    48→    if (res.status === 401 && !path.startsWith("auth/")) { logoutLocal(); throw new Error(json.error?.message || "نشست منقضی شده"); }
+    49→    49→    throw new Error(json.error?.message || "خطای ناشناخته");
+    50→    50→  }
+    51→    51→  return json.data;
+    52→    52→}
+    53→    53→
+    54→    54→function toast(msg, type = "") {
+    55→    55→  const host = document.getElementById("toast-host");
+    56→    56→  const el = document.createElement("div");
+    57→    57→  el.className = `toast ${type}`;
+    58→    58→  el.textContent = msg;
+    59→    59→  host.appendChild(el);
+    60→    60→  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; setTimeout(() => el.remove(), 300); }, 2600);
+    61→    61→}
+    62→    62→
+    63→    63→function modal(title, bodyHtml, footHtml) {
+    64→    64→  const host = document.getElementById("modal-host");
+    65→    65→  host.innerHTML = `
+    66→    66→    <div class="modal-back" id="modal-back">
+    67→    67→      <div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    68→    68→        <div class="modal-head"><h3>${esc(title)}</h3><button class="modal-x" id="modal-x" aria-label="بستن">×</button></div>
+    69→    69→        <div class="modal-body">${bodyHtml}</div>
+    70→    70→        ${footHtml ? `<div class="modal-foot">${footHtml}</div>` : ""}
+    71→    71→      </div>
+    72→    72→    </div>`;
+    73→    73→  const close = () => { host.innerHTML = ""; };
+    74→    74→  document.getElementById("modal-x").onclick = close;
+    75→    75→  document.getElementById("modal-back").onclick = (e) => { if (e.target.id === "modal-back") close(); };
+    76→    76→  return close;
+    77→    77→}
+    78→    78→
+    79→    79→function confirmDialog(msg, onYes) {
+    80→    80→  const close = modal("تأیید عملیات", `<p style="margin:0">${esc(msg)}</p>`,
+    81→    81→    `<button class="btn" id="c-no">انصراف</button><button class="btn btn-danger" id="c-yes">تأیید و ادامه</button>`);
+    82→    82→  document.getElementById("c-no").onclick = close;
+    83→    83→  document.getElementById("c-yes").onclick = async () => { close(); await onYes(); };
+    84→    84→}
+    85→    85→
+    86→    86→function closeModal() { document.getElementById("modal-host").innerHTML = ""; }
+    87→    87→
+    88→    88→function logoutLocal() {
+    89→    89→  localStorage.removeItem(TOKEN_KEY);
+    90→    90→  localStorage.removeItem(ADMIN_KEY);
+    91→    91→  location.hash = "#/login";
+    92→    92→  render();
+    93→    93→}
+    94→    94→
+    95→    95→/* خروجی CSV با BOM برای سازگاری اکسل فارسی */
+    96→    96→function csvExport(filename, headers, rows) {
+    97→    97→  const line = (arr) => arr.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",");
+    98→    98→  const csv = "\uFEFF" + line(headers) + "\r\n" + rows.map(line).join("\r\n");
+    99→    99→  const blob = new Blob([csv], { type: "text/csv; charset=utf-8" });
+   100→   100→  const a = document.createElement("a");
+   101→   101→  a.href = URL.createObjectURL(blob);
+   102→   102→  a.download = filename;
+   103→   103→  a.click();
+   104→   104→  URL.revokeObjectURL(a.href);
+   105→   105→  toast("فایل CSV دانلود شد", "ok2");
+   106→   106→}
+   107→   107→
+   108→   108→/* ---------------- وضعیت ---------------- */
+   109→   109→
+   110→   110→let me = null;
+   111→   111→try { me = JSON.parse(localStorage.getItem(ADMIN_KEY) || "null"); } catch {}
+   112→   112→
+   113→   113→const ROLE_LABEL = { super: "مدیر کل", operator: "اپراتور", viewer: "ناظر" };
+   114→   114→const STATUS_LABEL = { active: ["فعال", "ok"], limited: ["محدود", "warn"], disabled: ["غیرفعال", "bad"] };
+   115→   115→const MODE_LABEL = { metro: "مترو", bus: "اتوبوس", brt: "اتوبوس تندرو" };
+   116→   116→const PLACE_LABEL = { home: "خانه", map: "نقشه", plan: "مسیریابی", station: "جزئیات ایستگاه", line: "جزئیات خط", splash: "صفحه اسپلش", drawer: "منوی کناری" };
+   117→   117→
+   118→   118→const can = (role) => me && ({ viewer: 1, operator: 2, super: 3 }[me.role] ?? 0) >= ({ viewer: 1, operator: 2, super: 3 }[role] ?? 9);
+   119→   119→
+   120→   120→/* ---------------- اجزای مشترک طراحی مترویار ---------------- */
+   121→   121→
+   122→   122→function pageHead(title, desc, actionsHtml = "") {
+   123→   123→  return `
+   124→   124→  <div class="page-head">
+   125→   125→    <div class="page-head-txt">
+   126→   126→      <div class="page-head-row">
+   127→   127→        <h1>${esc(title)}</h1>
+   128→   128→        <span class="chip-live"><span class="dot-live"></span>سامانه فعال و همگام با کلاینت</span>
+   129→   129→      </div>
+   130→   130→      ${desc ? `<p>${esc(desc)}</p>` : ""}
+   131→   131→    </div>
+   132→   132→    ${actionsHtml ? `<div class="page-head-actions">${actionsHtml}</div>` : ""}
+   133→   133→  </div>`;
+   134→   134→}
+   135→   135→
+   136→   136→function kpi(label, icon, num, sub, tone = "t-primary") {
+   137→   137→  const isNum = typeof num === "number" || /^\d+$/.test(String(num ?? ""));
+   138→   138→  const numHtml = isNum ? Number(num || 0).toLocaleString("fa-IR") : esc(String(num ?? "—"));
+   139→   139→  return `
+   140→   140→  <div class="card kpi">
+   141→   141→    <div class="kpi-top"><span class="kpi-lbl">${esc(label)}</span><div class="kpi-icon ${tone}"><span class="material">${icon}</span></div></div>
+   142→   142→    <div class="kpi-num">${numHtml}</div>
+   143→   143→    <div class="kpi-sub"><span class="material">trending_up</span><span>${esc(sub)}</span></div>
+   144→   144→  </div>`;
+   145→   145→}
+   146→   146→
+   147→   147→function filterTables(q) {
+   148→   148→  document.querySelectorAll("table.tbl tbody").forEach((tb) => {
+   149→   149→    tb.querySelectorAll("tr").forEach((tr) => {
+   150→   150→      tr.style.display = !q || tr.textContent.includes(q) ? "" : "none";
+   151→   151→    });
+   152→   152→  });
+   153→   153→}
+   154→   154→
+   155→   155→/* ---------------- مسیریابی ---------------- */
+   156→   156→
+   157→   157→const PAGES = [
+   158→   158→  { id: "dashboard", title: "داشبورد مدیریتی", icon: "dashboard" },
+   159→   159→  { id: "users", title: "کاربران", icon: "group" },
+   160→   160→  { id: "lines", title: "خطوط", icon: "alt_route" },
+   161→   161→  { id: "stations", title: "ایستگاه‌ها", icon: "location_on" },
+   162→   162→  { id: "ads", title: "تبلیغات و بنرها", icon: "campaign" },
+   163→   163→  { id: "voice", title: "دستیار صوتی", icon: "record_voice_over" },
+   164→   164→  { id: "settings", title: "تنظیمات سامانه", icon: "settings", super: true },
+   165→   165→  { id: "reports", title: "گزارش‌ها و تحلیل داده", icon: "monitoring" },
+   166→   166→  { id: "security", title: "امنیت و وقایع‌نگاری", icon: "security", super: true },
+   167→   167→];
+   168→   168→
+   169→   169→function currentPage() {
+   170→   170→  const h = location.hash.replace(/^#\//, "") || "dashboard";
+   171→   171→  return PAGES.find((p) => p.id === h)?.id ?? "dashboard";
+   172→   172→}
+   173→   173→
+   174→   174→/* ---------------- رندر ---------------- */
+   175→   175→
+   176→   176→function render() {
+   177→   177→  const app = document.getElementById("app");
+   178→   178→  if (!location.hash.startsWith("#/")) location.hash = "#/login";
+   179→   179→  const page = location.hash.replace(/^#\//, "") || "login";
+   180→   180→  if (!localStorage.getItem(TOKEN_KEY) || page === "login") {
+   181→   181→    if (me && localStorage.getItem(TOKEN_KEY) && page === "login") { location.hash = "#/dashboard"; }
+   182→   182→    app.innerHTML = loginView();
+   183→   183→    bindLogin();
+   184→   184→    return;
+   185→   185→  }
+   186→   186→  if (!me) { logoutLocal(); return; }
+   187→   187→  const cur = PAGES.find((p) => p.id === currentPage()) ?? PAGES[0];
+   188→   188→  if (cur.super && me.role !== "super") { location.hash = "#/dashboard"; return; }
+   189→   189→  app.innerHTML = layout(cur);
+   190→   190→  document.getElementById("logout-btn").onclick = async () => {
+   191→   191→    try { await api("auth/logout", { method: "POST" }); } catch {}
+   192→   192→    logoutLocal();
+   193→   193→  };
+   194→   194→  const burger = document.getElementById("burger");
+   195→   195→  const sidebar = document.getElementById("sidebar");
+   196→   196→  burger.onclick = () => sidebar.classList.toggle("open");
+   197→   197→  document.addEventListener("click", function onDoc(e) {
+   198→   198→    if (sidebar.classList.contains("open") && !sidebar.contains(e.target) && e.target !== burger && !burger.contains(e.target)) {
+   199→   199→      sidebar.classList.remove("open");
+   200→   200→      document.querySelectorAll(".sidebar-back").forEach((x) => x.remove());
+   201→   201→    }
+   202→   202→  });
+   203→   203→  if (sidebar.classList.contains("open")) {
+   204→   204→    const back = document.createElement("div");
+   205→   205→    back.className = "sidebar-back";
+   206→   206→    document.body.appendChild(back);
+   207→   207→  }
+   208→   208→  const ts = document.getElementById("top-search");
+   209→   209→  if (ts) {
+   210→   210→    ts.oninput = () => filterTables(ts.value.trim());
+   211→   211→  }
+   212→   212→  renderPage(cur.id);
+   213→   213→  if (ts && ts.value.trim()) filterTables(ts.value.trim());
+   214→   214→}
+   215→   215→
+   216→   216→function loginView() {
+   217→   217→  return `
+   218→   218→  <div class="login-wrap">
+   219→   219→    <div class="login-card">
+   220→   220→      <div class="login-logo"><span class="material fill">subway</span></div>
+   221→   221→      <h1>پنل مدیریت درمسیر</h1>
+   222→   222→      <p class="sub">دستیار هوشمند سفر شهری — ورود مدیران</p>
+   223→   223→      <div class="login-err" id="login-err"></div>
+   224→   224→      <form id="login-form">
+   225→   225→        <div class="field"><label for="u">نام کاربری</label><input id="u" name="username" autocomplete="username" required placeholder="admin" /></div>
+   226→   226→        <div class="field"><label for="p">گذرواژه</label><input id="p" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" /></div>
+   227→   227→        <button class="btn btn-primary" style="width:100%; min-height:44px" type="submit"><span class="material">login</span><span>ورود به پنل</span></button>
+   228→   228→      </form>
+   229→   229→    </div>
+   230→   230→  </div>`;
+   231→   231→}
+   232→   232→
+   233→   233→function bindLogin() {
+   234→   234→  const form = document.getElementById("login-form");
+   235→   235→  form.onsubmit = async (e) => {
+   236→   236→    e.preventDefault();
+   237→   237→    const err = document.getElementById("login-err");
+   238→   238→    err.style.display = "none";
+   239→   239→    const btn = form.querySelector("button[type=submit]");
+   240→   240→    btn.disabled = true; btn.textContent = "در حال ورود…";
+   241→   241→    try {
+   242→   242→      const data = await api("auth/login", {
+   243→   243→        method: "POST",
+   244→   244→        body: { username: form.username.value.trim(), password: form.password.value },
+   245→   245→      });
+   246→   246→      localStorage.setItem(TOKEN_KEY, data.token);
+   247→   247→      localStorage.setItem(ADMIN_KEY, JSON.stringify(data.admin));
+   248→   248→      me = data.admin;
+   249→   249→      toast("خوش آمدید، " + data.admin.display_name, "ok2");
+   250→   250→      location.hash = "#/dashboard";
+   251→   251→      render();
+   252→   252→    } catch (ex) {
+   253→   253→      err.textContent = ex.message;
+   254→   254→      err.style.display = "block";
+   255→   255→    } finally {
+   256→   256→      btn.disabled = false; btn.textContent = "ورود به پنل";
+   257→   257→    }
+   258→   258→  };
+   259→   259→}
+   260→   260→
+   261→   261→function layout(cur) {
+   262→   262→  const nav = PAGES.filter((p) => !p.super || me.role === "super")
+   263→   263→    .map((p) => `<a href="#/${p.id}" class="${p.id === cur.id ? "active" : ""}"><span class="material ${p.id === cur.id ? "fill" : ""}">${p.icon}</span><span class="nav-lbl">${p.title}</span>${p.id === cur.id ? '<span class="nav-live"></span>' : ""}</a>`)
+   264→   264→    .join("");
+   265→   265→  return `
+   266→   266→  <div class="layout">
+   267→   267→    <aside class="sidebar" id="sidebar">
+   268→   268→      <div class="side-scroll">
+   269→   269→        <div class="brand">
+   270→   270→          <div class="brand-logo"><span class="material fill">subway</span></div>
+   271→   271→          <div class="brand-txt">
+   272→   272→            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۵</span></div>
+   273→   273→            <span class="brand-sub">پنل مدیریت سامانه ناوبری شهری</span>
+   274→   274→          </div>
+   275→   275→        </div>
+   276→   276→        <nav class="nav" aria-label="ناوبری پنل">${nav}</nav>
+   277→   277→      </div>
+   278→   278→      <div class="side-foot">
+   279→   279→        <div class="side-meta"><span class="material">database</span><span>پایگاه داده محلی فعال — بدون وابستگی خارجی</span></div>
+   280→   280→        <button class="logout-btn" id="logout-btn"><span class="material">logout</span><span>خروج از حساب</span></button>
+   281→   281→      </div>
+   282→   282→    </aside>
+   283→   283→    <div class="main">
+   284→   284→      <header class="topbar">
+   285→   285→        <button class="burger" id="burger" aria-label="منو"><span class="material">menu</span></button>
+   286→   286→        <div class="top-search">
+   287→   287→          <span class="material">search</span>
+   288→   288→          <input id="top-search" type="search" placeholder="جستجو در جدول‌های این صفحه…" aria-label="جستجو در صفحه" />
+   289→   289→        </div>
+   290→   290→        <div class="db-chip"><span class="pulse"></span><span>اتصال پایگاه داده فعال</span></div>
+   291→   291→        <span class="top-divider"></span>
+   292→   292→        <div class="me-box">
+   293→   293→          <div class="who"><b>${esc(me.display_name)}</b><span>${ROLE_LABEL[me.role] || me.role} — ${esc(me.username || "")}</span></div>
+   294→   294→          <div class="avatar">${esc((me.display_name || "?").slice(0, 1))}</div>
+   295→   295→        </div>
+   296→   296→      </header>
+   297→   297→      <main class="content" id="page-content"><div class="empty"><span class="material">hourglass_empty</span>در حال بارگذاری…</div></main>
+   298→   298→    </div>
+   299→   299→  </div>`;
+   300→   300→}
+   301→   301→
+   302→   302→async function renderPage(id) {
+   303→   303→  const host = document.getElementById("page-content");
+   304→   304→  try {
+   305→   305→    if (id === "dashboard") await pageDashboard(host);
+   306→   306→    else if (id === "users") await pageUsers(host);
+   307→   307→    else if (id === "lines") await pageLines(host);
+   308→   308→    else if (id === "stations") await pageStations(host);
+   309→   309→    else if (id === "ads") await pageAds(host);
+   310→   310→    else if (id === "voice") await pageVoice(host);
+   311→   311→    else if (id === "settings") await pageSettings(host);
+   312→   312→    else if (id === "reports") await pageReports(host);
+   313→   313→    else if (id === "security") await pageSecurity(host);
+   314→   314→  } catch (ex) {
+   315→   315→    host.innerHTML = `<div class="card"><div class="empty">${esc(ex.message)}</div></div>`;
+   316→   316→  }
+   317→   317→}
+   318→   318→
+   319→   319→/* ---------------- صفحات ---------------- */
+   320→   320→
+   321→   321→async function pageDashboard(host) {
+   322→   322→  const d = await api("dashboard");
+   323→   323→  const maxApi = Math.max(...d.api_last7.map((x) => x.count), 1);
+   324→   324→  host.innerHTML = `
+   325→   325→    ${pageHead("داشبورد مدیریتی", "نمای کلی آمار کاربران، سفرها، تبلیغات و وضعیت سرویس‌های درمسیر")}
+   326→   326→    <div class="kpi-grid">
+   327→   327→      ${kpi("کل کاربران", "group", d.users_total, "کاربر ثبت‌شده در سامانه", "t-primary")}
+   328→   328→      ${kpi("کاربران فعال", "trending_up", d.users_active, "کاربر با نشست اخیر", "t-tertiary")}
+   329→   329→      ${kpi("سفرهای ثبت‌شده", "route", d.trips_total, "از ابتدا تا امروز", "t-surface")}
+   330→   330→      ${kpi("تبلیغ فعال", "campaign", d.ads_active, "کمپین در حال نمایش", "t-dim")}
+   331→   331→    </div>
+   332→   332→    <div class="kpi-grid kpi-grid-3">
+   333→   333→      ${kpi("خط فعال", "alt_route", d.lines_active, "خط در حال سرویس‌دهی", "t-primary")}
+   334→   334→      ${kpi("ایستگاه", "location_on", d.stations_total, "ایستگاه ثبت‌شده در پایگاه داده", "t-surface")}
+   335→   335→      <div class="card">
+   336→   336→        <h3><span class="material" style="color:var(--primary)">dns</span>وضعیت سرویس‌ها</h3>
+   337→   337→        ${d.services.map((s) => `
+   338→   338→          <div style="display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid rgba(194,198,211,.35)">
+   339→   339→            <div><b style="font-size:13px">${esc(s.name)}</b><div style="font-size:11px;color:var(--ink-3)">${esc(s.note || "")}</div></div>
+   340→   340→            <span class="badge ${s.status === "ok" ? "ok" : "off"}">${s.status === "ok" ? "برقرار" : "غیرفعال"}</span>
+   341→   341→          </div>`).join("")}
+   342→   342→      </div>
+   343→   343→    </div>
+   344→   344→    <div class="grid cols-2">
+   345→   345→      <div class="card">
+   346→   346→        <h3><span class="material" style="color:var(--primary)">monitoring</span>درخواست‌های API — ۷ روز اخیر</h3>
+   347→   347→        <div class="bars">
+   348→   348→          ${d.api_last7.map((x) => `
+   349→   349→            <div class="bar-col">
+   350→   350→              <span class="bar-val">${x.count || ""}</span>
+   351→   351→              <div class="bar" style="height:${Math.round((x.count / maxApi) * 100)}%"></div>
+   352→   352→              <span class="bar-day">${x.day.slice(5).replace("-", "/")}</span>
+   353→   353→            </div>`).join("")}
+   354→   354→        </div>
+   355→   355→      </div>
+   356→   356→      <div class="card">
+   357→   357→        <h3><span class="material" style="color:var(--primary)">history</span>آخرین فعالیت مدیران</h3>
+   358→   358→        <div class="feed">
+   359→   359→          ${d.audit_recent.length ? d.audit_recent.map((a) => `
+   360→   360→            <div class="feed-item">
+   361→   361→              <span class="fi-dot"></span>
+   362→   362→              <div class="fi-body"><b>${esc(actionLabel(a.action))}</b><p>${esc(a.admin_name)}${a.details ? " — " + esc(a.details) : ""}</p></div>
+   363→   363→              <span class="fi-time">${faTime(a.created_at)}</span>
+   364→   364→            </div>`).join("") : `<div class="empty"><span class="material">inbox</span>فعالیتی ثبت نشده است</div>`}
+   365→   365→        </div>
+   366→   366→      </div>
+   367→   367→    </div>`;
+   368→   368→}
+   369→   369→
+   370→   370→function actionLabel(a) {
+   371→   371→  return {
+   372→   372→    login: "ورود به پنل", login_failed: "ورود ناموفق", logout: "خروج",
+   373→   373→    password_change: "تغییر گذرواژه", session_revoke: "ابطال نشست",
+   374→   374→    user_create: "ایجاد کاربر", user_update: "ویرایش کاربر", user_delete: "حذف کاربر", user_bulk_status: "تغییر گروهی وضعیت کاربران",
+   375→   375→    line_create: "ایجاد خط", line_update: "ویرایش خط", line_delete: "حذف خط",
+   376→   376→    station_create: "ایجاد ایستگاه", station_update: "ویرایش ایستگاه", station_delete: "حذف ایستگاه", station_bulk: "افزودن گروهی ایستگاه",
+   377→   377→    ad_create: "ایجاد تبلیغ", ad_update: "ویرایش تبلیغ", ad_delete: "حذف تبلیغ",
+   378→   378→    ad_bulk_activate: "فعال‌سازی گروهی تبلیغات", ad_bulk_deactivate: "غیرفعال‌سازی گروهی تبلیغات", ad_bulk_delete: "حذف گروهی تبلیغات",
+   379→   379→    ad_reset_stats: "بازنشانی آمار تبلیغ",
+   380→   380→    lexicon_create: "افزودن مدخل تلفظ", lexicon_import: "درون‌ریزی ایستگاه‌ها به فرهنگ",
+   381→   381→    settings_update: "بروزرسانی تنظیمات",
+   382→   382→    admin_create: "ایجاد مدیر", admin_update: "ویرایش مدیر", admin_delete: "حذف مدیر",
+   383→   383→  }[a] || a;
+   384→   384→}
+   385→   385→
+   386→   386→/* ---------- کاربران ---------- */
+   387→   387→
+   388→   388→async function pageUsers(host) {
+   389→   389→  const writable = can("operator");
+   390→   390→  host.innerHTML = `
+   391→   391→    ${pageHead("کاربران", "مشاهده و مدیریت حساب‌های مسافران، وضعیت و محدودیت‌های دسترسی.",
+   392→   392→      `${writable ? `<button class="btn btn-primary" id="u-add"><span class="material">add</span><span>کاربر جدید</span></button>` : ""}
+   393→   393→       <button class="btn" id="u-csv"><span class="material">download</span><span>خروجی CSV</span></button>`)}
+   394→   394→    <div class="toolbar">
+   395→   395→      <input id="u-q" placeholder="جست‌وجوی نام یا شماره…" style="min-width:220px" />
+   396→   396→      <select id="u-status">
+   397→   397→        <option value="">همه وضعیت‌ها</option>
+   398→   398→        <option value="active">فعال</option>
+   399→   399→        <option value="limited">محدود</option>
+   400→   400→        <option value="disabled">غیرفعال</option>
+   401→   401→      </select>
+   402→   402→    </div>
+   403→   403→    <div id="u-table"></div>`;
+   404→   404→  let lastRows = [];
+   405→   405→  const load = async () => {
+   406→   406→    const q = document.getElementById("u-q").value.trim();
+   407→   407→    const st = document.getElementById("u-status").value;
+   408→   408→    const rows = await api(`users?q=${encodeURIComponent(q)}&status=${st}`);
+   409→   409→    lastRows = rows;
+   410→   410→    document.getElementById("u-table").innerHTML = rows.length ? `
+   411→   411→      <div class="tbl-wrap"><table class="tbl">
+   412→   412→        <thead><tr><th>نام</th><th>شماره</th><th>وضعیت</th><th>سفرها</th><th>عضویت</th><th>آخرین بازدید</th><th>عملیات</th></tr></thead>
+   413→   413→        <tbody>
+   414→   414→          ${rows.map((u) => {
+   415→   415→            const [lbl, cls] = STATUS_LABEL[u.status] || [u.status, "off"];
+   416→   416→            return `<tr>
+   417→   417→              <td><b>${esc(u.display_name)}</b></td>
+   418→   418→              <td>${esc(u.phone || "—")}</td>
+   419→   419→              <td><span class="badge ${cls}">${lbl}</span></td>
+   420→   420→              <td>${faNum(u.trips_count)}</td>
+   421→   421→              <td>${faTime(u.created_at)}</td>
+   422→   422→              <td>${faTime(u.last_seen)}</td>
+   423→   423→              <td><div class="acts">
+   424→   424→                <button class="icon-btn" data-detail="${u.id}" title="پروفایل و تنظیم سفرها"><span class="material">person</span></button>
+   425→   425→                ${writable ? `<button class="icon-btn" data-edit="${u.id}" title="ویرایش کاربر"><span class="material">edit</span></button>
+   426→   426→                <button class="icon-btn danger" data-del="${u.id}" data-name="${esc(u.display_name)}" title="حذف کاربر"><span class="material">delete</span></button>` : ""}
+   427→   427→              </div></td>
+   428→   428→            </tr>`;
+   429→   429→          }).join("")}
+   430→   430→        </tbody>
+   431→   431→      </table></div>` : `<div class="card"><div class="empty"><span class="material">group_off</span>کاربری یافت نشد</div></div>`;
+   432→   432→    document.querySelectorAll("[data-detail]").forEach((b) => (b.onclick = () => openUserDetail(lastRows.find((x) => x.id === Number(b.dataset.detail)))));
+   433→   433→    if (writable) {
+   434→   434→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openUserForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+   435→   435→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   436→   436→        confirmDialog(`کاربر «${b.dataset.name}» حذف شود؟`, async () => {
+   437→   437→          await api(`users/${b.dataset.del}`, { method: "DELETE" });
+   438→   438→          toast("کاربر حذف شد", "ok2"); load();
+   439→   439→        })));
+   440→   440→    }
+   441→   441→  };
+   442→   442→  document.getElementById("u-q").oninput = load;
+   443→   443→  document.getElementById("u-status").onchange = load;
+   444→   444→  document.getElementById("u-csv").onclick = () => {
+   445→   445→    csvExport("darmasir-users.csv", ["نام", "شماره", "وضعیت", "سفرها", "عضویت", "آخرین بازدید"],
+   446→   446→      lastRows.map((u) => [u.display_name, u.phone || "", STATUS_LABEL[u.status]?.[0] || u.status, u.trips_count, faTime(u.created_at), faTime(u.last_seen)]));
+   447→   447→  };
+   448→   448→  const addBtn = document.getElementById("u-add");
+   449→   449→  if (addBtn) addBtn.onclick = () => openUserForm(null, load);
+   450→   450→  await load();
+   451→   451→}
+   452→   452→
+   453→   453→/* پروفایل کاربر + تنظیم سفرها */
+   454→   454→function openUserDetail(user) {
+   455→   455→  if (!user) return;
+   456→   456→  const writable = can("operator");
+   457→   457→  const close = modal(`پروفایل — ${user.display_name}`, `
+   458→   458→    <div class="detail-grid">
+   459→   459→      <div class="detail-row"><span>شماره تماس</span><b style="direction:ltr">${esc(user.phone || "—")}</b></div>
+   460→   460→      <div class="detail-row"><span>وضعیت</span><span class="badge ${(STATUS_LABEL[user.status] || ["", "off"])[1]}">${(STATUS_LABEL[user.status] || [user.status])[0]}</span></div>
+   461→   461→      <div class="detail-row"><span>تاریخ عضویت</span><b>${faTime(user.created_at)}</b></div>
+   462→   462→      <div class="detail-row"><span>آخرین بازدید</span><b>${faTime(user.last_seen)}</b></div>
+   463→   463→      <div class="detail-row"><span>سفرهای ثبت‌شده</span><b id="ud-trips">${faNum(user.trips_count)}</b></div>
+   464→   464→    </div>
+   465→   465→    ${writable ? `
+   466→   466→    <div class="field" style="margin-top:14px"><label>تنظیم دستی تعداد سفرها</label>
+   467→   467→      <div class="trips-adjust">
+   468→   468→        <button class="btn btn-sm" data-delta="-10">−۱۰</button>
+   469→   469→        <button class="btn btn-sm" data-delta="-5">−۵</button>
+   470→   470→        <button class="btn btn-sm" data-delta="-1">−۱</button>
+   471→   471→        <button class="btn btn-sm" data-delta="1">+۱</button>
+   472→   472→        <button class="btn btn-sm" data-delta="5">+۵</button>
+   473→   473→        <button class="btn btn-sm" data-delta="10">+۱۰</button>
+   474→   474→      </div>
+   475→   475→      <span class="hint">برای همگام‌سازی با سامانه پرداخت یا اصلاح خطای شمارش استفاده می‌شود.</span>
+   476→   476→    </div>` : ""}`,
+   477→   477→    `<button class="btn" id="f-cancel">بستن</button>`);
+   478→   478→  document.getElementById("f-cancel").onclick = close;
+   479→   479→  if (writable) {
+   480→   480→    document.querySelectorAll("[data-delta]").forEach((b) => (b.onclick = async () => {
+   481→   481→      try {
+   482→   482→        const r = await api(`users/trips/${user.id}`, { method: "POST", body: { delta: Number(b.dataset.delta) } });
+   483→   483→        user.trips_count = r.trips_count;
+   484→   484→        document.getElementById("ud-trips").textContent = faNum(r.trips_count);
+   485→   485→        toast("سفرها بروزرسانی شد", "ok2");
+   486→   486→        renderPage("users");
+   487→   487→      } catch (ex) { toast(ex.message, "err"); }
+   488→   488→    }));
+   489→   489→  }
+   490→   490→}
+   491→   491→
+   492→   492→function openUserForm(user, after) {
+   493→   493→  const isEdit = !!user;
+   494→   494→  const close = modal(isEdit ? "ویرایش کاربر" : "کاربر جدید", `
+   495→   495→    <div class="field"><label>نام نمایشی</label><input id="f-name" value="${esc(user?.display_name || "")}" placeholder="مثلاً کاربر نمونه" /></div>
+   496→   496→    <div class="field"><label>شماره تماس</label><input id="f-phone" value="${esc(user?.phone || "")}" placeholder="۰۹…" /></div>
+   497→   497→    <div class="field"><label>وضعیت</label>
+   498→   498→      <select id="f-status">
+   499→   499→        <option value="active" ${user?.status === "active" ? "selected" : ""}>فعال</option>
+   500→   500→        <option value="limited" ${user?.status === "limited" ? "selected" : ""}>محدود</option>
+   501→   501→        <option value="disabled" ${user?.status === "disabled" ? "selected" : ""}>غیرفعال</option>
+   502→   502→      </select></div>`,
+   503→   503→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   504→   504→  document.getElementById("f-cancel").onclick = close;
+   505→   505→  document.getElementById("f-save").onclick = async () => {
+   506→   506→    const body = {
+   507→   507→      display_name: document.getElementById("f-name").value.trim(),
+   508→   508→      phone: document.getElementById("f-phone").value.trim(),
+   509→   509→      status: document.getElementById("f-status").value,
+   510→   510→    };
+   511→   511→    if (!body.display_name) { toast("نام الزامی است", "err"); return; }
+   512→   512→    try {
+   513→   513→      await api(isEdit ? `users/${user.id}` : "users", { method: isEdit ? "PUT" : "POST", body });
+   514→   514→      toast(isEdit ? "کاربر بروزرسانی شد" : "کاربر اضافه شد", "ok2");
+   515→   515→      close(); after ? after() : renderPage("users");
+   516→   516→    } catch (ex) { toast(ex.message, "err"); }
+   517→   517→  };
+   518→   518→}
+   519→   519→
+   520→   520→/* ---------- خطوط ---------- */
+   521→   521→
+   522→   522→async function pageLines(host) {
+   523→   523→  const writable = can("operator");
+   524→   524→  let mode = "metro";
+   525→   525→  host.innerHTML = `
+   526→   526→    ${pageHead("خطوط", "مدیریت خطوط مترو، اتوبوس و اتوبوس تندرو؛ مشاهده، ترتیب‌دهی و اصلاح داده‌های حمل‌ونقل.",
+   527→   527→      writable ? `<button class="btn btn-primary" id="l-add"><span class="material">add</span><span>خط جدید</span></button>` : "")}
+   528→   528→    <div class="toolbar">
+   529→   529→      <select id="l-mode">
+   530→   530→        <option value="metro">مترو</option>
+   531→   531→        <option value="bus">اتوبوس</option>
+   532→   532→        <option value="brt">اتوبوس تندرو</option>
+   533→   533→      </select>
+   534→   534→    </div>
+   535→   535→    <div id="l-table"></div>`;
+   536→   536→  const load = async () => {
+   537→   537→    const rows = await api(`lines?mode=${mode}`);
+   538→   538→    document.getElementById("l-table").innerHTML = rows.length ? `
+   539→   539→      <div class="tbl-wrap"><table class="tbl">
+   540→   540→        <thead><tr><th></th><th>نام خط</th><th>شماره</th><th>سرخط‌ها</th><th>جهت</th><th>ایستگاه‌ها</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+   541→   541→        <tbody>
+   542→   542→          ${rows.map((l) => `
+   543→   543→            <tr>
+   544→   544→              <td><span class="dot" style="background:${esc(l.color)}"></span></td>
+   545→   545→              <td><b>${esc(l.name)}</b></td>
+   546→   546→              <td>${l.number ?? "—"}</td>
+   547→   547→              <td>${esc((l.terminals || "").split("|").filter(Boolean).join(" ← ")) || "—"}</td>
+   548→   548→              <td>${esc(l.direction || "—")}</td>
+   549→   549→              <td><span class="badge info">${faNum(l.station_count ?? 0)} ایستگاه</span></td>
+   550→   550→              <td><span class="badge ${l.is_active ? "ok" : "off"}">${l.is_active ? "فعال" : "غیرفعال"}</span></td>
+   551→   551→              ${writable ? `<td><div class="acts">
+   552→   552→                <button class="icon-btn" data-up="${l.id}" title="انتقال به بالا"><span class="material">arrow_upward</span></button>
+   553→   553→                <button class="icon-btn" data-down="${l.id}" title="انتقال به پایین"><span class="material">arrow_downward</span></button>
+   554→   554→                <button class="icon-btn" data-dup="${l.id}" data-name="${esc(l.name)}" title="تکثیر خط"><span class="material">content_copy</span></button>
+   555→   555→                <button class="icon-btn" data-edit="${l.id}" title="ویرایش خط"><span class="material">edit</span></button>
+   556→   556→                <button class="icon-btn danger" data-del="${l.id}" data-name="${esc(l.name)}" title="حذف خط"><span class="material">delete</span></button>
+   557→   557→              </div></td>` : ""}
+   558→   558→            </tr>`).join("")}
+   559→   559→        </tbody>
+   560→   560→      </table></div>` : `<div class="card"><div class="empty"><span class="material">alt_route</span>خطی در این دسته ثبت نشده است</div></div>`;
+   561→   561→    if (writable) {
+   562→   562→      document.querySelectorAll("[data-up]").forEach((b) => (b.onclick = () => reorderLine(Number(b.dataset.up), "up")));
+   563→   563→      document.querySelectorAll("[data-down]").forEach((b) => (b.onclick = () => reorderLine(Number(b.dataset.down), "down")));
+   564→   564→      document.querySelectorAll("[data-dup]").forEach((b) => (b.onclick = async () => {
+   565→   565→        await api("lines/duplicate", { method: "POST", body: { id: Number(b.dataset.dup) } });
+   566→   566→        toast(`خط «${b.dataset.name}» تکثیر شد (غیرفعال)`, "ok2"); load();
+   567→   567→      }));
+   568→   568→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openLineForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+   569→   569→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   570→   570→        confirmDialog(`خط «${b.dataset.name}» و ایستگاه‌هایش حذف شوند؟`, async () => {
+   571→   571→          await api(`lines/${b.dataset.del}`, { method: "DELETE" });
+   572→   572→          toast("خط حذف شد", "ok2"); load();
+   573→   573→        })));
+   574→   574→    }
+   575→   575→  };
+   576→   576→  const reorderLine = async (id, dir) => {
+   577→   577→    const r = await api("lines/reorder", { method: "POST", body: { id, dir } });
+   578→   578→    if (!r.moved) { toast("جابه‌جایی ممکن نیست — به انتهای فهرست است", "err"); return; }
+   579→   579→    load();
+   580→   580→  };
+   581→   581→  document.getElementById("l-mode").onchange = (e) => { mode = e.target.value; load(); };
+   582→   582→  const addBtn = document.getElementById("l-add");
+   583→   583→  if (addBtn) addBtn.onclick = () => openLineForm(null, load);
+   584→   584→  await load();
+   585→   585→}
+   586→   586→
+   587→   587→function openLineForm(line, after) {
+   588→   588→  const isEdit = !!line;
+   589→   589→  const close = modal(isEdit ? "ویرایش خط" : "خط جدید", `
+   590→   590→    <div class="field"><label>نام خط</label><input id="f-name" value="${esc(line?.name || "")}" placeholder="مثلاً خط ۱" /></div>
+   591→   591→    <div class="field"><label>دسته</label>
+   592→   592→      <select id="f-mode">
+   593→   593→        <option value="metro" ${line?.mode === "metro" ? "selected" : ""}>مترو</option>
+   594→   594→        <option value="bus" ${line?.mode === "bus" ? "selected" : ""}>اتوبوس</option>
+   595→   595→        <option value="brt" ${line?.mode === "brt" ? "selected" : ""}>اتوبوس تندرو</option>
+   596→   596→      </select></div>
+   597→   597→    <div class="grid cols-2">
+   598→   598→      <div class="field"><label>شماره</label><input id="f-number" type="number" value="${line?.number ?? ""}" /></div>
+   599→   599→      <div class="field"><label>رنگ (hex)</label><input id="f-color" value="${esc(line?.color || "#009640")}" placeholder="#009640" /></div>
+   600→   600→    </div>
+   601→   601→    <div class="field"><label>سرخط‌ها</label><input id="f-terminals" value="${esc(line?.terminals || "")}" placeholder="مبدأ|مقصد" /><span class="hint">دو سرخط را با «|» جدا کنید</span></div>
+   602→   602→    <div class="field"><label>جهت</label><input id="f-direction" value="${esc(line?.direction || "")}" placeholder="مثلاً شمال - جنوب" /></div>
+   603→   603→    <div class="field"><label>وضعیت</label>
+   604→   604→      <select id="f-active"><option value="1" ${!line || line.is_active ? "selected" : ""}>فعال</option><option value="0" ${line && !line.is_active ? "selected" : ""}>غیرفعال</option></select></div>`,
+   605→   605→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   606→   606→  document.getElementById("f-cancel").onclick = close;
+   607→   607→  document.getElementById("f-save").onclick = async () => {
+   608→   608→    const body = {
+   609→   609→      name: document.getElementById("f-name").value.trim(),
+   610→   610→      mode: document.getElementById("f-mode").value,
+   611→   611→      number: document.getElementById("f-number").value,
+   612→   612→      color: document.getElementById("f-color").value.trim(),
+   613→   613→      terminals: document.getElementById("f-terminals").value.trim(),
+   614→   614→      direction: document.getElementById("f-direction").value.trim(),
+   615→   615→      is_active: Number(document.getElementById("f-active").value),
+   616→   616→    };
+   617→   617→    if (!body.name) { toast("نام خط الزامی است", "err"); return; }
+   618→   618→    try {
+   619→   619→      await api(isEdit ? `lines/${line.id}` : "lines", { method: isEdit ? "PUT" : "POST", body });
+   620→   620→      toast(isEdit ? "خط بروزرسانی شد" : "خط اضافه شد", "ok2");
+   621→   621→      close(); after ? after() : renderPage("lines");
+   622→   622→    } catch (ex) { toast(ex.message, "err"); }
+   623→   623→  };
+   624→   624→}
+   625→   625→
+   626→   626→/* ---------- ایستگاه‌ها ---------- */
+   627→   627→
+   628→   628→async function pageStations(host) {
+   629→   629→  const writable = can("operator");
+   630→   630→  const lines = await api("lines");
+   631→   631→  if (!lines.length) { host.innerHTML = `${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط و مختصات جغرافیایی.")}<div class="card"><div class="empty"><span class="material">location_off</span>ابتدا یک خط ثبت کنید</div></div>`; return; }
+   632→   632→  host.innerHTML = `
+   633→   633→    ${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط، ترتیب قرارگیری و مختصات جغرافیایی.",
+   634→   634→      `${writable ? `<button class="btn" id="s-bulk"><span class="material">playlist_add</span><span>افزودن گروهی</span></button>
+   635→   635→      <button class="btn btn-primary" id="s-add"><span class="material">add</span><span>ایستگاه جدید</span></button>` : ""}`)}
+   636→   636→    <div class="toolbar">
+   637→   637→      <select id="s-line">${lines.map((l) => `<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select>
+   638→   638→      <span class="toolbar-note" id="s-count"></span>
+   639→   639→    </div>
+   640→   640→    <div id="s-table"></div>`;
+   641→   641→  const load = async () => {
+   642→   642→    const lineId = Number(document.getElementById("s-line").value);
+   643→   643→    const rows = await api(`stations?line_id=${lineId}`);
+   644→   644→    document.getElementById("s-count").textContent = `${faNum(rows.length)} ایستگاه در این خط`;
+   645→   645→    document.getElementById("s-table").innerHTML = rows.length ? `
+   646→   646→      <div class="tbl-wrap"><table class="tbl">
+   647→   647→        <thead><tr><th>ترتیب</th><th>نام ایستگاه</th><th>عرض جغرافیایی</th><th>طول جغرافیایی</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+   648→   648→        <tbody>
+   649→   649→          ${rows.map((s) => `
+   650→   650→            <tr>
+   651→   651→              <td><span class="order-chip">${faNum(s.order_index)}</span></td>
+   652→   652→              <td><b>${esc(s.name)}</b></td>
+   653→   653→              <td>${s.lat ?? "—"}</td>
+   654→   654→              <td>${s.lng ?? "—"}</td>
+   655→   655→              <td><span class="badge ${s.is_active ? "ok" : "off"}">${s.is_active ? "فعال" : "غیرفعال"}</span></td>
+   656→   656→              ${writable ? `<td><div class="acts">
+   657→   657→                <button class="icon-btn" data-up="${s.id}" title="انتقال به بالا"><span class="material">arrow_upward</span></button>
+   658→   658→                <button class="icon-btn" data-down="${s.id}" title="انتقال به پایین"><span class="material">arrow_downward</span></button>
+   659→   659→                <button class="icon-btn" data-edit="${s.id}" title="ویرایش / انتقال به خط دیگر"><span class="material">edit</span></button>
+   660→   660→                <button class="icon-btn danger" data-del="${s.id}" data-name="${esc(s.name)}" title="حذف ایستگاه"><span class="material">delete</span></button>
+   661→   661→              </div></td>` : ""}
+   662→   662→            </tr>`).join("")}
+   663→   663→        </tbody>
+   664→   664→      </table></div>` : `<div class="card"><div class="empty"><span class="material">location_off</span>ایستگاهی در این خط ثبت نشده است</div></div>`;
+   665→   665→    if (writable) {
+   666→   666→      document.querySelectorAll("[data-up]").forEach((b) => (b.onclick = async () => {
+   667→   667→        const r = await api("stations/reorder", { method: "POST", body: { id: Number(b.dataset.up), dir: "up" } });
+   668→   668→        if (!r.moved) { toast("به بالای فهرست رسیده است", "err"); return; }
+   669→   669→        load();
+   670→   670→      }));
+   671→   671→      document.querySelectorAll("[data-down]").forEach((b) => (b.onclick = async () => {
+   672→   672→        const r = await api("stations/reorder", { method: "POST", body: { id: Number(b.dataset.down), dir: "down" } });
+   673→   673→        if (!r.moved) { toast("به پایین فهرست رسیده است", "err"); return; }
+   674→   674→        load();
+   675→   675→      }));
+   676→   676→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openStationForm(rows.find((x) => x.id === Number(b.dataset.edit)), load, lines)));
+   677→   677→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   678→   678→        confirmDialog(`ایستگاه «${b.dataset.name}» حذف شود؟`, async () => {
+   679→   679→          await api(`stations/${b.dataset.del}`, { method: "DELETE" });
+   680→   680→          toast("ایستگاه حذف شد", "ok2"); load();
+   681→   681→        })));
+   682→   682→    }
+   683→   683→  };
+   684→   684→  document.getElementById("s-line").onchange = load;
+   685→   685→  if (writable) {
+   686→   686→    document.getElementById("s-add").onclick = () => openStationForm(null, load, lines);
+   687→   687→    document.getElementById("s-bulk").onclick = () => openStationBulk(load, lines);
+   688→   688→  }
+   689→   689→  await load();
+   690→   690→}
+   691→   691→
+   692→   692→/* افزودن گروهی ایستگاه — هر خط یک نام */
+   693→   693→function openStationBulk(after, lines) {
+   694→   694→  const lineId = document.getElementById("s-line").value;
+   695→   695→  const close = modal("افزودن گروهی ایستگاه", `
+   696→   696→    <div class="field"><label>خط مقصد</label>
+   697→   697→      <select id="b-line">${lines.map((l) => `<option value="${l.id}" ${String(l.id) === String(lineId) ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
+   698→   698→    <div class="field"><label>نام ایستگاه‌ها (هر خط یک نام — به ترتیب مسیر)</label>
+   699→   699→      <textarea id="b-names" rows="8" placeholder="مثلاً:
+   700→   700→کهریزک
+   701→   701→حرم مطهر
+   702→   702→شهید بهشتی"></textarea>
+   703→   703→      <span class="hint">نام‌های تکراری در همان خط به‌صورت خودکار رد می‌شوند. ترتیب به‌طور خودکار ادامه پیدا می‌کند.</span></div>`,
+   704→   704→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">افزودن همه</button>`);
+   705→   705→  document.getElementById("f-cancel").onclick = close;
+   706→   706→  document.getElementById("f-save").onclick = async () => {
+   707→   707→    const names = document.getElementById("b-names").value.trim();
+   708→   708→    if (!names) { toast("حداقل یک نام وارد کنید", "err"); return; }
+   709→   709→    try {
+   710→   710→      const r = await api("stations/bulk", { method: "POST", body: { line_id: Number(document.getElementById("b-line").value), names } });
+   711→   711→      toast(`${faNum(r.added)} ایستگاه افزوده شد${r.skipped ? ` — ${faNum(r.skipped)} تکراری رد شد` : ""}`, "ok2");
+   712→   712→      close(); after();
+   713→   713→    } catch (ex) { toast(ex.message, "err"); }
+   714→   714→  };
+   715→   715→}
+   716→   716→
+   717→   717→function openStationForm(station, after, lines) {
+   718→   718→  const isEdit = !!station;
+   719→   719→  const curLine = isEdit ? station.line_id : Number(document.getElementById("s-line").value);
+   720→   720→  const close = modal(isEdit ? "ویرایش ایستگاه" : "ایستگاه جدید", `
+   721→   721→    <div class="field"><label>خط</label>
+   722→   722→      <select id="f-line">${lines.map((l) => `<option value="${l.id}" ${l.id === curLine ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select>
+   723→   723→      ${isEdit ? '<span class="hint">با تغییر خط، ایستگاه به خط مقصد منتقل می‌شود.</span>' : ""}</div>
+   724→   724→    <div class="field"><label>نام ایستگاه</label><input id="f-name" value="${esc(station?.name || "")}" placeholder="مثلاً تجریش" /></div>
+   725→   725→    <div class="grid cols-2">
+   726→   726→      <div class="field"><label>عرض جغرافیایی (اختیاری)</label><input id="f-lat" value="${station?.lat ?? ""}" style="direction:ltr" placeholder="35.7999" /></div>
+   727→   727→      <div class="field"><label>طول جغرافیایی (اختیاری)</label><input id="f-lng" value="${station?.lng ?? ""}" style="direction:ltr" placeholder="51.4343" /></div>
+   728→   728→    </div>
+   729→   729→    <div class="field"><label>ترتیب</label><input id="f-order" type="number" value="${station?.order_index ?? 0}" /></div>
+   730→   730→    <div class="field"><label>وضعیت</label>
+   731→   731→      <select id="f-active"><option value="1" ${!station || station.is_active ? "selected" : ""}>فعال</option><option value="0" ${station && !station.is_active ? "selected" : ""}>غیرفعال</option></select></div>`,
+   732→   732→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   733→   733→  document.getElementById("f-cancel").onclick = close;
+   734→   734→  document.getElementById("f-save").onclick = async () => {
+   735→   735→    const body = {
+   736→   736→      line_id: Number(document.getElementById("f-line").value),
+   737→   737→      name: document.getElementById("f-name").value.trim(),
+   738→   738→      lat: document.getElementById("f-lat").value,
+   739→   739→      lng: document.getElementById("f-lng").value,
+   740→   740→      order_index: document.getElementById("f-order").value,
+   741→   741→      is_active: Number(document.getElementById("f-active").value),
+   742→   742→    };
+   743→   743→    if (!body.name) { toast("نام ایستگاه الزامی است", "err"); return; }
+   744→   744→    try {
+   745→   745→      await api(isEdit ? `stations/${station.id}` : "stations", { method: isEdit ? "PUT" : "POST", body });
+   746→   746→      toast(isEdit ? "ایستگاه بروزرسانی شد" : "ایستگاه اضافه شد", "ok2");
+   747→   747→      close(); after();
+   748→   748→    } catch (ex) { toast(ex.message, "err"); }
+   749→   749→  };
+   750→   750→}
+   751→   751→
+   752→   752→/* ---------- تبلیغات ---------- */
+   753→   753→
+   754→   754→const AD_PLACE_META = {
+   755→   755→  home: { icon: "view_carousel", cls: "" },
+   756→   756→  map: { icon: "map", cls: "alt" },
+   757→   757→  plan: { icon: "alt_route", cls: "warn2" },
+   758→   758→  station: { icon: "location_on", cls: "alt" },
+   759→   759→  line: { icon: "route", cls: "" },
+   760→   760→  splash: { icon: "launch", cls: "warn2" },
+   761→   761→  drawer: { icon: "menu", cls: "alt" },
+   762→   762→};
+   763→   763→
+   764→   764→async function pageAds(host) {
+   765→   765→  const writable = can("operator");
+   766→   766→  const [rows, stats] = await Promise.all([api("ads"), api("ads/stats?days=14")]);
+   767→   767→  const isLive = (a) => a.is_active && (!a.ends_at || new Date(a.ends_at) > Date.now()) && (!a.starts_at || new Date(a.starts_at) <= Date.now());
+   768→   768→  const isScheduled = (a) => a.is_active && a.starts_at && new Date(a.starts_at) > Date.now();
+   769→   769→  const isExpired = (a) => !isLive(a) && !isScheduled(a);
+   770→   770→  const TABS = [
+   771→   771→    ["all", "همه کمپین‌ها", () => true],
+   772→   772→    ["live", "در حال نمایش", isLive],
+   773→   773→    ["scheduled", "زمان‌بندی‌شده", isScheduled],
+   774→   774→    ["expired", "منقضی / بایگانی", isExpired],
+   775→   775→  ];
+   776→   776→  let tab = "all";
+   777→   777→  let placeFilter = "";
+   778→   778→  let searchQ = "";
+   779→   779→  const selected = new Set();
+   780→   780→
+   781→   781→  const totalImp = rows.reduce((s, a) => s + (a.impressions || 0), 0);
+   782→   782→  const totalClk = rows.reduce((s, a) => s + (a.clicks || 0), 0);
+   783→   783→  const avgCtr = totalImp ? ((totalClk / totalImp) * 100) : 0;
+   784→   784→  const liveCount = rows.filter(isLive).length;
+   785→   785→
+   786→   786→  host.innerHTML = `
+   787→   787→    ${pageHead("تبلیغات و بنرها", "پیکربندی کمپین‌های درون‌برنامه‌ای، اولویت‌بندی نمایش، زمان‌بندی و تحلیل عملکرد؛ خاموش‌کردن تبلیغ بدون انتشار نسخه جدید اپلیکیشن.",
+   788→   788→      writable ? `<button class="btn btn-primary" id="a-add"><span class="material">add</span><span>ایجاد کمپین / بنر جدید</span></button>` : "")}
+   789→   789→    <div class="kpi-grid kpi-grid-5">
+   790→   790→      ${kpi("کل کمپین‌ها", "campaign", rows.length, "کمپین ثبت‌شده در پایگاه داده", "t-primary")}
+   791→   791→      ${kpi("در حال نمایش", "play_circle", liveCount, "کمپین فعال در اپ", "t-tertiary")}
+   792→   792→      ${kpi("نمایش‌ها", "visibility", totalImp, "مجموع نمایش در همه کمپین‌ها", "t-surface")}
+   793→   793→      ${kpi("کلیک‌ها", "ads_click", totalClk, "مجموع کلیک ثبت‌شده", "t-dim")}
+   794→   794→      ${kpi("میانگین CTR", "query_stats", avgCtr.toLocaleString("fa-IR", { maximumFractionDigits: 1 }) + "٪", "نسبت کلیک به نمایش", "t-primary")}
+   795→   795→    </div>
+   796→   796→    <div class="tbl-card">
+   797→   797→      <div class="tabbar" id="a-tabs">
+   798→   798→        ${TABS.map(([id, lbl, fn]) => `<button class="tab ${id === tab ? "active" : ""}" data-tab="${id}">${lbl} (${faNum(rows.filter(fn).length)})</button>`).join("")}
+   799→   799→      </div>
+   800→   800→      <div class="tbl-toolbar">
+   801→
+   802→[showing lines 1-800 of 1521; use offset=801 with limit to continue reading]
