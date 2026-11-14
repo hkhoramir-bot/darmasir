@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+
+<html class="h-full" dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>درمسیر - مدیریت تبلیغات و بنرها</title>
+<!-- Google Fonts: Vazirmatn -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-background": "#111c2d",
+            "surface-dim": "#cfdaf2",
+            "tertiary-container": "#006638",
+            "on-secondary-fixed-variant": "#930007",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed": "#7efbac",
+            "on-primary-container": "#b6d0ff",
+            "on-tertiary-fixed-variant": "#00522c",
+            "on-error-container": "#93000a",
+            "on-secondary": "#ffffff",
+            "outline-variant": "#c2c6d3",
+            "surface-container-highest": "#d8e3fb",
+            "primary-fixed": "#d5e3ff",
+            "primary-container": "#0d58a6",
+            "surface-container": "#e7eeff",
+            "background": "#f9f9ff",
+            "primary": "#00417f",
+            "surface-variant": "#d8e3fb",
+            "surface": "#f9f9ff",
+            "on-error": "#ffffff",
+            "on-primary": "#ffffff",
+            "on-primary-fixed": "#001b3c",
+            "error-container": "#ffdad6",
+            "secondary-container": "#e32220",
+            "surface-bright": "#f9f9ff",
+            "on-primary-fixed-variant": "#004689",
+            "on-surface-variant": "#424751",
+            "tertiary": "#004c28",
+            "on-tertiary-fixed": "#00210e",
+            "on-surface": "#111c2d",
+            "surface-container-low": "#f0f3ff",
+            "outline": "#727782",
+            "on-tertiary-container": "#6ae79a",
+            "tertiary-fixed-dim": "#61de92",
+            "error": "#ba1a1a",
+            "on-secondary-container": "#fffbff",
+            "inverse-surface": "#263143",
+            "secondary-fixed-dim": "#ffb4aa",
+            "inverse-primary": "#a8c8ff",
+            "primary-fixed-dim": "#a8c8ff",
+            "surface-container-high": "#dee8ff",
+            "secondary": "#bc000c",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#ffdad5",
+            "on-secondary-fixed": "#410001",
+            "surface-tint": "#1a5eac",
+            "inverse-on-surface": "#ecf1ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "margin": "1rem",
+            "space-xl": "2rem",
+            "space-lg": "1.5rem",
+            "gutter": "1rem"
+          },
+          "fontFamily": {
+            "label-md": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c2c6d3;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #727782;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface h-full antialiased overflow-hidden select-none">
+<!-- ========================================================================= -->
+<!-- BACKGROUND ADMIN DASHBOARD SHELL (Behind the overlay)                     -->
+<!-- ========================================================================= -->
+<!-- TopNavBar (Admin Header) -->
+<header class="fixed top-0 left-0 right-72 z-30 h-16 flex items-center justify-between px-6 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined">dns</span>
+<span class="font-label-md text-label-md text-primary font-bold">Cloudflare R2 + D1 Active</span>
+</div>
+<span class="h-4 w-px bg-outline-variant"></span>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span>سامانه مدیریت بنرهای ناوبری و تبلیغات درون‌برنامه‌ای</span>
+</div>
+</div>
+<!-- Actions & User Profile -->
+<div class="flex items-center gap-3">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors relative" title="اطلاعیه‌ها">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-secondary rounded-full"></span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors" title="زمان‌بندی سیستم">
+<span class="material-symbols-outlined">schedule</span>
+</button>
+<div class="flex items-center gap-3 pr-3 border-r border-outline-variant">
+<div class="text-left">
+<p class="font-title-md text-title-md text-on-surface leading-tight">مدیر ارشد سامانه</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">واحد توسعه پایدار و ناوگان</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold font-title-lg">
+          م‌ا
+        </div>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Drawer) -->
+<aside class="fixed right-0 top-0 h-full w-72 flex flex-col justify-between z-40 bg-surface-container-lowest dark:bg-inverse-surface border-l border-outline-variant dark:border-outline shadow-sm">
+<!-- Brand / Header -->
+<div class="p-5 border-b border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary font-black text-xl shadow-md">
+<span class="material-symbols-outlined text-2xl">alt_route</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary leading-tight">درمسیر</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">پنل مدیریت سامانه ناوبری شهری</p>
+</div>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>داشبورد مدیریتی</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>کاربران</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">alt_route</span>
+<span>خطوط و ایستگاه‌ها</span>
+</a>
+<!-- ACTIVE TAB: تبلیغات و بنرها -->
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container rounded-xl px-4 py-3 font-title-md text-title-md transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">campaign</span>
+<span>تبلیغات و بنرها</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">record_voice_over</span>
+<span>دستیار صوتی و آواشناسی</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>تنظیمات سامانه</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span>گزارش‌ها و تحلیل داده</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">security</span>
+<span>امنیت و وقایع‌نگاری</span>
+</a>
+</nav>
+<!-- Footer Support & Signout -->
+<div class="p-4 border-t border-outline-variant space-y-2">
+<div class="flex items-center justify-between text-on-surface-variant text-body-sm font-body-sm px-2">
+<a class="flex items-center gap-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">help</span>
+<span>پشتیبانی فنی</span>
+</a>
+<a class="flex items-center gap-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">api</span>
+<span>مستندات API</span>
+</a>
+</div>
+<button class="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-secondary hover:bg-error-container/40 transition-colors font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-xl">logout</span>
+<span>خروج از حساب</span>
+</button>
+</div>
+</aside>
+<!-- Background Content Mockup (Blurred Dashboard Table) -->
+<main class="fixed inset-0 mr-72 pt-16 p-8 overflow-y-auto bg-surface-container-low pointer-events-none filter blur-[2px] opacity-60">
+<div class="max-w-7xl mx-auto space-y-6">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-bold">کمپین‌های فعال و رزرو جایگاه‌ها</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">مدیریت بنرهای هوشمند مبتنی بر ایستگاه، خطوط و زمان‌بندی مترو</p>
+</div>
+<div class="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-lg shadow-sm">
+          + ایجاد کمپین جدید
+        </div>
+</div>
+<!-- Stats Cards -->
+<div class="grid grid-cols-4 gap-4">
+<div class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm">
+<p class="text-on-surface-variant font-label-md">کل نوبت‌های نمایش امروز</p>
+<p class="font-headline-lg font-bold text-primary mt-1">۱,۴۸۲,۱۰۰</p>
+</div>
+<div class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm">
+<p class="text-on-surface-variant font-label-md">نرخ کلیک میانگین (CTR)</p>
+<p class="font-headline-lg font-bold text-tertiary-container mt-1">۳.۴٪</p>
+</div>
+<div class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm">
+<p class="text-on-surface-variant font-label-md">کمپین‌های فعال</p>
+<p class="font-headline-lg font-bold text-on-surface mt-1">۱۲ کمپین</p>
+</div>
+<div class="p-5 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm">
+<p class="text-on-surface-variant font-label-md">وضعیت کلاودفلر R2</p>
+<p class="font-headline-lg font-bold text-primary mt-1">پایدار (۱۴ms)</p>
+</div>
+</div>
+<!-- Dummy Table -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 shadow-sm">
+<div class="h-8 bg-surface-container-high rounded mb-4 w-1/3"></div>
+<div class="space-y-3">
+<div class="h-12 bg-surface-container rounded"></div>
+<div class="h-12 bg-surface-container rounded"></div>
+<div class="h-12 bg-surface-container rounded"></div>
+<div class="h-12 bg-surface-container rounded"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- ========================================================================= -->
+<!-- MODAL BACKDROP OVERLAY & DESKTOP CENTERED DIALOG                          -->
+<!-- ========================================================================= -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+<!-- Modal Dialog Window -->
+<div class="relative w-full max-w-6xl max-h-[942px] bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+<!-- 1. MODAL HEADER -->
+<div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface-bright flex-shrink-0">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-2xl">campaign</span>
+</div>
+<div>
+<div class="flex items-center gap-3">
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold">ایجاد کمپین و بنر تبلیغاتی جدید</h2>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-label-md bg-tertiary-fixed text-on-tertiary-fixed-variant border border-tertiary-fixed-dim">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                آماده ذخیره در D1
+              </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">تعریف مشخصات، جایگاه نمایش، بارگذاری مدیا در Cloudflare R2 و زمان‌بندی انتشار</p>
+</div>
+</div>
+<button class="w-9 h-9 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="بستن فرم">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</div>
+<!-- MODAL BODY: Two-Column Form + Real-Time Phone Mockup -->
+<div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-surface">
+<!-- LEFT/MAIN COLUMN: Form Fields (7 Columns) -->
+<div class="lg:col-span-7 space-y-6">
+<!-- Section A: Identity & Sponsor Details -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm space-y-4">
+<div class="flex items-center gap-2 text-primary font-title-md text-title-md border-b border-outline-variant/60 pb-2.5">
+<span class="material-symbols-outlined">badge</span>
+<span>مشخصات اصلی کمپین</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Campaign Name -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface font-semibold mb-1.5">
+                  عنوان کمپین / اسپانسر <span class="text-secondary">*</span>
+</label>
+<div class="relative">
+<input class="w-full rounded-xl border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md pr-3 pl-9 py-2.5 bg-surface-bright placeholder-on-surface-variant/50" id="campaignTitleInput" placeholder="مثال: شارژ سریع بلیت اعتباری - بانک شهر" type="text" value="شارژ سریع بلیت اعتباری - بانک شهر"/>
+<span class="material-symbols-outlined absolute left-2.5 top-3 text-outline-variant text-lg">edit</span>
+</div>
+</div>
+<!-- Sponsor Name -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface font-semibold mb-1.5">
+                  نام حامی مالی یا شرکت سفارش‌دهنده <span class="text-secondary">*</span>
+</label>
+<div class="relative">
+<input class="w-full rounded-xl border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md pr-3 pl-9 py-2.5 bg-surface-bright" id="sponsorNameInput" placeholder="مثال: بانک شهر / شرکت ارتباطات" type="text" value="بانک شهر (سامانه پرداخت شهرزاد)"/>
+<span class="material-symbols-outlined absolute left-2.5 top-3 text-outline-variant text-lg">corporate_fare</span>
+</div>
+</div>
+</div>
+<!-- Ad Placement Selector (Darmasir PRD Specs) -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface font-semibold mb-2">
+                جایگاه نمایش در اپلیکیشن (Placement Slot) <span class="text-secondary">*</span>
+</label>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+<!-- Option 1: Top of Home -->
+<label class="relative flex items-start gap-3 p-3 rounded-xl border-2 border-primary bg-primary-fixed/20 cursor-pointer transition-all hover:bg-surface-container">
+<input checked="" class="mt-1 text-primary focus:ring-primary border-outline" name="placement_slot" type="radio" value="home_top"/>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface font-bold">بالای صفحه اصلی و تب ذخیره‌ها</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">دید حداکثری مسافران در اولین ثانیه‌های باز شدن اپ</p>
+</div>
+</label>
+<!-- Option 2: Below Interactive Map -->
+<label class="relative flex items-start gap-3 p-3 rounded-xl border border-outline-variant bg-surface-bright cursor-pointer transition-all hover:bg-surface-container">
+<input class="mt-1 text-primary focus:ring-primary border-outline" name="placement_slot" type="radio" value="below_map"/>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface font-bold">زیر نقشه تعاملی و جزئیات ایستگاه</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">هنگام زوم یا جستجوی ایستگاه‌های خاص مترو</p>
+</div>
+</label>
+<!-- Option 3: Between Route Cards -->
+<label class="relative flex items-start gap-3 p-3 rounded-xl border border-outline-variant bg-surface-bright cursor-pointer transition-all hover:bg-surface-container">
+<input class="mt-1 text-primary focus:ring-primary border-outline" name="placement_slot" type="radio" value="route_cards"/>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface font-bold">بین گزینه‌های مسیریابی چندوسیله‌ای</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">نمایش حین مقایسه خطوط مترو و اتوبوس تندرو</p>
+</div>
+</label>
+<!-- Option 4: Station Exits & Facilities Modal -->
+<label class="relative flex items-start gap-3 p-3 rounded-xl border border-outline-variant bg-surface-bright cursor-pointer transition-all hover:bg-surface-container">
+<input class="mt-1 text-primary focus:ring-primary border-outline" name="placement_slot" type="radio" value="station_facilities"/>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface font-bold">پاپ‌آپ امکانات و خروجی‌های ایستگاه</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">حین بررسی پله‌برقی، آسانسور و ورودی مراکز تجاری</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Destination Link & Action Type -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 pt-1">
+<div class="md:col-span-7">
+<label class="block font-label-md text-label-md text-on-surface font-semibold mb-1.5">
+                  لینک مقصد / Action URL <span class="text-secondary">*</span>
+</label>
+<div class="relative">
+<input class="w-full rounded-xl border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md pr-3 pl-9 py-2 bg-surface-bright text-left" dir="ltr" placeholder="https://..." type="url" value="https://shahr.ir/charge-metro?utm_source=darmasir_app"/>
+<span class="material-symbols-outlined absolute left-2.5 top-2.5 text-outline-variant text-lg">link</span>
+</div>
+</div>
+<div class="md:col-span-5">
+<label class="block font-label-md text-label-md text-on-surface font-semibold mb-1.5">
+                  نوع اکشن باز شدن
+                </label>
+<select class="w-full rounded-xl border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md py-2 px-3 bg-surface-bright">
+<option selected="">باز کردن مرورگر خارجی (External)</option>
+<option>دیپ‌لینک درون‌برنامه‌ای (In-App Deep Link)</option>
+<option>صفحه بلیت درون اپ (Internal Metro Ticket)</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Section B: Media Upload Area (Cloudflare R2 Bucket) -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm space-y-4">
+<div class="flex items-center justify-between border-b border-outline-variant/60 pb-2.5">
+<div class="flex items-center gap-2 text-primary font-title-md text-title-md">
+<span class="material-symbols-outlined">cloud_upload</span>
+<span>بارگذاری مدیا در مخزن ابری Cloudflare R2</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-md">
+                Bucket: darmasir-banners-cdn
+              </span>
+</div>
+<!-- Upload Area & Current Asset -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+<!-- Drag and Drop Box -->
+<div class="md:col-span-7 border-2 border-dashed border-primary/40 hover:border-primary rounded-xl p-5 text-center bg-surface-bright/50 hover:bg-primary-fixed/10 transition-colors cursor-pointer group">
+<div class="w-12 h-12 mx-auto rounded-full bg-primary-container/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">add_photo_alternate</span>
+</div>
+<p class="font-title-md text-title-md text-on-surface mt-2 font-medium">تصویر بنر را بکشید و اینجا رها کنید</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">یا برای انتخاب فایل از سیستم کلیک نمایید</p>
+<div class="mt-3 flex items-center justify-center gap-2 text-label-sm font-label-sm text-outline">
+<span>ابعاد پیشنهادی: ۱۰۸۰ × ۳۶۰ پیکسل</span>
+<span>•</span>
+<span>فرمت‌های WebP، AVIF یا PNG</span>
+</div>
+</div>
+<!-- Asset Preview & Weight Badge -->
+<div class="md:col-span-5 bg-surface-container-low rounded-xl p-3 border border-outline-variant space-y-2.5">
+<div class="relative rounded-lg overflow-hidden border border-outline-variant aspect-[3/1] bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A clean modern graphic vector transit advertisement banner featuring a glowing Tehran metro card, stylized subway train tracks, and digital payment phone icons in royal blue and emerald green hues, Persian typography and high contrast civic wayfinding style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB14tgIMA2PcfT5NECLtxB8iRu7ADHPQO-O5RlYDFJg6PKMfLrOFBlhQIB8tCvSPIhuetCacgLHIkkpSwKt6f8nzZAlb1RWJ3Eyi9Eel6moCv8v0F6vRkfYooiSubDD_NUJJ5o8KF8Eu-X5treVUW_QjwZ98U7fi3_i8RaI5KzYzpKR_efYSkIUOp8e8ni3MsKbZso28jBQEFcJnrjtaXuDj8unVOsSW5y-kqwDLw"/>
+<span class="absolute top-1.5 right-1.5 px-2 py-0.5 rounded bg-surface-container-lowest/90 backdrop-blur-md text-[10px] font-bold text-on-surface">
+                    پیش‌نمایش فعال
+                  </span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant font-label-md">shahr-charge-banner.webp</span>
+<span class="text-emerald-700 bg-emerald-100 font-label-sm px-2 py-0.5 rounded-full font-bold">۱۴۲ KB</span>
+</div>
+<div class="flex items-center gap-2 pt-1">
+<button class="flex-1 py-1.5 text-xs font-label-md bg-surface-container-lowest border border-outline-variant hover:bg-surface-container rounded-lg text-on-surface transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-sm">cached</span>
+<span>تعویض فایل</span>
+</button>
+<button class="py-1.5 px-2.5 text-xs font-label-md bg-surface-container-lowest border border-outline-variant hover:bg-error-container text-error rounded-lg transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-high/60 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-primary text-base">speed</span>
+<span>حداکثر حجم ۳۰۰ کیلوبایت برای بارگذاری بدون مکث و فوق‌سریع در لبه شبکه اینترنت مترو (Edge Cache).</span>
+</div>
+</div>
+<!-- Section C: Schedule, Timing & Impression Cap -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm space-y-4">
+<div class="flex items-center gap-2 text-primary font-title-md text-title-md border-b border-outline-variant/60 pb-2.5">
+<span class="material-symbols-outlined">date_range</span>
+<span>زمان‌بندی انتشار و سقف بودجه نمایش</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<!-- Start Date -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface font-semibold mb-1">تاریخ شروع نمایش</label>
+<div class="relative">
+<input class="w-full rounded-xl border-outline-variant text-body-md font-body-md pr-3 pl-8 py-2 bg-surface-bright" type="text" value="۱۴۰۳/۰۸/۰۱"/>
+<span class="material-symbols-outlined absolute left-2.5 top-2.5 text-outline-variant text-base">calendar_today</span>
+</div>
+</div>
+<!-- End Date -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface font-semibold mb-1">تاریخ خاتمه نمایش</label>
+<div class="relative">
+<input class="w-full rounded-xl border-outline-variant text-body-md font-body-md pr-3 pl-8 py-2 bg-surface-bright" type="text" value="۱۴۰۳/۰۸/۳۰"/>
+<span class="material-symbols-outlined absolute left-2.5 top-2.5 text-outline-variant text-base">event_busy</span>
+</div>
+</div>
+<!-- Impression Cap -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface font-semibold mb-1">سقف نمایش (Impression Cap)</label>
+<div class="relative">
+<input class="w-full rounded-xl border-outline-variant text-body-md font-body-md pr-3 pl-8 py-2 bg-surface-bright" type="text" value="۵۰۰,۰۰۰ نوبت"/>
+<span class="material-symbols-outlined absolute left-2.5 top-2.5 text-outline-variant text-base">visibility</span>
+</div>
+</div>
+</div>
+<!-- Peak Hours Option -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-bright border border-outline-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">access_time</span>
+<div>
+<p class="font-label-lg text-label-lg text-on-surface font-semibold">فیلتر ساعات اوج تردد مترو (Peak Traffic Window)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">نمایش بنر تنها در شیفت صبحگاهی (۰۶:۳۰ تا ۰۹:۰۰) و عصرگاهی (۱۶:۳۰ تا ۲۰:۳۰)</p>
+</div>
+</div>
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary border-outline-variant" type="checkbox"/>
+</div>
+</div>
+<!-- Section D: Privacy & Targeting Constraints (PRD Sections 9 & 10 Compliance) -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm space-y-3">
+<div class="flex items-center gap-2 text-tertiary-container font-title-md text-title-md">
+<span class="material-symbols-outlined">verified_user</span>
+<span>انطباق با منشور حریم خصوصی مسافران و ناوبری پاک</span>
+</div>
+<div class="space-y-2.5 pt-1">
+<label class="flex items-start gap-3 cursor-pointer">
+<input checked="" class="mt-1 w-4 h-4 rounded text-tertiary focus:ring-tertiary border-outline" disabled="" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">
+<strong class="font-semibold text-on-surface">عدم ردیابی موقعیت مکانی زنده (No Continuous GPS Tracking):</strong>
+                  تطبیق تبلیغات صرفاً با انتخاب دستی ایستگاه مبدا یا ایستگاه‌های تقاطعی صورت گرفته و داده‌های زنده جی‌پی‌اس مسافر خوانده یا ذخیره نمی‌شود.
+                </span>
+</label>
+<label class="flex items-start gap-3 cursor-pointer">
+<input checked="" class="mt-1 w-4 h-4 rounded text-tertiary focus:ring-tertiary border-outline" disabled="" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">
+<strong class="font-semibold text-on-surface">عدم نگهداری هویت و کوکی‌های تجاری:</strong>
+                  شمارنده نمایش تنها از طریق شناسه‌های هش‌شده ناشناس (Anonymous Hash) در پایگاه داده لبه D1 ثبت می‌شود.
+                </span>
+</label>
+</div>
+</div>
+</div>
+<!-- RIGHT/SIDE COLUMN: Real-Time Mobile App Live Mockup (5 Columns) -->
+<div class="lg:col-span-5 flex flex-col items-center">
+<div class="w-full max-w-sm sticky top-0 space-y-3">
+<div class="flex items-center justify-between px-2">
+<div class="flex items-center gap-1.5 text-on-surface font-title-md text-title-md">
+<span class="material-symbols-outlined text-primary text-xl">smartphone</span>
+<span class="font-bold">پیش‌نمایش زنده در اپلیکیشن</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary bg-primary-fixed px-2 py-0.5 rounded-full font-bold">
+                نمای زنده مسافر
+              </span>
+</div>
+<!-- Phone Frame -->
+<div class="w-full bg-slate-900 p-3 rounded-[36px] shadow-2xl border-4 border-slate-800">
+<!-- Screen Canvas (Iranian Civic Wayfinding Mobile Layout) -->
+<div class="w-full bg-[#F8FAFC] rounded-[26px] overflow-hidden flex flex-col border border-slate-200 text-slate-800 shadow-inner min-h-[580px]">
+<!-- Phone Top Bar / Status -->
+<div class="bg-primary text-white px-5 pt-3 pb-2 flex items-center justify-between text-xs">
+<span class="font-bold">۰۸:۴۵</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs">network_cell</span>
+<span class="material-symbols-outlined text-xs">wifi</span>
+<span class="material-symbols-outlined text-xs">battery_full</span>
+</div>
+</div>
+<!-- App Header in Mobile -->
+<div class="bg-primary text-white px-4 py-2.5 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center font-bold text-sm">
+<span class="material-symbols-outlined text-base">subway</span>
+</div>
+<div>
+<h4 class="font-bold text-sm leading-tight">متروی تهران</h4>
+<p class="text-[10px] text-white/80">ایستگاه میدان حضرت ولی‌عصر (عج)</p>
+</div>
+</div>
+<div class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-xs">
+<span class="material-symbols-outlined text-sm">search</span>
+</div>
+</div>
+<!-- Mobile Content Canvas -->
+<div class="p-3.5 space-y-3 flex-1 overflow-hidden">
+<!-- City Lines Filter Chips (Preview) -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+<span class="px-2.5 py-1 rounded-full bg-red-600 text-white font-bold whitespace-nowrap">خط ۱ - تجریش</span>
+<span class="px-2.5 py-1 rounded-full bg-amber-500 text-white font-bold whitespace-nowrap">خط ۳ - قائم</span>
+<span class="px-2.5 py-1 rounded-full bg-yellow-400 text-slate-900 font-bold whitespace-nowrap">خط ۴ - کلاهدوز</span>
+</div>
+<!-- THE DYNAMIC AD BANNER SLOT (TARGET OF THIS FORM) -->
+<div class="rounded-xl border border-primary/30 overflow-hidden shadow-sm bg-white relative transition-all duration-300 ring-2 ring-primary/20">
+<div class="relative aspect-[3/1] bg-surface-container-high overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A clean modern graphic vector transit advertisement banner featuring a glowing Tehran metro card, stylized subway train tracks, and digital payment phone icons in royal blue and emerald green hues, Persian typography and high contrast civic wayfinding style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAluCD2jKgFgX27h0BVw9W0Cpd0PsoRSBFj0o5m7P97KDKGlgvIDC1qqOcbx5KV_gZCEnYMt8PiEWf3fmuz_ug4dTCx7e8ahdExo6vvoKkMgi3-ug2-AKNm1QuCbSW6hMTsQPmviN7ofYKrpdANZ46fr7tUhRBWluwbODvmn6ql7iB7X8vg0dzC77bY_OteSuxn1eMGEN8MUYOBGVyNLLD-IyNh0cxyRW4aO9OKzw"/>
+<span class="absolute top-1 left-1.5 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm">
+                        آگهی
+                      </span>
+</div>
+<div class="p-2 flex items-center justify-between bg-white">
+<div class="flex items-center gap-1.5 overflow-hidden">
+<span class="w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
+<p class="text-[11px] font-bold text-slate-800 truncate" id="mockupBannerTitle">شارژ سریع بلیت اعتباری - بانک شهر</p>
+</div>
+<span class="text-[10px] font-semibold text-primary flex items-center gap-0.5 flex-shrink-0">
+<span>ورود</span>
+<span class="material-symbols-outlined text-[12px]">chevron_left</span>
+</span>
+</div>
+</div>
+<!-- Metro Next Arrivals Station Card (Wayfinding Context) -->
+<div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm space-y-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-white ring-1 ring-amber-500"></span>
+<span class="font-bold text-xs text-slate-800">خط ۳ (آزادگان - قائم)</span>
+</div>
+<span class="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">ورود به ایستگاه</span>
+</div>
+<div class="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+<span class="text-slate-500 text-[11px]">به سمت قائم:</span>
+<span class="font-bold text-primary font-mono">۲ دقیقه دیگر</span>
+</div>
+<div class="flex items-center justify-between text-xs">
+<span class="text-slate-500 text-[11px]">به سمت آزادگان:</span>
+<span class="font-bold text-slate-700 font-mono">۶ دقیقه دیگر</span>
+</div>
+</div>
+<!-- Station Facilities Mini Grid -->
+<div class="grid grid-cols-4 gap-1.5 text-center">
+<div class="bg-white p-1.5 rounded-lg border border-slate-200">
+<span class="material-symbols-outlined text-base text-slate-600">elevator</span>
+<p class="text-[9px] text-slate-600 mt-0.5">آسانسور</p>
+</div>
+<div class="bg-white p-1.5 rounded-lg border border-slate-200">
+<span class="material-symbols-outlined text-base text-slate-600">atm</span>
+<p class="text-[9px] text-slate-600 mt-0.5">خودپرداز</p>
+</div>
+<div class="bg-white p-1.5 rounded-lg border border-slate-200">
+<span class="material-symbols-outlined text-base text-slate-600">local_parking</span>
+<p class="text-[9px] text-slate-600 mt-0.5">پارکینگ</p>
+</div>
+<div class="bg-white p-1.5 rounded-lg border border-slate-200">
+<span class="material-symbols-outlined text-base text-slate-600">accessible</span>
+<p class="text-[9px] text-slate-600 mt-0.5">ویلچر</p>
+</div>
+</div>
+</div>
+<!-- Phone Bottom Navigation Bar (RTL 4-tab style from PRD) -->
+<div class="bg-white/95 backdrop-blur border-t border-slate-200 px-3 py-2 flex items-center justify-around text-slate-500">
+<div class="flex flex-col items-center text-primary">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">alt_route</span>
+<span class="text-[9px] font-bold mt-0.5">خطوط و نقشه</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-lg">near_me</span>
+<span class="text-[9px] mt-0.5">مسیریاب</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-lg">search</span>
+<span class="text-[9px] mt-0.5">امکانات</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-lg">record_voice_over</span>
+<span class="text-[9px] mt-0.5">دستیار صوتی</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Hint text -->
+<p class="text-center font-label-sm text-label-sm text-on-surface-variant">
+              تغییرات متن، جایگاه و تصویر به شکل برخط روی پیش‌نمایش منعکس می‌شود.
+            </p>
+</div>
+</div>
+</div>
+<!-- 4. ACTION FOOTER -->
+<div class="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-outline-variant bg-surface-container-lowest flex-shrink-0 gap-3">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-tertiary text-lg">cloud_done</span>
+<span>همگام‌سازی مستقیم با مخزن توزیع‌شده Cloudflare Edge Workers</span>
+</div>
+<div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+<!-- Cancel -->
+<button class="px-5 py-2.5 rounded-xl border border-outline-variant hover:bg-surface-container text-on-surface font-label-lg text-label-lg transition-all active:scale-95" type="button">
+            انصراف
+          </button>
+<!-- Save Draft -->
+<button class="px-5 py-2.5 rounded-xl border border-outline-variant bg-surface-bright hover:bg-surface-container text-on-surface font-label-lg text-label-lg transition-all active:scale-95 flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-lg">save</span>
+<span>ذخیره به عنوان پیش‌نویس (Draft)</span>
+</button>
+<!-- Primary Save & Activate -->
+<button class="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg shadow-md transition-all active:scale-95 flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">cloud_sync</span>
+<span>ذخیره و فعال‌سازی کمپین</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Inline Script for Real-Time Synchronization between Form and Mockup -->
+<script>
+    const campaignTitleInput = document.getElementById('campaignTitleInput');
+    const mockupBannerTitle = document.getElementById('mockupBannerTitle');
+
+    if (campaignTitleInput && mockupBannerTitle) {
+      campaignTitleInput.addEventListener('input', (e) => {
+        mockupBannerTitle.textContent = e.target.value.trim() || 'عنوان بنر تبلیغاتی';
+      });
+    }
+  </script>
+</body></html>

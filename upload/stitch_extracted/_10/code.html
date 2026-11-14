@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+
+<html class="h-full" dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>درمسیر | مدیریت خطوط و ایستگاه‌های ناوگان شهری</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Vazirmatn Persian Typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-surface": "#263143",
+            "on-secondary-fixed": "#410001",
+            "surface-container": "#e7eeff",
+            "on-error-container": "#93000a",
+            "surface-dim": "#cfdaf2",
+            "primary-fixed": "#d5e3ff",
+            "secondary-container": "#e32220",
+            "on-tertiary-fixed": "#00210e",
+            "surface-container-highest": "#d8e3fb",
+            "outline-variant": "#c2c6d3",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-tertiary-fixed-variant": "#00522c",
+            "on-surface-variant": "#424751",
+            "on-surface": "#111c2d",
+            "on-tertiary": "#ffffff",
+            "surface-bright": "#f9f9ff",
+            "tertiary-container": "#006638",
+            "on-secondary-container": "#fffbff",
+            "secondary": "#bc000c",
+            "primary": "#00417f",
+            "surface-container-low": "#f0f3ff",
+            "surface-container-lowest": "#ffffff",
+            "on-primary": "#ffffff",
+            "tertiary-fixed": "#7efbac",
+            "surface-tint": "#1a5eac",
+            "on-primary-container": "#b6d0ff",
+            "on-background": "#111c2d",
+            "on-tertiary-container": "#6ae79a",
+            "primary-container": "#0d58a6",
+            "on-primary-fixed-variant": "#004689",
+            "surface": "#f9f9ff",
+            "on-error": "#ffffff",
+            "on-secondary": "#ffffff",
+            "inverse-on-surface": "#ecf1ff",
+            "outline": "#727782",
+            "on-primary-fixed": "#001b3c",
+            "primary-fixed-dim": "#a8c8ff",
+            "error": "#ba1a1a",
+            "tertiary": "#004c28",
+            "surface-container-high": "#dee8ff",
+            "on-secondary-fixed-variant": "#930007",
+            "surface-variant": "#d8e3fb",
+            "inverse-primary": "#a8c8ff",
+            "secondary-fixed": "#ffdad5",
+            "background": "#f9f9ff",
+            "tertiary-fixed-dim": "#61de92",
+            "error-container": "#ffdad6"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "gutter": "1rem",
+            "space-xl": "2rem"
+          },
+          "fontFamily": {
+            "body-lg": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background-color: #f9f9ff;
+      color: #111c2d;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .line-color-1 { background-color: #e32220; }
+    .line-color-2 { background-color: #1d3557; }
+    .line-color-3 { background-color: #00a896; }
+    .line-color-4 { background-color: #e9c46a; }
+    .line-color-brt { background-color: #d90429; }
+    
+    /* Scrollbar refinement */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f0f3ff;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c2c6d3;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #727782;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface flex min-h-screen">
+<!-- ========================================================================= -->
+<!-- 1. SideNavBar Component (Shared Component: Responsive Drawer)             -->
+<!-- ========================================================================= -->
+<aside class="fixed right-0 top-0 h-full w-72 flex flex-col z-40 bg-surface-container-lowest dark:bg-inverse-surface border-l border-outline-variant dark:border-outline shadow-sm">
+<!-- Header / Brand Section -->
+<div class="p-6 pb-4 flex items-center gap-3 border-b border-outline-variant">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-on-primary shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined text-2xl" data-icon="alt_route">alt_route</span>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-inverse-primary leading-tight">درمسیر</h1>
+<p class="text-label-md font-label-md text-on-surface-variant">پنل مدیریت سامانه ناوبری شهری</p>
+</div>
+</div>
+<!-- Navigation Tabs List -->
+<nav class="flex-1 overflow-y-auto px-4 py-4 space-y-1.5">
+<!-- Tab 0: داشبورد مدیریتی -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>داشبورد مدیریتی</span>
+</a>
+<!-- Tab 1: کاربران -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>کاربران</span>
+</a>
+<!-- Tab 2: خطوط و ایستگاه‌ها (ACTIVE TAB) -->
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container dark:bg-primary-fixed dark:text-on-primary-fixed rounded-xl px-4 py-3 font-title-md text-title-md transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined" data-icon="alt_route" style="font-variation-settings: 'FILL' 1;">alt_route</span>
+<span class="font-bold">خطوط و ایستگاه‌ها</span>
+</a>
+<!-- Tab 3: تبلیغات و بنرها -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+<span>تبلیغات و بنرها</span>
+</a>
+<!-- Tab 4: دستیار صوتی و آواشناسی -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="record_voice_over">record_voice_over</span>
+<span>دستیار صوتی و آواشناسی</span>
+</a>
+<!-- Tab 5: تنظیمات سامانه -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>تنظیمات سامانه</span>
+</a>
+<!-- Tab 6: گزارش‌ها و تحلیل داده -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span>گزارش‌ها و تحلیل داده</span>
+</a>
+<!-- Tab 7: امنیت و وقایع‌نگاری -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span>امنیت و وقایع‌نگاری</span>
+</a>
+</nav>
+<!-- Footer Support Links & Logout CTA -->
+<div class="p-4 border-t border-outline-variant bg-surface-container-low/50 space-y-2">
+<div class="flex items-center justify-between px-2 text-on-surface-variant text-label-md font-label-md">
+<a class="flex items-center gap-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-base" data-icon="help">help</span>
+<span>پشتیبانی فنی</span>
+</a>
+<a class="flex items-center gap-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-base" data-icon="api">api</span>
+<span>مستندات API</span>
+</a>
+</div>
+<button class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-error bg-error-container/40 hover:bg-error-container transition-colors text-title-md font-title-md active:scale-[0.98]">
+<span class="material-symbols-outlined text-lg" data-icon="logout">logout</span>
+<span>خروج از حساب</span>
+</button>
+</div>
+</aside>
+<!-- ========================================================================= -->
+<!-- 2. Main Content Canvas & TopNavBar                                       -->
+<!-- ========================================================================= -->
+<div class="flex-1 mr-72 flex flex-col min-h-screen bg-background">
+<!-- TopNavBar Component (Shared Component: Admin Header) -->
+<header class="sticky top-0 z-30 h-16 flex items-center justify-between px-8 bg-surface-container-lowest border-b border-outline-variant shadow-sm">
+<!-- Right Side: Search Input -->
+<div class="flex items-center gap-4 w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-outline text-xl" data-icon="search">search</span>
+<input class="w-full pr-10 pl-4 py-2 rounded-xl bg-surface-container-low border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md text-on-surface placeholder:text-outline outline-none transition-all" placeholder="جستجوی خطوط، کد ایستگاه، تقاطع یا شاخص..." type="text"/>
+</div>
+</div>
+<!-- Left Side: Trailing Icons & Manager Profile -->
+<div class="flex items-center gap-5">
+<!-- Live Transit Cloud Sync Status -->
+<div class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container text-primary font-label-md text-label-md border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span>پایگاه ابری D1 برخط</span>
+</div>
+<!-- Trailing Icon Actions -->
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" title="اعلان‌ها">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-secondary"></span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="زمان‌بندی اعزام">
+<span class="material-symbols-outlined" data-icon="schedule">schedule</span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="وضعیت سرور و DNS">
+<span class="material-symbols-outlined" data-icon="dns">dns</span>
+</button>
+</div>
+<div class="h-6 w-px bg-outline-variant"></div>
+<!-- Trailing Primary Action (Admin Profile) -->
+<div class="flex items-center gap-3 pl-1">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold overflow-hidden ring-2 ring-primary/20">
+<img class="w-full h-full object-cover" data-alt="A refined and professional portrait of a senior Iranian urban transit systems director in an executive operations command center, surrounded by sleek glass workstations displaying vibrant public transit schematics and telemetry graphs. The lighting is calm, balanced and distinctly corporate with cool blue tones and sharp crisp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcTBqleEjVbrIttsE86Veg4rbC7Y2LwYTvHhZ_bZCUxmJuN90YlqFL88mRv5yY-VmVdMCgFPy2hYIokz1VAq0zt8EOrMhb6_tX0VjBB_1pPuH0wRQq7TcggvTCzCxMn-ewTg8HPcnrJ8E75VrkVbliJYWOAtp1wfFwUEkjsA9KFNs9NLqwjwh_313FlqaNGXBa_zzOMrcXXPoJ1YdMcyeyQyn3KOpuAajieQwMuA"/>
+</div>
+<div class="text-right">
+<span class="block text-title-md font-title-md text-on-surface font-semibold leading-tight">مدیر ارشد سامانه</span>
+<span class="block text-label-sm font-label-sm text-outline">مرکز کنترل ترافیک و ناوبری</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Body Container -->
+<main class="flex-1 p-8 space-y-8">
+<!-- Section 1: Page Header & Global Action Toolbar -->
+<section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2.5">
+<span class="p-2 rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-2xl" data-icon="fork_right">fork_right</span>
+</span>
+<h2 class="text-headline-lg font-headline-lg text-on-surface font-extrabold tracking-tight">مدیریت خطوط و ایستگاه‌های ناوگان شهری</h2>
+</div>
+<p class="mt-1 text-body-md font-body-md text-on-surface-variant mr-10">
+            تنظیم و انتشار لحظه‌ای سرفاصله حرکت قطارها و اتوبوس‌ها، پایش وضعیت فنی ایستگاه‌ها و ثبت در پایگاه داده D1
+          </p>
+</div>
+<!-- Global Action Buttons -->
+<div class="flex items-center flex-wrap gap-3">
+<!-- Button 1: Add Route -->
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface font-label-lg text-label-lg hover:bg-surface-container transition-colors shadow-sm active:scale-95">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="add_circle">add_circle</span>
+<span>افزودن خط یا شاخه جدید</span>
+</button>
+<!-- Button 2: Global Peak Headway -->
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-secondary text-secondary bg-surface-container-lowest hover:bg-secondary/5 font-label-lg text-label-lg transition-colors shadow-sm active:scale-95" onclick="document.getElementById('headwayModal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-xl" data-icon="speed">speed</span>
+<span>اعمال همگانی سرفاصله پیک ترافیک</span>
+</button>
+<!-- Button 3: Publish to Mobile App -->
+<div class="flex items-center">
+<button class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg hover:bg-primary-container hover:text-on-primary-container transition-all shadow-md active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="cloud_upload">cloud_upload</span>
+<span>انتشار تغییرات به اپلیکیشن (Publish)</span>
+</button>
+<span class="mr-3 text-label-sm font-label-sm text-outline hidden xl:inline">
+              آخرین انتشار: ۲۲ دقیقه پیش
+            </span>
+</div>
+</div>
+</section>
+<!-- Section 2: Fleet KPI Summary Cards (Bento Style 4-Cards Grid) -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+<!-- KPI 1 -->
+<div class="p-5 rounded-2xl bg-surface-container-lowest border border-outline-variant shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">خطوط فعال مترو و اتوبوس</span>
+<span class="p-2 rounded-xl bg-primary-fixed text-primary">
+<span class="material-symbols-outlined text-xl" data-icon="tram">tram</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-xl font-headline-xl font-black text-on-surface">۱۷</span>
+<span class="text-label-lg font-label-lg text-on-surface-variant">خط فعال</span>
+</div>
+<div class="mt-2 flex items-center gap-2 text-label-sm font-label-sm text-tertiary">
+<span class="material-symbols-outlined text-base" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>۷ خط مترو + ۱۰ خط BRT فعال شهری</span>
+</div>
+</div>
+<div class="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-primary/5 pointer-events-none"></div>
+</div>
+<!-- KPI 2 -->
+<div class="p-5 rounded-2xl bg-surface-container-lowest border border-outline-variant shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">میانگین سرفاصله حرکت شبکه</span>
+<span class="p-2 rounded-xl bg-tertiary-fixed text-tertiary">
+<span class="material-symbols-outlined text-xl" data-icon="timer">timer</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-xl font-headline-xl font-black text-on-surface">۳.۸</span>
+<span class="text-label-lg font-label-lg text-on-surface-variant">دقیقه</span>
+</div>
+<div class="mt-2 flex items-center gap-2 text-label-sm font-label-sm text-tertiary">
+<span class="material-symbols-outlined text-base" data-icon="trending_down">trending_down</span>
+<span>در ساعات اوج (کاهش ۰.۴ دقیقه‌ای)</span>
+</div>
+</div>
+<div class="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-tertiary/5 pointer-events-none"></div>
+</div>
+<!-- KPI 3 -->
+<div class="p-5 rounded-2xl bg-surface-container-lowest border border-outline-variant shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">کل ایستگاه‌های عملیاتی</span>
+<span class="p-2 rounded-xl bg-surface-container-high text-primary">
+<span class="material-symbols-outlined text-xl" data-icon="pin_drop">pin_drop</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-xl font-headline-xl font-black text-on-surface">۱۶۴</span>
+<span class="text-label-lg font-label-lg text-on-surface-variant">ایستگاه باز</span>
+</div>
+<div class="mt-2 flex items-center gap-2 text-label-sm font-label-sm text-secondary">
+<span class="material-symbols-outlined text-base" data-icon="construction">construction</span>
+<span>۵ ایستگاه تحت تعمیرات پله‌برقی/آسانسور</span>
+</div>
+</div>
+<div class="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-surface-container pointer-events-none"></div>
+</div>
+<!-- KPI 4 -->
+<div class="p-5 rounded-2xl bg-surface-container-lowest border border-outline-variant shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">وضعیت پایداری سرویس</span>
+<span class="p-2 rounded-xl bg-primary-fixed text-primary">
+<span class="material-symbols-outlined text-xl" data-icon="published_with_changes">published_with_changes</span>
+</span>
+</div>
+<div class="mt-4">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-xl font-headline-xl font-black text-tertiary">۹۹.۴٪</span>
+<span class="text-label-lg font-label-lg text-on-surface-variant">شاخص پایداری</span>
+</div>
+<div class="mt-2 flex items-center gap-2 text-label-sm font-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-base text-tertiary" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span>اعزام کاملاً به‌موقع طبق سناریو صبحگاهی</span>
+</div>
+</div>
+<div class="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-tertiary/5 pointer-events-none"></div>
+</div>
+</section>
+<!-- Section 3 & 5: Main Grid (Left: Lines Table 8 Cols, Right: Interchange Monitoring 4 Cols) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+<!-- Lines Management Table (8 Cols) -->
+<div class="xl:col-span-8 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+<!-- Table Toolbar & Filters -->
+<div class="p-5 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-container-lowest">
+<div>
+<h3 class="text-title-lg font-title-lg font-bold text-on-surface">جدول پایش و پیکربندی خطوط حمل‌ونقل</h3>
+<p class="text-label-md font-label-md text-on-surface-variant">مدیریت مستقیم سرعفاصله، ناوگان اعزامی و وضعیت ناوگان</p>
+</div>
+<!-- Segmented Route Type Tabs -->
+<div class="flex items-center p-1 rounded-xl bg-surface-container-low border border-outline-variant text-label-md font-label-md">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest font-bold text-primary shadow-xs">همه خطوط (۱۷)</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors">خطوط مترو شهری</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors">خطوط تندرو BRT</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors">انشعاب‌های فرودگاهی</button>
+</div>
+</div>
+<!-- Responsive Table Body -->
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant text-label-md font-label-md border-b border-outline-variant">
+<th class="py-3.5 px-5">شناسه و عنوان خط</th>
+<th class="py-3.5 px-4">ایستگاه‌ها</th>
+<th class="py-3.5 px-4">سرفاصله فعلی</th>
+<th class="py-3.5 px-4">ناوگان اعزامی</th>
+<th class="py-3.5 px-4">وضعیت ترافیکی</th>
+<th class="py-3.5 px-5 text-center">عملیات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant text-body-md font-body-md">
+<!-- Row 1: خط ۱ مترو -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg line-color-1 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                        ۱
+                      </span>
+<div>
+<div class="font-bold text-on-surface text-title-md">خط ۱ مترو تهران</div>
+<div class="text-label-sm font-label-sm text-outline flex items-center gap-1">
+<span>تجریش</span>
+<span class="material-symbols-outlined text-xs" data-icon="swap_horiz">swap_horiz</span>
+<span>کهریزک</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-semibold text-on-surface">۲۹ ایستگاه</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container font-bold text-primary text-title-md">
+<span class="material-symbols-outlined text-base" data-icon="schedule">schedule</span>
+                      ۳.۵ دقیقه
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface">۳۸ رام قطار فعال</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-md font-bold">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                      عادی و روان
+                    </span>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center justify-center gap-1.5">
+<button class="p-2 rounded-lg text-primary hover:bg-primary-fixed transition-colors" onclick="document.getElementById('headwayModal').classList.remove('hidden')" title="ویرایش سرفاصله">
+<span class="material-symbols-outlined text-xl" data-icon="tune">tune</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="مدیریت ایستگاه‌ها">
+<span class="material-symbols-outlined text-xl" data-icon="list_alt">list_alt</span>
+</button>
+<button class="p-2 rounded-lg text-secondary hover:bg-secondary-fixed transition-colors" title="تنظیم حالت فوق‌العاده">
+<span class="material-symbols-outlined text-xl" data-icon="bolt">bolt</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: خط ۲ مترو -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg line-color-2 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                        ۲
+                      </span>
+<div>
+<div class="font-bold text-on-surface text-title-md">خط ۲ مترو تهران</div>
+<div class="text-label-sm font-label-sm text-outline flex items-center gap-1">
+<span>صادقیه</span>
+<span class="material-symbols-outlined text-xs" data-icon="swap_horiz">swap_horiz</span>
+<span>فرهنگسرا</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-semibold text-on-surface">۲۲ ایستگاه</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container font-bold text-primary text-title-md">
+<span class="material-symbols-outlined text-base" data-icon="schedule">schedule</span>
+                      ۳.۰ دقیقه
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface">۳۴ رام قطار فعال</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-md font-bold">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                      عادی
+                    </span>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center justify-center gap-1.5">
+<button class="p-2 rounded-lg text-primary hover:bg-primary-fixed transition-colors" onclick="document.getElementById('headwayModal').classList.remove('hidden')" title="ویرایش سرفاصله">
+<span class="material-symbols-outlined text-xl" data-icon="tune">tune</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="مدیریت ایستگاه‌ها">
+<span class="material-symbols-outlined text-xl" data-icon="list_alt">list_alt</span>
+</button>
+<button class="p-2 rounded-lg text-secondary hover:bg-secondary-fixed transition-colors" title="تنظیم حالت فوق‌العاده">
+<span class="material-symbols-outlined text-xl" data-icon="bolt">bolt</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: خط ۳ مترو -->
+<tr class="hover:bg-surface-container-low/60 transition-colors bg-secondary-fixed/20">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg line-color-3 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                        ۳
+                      </span>
+<div>
+<div class="font-bold text-on-surface text-title-md">خط ۳ مترو تهران</div>
+<div class="text-label-sm font-label-sm text-outline flex items-center gap-1">
+<span>قائم</span>
+<span class="material-symbols-outlined text-xs" data-icon="swap_horiz">swap_horiz</span>
+<span>آزادگان</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-semibold text-on-surface">۲۵ ایستگاه</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container font-bold text-primary text-title-md">
+<span class="material-symbols-outlined text-base" data-icon="schedule">schedule</span>
+                      ۴.۵ دقیقه
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface">۲۸ رام قطار فعال</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-md font-bold">
+<span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+                      تراکم بالا - اعزام قطار فوق‌العاده
+                    </span>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center justify-center gap-1.5">
+<button class="p-2 rounded-lg text-primary hover:bg-primary-fixed transition-colors" onclick="document.getElementById('headwayModal').classList.remove('hidden')" title="ویرایش سرفاصله">
+<span class="material-symbols-outlined text-xl" data-icon="tune">tune</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="مدیریت ایستگاه‌ها">
+<span class="material-symbols-outlined text-xl" data-icon="list_alt">list_alt</span>
+</button>
+<button class="p-2 rounded-lg text-secondary hover:bg-secondary-fixed transition-colors" title="تنظیم حالت فوق‌العاده">
+<span class="material-symbols-outlined text-xl" data-icon="bolt">bolt</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: خط ۴ مترو -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg line-color-4 text-black font-bold flex items-center justify-center text-sm shadow-xs">
+                        ۴
+                      </span>
+<div>
+<div class="font-bold text-on-surface text-title-md">خط ۴ مترو تهران</div>
+<div class="text-label-sm font-label-sm text-outline flex items-center gap-1">
+<span>شهید کلاهدوز</span>
+<span class="material-symbols-outlined text-xs" data-icon="swap_horiz">swap_horiz</span>
+<span>ارم سبز (انشعاب مهرآباد)</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-semibold text-on-surface">۲۲ ایستگاه</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container font-bold text-primary text-title-md">
+<span class="material-symbols-outlined text-base" data-icon="schedule">schedule</span>
+                      ۳.۵ دقیقه
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface">۳۰ رام فعال + ۳ شاتل</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-md font-bold">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                      عادی
+                    </span>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center justify-center gap-1.5">
+<button class="p-2 rounded-lg text-primary hover:bg-primary-fixed transition-colors" onclick="document.getElementById('headwayModal').classList.remove('hidden')" title="ویرایش سرفاصله">
+<span class="material-symbols-outlined text-xl" data-icon="tune">tune</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="مدیریت ایستگاه‌ها">
+<span class="material-symbols-outlined text-xl" data-icon="list_alt">list_alt</span>
+</button>
+<button class="p-2 rounded-lg text-secondary hover:bg-secondary-fixed transition-colors" title="تنظیم حالت فوق‌العاده">
+<span class="material-symbols-outlined text-xl" data-icon="bolt">bolt</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5: BRT Line 1 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-4 px-5">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-lg line-color-brt text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                        BRT1
+                      </span>
+<div>
+<div class="font-bold text-on-surface text-title-md">خط ۱ اتوبوس تندرو (BRT)</div>
+<div class="text-label-sm font-label-sm text-outline flex items-center gap-1">
+<span>پایانه آزادی</span>
+<span class="material-symbols-outlined text-xs" data-icon="swap_horiz">swap_horiz</span>
+<span>چهارراه تهرانپارس</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-semibold text-on-surface">۲۶ ایستگاه</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container font-bold text-primary text-title-md">
+<span class="material-symbols-outlined text-base" data-icon="schedule">schedule</span>
+                      ۲.۰ دقیقه
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface">۸۴ دستگاه دوکابین</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-md font-bold">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                      خط ویژه روان
+                    </span>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center justify-center gap-1.5">
+<button class="p-2 rounded-lg text-primary hover:bg-primary-fixed transition-colors" onclick="document.getElementById('headwayModal').classList.remove('hidden')" title="ویرایش سرفاصله">
+<span class="material-symbols-outlined text-xl" data-icon="tune">tune</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="مدیریت ایستگاه‌ها">
+<span class="material-symbols-outlined text-xl" data-icon="list_alt">list_alt</span>
+</button>
+<button class="p-2 rounded-lg text-secondary hover:bg-secondary-fixed transition-colors" title="تنظیم حالت فوق‌العاده">
+<span class="material-symbols-outlined text-xl" data-icon="bolt">bolt</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer Pagination & D1 Sync Status -->
+<div class="p-4 border-t border-outline-variant bg-surface-container-low/40 flex items-center justify-between text-label-md font-label-md text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-tertiary" data-icon="database">database</span>
+<span>همگام‌سازی مستقیم با جدول Cloudflare D1 (routes_v2) - کش Edge فعال</span>
+</div>
+<div class="flex items-center gap-1">
+<span>نمایش ۱ تا ۵ از ۱۷ خط فعال</span>
+</div>
+</div>
+</div>
+<!-- Interchange & Key Stations Live Monitoring (4 Cols) -->
+<div class="xl:col-span-4 space-y-5">
+<div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 shadow-sm">
+<div class="flex items-center justify-between pb-4 border-b border-outline-variant">
+<div>
+<h3 class="text-title-lg font-title-lg font-bold text-on-surface">پایش ایستگاه‌های تبادلی و شاخص</h3>
+<p class="text-label-md font-label-md text-on-surface-variant">وضعیت تجهیزات حرکتی و تراکم مسافر</p>
+</div>
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="hub">hub</span>
+</div>
+<!-- Interchange Cards List -->
+<div class="mt-5 space-y-4">
+<!-- Station 1: دروازه دولت -->
+<div class="p-4 rounded-xl border border-outline-variant hover:border-primary/50 transition-colors bg-surface-container-low/30">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-secondary"></span>
+<h4 class="font-bold text-on-surface text-title-md">دروازه دولت</h4>
+</div>
+<!-- Interchange Badges -->
+<div class="flex items-center gap-1 text-xs font-bold text-white">
+<span class="px-2 py-0.5 rounded-full line-color-1">خط ۱</span>
+<span class="px-2 py-0.5 rounded-full line-color-4 text-black">خط ۴</span>
+</div>
+</div>
+<div class="mt-3 grid grid-cols-2 gap-2 text-label-md font-label-md">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-base text-tertiary" data-icon="elevator">elevator</span>
+<span>آسانسورها: <strong>فعال</strong></span>
+</div>
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-base" data-icon="escalator">escalator</span>
+<span>۱ پله در حال سرویس</span>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/60 flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-outline">شاخص تراکم سکو:</span>
+<span class="px-2 py-0.5 rounded-md bg-surface-container text-primary font-bold">متوسط (۶۲٪)</span>
+</div>
+</div>
+<!-- Station 2: تئاتر شهر -->
+<div class="p-4 rounded-xl border border-outline-variant hover:border-primary/50 transition-colors bg-surface-container-low/30">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary"></span>
+<h4 class="font-bold text-on-surface text-title-md">تئاتر شهر</h4>
+</div>
+<div class="flex items-center gap-1 text-xs font-bold text-white">
+<span class="px-2 py-0.5 rounded-full line-color-3">خط ۳</span>
+<span class="px-2 py-0.5 rounded-full line-color-4 text-black">خط ۴</span>
+</div>
+</div>
+<div class="mt-3 grid grid-cols-2 gap-2 text-label-md font-label-md">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-base text-tertiary" data-icon="elevator">elevator</span>
+<span>آسانسورها: <strong>نرمال</strong></span>
+</div>
+<div class="flex items-center gap-1.5 text-tertiary">
+<span class="material-symbols-outlined text-base" data-icon="escalator">escalator</span>
+<span>تمامی پله‌ها فعال</span>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/60 flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-outline">شاخص تراکم سکو:</span>
+<span class="px-2 py-0.5 rounded-md bg-tertiary-fixed text-tertiary font-bold">نرمال و روان</span>
+</div>
+</div>
+<!-- Station 3: امام خمینی (ره) -->
+<div class="p-4 rounded-xl border border-secondary/40 hover:border-secondary transition-colors bg-secondary-fixed/10">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-secondary animate-pulse"></span>
+<h4 class="font-bold text-on-surface text-title-md">امام خمینی (ره)</h4>
+</div>
+<div class="flex items-center gap-1 text-xs font-bold text-white">
+<span class="px-2 py-0.5 rounded-full line-color-1">خط ۱</span>
+<span class="px-2 py-0.5 rounded-full line-color-2">خط ۲</span>
+</div>
+</div>
+<div class="mt-3 grid grid-cols-2 gap-2 text-label-md font-label-md">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-base text-tertiary" data-icon="elevator">elevator</span>
+<span>آسانسورها: <strong>فعال</strong></span>
+</div>
+<div class="flex items-center gap-1.5 text-tertiary">
+<span class="material-symbols-outlined text-base" data-icon="escalator">escalator</span>
+<span>پله‌ها فعال</span>
+</div>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/60 flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-outline">شاخص تراکم سکو:</span>
+<span class="px-2 py-0.5 rounded-md bg-secondary-fixed text-on-secondary-fixed font-bold">بسیار شلوغ (پیک عصرگاهی)</span>
+</div>
+</div>
+</div>
+<!-- Quick Action button -->
+<button class="w-full mt-5 py-2.5 px-4 rounded-xl border border-primary text-primary hover:bg-primary-fixed/40 transition-colors font-label-lg text-label-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="map">map</span>
+<span>مشاهده نقشه کامل اتصالات متقاطع</span>
+</button>
+</div>
+<!-- Non-intrusive Ad Banner Slot (جایگاه بنر تبلیغاتی استاندارد درمسیر) -->
+<div class="p-5 rounded-2xl bg-surface-container-low border border-outline-variant shadow-xs relative overflow-hidden">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-outline-variant/50 text-on-surface-variant font-bold">آگهی ویژه سامانه</span>
+<span class="text-label-sm font-label-sm text-outline">حمایت از توسعه ناوگان پاک</span>
+</div>
+<h4 class="font-bold text-title-md text-on-surface">سامانه بلیت الکترونیک هوشمند درمسیر</h4>
+<p class="mt-1 text-body-sm text-on-surface-variant">شارژ مستقیم کارت بلیت مترو و اتوبوس بدون صف از طریق اپلیکیشن مسافرین</p>
+<div class="mt-3 flex items-center justify-end">
+<span class="text-label-md text-primary font-bold flex items-center gap-1 hover:underline cursor-pointer">
+<span>اطلاعات بیشتر</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_back">arrow_back</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- ========================================================================= -->
+<!-- 4. Headway Dispatch Modal / Editor (ویرایش سریع سرفاصله و اعزام قطار)    -->
+<!-- ========================================================================= -->
+<div class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/60 backdrop-blur-sm transition-opacity" id="headwayModal">
+<div class="bg-surface-container-lowest rounded-2xl max-w-xl w-full border border-outline-variant shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+<!-- Modal Header -->
+<div class="p-6 border-b border-outline-variant flex items-center justify-between bg-surface-container-low/40">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary-container text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="tune">tune</span>
+</div>
+<div>
+<h3 class="text-title-lg font-title-lg font-bold text-on-surface">تنظیم و انتشار سرفاصله حرکت قطارها</h3>
+<p class="text-label-md font-label-md text-on-surface-variant">پیکربندی زمان‌بندی اعزام برای خط انتخاب‌شده</p>
+</div>
+</div>
+<button class="w-9 h-9 rounded-lg flex items-center justify-center text-outline hover:bg-surface-container hover:text-on-surface transition-colors" onclick="document.getElementById('headwayModal').classList.add('hidden')">
+<span class="material-symbols-outlined text-xl" data-icon="close">close</span>
+</button>
+</div>
+<!-- Modal Body Form -->
+<div class="p-6 space-y-5">
+<!-- Target Route Selection -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">خط هدف جهت اعمال تغییرات</label>
+<div class="relative">
+<select class="w-full py-2.5 px-4 rounded-xl bg-surface-container-low border border-outline-variant text-body-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none pr-10">
+<option selected="" value="line-3">خط ۳ مترو (قائم ↔ آزادگان) - وضعیت فعلی: تراکم بالا</option>
+<option value="line-1">خط ۱ مترو (تجریش ↔ کهریزک)</option>
+<option value="line-2">خط ۲ مترو (صادقیه ↔ فرهنگسرا)</option>
+<option value="line-4">خط ۴ مترو (شهید کلاهدوز ↔ ارم سبز)</option>
+<option value="brt-1">خط ۱ BRT (پایانه آزادی ↔ چهارراه تهرانپارس)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<!-- 3 Time Intervals Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Peak AM -->
+<div class="p-3.5 rounded-xl border border-outline-variant bg-surface-container-low/30">
+<label class="block text-label-md font-label-md font-bold text-on-surface mb-1">اوج صبحگاهی (AM)</label>
+<span class="block text-label-sm font-label-sm text-outline mb-2">۰۶:۳۰ تا ۰۹:۰۰</span>
+<div class="flex items-center gap-1.5">
+<input class="w-full text-center py-1.5 px-2 rounded-lg bg-surface-container-lowest border border-outline-variant font-bold text-primary text-title-md" step="0.5" type="number" value="3.0"/>
+<span class="text-label-md text-outline">دقیقه</span>
+</div>
+</div>
+<!-- Midday Normal -->
+<div class="p-3.5 rounded-xl border border-outline-variant bg-surface-container-low/30">
+<label class="block text-label-md font-label-md font-bold text-on-surface mb-1">عادی بین‌روز</label>
+<span class="block text-label-sm font-label-sm text-outline mb-2">۰۹:۰۰ تا ۱۶:۳۰</span>
+<div class="flex items-center gap-1.5">
+<input class="w-full text-center py-1.5 px-2 rounded-lg bg-surface-container-lowest border border-outline-variant font-bold text-on-surface text-title-md" step="0.5" type="number" value="5.0"/>
+<span class="text-label-md text-outline">دقیقه</span>
+</div>
+</div>
+<!-- Peak PM -->
+<div class="p-3.5 rounded-xl border border-outline-variant bg-surface-container-low/30">
+<label class="block text-label-md font-label-md font-bold text-on-surface mb-1">اوج عصرگاهی (PM)</label>
+<span class="block text-label-sm font-label-sm text-outline mb-2">۱۶:۳۰ تا ۲۰:۰۰</span>
+<div class="flex items-center gap-1.5">
+<input class="w-full text-center py-1.5 px-2 rounded-lg bg-surface-container-lowest border border-outline-variant font-bold text-primary text-title-md" step="0.5" type="number" value="3.5"/>
+<span class="text-label-md text-outline">دقیقه</span>
+</div>
+</div>
+</div>
+<!-- Auxiliary Express Trains Switch -->
+<div class="p-4 rounded-xl border border-secondary/30 bg-secondary-fixed/10 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="p-2 rounded-lg bg-secondary text-white">
+<span class="material-symbols-outlined text-xl" data-icon="electric_bolt">electric_bolt</span>
+</span>
+<div>
+<span class="block font-bold text-on-surface text-label-lg">اعزام قطارهای کمکی و سریع‌السیر</span>
+<span class="block text-label-sm text-on-surface-variant">تخلیه اضطراری ایستگاه‌های تقاطعی با قطار خالی</span>
+</div>
+</div>
+<!-- Toggle checkbox -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<!-- Audit Log Note -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-1.5">یادداشت ثبت در تاریخچه تغییرات (Audit Log)</label>
+<textarea class="w-full p-3 rounded-xl bg-surface-container-low border border-outline-variant text-body-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="دلیل کاهش سرفاصله یا تغییر اعزام (مثلاً: پوشش تراکم ترافیکی پس از بازی فوتبال یا بارندگی)..." rows="2"></textarea>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-5 border-t border-outline-variant bg-surface-container-low/40 flex items-center justify-between">
+<button class="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container font-label-lg text-label-lg transition-colors" onclick="document.getElementById('headwayModal').classList.add('hidden')">
+          انصراف
+        </button>
+<div class="flex items-center gap-3">
+<button class="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg hover:bg-primary-container shadow-md active:scale-95 transition-all flex items-center gap-2" onclick="document.getElementById('headwayModal').classList.add('hidden')">
+<span class="material-symbols-outlined text-lg" data-icon="check">check</span>
+<span>تأیید و انتشار به شبکه</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

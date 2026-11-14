@@ -1,0 +1,558 @@
+<!DOCTYPE html><html class="h-full" dir="rtl" lang="fa"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>درمسیر - حساب من و تنظیمات پیشرفته (پروفایل مسافر و عیب‌یابی GPS)</title>
+<!-- Persian Typography (Vazirmatn) -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration with Design System Tokens -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed-dim": "#a8c8ff",
+            "surface-container": "#e7eeff",
+            "outline": "#727782",
+            "secondary-fixed": "#ffdad5",
+            "on-secondary-fixed-variant": "#930007",
+            "on-secondary": "#ffffff",
+            "background": "#f9f9ff",
+            "on-background": "#111c2d",
+            "inverse-surface": "#263143",
+            "surface-variant": "#d8e3fb",
+            "secondary-container": "#e32220",
+            "surface-container-low": "#f0f3ff",
+            "surface-bright": "#f9f9ff",
+            "surface-container-high": "#dee8ff",
+            "outline-variant": "#c2c6d3",
+            "on-surface": "#111c2d",
+            "on-error": "#ffffff",
+            "tertiary-container": "#006638",
+            "on-tertiary-container": "#6ae79a",
+            "tertiary-fixed": "#7efbac",
+            "on-tertiary": "#ffffff",
+            "primary": "#00417f",
+            "on-primary-container": "#b6d0ff",
+            "on-primary": "#ffffff",
+            "tertiary-fixed-dim": "#61de92",
+            "error": "#ba1a1a",
+            "primary-container": "#0d58a6",
+            "surface-dim": "#cfdaf2",
+            "on-tertiary-fixed-variant": "#00522c",
+            "primary-fixed": "#d5e3ff",
+            "on-secondary-container": "#fffbff",
+            "inverse-on-surface": "#ecf1ff",
+            "secondary": "#bc000c",
+            "on-secondary-fixed": "#410001",
+            "on-surface-variant": "#424751",
+            "surface-tint": "#1a5eac",
+            "surface": "#f9f9ff",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed": "#00210e",
+            "surface-container-highest": "#d8e3fb",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-primary-fixed": "#001b3c",
+            "tertiary": "#004c28",
+            "inverse-primary": "#a8c8ff",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#004689"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "margin": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "2rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "headline-xl": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-filled {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Smooth Pulse for Live Diagnostic Signal */
+    @keyframes subtlePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(1.15); }
+    }
+    .live-ping {
+      animation: subtlePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    /* Hide scrollbars for streamlined app look */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen pb-28 select-none flex flex-col justify-between">
+<!-- =========================================================================
+       1. TOP APP BAR & STATUS HEADER
+       ========================================================================= -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest/95 backdrop-blur-md px-margin py-3 border-b border-outline-variant/40 shadow-sm flex items-center justify-between">
+<!-- Brand / Title & GPS Health -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-xl">manage_accounts</span>
+</div>
+<div>
+<h1 class="text-title-md font-title-md text-on-surface">حساب من و تنظیمات</h1>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="relative flex h-2 w-2">
+<span class="live-ping absolute inline-flex h-full w-full rounded-full bg-tertiary-fixed-dim opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary-container"></span>
+</span>
+<span class="text-label-sm font-label-sm text-tertiary font-medium">سرویس مکان‌یابی فعال (GPS متصل)</span>
+</div>
+</div>
+</div>
+<!-- Actions (Edit Profile / Logout) -->
+<div class="flex items-center gap-1">
+<button class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container transition-colors active:scale-95" title="ویرایش پروفایل">
+<span class="material-symbols-outlined text-xl">edit_note</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-full text-secondary hover:bg-secondary-fixed/50 transition-colors active:scale-95" title="خروج از حساب">
+<span class="material-symbols-outlined text-xl">logout</span>
+</button>
+</div>
+</header>
+<!-- =========================================================================
+       MAIN CONTENT CONTAINER
+       ========================================================================= -->
+<main class="max-w-md mx-auto w-full px-margin space-y-4 pt-3 flex-1">
+<!-- =========================================================================
+         2. PASSENGER PROFILE CARD & TRANSIT METRICS
+         ========================================================================= -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3.5">
+<!-- User Avatar -->
+<div class="relative">
+<div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-primary-container text-white flex items-center justify-center font-bold text-headline-sm shadow-md ring-2 ring-primary-fixed">
+<span>ار</span>
+</div>
+<div class="absolute -bottom-1 -left-1 bg-tertiary-container text-white rounded-full p-0.5 ring-2 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-xs">verified</span>
+</div>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="text-title-lg font-title-lg text-on-surface">امیرحسین رضایی</h2>
+<span class="text-label-sm font-label-sm bg-primary-fixed text-primary px-2 py-0.5 rounded-full font-bold">عضو وفادار</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant font-mono mt-0.5" dir="ltr">۰۹۱۲ *** ۴۵۶۷</p>
+</div>
+</div>
+<button class="px-2.5 py-1 text-label-md font-label-md text-primary bg-surface-container rounded-lg hover:bg-surface-container-high transition-colors">
+          پروفایل
+        </button>
+</div>
+<!-- Quick Metrics 3-Column Bento Grid -->
+<div class="grid grid-cols-3 gap-2.5 pt-3 border-t border-outline-variant/30">
+<!-- Metric 1: Total Trips -->
+<div class="bg-surface-container-low p-2.5 rounded-xl text-center">
+<span class="text-headline-md font-headline-md text-primary block">۶۴</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant block mt-0.5">سفر موفق</span>
+</div>
+<!-- Metric 2: Time Saved -->
+<div class="bg-surface-container-low p-2.5 rounded-xl text-center">
+<span class="text-headline-md font-headline-md text-tertiary-container block">۱۸ <span class="text-label-sm">ساعت</span></span>
+<span class="text-label-sm font-label-sm text-on-surface-variant block mt-0.5">صرفه‌جویی زمان</span>
+</div>
+<!-- Metric 3: Wallet Balance -->
+<div class="bg-surface-container-low p-2.5 rounded-xl text-center flex flex-col justify-between">
+<div>
+<span class="text-title-md font-title-md text-on-surface block truncate">۴۸,۵۰۰</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">تومان اعتبار</span>
+</div>
+<button class="mt-1 text-label-sm font-label-sm text-primary font-bold hover:underline flex items-center justify-center gap-0.5">
+<span>شارژ</span>
+<span class="material-symbols-outlined text-xs">add_circle</span>
+</button>
+</div>
+</div>
+</section>
+<!-- =========================================================================
+         3. ADVANCED GPS & LOCATION DIAGNOSTICS TOOL (SECTION 5 DOCUMENT_9)
+         ========================================================================= -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/50 relative overflow-hidden">
+<!-- Ambient Indicator Banner -->
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+<div class="flex items-center gap-2">
+<div class="p-1.5 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined text-lg">satellite_alt</span>
+</div>
+<div>
+<h3 class="text-title-md font-title-md text-on-surface">عیب‌یابی سلامت GPS و موقعیت مکانی</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant">بررسی دقیق ماژول سخت‌افزاری و Fused Location</p>
+</div>
+</div>
+<span class="text-label-sm font-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+          سالم
+        </span>
+</div>
+<!-- Diagnostic Telemetry Parameters -->
+<div class="mt-3 space-y-2.5">
+<!-- Telemetry 1: Permission Status -->
+<div class="flex items-center justify-between text-body-sm bg-surface-container-low/70 px-3 py-2 rounded-xl">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-base text-primary">verified_user</span>
+<span>مجوز سیستم‌عامل اندروید:</span>
+</div>
+<div class="flex items-center gap-1 text-tertiary-container font-semibold text-label-md">
+<span>ACCESS_FINE_LOCATION</span>
+<span class="material-symbols-outlined text-sm">check_circle</span>
+</div>
+</div>
+<!-- Telemetry 2: Provider Hardware -->
+<div class="flex items-center justify-between text-body-sm bg-surface-container-low/70 px-3 py-2 rounded-xl">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-base text-primary">cell_tower</span>
+<span>منبع مکانیابی (Provider):</span>
+</div>
+<span class="text-label-md font-label-md text-on-surface font-mono" dir="ltr">Fused (GPS+Wi-Fi+Cell)</span>
+</div>
+<!-- Telemetry 3: Live Coordinates -->
+<div class="p-2.5 rounded-xl bg-surface-container-high/40 border border-outline-variant/30 flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">مختصات جغرافیایی فعلی (میدان انقلاب):</span>
+<div class="font-mono text-label-md font-medium text-primary mt-0.5" dir="ltr">
+              35.7008° N , 51.3911° E
+            </div>
+</div>
+<div class="text-left">
+<span class="text-label-sm font-label-sm text-on-surface-variant block">دقت تخمین (Accuracy):</span>
+<span class="text-label-md font-label-md text-tertiary-container font-bold">±۴.۲ متر (دقت عالی)</span>
+</div>
+</div>
+<!-- Telemetry 4: Timestamp & Refresh CTA -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-sm text-outline">update</span>
+<span>سن آخرین پکت مکانی:</span>
+<span class="font-semibold text-on-surface">۲ ثانیه پیش (تازه)</span>
+</div>
+<button class="flex items-center gap-1.5 bg-primary text-on-primary px-3 py-1.5 rounded-xl text-label-md font-label-md hover:bg-primary-container active:scale-95 transition-all shadow-sm" id="gpsRefreshBtn">
+<span class="material-symbols-outlined text-base transition-transform" id="refreshIcon">autorenew</span>
+<span>تست و به‌روزرسانی مجدد</span>
+</button>
+</div>
+</div>
+</section>
+<!-- =========================================================================
+         4. VOICE ASSISTANT & SMART COMMUTE ALERTS (SECTION 7)
+         ========================================================================= -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40 space-y-3.5">
+<div class="flex items-center gap-2 pb-2 border-b border-outline-variant/30">
+<div class="p-1.5 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined text-lg">record_voice_over</span>
+</div>
+<div>
+<h3 class="text-title-md font-title-md text-on-surface">دستیار صوتی و اعلان‌های هوشمند سفر</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant">تنظیمات بیدارباش و هدایت صوتی گام‌به‌گام</p>
+</div>
+</div>
+<!-- Setting 1: Smart Audio Guide Toggle -->
+<div class="flex items-center justify-between py-1">
+<div class="max-w-[78%]">
+<span class="text-label-lg font-label-lg text-on-surface block">راهنمای صوتی هوشمند در سفر</span>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">اعلام ایستگاه بعدی و هشدار صوتی تعویض خط در هندزفری</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Setting 2: Voice Persona Selector -->
+<div class="bg-surface-container-low p-2.5 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-primary">spatial_audio</span>
+<span class="text-label-md font-label-md text-on-surface">گوینده راهنما:</span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-lowest p-1 rounded-lg border border-outline-variant/40">
+<button class="px-2.5 py-1 text-label-sm rounded-md bg-primary-container text-on-primary font-medium">رسمی خانم</button>
+<button class="px-2.5 py-1 text-label-sm rounded-md text-on-surface-variant hover:text-on-surface">رسمی آقا</button>
+</div>
+</div>
+<!-- Setting 3: Destination Proximity Wakeup Alarm -->
+<div class="flex items-center justify-between py-1 border-t border-outline-variant/20 pt-3">
+<div class="max-w-[78%]">
+<span class="text-label-lg font-label-lg text-on-surface block">اعلان خودکار بیدارباش ایستگاه مقصد</span>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">ویبره و زنگ هشدار ۲ ایستگاه قبل از رسیدن به مقصد</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</section>
+<!-- =========================================================================
+         5. RECENT TRANSIT HISTORY & FEEDBACK
+         ========================================================================= -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40 space-y-3">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+<h3 class="text-title-md font-title-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">history</span>
+<span>تاریخچه سفرها و گزارش‌ها</span>
+</h3>
+<button class="text-label-sm font-label-sm text-primary font-bold hover:underline">مشاهده همه</button>
+</div>
+<!-- Recent Trip Row Card -->
+<div class="bg-surface-container-low p-3 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">directions_transit</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5 text-label-lg font-label-lg text-on-surface">
+<span>میدان انقلاب</span>
+<span class="material-symbols-outlined text-xs text-outline">arrow_back</span>
+<span>بیمارستان میلاد</span>
+</div>
+<div class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-0.5">
+<span>امروز ساعت ۰۸:۲۵</span>
+<span>•</span>
+<span class="text-primary font-medium">۲۸ دقیقه (۱ تعویض)</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-lg">chevron_left</span>
+</div>
+<!-- Station Feedback / Bug Report Link -->
+<a class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors text-on-surface-variant" href="#feedback">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-base text-outline">report_problem</span>
+<span class="text-label-md font-label-md">گزارش خطا یا عدم تطابق نام ایستگاه و خروجی‌ها</span>
+</div>
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</a>
+</section>
+<!-- =========================================================================
+         6. TECHNICAL SPECS, VERSION & PRIVACY COMMITMENT (DOCUMENT_9)
+         ========================================================================= -->
+<!-- Support Tickets Card -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40 space-y-3">
+  <div class="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+    <div class="flex items-center gap-2">
+      <div class="p-1.5 rounded-lg bg-surface-container text-primary">
+        <span class="material-symbols-outlined text-lg">support_agent</span>
+      </div>
+      <div>
+        <h3 class="text-title-md font-title-md text-on-surface">پشتیبانی و تیکت‌ها</h3>
+        <p class="text-label-sm font-label-sm text-on-surface-variant">پیگیری سوالات، گزارش خرابی و راهنمایی سفر</p>
+      </div>
+    </div>
+    <button class="flex items-center gap-1 text-label-sm font-label-sm text-primary bg-surface-container hover:bg-surface-container-high px-2.5 py-1.5 rounded-lg transition-colors">
+      <span class="material-symbols-outlined text-sm">add</span>
+      <span>ثبت تیکت پشتیبانی جدید</span>
+    </button>
+  </div>
+
+  <!-- Active Ticket Item -->
+  <div class="bg-surface-container-low p-3 rounded-xl flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+        <span class="material-symbols-outlined text-lg">confirmation_number</span>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 text-label-md font-semibold text-on-surface">
+          <span>تیکت‌های من (۲ تیکت باز)</span>
+          <span class="text-label-sm bg-primary-fixed text-primary px-2 py-0.5 rounded-full">در حال بررسی</span>
+        </div>
+        <div class="text-label-sm text-on-surface-variant mt-0.5">
+          <span>کد رهگیری: <span class="font-mono text-primary font-medium" dir="ltr">TCK-94820</span></span>
+          <span class="mx-1">•</span>
+          <span>عدم تطابق زمان حرکت خط ۳ مترو</span>
+        </div>
+      </div>
+    </div>
+    <span class="material-symbols-outlined text-outline text-lg">chevron_left</span>
+  </div>
+</section>
+
+<!-- About Us & Contact Section -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40 space-y-3.5">
+  <div class="flex items-center gap-2 pb-2 border-b border-outline-variant/30">
+    <div class="p-1.5 rounded-lg bg-surface-container text-primary">
+      <span class="material-symbols-outlined text-lg">info</span>
+    </div>
+    <div>
+      <h3 class="text-title-md font-title-md text-on-surface">درباره درمسیر و ارتباط با ما</h3>
+      <p class="text-label-sm font-label-sm text-on-surface-variant">کانال‌های ارتباط مستقیم و معرفی سامانه</p>
+    </div>
+  </div>
+
+  <!-- About description -->
+  <div class="p-3 bg-surface-container-low rounded-xl text-body-sm text-on-surface-variant leading-relaxed">
+    <span class="font-semibold text-on-surface block mb-1">درباره سامانه جامع درمسیر:</span>
+    دستیار هوشمند سفر شهری و ناوگان مترو و BRT با مشارکت تخصصی متخصصین ناوبری، با هدف تسهیل سفرهای درون‌شهری پایدار و بهینه در کلان‌شهرها.
+  </div>
+
+  <!-- Direct Phone Contact CTA -->
+  <div class="p-3 bg-surface-container-low rounded-xl flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <span class="material-symbols-outlined text-primary text-xl">phone_in_talk</span>
+      <div>
+        <span class="text-label-md font-semibold text-on-surface block">تماس تلفنی با پشتیبانی ۲۴ ساعته</span>
+        <span class="text-label-sm text-on-surface-variant font-mono mt-0.5 block" dir="ltr">۰۲۱-۹۱۰۰۴۸۲۰</span>
+      </div>
+    </div>
+    <a href="tel:02191004820" class="flex items-center gap-1 text-label-sm font-label-sm bg-primary text-on-primary px-3 py-1.5 rounded-xl hover:bg-primary-container active:scale-95 transition-all shadow-sm">
+      <span class="material-symbols-outlined text-sm">call</span>
+      <span>تماس</span>
+    </a>
+  </div>
+
+  <!-- Website & Email info -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-surface-container-low/70 text-label-sm text-on-surface-variant">
+    <div class="flex items-center gap-1.5">
+      <span class="material-symbols-outlined text-base text-primary">mail</span>
+      <span>ایمیل:</span>
+      <a href="mailto:support@darmasir.ir" class="font-mono text-primary font-medium hover:underline" dir="ltr">support@darmasir.ir</a>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="material-symbols-outlined text-base text-primary">language</span>
+      <span>وب‌سایت:</span>
+      <a href="https://darmasir.ir" target="_blank" class="font-mono text-primary font-medium hover:underline" dir="ltr">darmasir.ir</a>
+    </div>
+  </div>
+</section><section class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/30 space-y-3 text-center sm:text-right">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-2">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-primary-container text-white flex items-center justify-center text-xs font-bold">
+            د
+          </div>
+<span class="text-label-lg font-label-lg text-on-surface font-semibold">اپلیکیشن درمسیر - نسخه ۲.۵.۰</span>
+</div>
+<span class="text-label-sm font-label-sm bg-surface-container-highest px-2.5 py-0.5 rounded-full text-on-surface-variant">
+          موتور مسیریابی هوشمند + Fused Loc
+        </span>
+</div>
+<!-- Privacy Guarantee Callout -->
+<div class="p-3 bg-surface-container-lowest rounded-xl border border-outline-variant/40 flex items-start gap-2.5 text-right">
+<span class="material-symbols-outlined text-tertiary-container text-lg mt-0.5 flex-shrink-0">shield_lock</span>
+<p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+<strong class="text-on-surface font-semibold">تضمین محرمانگی:</strong> داده‌های مکانی و مختصات GPS شما تنها برای مسیریابی بلادرنگ روی پردازنده دستگاه محاسبه شده و در هیچ سروری ذخیره نمی‌گردند.
+        </p>
+</div>
+<div class="flex items-center justify-center gap-4 text-label-sm font-label-sm text-primary pt-1">
+<a class="hover:underline flex items-center gap-1" href="#support">
+<span class="material-symbols-outlined text-xs">support_agent</span>
+<span>پشتیبانی ۲۴ ساعته مسافر</span>
+</a>
+<span>•</span>
+<a class="hover:underline" href="#terms">قوانین و حریم خصوصی</a>
+</div>
+</section>
+</main>
+<!-- =========================================================================
+       7. OFFICIAL DOCKED 5-TAB NAVIGATION BAR (DERMASIR DESIGN SYSTEM)
+       Exact 5-destination shell: Home, Map, Route, Bookmarks, Account (Active)
+       ========================================================================= -->
+<nav aria-label="ناوبری اصلی برنامه" class="fixed bottom-0 left-0 w-full h-20 z-50 bg-surface-container-lowest/95 backdrop-blur-md shadow-lg border-t border-outline-variant/30 flex justify-around items-center px-space-md rtl:flex-row-reverse">
+<!-- Tab 5: حساب من (ACTIVE DESTINATION) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-white rounded-full px-4 py-1.5 shadow-sm active:scale-95 transition-all" href="#profile">
+<span class="material-symbols-outlined material-symbols-filled text-xl">person</span>
+<span class="text-label-sm font-label-sm font-bold mt-0.5">حساب من</span>
+</a>
+<!-- Tab 4: ذخیره‌ها -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 active:scale-95 transition-all" href="#bookmarks">
+<span class="material-symbols-outlined text-xl">bookmark</span>
+<span class="text-label-sm font-label-sm mt-0.5">ذخیره‌ها</span>
+</a>
+<!-- Tab 3: مسیریابی -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 active:scale-95 transition-all" href="#planner">
+<span class="material-symbols-outlined text-xl">route</span>
+<span class="text-label-sm font-label-sm mt-0.5">مسیریابی</span>
+</a>
+<!-- Tab 2: نقشه -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 active:scale-95 transition-all" href="#map">
+<span class="material-symbols-outlined text-xl">map</span>
+<span class="text-label-sm font-label-sm mt-0.5">نقشه</span>
+</a>
+<!-- Tab 1: خانه -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 active:scale-95 transition-all" href="#home">
+<span class="material-symbols-outlined text-xl">home</span>
+<span class="text-label-sm font-label-sm mt-0.5">خانه</span>
+</a>
+</nav>
+<!-- Lightweight Inline Interaction Script for GPS Refresh Demo -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const refreshBtn = document.getElementById('gpsRefreshBtn');
+      const refreshIcon = document.getElementById('refreshIcon');
+
+      if (refreshBtn && refreshIcon) {
+        refreshBtn.addEventListener('click', () => {
+          refreshIcon.classList.add('rotate-180');
+          refreshBtn.classList.add('opacity-75');
+          
+          setTimeout(() => {
+            refreshIcon.classList.remove('rotate-180');
+            refreshBtn.classList.remove('opacity-75');
+          }, 600);
+        });
+      }
+    });
+  </script>
+
+
+</body></html>
