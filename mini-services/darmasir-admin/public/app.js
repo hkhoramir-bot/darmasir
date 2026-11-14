@@ -99,18 +99,51 @@ const PLACE_LABEL = { home: "خانه", map: "نقشه", plan: "مسیریابی
 
 const can = (role) => me && ({ viewer: 1, operator: 2, super: 3 }[me.role] ?? 0) >= ({ viewer: 1, operator: 2, super: 3 }[role] ?? 9);
 
+/* ---------------- اجزای مشترک طراحی مترویار ---------------- */
+
+function pageHead(title, desc, actionsHtml = "") {
+  return `
+  <div class="page-head">
+    <div class="page-head-txt">
+      <div class="page-head-row">
+        <h1>${esc(title)}</h1>
+        <span class="chip-live"><span class="dot-live"></span>سامانه فعال و همگام با کلاینت</span>
+      </div>
+      ${desc ? `<p>${esc(desc)}</p>` : ""}
+    </div>
+    ${actionsHtml ? `<div class="page-head-actions">${actionsHtml}</div>` : ""}
+  </div>`;
+}
+
+function kpi(label, icon, num, sub, tone = "t-primary") {
+  return `
+  <div class="card kpi">
+    <div class="kpi-top"><span class="kpi-lbl">${esc(label)}</span><div class="kpi-icon ${tone}"><span class="material">${icon}</span></div></div>
+    <div class="kpi-num">${Number(num || 0).toLocaleString("fa-IR")}</div>
+    <div class="kpi-sub"><span class="material">trending_up</span><span>${esc(sub)}</span></div>
+  </div>`;
+}
+
+function filterTables(q) {
+  document.querySelectorAll("table.tbl tbody").forEach((tb) => {
+    tb.querySelectorAll("tr").forEach((tr) => {
+      tr.style.display = !q || tr.textContent.includes(q) ? "" : "none";
+    });
+  });
+}
+
 /* ---------------- مسیریابی ---------------- */
 
 const PAGES = [
-  { id: "dashboard", title: "داشبورد", icon: "▦" },
-  { id: "users", title: "کاربران", icon: "☰" },
-  { id: "lines", title: "خطوط", icon: "≈" },
-  { id: "stations", title: "ایستگاه‌ها", icon: "◉" },
-  { id: "ads", title: "تبلیغات", icon: "▣" },
-  { id: "voice", title: "دستیار صوتی", icon: "♪" },
-  { id: "settings", title: "تنظیمات عمومی", icon: "⚙", super: true },
-  { id: "reports", title: "گزارش‌ها", icon: "▤" },
-  { id: "security", title: "امنیت", icon: "⛨", super: true },
+  { id: "dashboard", title: "داشبورد مدیریتی", icon: "dashboard" },
+  { id: "users", title: "کاربران", icon: "group" },
+  { id: "lines", title: "خطوط", icon: "alt_route" },
+  { id: "stations", title: "ایستگاه‌ها", icon: "location_on" },
+  { id: "ads", title: "تبلیغات و بنرها", icon: "campaign" },
+  { id: "voice", title: "دستیار صوتی", icon: "record_voice_over" },
+  { id: "settings", title: "تنظیمات سامانه", icon: "settings", super: true },
+  { id: "reports", title: "گزارش‌ها و تحلیل داده", icon: "monitoring" },
+  { id: "security", title: "امنیت و وقایع‌نگاری", icon: "security", super: true },
 ];
 
 function currentPage() {
@@ -152,21 +185,26 @@ function render() {
     back.className = "sidebar-back";
     document.body.appendChild(back);
   }
+  const ts = document.getElementById("top-search");
+  if (ts) {
+    ts.oninput = () => filterTables(ts.value.trim());
+  }
   renderPage(cur.id);
+  if (ts && ts.value.trim()) filterTables(ts.value.trim());
 }
 
 function loginView() {
   return `
   <div class="login-wrap">
     <div class="login-card">
-      <div class="login-logo">د</div>
+      <div class="login-logo"><span class="material fill">subway</span></div>
       <h1>پنل مدیریت درمسیر</h1>
       <p class="sub">دستیار هوشمند سفر شهری — ورود مدیران</p>
       <div class="login-err" id="login-err"></div>
       <form id="login-form">
         <div class="field"><label for="u">نام کاربری</label><input id="u" name="username" autocomplete="username" required placeholder="admin" /></div>
         <div class="field"><label for="p">گذرواژه</label><input id="p" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" /></div>
-        <button class="btn btn-primary" style="width:100%; min-height:44px" type="submit">ورود به پنل</button>
+        <button class="btn btn-primary" style="width:100%; min-height:44px" type="submit"><span class="material">login</span><span>ورود به پنل</span></button>
       </form>
     </div>
   </div>`;
@@ -202,29 +240,41 @@ function bindLogin() {
 
 function layout(cur) {
   const nav = PAGES.filter((p) => !p.super || me.role === "super")
-    .map((p) => `<a href="#/${p.id}" class="${p.id === cur.id ? "active" : ""}"><span class="material">${p.icon}</span>${p.title}</a>`)
+    .map((p) => `<a href="#/${p.id}" class="${p.id === cur.id ? "active" : ""}"><span class="material ${p.id === cur.id ? "fill" : ""}">${p.icon}</span><span class="nav-lbl">${p.title}</span>${p.id === cur.id ? '<span class="nav-live"></span>' : ""}</a>`)
     .join("");
   return `
   <div class="layout">
     <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="brand-logo">د</div>
-        <div><b>درمسیر</b><span>پنل مدیریت نسخه ۱.۰</span></div>
+      <div class="side-scroll">
+        <div class="brand">
+          <div class="brand-logo"><span class="material fill">subway</span></div>
+          <div class="brand-txt">
+            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۴</span></div>
+            <span class="brand-sub">پنل مدیریت سامانه ناوبری شهری</span>
+          </div>
+        </div>
+        <nav class="nav" aria-label="ناوبری پنل">${nav}</nav>
       </div>
-      <nav class="nav" aria-label="ناوبری پنل">${nav}</nav>
-      <div class="me-box">
-        <div class="avatar">${esc((me.display_name || "?").slice(0, 1))}</div>
-        <div class="who"><b>${esc(me.display_name)}</b><span>${ROLE_LABEL[me.role] || me.role}</span></div>
-        <button class="logout" id="logout-btn" title="خروج">⏻</button>
+      <div class="side-foot">
+        <div class="side-meta"><span class="material">database</span><span>پایگاه داده محلی فعال — بدون وابستگی خارجی</span></div>
+        <button class="logout-btn" id="logout-btn"><span class="material">logout</span><span>خروج از حساب</span></button>
       </div>
     </aside>
     <div class="main">
       <header class="topbar">
-        <button class="burger" id="burger" aria-label="منو">≡</button>
-        <h2>${cur.title}</h2>
-        <span class="badge ok">${ROLE_LABEL[me.role] || me.role}</span>
+        <button class="burger" id="burger" aria-label="منو"><span class="material">menu</span></button>
+        <div class="top-search">
+          <span class="material">search</span>
+          <input id="top-search" type="search" placeholder="جستجو در جدول‌های این صفحه…" aria-label="جستجو در صفحه" />
+        </div>
+        <div class="db-chip"><span class="pulse"></span><span>اتصال پایگاه داده فعال</span></div>
+        <span class="top-divider"></span>
+        <div class="me-box">
+          <div class="who"><b>${esc(me.display_name)}</b><span>${ROLE_LABEL[me.role] || me.role} — ${esc(me.username || "")}</span></div>
+          <div class="avatar">${esc((me.display_name || "?").slice(0, 1))}</div>
+        </div>
       </header>
-      <main class="content" id="page-content"><div class="empty">در حال بارگذاری…</div></main>
+      <main class="content" id="page-content"><div class="empty"><span class="material">hourglass_empty</span>در حال بارگذاری…</div></main>
     </div>
   </div>`;
 }
@@ -252,27 +302,28 @@ async function pageDashboard(host) {
   const d = await api("dashboard");
   const maxApi = Math.max(...d.api_last7.map((x) => x.count), 1);
   host.innerHTML = `
-    <div class="grid cols-4">
-      <div class="card stat"><span class="num">${d.users_total.toLocaleString("fa-IR")}</span><span class="lbl">کل کاربران</span></div>
-      <div class="card stat"><span class="num">${d.users_active.toLocaleString("fa-IR")}</span><span class="lbl">کاربران فعال</span></div>
-      <div class="card stat"><span class="num">${d.trips_total.toLocaleString("fa-IR")}</span><span class="lbl">سفرهای ثبت‌شده</span></div>
-      <div class="card stat"><span class="num">${d.ads_active.toLocaleString("fa-IR")}</span><span class="lbl">تبلیغ فعال</span></div>
+    ${pageHead("داشبورد مدیریتی", "نمای کلی آمار کاربران، سفرها، تبلیغات و وضعیت سرویس‌های درمسیر")}
+    <div class="kpi-grid">
+      ${kpi("کل کاربران", "group", d.users_total, "کاربر ثبت‌شده در سامانه", "t-primary")}
+      ${kpi("کاربران فعال", "trending_up", d.users_active, "کاربر با نشست اخیر", "t-tertiary")}
+      ${kpi("سفرهای ثبت‌شده", "route", d.trips_total, "از ابتدا تا امروز", "t-surface")}
+      ${kpi("تبلیغ فعال", "campaign", d.ads_active, "کمپین در حال نمایش", "t-dim")}
     </div>
-    <div class="grid cols-3" style="margin-top:14px">
-      <div class="card stat"><span class="num">${d.lines_active.toLocaleString("fa-IR")}</span><span class="lbl">خط فعال</span></div>
-      <div class="card stat"><span class="num">${d.stations_total.toLocaleString("fa-IR")}</span><span class="lbl">ایستگاه</span></div>
+    <div class="kpi-grid kpi-grid-3">
+      ${kpi("خط فعال", "alt_route", d.lines_active, "خط در حال سرویس‌دهی", "t-primary")}
+      ${kpi("ایستگاه", "location_on", d.stations_total, "ایستگاه ثبت‌شده در پایگاه داده", "t-surface")}
       <div class="card">
-        <h3>وضعیت سرویس‌ها</h3>
+        <h3><span class="material" style="color:var(--primary)">dns</span>وضعیت سرویس‌ها</h3>
         ${d.services.map((s) => `
-          <div style="display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f5f5f4">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid rgba(194,198,211,.35)">
             <div><b style="font-size:13px">${esc(s.name)}</b><div style="font-size:11px;color:var(--ink-3)">${esc(s.note || "")}</div></div>
             <span class="badge ${s.status === "ok" ? "ok" : "off"}">${s.status === "ok" ? "برقرار" : "غیرفعال"}</span>
           </div>`).join("")}
       </div>
     </div>
-    <div class="grid cols-2" style="margin-top:14px">
+    <div class="grid cols-2">
       <div class="card">
-        <h3>درخواست‌های API — ۷ روز اخیر</h3>
+        <h3><span class="material" style="color:var(--primary)">monitoring</span>درخواست‌های API — ۷ روز اخیر</h3>
         <div class="bars">
           ${d.api_last7.map((x) => `
             <div class="bar-col">
@@ -283,14 +334,14 @@ async function pageDashboard(host) {
         </div>
       </div>
       <div class="card">
-        <h3>آخرین فعالیت مدیران</h3>
+        <h3><span class="material" style="color:var(--primary)">history</span>آخرین فعالیت مدیران</h3>
         <div class="feed">
           ${d.audit_recent.length ? d.audit_recent.map((a) => `
             <div class="feed-item">
               <span class="fi-dot"></span>
               <div class="fi-body"><b>${esc(actionLabel(a.action))}</b><p>${esc(a.admin_name)}${a.details ? " — " + esc(a.details) : ""}</p></div>
               <span class="fi-time">${faTime(a.created_at)}</span>
-            </div>`).join("") : `<div class="empty"><span class="material">▤</span>فعالیتی ثبت نشده است</div>`}
+            </div>`).join("") : `<div class="empty"><span class="material">inbox</span>فعالیتی ثبت نشده است</div>`}
         </div>
       </div>
     </div>`;
@@ -313,6 +364,8 @@ function actionLabel(a) {
 async function pageUsers(host) {
   const writable = can("operator");
   host.innerHTML = `
+    ${pageHead("کاربران", "مشاهده و مدیریت حساب‌های مسافران، وضعیت و محدودیت‌های دسترسی.",
+      writable ? `<button class="btn btn-primary" id="u-add"><span class="material">add</span><span>کاربر جدید</span></button>` : "")}
     <div class="toolbar">
       <input id="u-q" placeholder="جست‌وجوی نام یا شماره…" style="min-width:220px" />
       <select id="u-status">
@@ -321,8 +374,6 @@ async function pageUsers(host) {
         <option value="limited">محدود</option>
         <option value="disabled">غیرفعال</option>
       </select>
-      <div class="spacer"></div>
-      ${writable ? `<button class="btn btn-primary" id="u-add">+ کاربر جدید</button>` : ""}
     </div>
     <div id="u-table"></div>`;
   const load = async () => {
@@ -343,13 +394,13 @@ async function pageUsers(host) {
               <td>${faTime(u.created_at)}</td>
               <td>${faTime(u.last_seen)}</td>
               ${writable ? `<td><div class="acts">
-                <button class="btn btn-sm" data-edit="${u.id}">ویرایش</button>
-                <button class="btn btn-sm btn-danger" data-del="${u.id}" data-name="${esc(u.display_name)}">حذف</button>
+                <button class="icon-btn" data-edit="${u.id}" title="ویرایش کاربر"><span class="material">edit</span></button>
+                <button class="icon-btn danger" data-del="${u.id}" data-name="${esc(u.display_name)}" title="حذف کاربر"><span class="material">delete</span></button>
               </div></td>` : ""}
             </tr>`;
           }).join("")}
         </tbody>
-      </table></div>` : `<div class="card"><div class="empty"><span class="material">☰</span>کاربری یافت نشد</div></div>`;
+      </table></div>` : `<div class="card"><div class="empty"><span class="material">group_off</span>کاربری یافت نشد</div></div>`;
     if (writable) {
       document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openUserForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
       document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
@@ -400,14 +451,14 @@ async function pageLines(host) {
   const writable = can("operator");
   let mode = "metro";
   host.innerHTML = `
+    ${pageHead("خطوط", "مدیریت خطوط مترو، اتوبوس و اتوبوس تندرو؛ مشاهده و اصلاح داده‌های حمل‌ونقل.",
+      writable ? `<button class="btn btn-primary" id="l-add"><span class="material">add</span><span>خط جدید</span></button>` : "")}
     <div class="toolbar">
       <select id="l-mode">
         <option value="metro">مترو</option>
         <option value="bus">اتوبوس</option>
         <option value="brt">اتوبوس تندرو</option>
       </select>
-      <div class="spacer"></div>
-      ${writable ? `<button class="btn btn-primary" id="l-add">+ خط جدید</button>` : ""}
     </div>
     <div id="l-table"></div>`;
   const load = async () => {
@@ -425,12 +476,12 @@ async function pageLines(host) {
               <td>${esc(l.direction || "—")}</td>
               <td><span class="badge ${l.is_active ? "ok" : "off"}">${l.is_active ? "فعال" : "غیرفعال"}</span></td>
               ${writable ? `<td><div class="acts">
-                <button class="btn btn-sm" data-edit="${l.id}">ویرایش</button>
-                <button class="btn btn-sm btn-danger" data-del="${l.id}" data-name="${esc(l.name)}">حذف</button>
+                <button class="icon-btn" data-edit="${l.id}" title="ویرایش خط"><span class="material">edit</span></button>
+                <button class="icon-btn danger" data-del="${l.id}" data-name="${esc(l.name)}" title="حذف خط"><span class="material">delete</span></button>
               </div></td>` : ""}
             </tr>`).join("")}
         </tbody>
-      </table></div>` : `<div class="card"><div class="empty"><span class="material">≈</span>خطی در این دسته ثبت نشده است</div></div>`;
+      </table></div>` : `<div class="card"><div class="empty"><span class="material">alt_route</span>خطی در این دسته ثبت نشده است</div></div>`;
     if (writable) {
       document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openLineForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
       document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
@@ -490,12 +541,12 @@ function openLineForm(line, after) {
 async function pageStations(host) {
   const writable = can("operator");
   const lines = await api("lines");
-  if (!lines.length) { host.innerHTML = `<div class="card"><div class="empty"><span class="material">◉</span>ابتدا یک خط ثبت کنید</div></div>`; return; }
+  if (!lines.length) { host.innerHTML = `${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط و مختصات جغرافیایی.")}<div class="card"><div class="empty"><span class="material">location_off</span>ابتدا یک خط ثبت کنید</div></div>`; return; }
   host.innerHTML = `
+    ${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط و مختصات جغرافیایی.",
+      writable ? `<button class="btn btn-primary" id="s-add"><span class="material">add</span><span>ایستگاه جدید</span></button>` : "")}
     <div class="toolbar">
       <select id="s-line">${lines.map((l) => `<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select>
-      <div class="spacer"></div>
-      ${writable ? `<button class="btn btn-primary" id="s-add">+ ایستگاه جدید</button>` : ""}
     </div>
     <div id="s-table"></div>`;
   const load = async () => {
@@ -513,12 +564,12 @@ async function pageStations(host) {
               <td>${s.lng ?? "—"}</td>
               <td><span class="badge ${s.is_active ? "ok" : "off"}">${s.is_active ? "فعال" : "غیرفعال"}</span></td>
               ${writable ? `<td><div class="acts">
-                <button class="btn btn-sm" data-edit="${s.id}">ویرایش</button>
-                <button class="btn btn-sm btn-danger" data-del="${s.id}" data-name="${esc(s.name)}">حذف</button>
+                <button class="icon-btn" data-edit="${s.id}" title="ویرایش ایستگاه"><span class="material">edit</span></button>
+                <button class="icon-btn danger" data-del="${s.id}" data-name="${esc(s.name)}" title="حذف ایستگاه"><span class="material">delete</span></button>
               </div></td>` : ""}
             </tr>`).join("")}
         </tbody>
-      </table></div>` : `<div class="card"><div class="empty"><span class="material">◉</span>برای این خط ایستگاهی ثبت نشده است</div></div>`;
+      </table></div>` : `<div class="card"><div class="empty"><span class="material">location_off</span>برای این خط ایستگاهی ثبت نشده است</div></div>`;
     if (writable) {
       document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openStationForm(lineId, rows.find((x) => x.id === Number(b.dataset.edit)))));
       document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
@@ -570,52 +621,109 @@ function openStationForm(lineId, station, after) {
 async function pageAds(host) {
   const writable = can("operator");
   const rows = await api("ads");
+  const isLive = (a) => a.is_active && (!a.ends_at || new Date(a.ends_at) > Date.now()) && (!a.starts_at || new Date(a.starts_at) <= Date.now());
+  const isScheduled = (a) => a.is_active && a.starts_at && new Date(a.starts_at) > Date.now();
+  const isExpired = (a) => !isLive(a) && !isScheduled(a);
+  const TABS = [
+    ["all", "همه کمپین‌ها", () => true],
+    ["live", "در حال نمایش", isLive],
+    ["scheduled", "زمان‌بندی‌شده", isScheduled],
+    ["expired", "منقضی / بایگانی", isExpired],
+  ];
+  let tab = "all";
+  const PLACE_ICON = { home: "view_carousel", map: "map", plan: "alt_route" };
+  const PLACE_CLASS = { home: "", map: "alt", plan: "warn2" };
   host.innerHTML = `
-    <div class="toolbar">
-      <span class="badge off">تبلیغ بدون انتشار نسخه جدید قابل خاموش‌کردن است</span>
-      <div class="spacer"></div>
-      ${writable ? `<button class="btn btn-primary" id="a-add">+ تبلیغ جدید</button>` : ""}
-    </div>
-    ${rows.length ? `
+    ${pageHead("تبلیغات و بنرها", "پیکربندی کمپین‌های درون‌برنامه‌ای و زمان‌بندی نمایش؛ خاموش‌کردن تبلیغ بدون انتشار نسخه جدید اپلیکیشن.",
+      writable ? `<button class="btn btn-primary" id="a-add"><span class="material">add</span><span>ایجاد کمپین / بنر جدید</span></button>` : "")}
+    <div class="tbl-card">
+      <div class="tabbar" id="a-tabs">
+        ${TABS.map(([id, lbl, fn]) => `<button class="tab ${id === tab ? "active" : ""}" data-tab="${id}">${lbl} (${rows.filter(fn).length.toLocaleString("fa-IR")})</button>`).join("")}
+      </div>
+      <div id="a-table"></div>
+      <div class="tbl-foot" id="a-foot"></div>
+    </div>`;
+  const renderTable = () => {
+    const fn = (TABS.find((t) => t[0] === tab) || TABS[0])[2];
+    const filtered = rows.filter(fn);
+    document.getElementById("a-table").innerHTML = filtered.length ? `
     <div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th>عنوان</th><th>محل</th><th>بازه</th><th>وضعیت</th><th>نمایش</th><th>کلیک</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+      <thead><tr><th>عنوان و تصویر بنر</th><th>جایگاه نمایش در اپ</th><th>بازه زمانی</th><th class="cell-center">وضعیت زنده</th><th>آمار کلیک / نمایش</th>${writable ? '<th class="cell-center">عملیات</th>' : ""}</tr></thead>
       <tbody>
-        ${rows.map((a) => {
-          const live = a.is_active && (!a.ends_at || new Date(a.ends_at) > new Date()) && (!a.starts_at || new Date(a.starts_at) <= new Date());
+        ${filtered.map((a) => {
+          const live = isLive(a);
+          const ctr = a.impressions ? (a.clicks / a.impressions) * 100 : 0;
+          const fill = Math.min(Math.max(ctr * 20, 4), 100);
           return `<tr>
-            <td><b>${esc(a.title)}</b>${a.link_url ? `<div style="font-size:11px;color:var(--ink-3);direction:ltr;text-align:right">${esc(a.link_url).slice(0, 40)}</div>` : ""}</td>
-            <td>${PLACE_LABEL[a.placement] || a.placement}</td>
-            <td style="font-size:11.5px">${a.starts_at ? faTime(a.starts_at) : "—"} تا ${a.ends_at ? faTime(a.ends_at) : "—"}</td>
-            <td><span class="badge ${live ? "ok" : "off"}">${live ? "در حال نمایش" : "خاموش"}</span></td>
-            <td>${Number(a.impressions || 0).toLocaleString("fa-IR")}</td>
-            <td>${Number(a.clicks || 0).toLocaleString("fa-IR")}</td>
-            ${writable ? `<td><div class="acts">
-              <button class="btn btn-sm" data-imp="${a.id}" title="ثبت نمایش آزمایشی">+نمایش</button>
-              <button class="btn btn-sm" data-clk="${a.id}" title="ثبت کلیک آزمایشی">+کلیک</button>
-              <button class="btn btn-sm" data-edit="${a.id}">ویرایش</button>
-              <button class="btn btn-sm btn-danger" data-del="${a.id}" data-name="${esc(a.title)}">حذف</button>
+            <td>
+              <div class="cell-media">
+                ${a.image_url ? `<img class="thumb" src="${esc(a.image_url)}" alt="تصویر بنر ${esc(a.title)}" onerror="this.style.display='none'" />` : `<div class="thumb thumb-empty"><span class="material">campaign</span></div>`}
+                <div>
+                  <b>${esc(a.title)}</b>
+                  <span class="cell-sub">شناسه: #AD-${String(a.id).padStart(4, "0")}</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="placement-chip ${PLACE_CLASS[a.placement] || ""}"><span class="material">${PLACE_ICON[a.placement] || "info"}</span>${PLACE_LABEL[a.placement] || a.placement}</span></td>
+            <td class="cell-range">
+              <span>${a.starts_at ? faTime(a.starts_at) : "بدون شروع"}</span>
+              <span class="m-live" style="display:block">تا ${a.ends_at ? faTime(a.ends_at) : "پایان نامحدود"}</span>
+            </td>
+            <td class="cell-center">
+              ${writable ? `<label class="switch"><input type="checkbox" data-toggle="${a.id}" ${a.is_active ? "checked" : ""} aria-label="وضعیت ${esc(a.title)}" /><span class="knob"></span></label>` : `<span class="badge ${live ? "ok" : "off"}">${live ? "در حال نمایش" : "خاموش"}</span>`}
+            </td>
+            <td>
+              <div class="cell-meter">
+                <div class="meter-row"><span class="m-imp">${Number(a.impressions || 0).toLocaleString("fa-IR")} نمایش</span><span class="m-ctr">${Number(a.clicks || 0).toLocaleString("fa-IR")} کلیک (${ctr.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪)</span></div>
+                <div class="meter"><div class="meter-fill ${ctr >= 4 ? "good" : ctr < 1 ? "low" : ""}" style="width:${fill}%"></div></div>
+              </div>
+            </td>
+            ${writable ? `<td class="cell-center"><div class="acts" style="justify-content:center">
+              <button class="icon-btn" data-imp="${a.id}" title="ثبت نمایش آزمایشی"><span class="material">visibility</span></button>
+              <button class="icon-btn" data-clk="${a.id}" title="ثبت کلیک آزمایشی"><span class="material">ads_click</span></button>
+              <button class="icon-btn" data-edit="${a.id}" title="ویرایش بنر"><span class="material">edit</span></button>
+              <button class="icon-btn danger" data-del="${a.id}" data-name="${esc(a.title)}" title="حذف بنر"><span class="material">delete</span></button>
             </div></td>` : ""}
           </tr>`;
         }).join("")}
       </tbody>
-    </table></div>` : `<div class="card"><div class="empty"><span class="material">▣</span>تبلیغی ثبت نشده است</div></div>` }`;
-  if (writable) {
-    document.getElementById("a-add")?.addEventListener("click", () => openAdForm(null));
-    document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openAdForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
-    document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
-      confirmDialog(`تبلیغ «${b.dataset.name}» حذف شود؟`, async () => {
-        await api(`ads/${b.dataset.del}`, { method: "DELETE" });
-        toast("تبلیغ حذف شد", "ok2"); renderPage("ads");
-      })));
-    document.querySelectorAll("[data-imp]").forEach((b) => (b.onclick = async () => {
-      await api(`ads/${b.dataset.imp}/track`, { method: "POST", body: { type: "impression" } });
-      toast("نمایش ثبت شد", "ok2"); renderPage("ads");
-    }));
-    document.querySelectorAll("[data-clk]").forEach((b) => (b.onclick = async () => {
-      await api(`ads/${b.dataset.clk}/track`, { method: "POST", body: { type: "click" } });
-      toast("کلیک ثبت شد", "ok2"); renderPage("ads");
-    }));
-  }
+    </table></div>` : `<div class="empty"><span class="material">campaign</span>در این دسته کمپینی ثبت نشده است</div>`;
+    document.getElementById("a-foot").textContent = `نمایش ${filtered.length.toLocaleString("fa-IR")} از مجموع ${rows.length.toLocaleString("fa-IR")} کمپین ثبت‌شده در پایگاه داده`;
+    if (writable) {
+      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openAdForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+        confirmDialog(`تبلیغ «${b.dataset.name}» حذف شود؟`, async () => {
+          await api(`ads/${b.dataset.del}`, { method: "DELETE" });
+          toast("تبلیغ حذف شد", "ok2"); renderPage("ads");
+        })));
+      document.querySelectorAll("[data-imp]").forEach((b) => (b.onclick = async () => {
+        await api(`ads/${b.dataset.imp}/track`, { method: "POST", body: { type: "impression" } });
+        toast("نمایش ثبت شد", "ok2"); renderPage("ads");
+      }));
+      document.querySelectorAll("[data-clk]").forEach((b) => (b.onclick = async () => {
+        await api(`ads/${b.dataset.clk}/track`, { method: "POST", body: { type: "click" } });
+        toast("کلیک ثبت شد", "ok2"); renderPage("ads");
+      }));
+      document.querySelectorAll("[data-toggle]").forEach((el) => (el.onchange = async () => {
+        const ad = rows.find((x) => x.id === Number(el.dataset.toggle));
+        try {
+          await api(`ads/${el.dataset.toggle}`, { method: "PUT", body: { is_active: el.checked ? 1 : 0 } });
+          toast(el.checked ? "تبلیغ فعال شد" : "تبلیغ خاموش شد", "ok2");
+        } catch (ex) {
+          toast(ex.message, "err");
+        }
+        if (ad) ad.is_active = el.checked ? 1 : 0;
+        renderTable();
+      }));
+    }
+  };
+  document.getElementById("a-tabs").querySelectorAll(".tab").forEach((b) => (b.onclick = () => {
+    tab = b.dataset.tab;
+    document.querySelectorAll("#a-tabs .tab").forEach((x) => x.classList.toggle("active", x === b));
+    renderTable();
+  }));
+  if (writable) document.getElementById("a-add").onclick = () => openAdForm(null);
+  renderTable();
 }
 
 function openAdForm(ad) {
@@ -664,9 +772,10 @@ async function pageVoice(host) {
   const writable = can("operator");
   const [lex, settings] = await Promise.all([api("voice-lexicon"), api("settings")]);
   host.innerHTML = `
+    ${pageHead("دستیار صوتی", "تنظیم متن‌های ثابت، فرهنگ تلفظ و تنظیمات مجاز سرویس صوتی.")}
     <div class="grid cols-2">
       <div class="card">
-        <h3>تنظیمات سرویس صوتی</h3>
+        <h3><span class="material" style="color:var(--primary)">record_voice_over</span>تنظیمات سرویس صوتی</h3>
         <div class="field"><label>سرویس پردازش صوت</label>
           <select id="v-service" ${me.role !== "super" ? "disabled" : ""}>
             <option value="cloudflare-worker" ${settings.voice_service?.value === "cloudflare-worker" ? "selected" : ""}>Cloudflare Worker (فعلی)</option>
@@ -682,7 +791,7 @@ async function pageVoice(host) {
         <p class="card-sub">فرمان‌های ثابت («شروع سفر»، «توقف»، «تکرار») بدون فراخوانی مدل زبانی پردازش می‌شوند.</p>
       </div>
       <div class="card">
-        <h3>فرهنگ تلفظ</h3>
+        <h3><span class="material" style="color:var(--primary)">translate</span>فرهنگ تلفظ</h3>
         <p class="card-sub" style="margin-top:0">نگاشت گفتار به نوشتار — برای تشخیص صحیح نام ایستگاه‌ها و مکان‌ها</p>
         <div id="v-lex"></div>
       </div>
@@ -694,10 +803,10 @@ async function pageVoice(host) {
         <tbody>${rows.map((l) => `
           <tr><td>${esc(l.spoken)}</td><td>${esc(l.written)}</td><td>${l.priority}</td>
           ${writable ? `<td><div class="acts">
-            <button class="btn btn-sm" data-edit="${l.id}">ویرایش</button>
-            <button class="btn btn-sm btn-danger" data-del="${l.id}">حذف</button>
+            <button class="icon-btn" data-edit="${l.id}" title="ویرایش مدخل"><span class="material">edit</span></button>
+            <button class="icon-btn danger" data-del="${l.id}" title="حذف مدخل"><span class="material">delete</span></button>
           </div></td>` : ""}</tr>`).join("")}</tbody>
-      </table></div>` : `<div class="empty"><span class="material">♪</span>مدخلی ثبت نشده است</div>`;
+      </table></div>` : `<div class="empty"><span class="material">record_voice_over</span>مدخلی ثبت نشده است</div>`;
     if (writable) {
       document.querySelectorAll("#v-lex [data-edit]").forEach((b) => (b.onclick = () => openLexForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
       document.querySelectorAll("#v-lex [data-del]").forEach((b) => (b.onclick = () =>
@@ -751,16 +860,17 @@ async function pageSettings(host) {
     <div class="field"><label>${label}</label>
       <input id="st-${key}" value="${esc(s[key]?.value || "")}" ${readOnly ? "disabled" : ""} ${type === "number" ? 'type="number"' : ""} /></div>`;
   host.innerHTML = `
+    ${pageHead("تنظیمات سامانه", "نام، لوگو، پیام‌ها، نسخه و تنظیمات عمومی برنامه — فقط برای مدیر کل.")}
     <div class="grid cols-2">
       <div class="card">
-        <h3>هویت برنامه</h3>
+        <h3><span class="material" style="color:var(--primary)">app_shortcut</span>هویت برنامه</h3>
         ${F("app_name", "نام برنامه")}
         ${F("app_version", "نسخه فعلی")}
         ${F("welcome_message", "پیام خوش‌آمد")}
         ${F("support_message", "پیام پشتیبانی")}
       </div>
       <div class="card">
-        <h3>وضعیت عملیاتی</h3>
+        <h3><span class="material" style="color:var(--primary)">engineering</span>وضعیت عملیاتی</h3>
         <div class="field"><label>حالت نگهداری</label>
           <select id="st-maintenance_mode" ${readOnly ? "disabled" : ""}>
             <option value="off" ${s.maintenance_mode?.value !== "on" ? "selected" : ""}>خاموش (عادی)</option>
@@ -792,14 +902,15 @@ async function pageReports(host) {
   const maxApi = Math.max(...r.api_stats.map((x) => x.count), 1);
   const statsAsc = [...r.api_stats].reverse();
   host.innerHTML = `
-    <div class="grid cols-3">
-      <div class="card stat"><span class="num">${Number(r.active_sessions || 0).toLocaleString("fa-IR")}</span><span class="lbl">نشست فعال مدیران</span></div>
-      <div class="card stat"><span class="num">${r.api_stats.reduce((s, x) => s + x.count, 0).toLocaleString("fa-IR")}</span><span class="lbl">درخواست API — ۱۴ روز</span></div>
-      <div class="card stat"><span class="num">${r.changes.length.toLocaleString("fa-IR")}</span><span class="lbl">آخرین تغییرات داده</span></div>
+    ${pageHead("گزارش‌ها و تحلیل داده", "آمار استفاده، عملکرد API، عملکرد تبلیغات و تاریخچه تغییرات داده.")}
+    <div class="kpi-grid kpi-grid-3">
+      ${kpi("نشست فعال مدیران", "how_to_reg", r.active_sessions, "نشست جاری پنل", "t-primary")}
+      ${kpi("درخواست API — ۱۴ روز", "api", r.api_stats.reduce((s, x) => s + x.count, 0), "مجموع فراخوانی نسخه‌دار", "t-surface")}
+      ${kpi("آخرین تغییرات داده", "edit_note", r.changes.length, "رویداد ثبت‌شده در وقایع‌نگاری", "t-tertiary")}
     </div>
-    <div class="grid cols-2" style="margin-top:14px">
+    <div class="grid cols-2">
       <div class="card">
-        <h3>درخواست‌های API — ۱۴ روز اخیر</h3>
+        <h3><span class="material" style="color:var(--primary)">monitoring</span>درخواست‌های API — ۱۴ روز اخیر</h3>
         <div class="bars">
           ${statsAsc.map((x) => `
             <div class="bar-col">
@@ -810,7 +921,7 @@ async function pageReports(host) {
         </div>
       </div>
       <div class="card">
-        <h3>عملکرد تبلیغات</h3>
+        <h3><span class="material" style="color:var(--primary)">ads_click</span>عملکرد تبلیغات</h3>
         ${r.ads.length ? `<div class="tbl-wrap" style="max-height:200px"><table class="tbl">
           <thead><tr><th>عنوان</th><th>نمایش</th><th>کلیک</th><th>وضعیت</th></tr></thead>
           <tbody>${r.ads.map((a) => `<tr>
@@ -818,18 +929,18 @@ async function pageReports(host) {
             <td>${Number(a.impressions).toLocaleString("fa-IR")}</td>
             <td>${Number(a.clicks).toLocaleString("fa-IR")}</td>
             <td><span class="badge ${a.is_active ? "ok" : "off"}">${a.is_active ? "فعال" : "خاموش"}</span></td>
-          </tr>`).join("")}</tbody></table></div>` : `<div class="empty"><span class="material">▣</span>تبلیغی ثبت نشده است</div>`}
+          </tr>`).join("")}</tbody></table></div>` : `<div class="empty"><span class="material">campaign</span>تبلیغی ثبت نشده است</div>`}
       </div>
     </div>
-    <div class="card" style="margin-top:14px">
-      <h3>تاریخچه تغییرات داده</h3>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="material" style="color:var(--primary)">history</span>تاریخچه تغییرات داده</h3>
       <div class="feed">
         ${r.changes.length ? r.changes.map((c) => `
           <div class="feed-item">
-            <span class="fi-dot" style="background:${c.action === "delete" ? "var(--danger)" : c.action === "create" ? "var(--accent)" : "var(--warn)"}"></span>
+            <span class="fi-dot" style="background:${c.action === "delete" ? "var(--error)" : c.action === "create" ? "var(--tertiary-container)" : "var(--primary-fixed-dim)"}"></span>
             <div class="fi-body"><b>${entityLabel(c.entity)} — ${c.action === "create" ? "ایجاد" : c.action === "update" ? "ویرایش" : "حذف"}</b><p>${esc(c.admin_name)}${c.details ? " — " + esc(c.details) : ""}</p></div>
             <span class="fi-time">${faTime(c.created_at)}</span>
-          </div>`).join("") : `<div class="empty"><span class="material">▤</span>تغییری ثبت نشده است</div>`}
+          </div>`).join("") : `<div class="empty"><span class="material">inbox</span>تغییری ثبت نشده است</div>`}
       </div>
     </div>`;
 }
@@ -843,9 +954,10 @@ function entityLabel(e) {
 async function pageSecurity(host) {
   const s = await api("security");
   host.innerHTML = `
+    ${pageHead("امنیت و وقایع‌نگاری", "مدیران پنل، نقش‌ها، نشست‌های فعال و گزارش رویدادهای امنیتی.")}
     <div class="grid cols-2">
       <div class="card">
-        <h3>مدیران پنل</h3>
+        <h3><span class="material" style="color:var(--primary)">admin_panel_settings</span>مدیران پنل</h3>
         <div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" id="adm-add">+ مدیر جدید</button></div>
         <div class="tbl-wrap" style="max-height:300px"><table class="tbl">
           <thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>وضعیت</th><th>آخرین ورود</th><th></th></tr></thead>
@@ -857,28 +969,28 @@ async function pageSecurity(host) {
               <td><span class="badge ${a.is_active ? "ok" : "bad"}">${a.is_active ? "فعال" : "غیرفعال"}</span></td>
               <td>${faTime(a.last_login)}</td>
               <td><div class="acts">
-                <button class="btn btn-sm" data-edit="${a.id}">ویرایش</button>
-                ${a.id !== me.id ? `<button class="btn btn-sm btn-danger" data-del="${a.id}" data-name="${esc(a.username)}">حذف</button>` : ""}
+                <button class="icon-btn" data-edit="${a.id}" title="ویرایش مدیر"><span class="material">edit</span></button>
+                ${a.id !== me.id ? `<button class="icon-btn danger" data-del="${a.id}" data-name="${esc(a.username)}" title="حذف مدیر"><span class="material">delete</span></button>` : ""}
               </div></td>
             </tr>`).join("")}</tbody>
         </table></div>
       </div>
       <div class="card">
-        <h3>نشست‌های فعال</h3>
+        <h3><span class="material" style="color:var(--primary)">wifi_tethering</span>نشست‌های فعال</h3>
         <div class="tbl-wrap" style="max-height:150px"><table class="tbl">
           <thead><tr><th>مدیر</th><th>IP</th><th>ایجاد</th><th>انقضا</th></tr></thead>
           <tbody>${s.sessions.length ? s.sessions.map((x) => `
             <tr><td>${esc(x.display_name)}</td><td style="direction:ltr;text-align:right">${esc(x.ip || "—")}</td>
             <td>${faTime(x.created_at)}</td><td>${faTime(x.expires_at)}</td></tr>`).join("") : `<tr><td colspan="4" class="empty">نشستی فعال نیست</td></tr>`}</tbody>
         </table></div>
-        <h3 style="margin-top:16px">گزارش رویدادهای امنیتی (۱۰۰ مورد اخیر)</h3>
+        <h3 style="margin-top:16px"><span class="material" style="color:var(--primary)">security</span>گزارش رویدادهای امنیتی (۱۰۰ مورد اخیر)</h3>
         <div class="feed" style="max-height:260px">
           ${s.audit.length ? s.audit.map((a) => `
             <div class="feed-item">
-              <span class="fi-dot" style="background:${a.action === "login_failed" ? "var(--danger)" : "var(--accent)"}"></span>
+              <span class="fi-dot" style="background:${a.action === "login_failed" ? "var(--error)" : "var(--tertiary-container)"}"></span>
               <div class="fi-body"><b>${esc(actionLabel(a.action))}</b><p>${esc(a.admin_name)}${a.details ? " — " + esc(a.details) : ""} ${a.ip ? `(IP: ${esc(a.ip)})` : ""}</p></div>
               <span class="fi-time">${faTime(a.created_at)}</span>
-            </div>`).join("") : `<div class="empty"><span class="material">⛨</span>رویدادی ثبت نشده است</div>`}
+            </div>`).join("") : `<div class="empty"><span class="material">shield</span>رویدادی ثبت نشده است</div>`}
         </div>
       </div>
     </div>`;
