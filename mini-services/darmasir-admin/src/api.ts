@@ -2,7 +2,9 @@
    درمسیر — پنل مدیریت | مسیریاب API نسخه‌دار /api/v1
    استاندارد: ورودی معتبر، خطای استاندارد، نقش‌ها، لاگ عملیات
    ============================================================ */
-import { db, now, bumpApiStats, audit, changeLog } from "./db";
+import { db, now, bumpApiStats, audit, changeLog, UPLOAD_DIR } from "./db";
+import { join } from "node:path";
+import { existsSync, unlinkSync } from "node:fs";
 import {
   verifyPassword,
   newToken,
@@ -82,7 +84,8 @@ export async function handleApi(req: Request, url: URL): Promise<Response> {
   const ip = clientIp(req);
 
   let body: any = {};
-  if (method === "POST" || method === "PUT" || method === "PATCH") {
+  const ctype = req.headers.get("content-type") || "";
+  if ((method === "POST" || method === "PUT" || method === "PATCH") && ctype.includes("application/json")) {
     try {
       body = await req.json();
     } catch {
@@ -246,6 +249,20 @@ async function route(
       lines_active: q("SELECT COUNT(*) AS c FROM lines WHERE is_active = 1"),
       stations_total: q("SELECT COUNT(*) AS c FROM stations"),
       cities_total: q("SELECT COUNT(*) AS c FROM cities WHERE is_active = 1"),
+      revenues_count: q("SELECT COUNT(*) AS c FROM revenues"),
+      revenues_settled: q(
+        "SELECT COUNT(*) AS c FROM revenues WHERE amount > 0 AND (SELECT COALESCE(SUM(p.amount),0) FROM revenue_payments p WHERE p.revenue_id = revenues.id) >= amount"
+      ),
+      revenues_total: q("SELECT COALESCE(SUM(amount),0) AS c FROM revenues"),
+      revenues_paid: q("SELECT COALESCE(SUM(amount),0) AS c FROM revenue_payments"),
+      invoices_count: q("SELECT COUNT(*) AS c FROM invoices WHERE status != 'cancelled'"),
+      invoices_paid: q("SELECT COUNT(*) AS c FROM invoices WHERE status = 'paid'"),
+      invoices_total: q("SELECT COALESCE(SUM(total),0) AS c FROM invoices WHERE status != 'cancelled'"),
+      recent_payments: db
+        .query(
+          "SELECT p.amount, p.paid_at, p.method, r.title, r.org_name FROM revenue_payments p JOIN revenues r ON r.id = p.revenue_id ORDER BY p.id DESC LIMIT 6"
+        )
+        .all(),
       lines_by_city: db
         .query(
           `SELECT c.name AS city, COUNT(l.id) AS lines,
@@ -618,6 +635,383 @@ async function route(
       db.prepare("DELETE FROM stations WHERE id = ?").run(id);
       changeLog("station", id, "delete", admin.display_name);
       audit(admin.id, admin.display_name, "station_delete", `#${id}`, ip);
+      return ok({ deleted: true });
+    }
+  }
+
+  /* ---------- revenues (درآمدها و قراردادهای سازمانی) ---------- */
+  const REV_STATUS_SQL = `CASE
+    WHEN (SELECT COALESCE(SUM(p.amount),0) FROM revenue_payments p WHERE p.revenue_id = r.id) >= r.amount AND r.amount > 0 THEN 'paid'
+    WHEN (SELECT COALESCE(SUM(p.amount),0) FROM revenue_payments p WHERE p.revenue_id = r.id) > 0 THEN 'partial'
+    ELSE 'pending' END`;
+  const REV_SELECT = `SELECT r.*,
+    (SELECT COALESCE(SUM(p.amount),0) FROM revenue_payments p WHERE p.revenue_id = r.id) AS paid_amount,
+    (SELECT COUNT(*) FROM revenue_docs d WHERE d.revenue_id = r.id) AS docs_count,
+    (SELECT COUNT(*) FROM revenue_payments p WHERE p.revenue_id = r.id) AS payments_count,
+    ${REV_STATUS_SQL} AS status
+    FROM revenues r`;
+  const revDate = (v: any) => {
+    const s = typeof v === "string" ? v.trim().slice(0, 10) : "";
+    return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+  };
+
+  if (seg[0] === "revenues") {
+    /* صورت‌حساب دوره‌ای — پایه گزارش PDF */
+    if (seg[1] === "statement" && method === "GET") {
+      const from = revDate(url.searchParams.get("from")) ?? "0000-01-01";
+      const to = revDate(url.searchParams.get("to")) ?? "9999-12-31";
+      const toIncl = `${to}T23:59:59.999Z`;
+      const payments = db
+        .query(
+          `SELECT p.id, p.amount, p.paid_at, p.method, p.reference, p.note,
+                  r.id AS revenue_id, r.title AS rev_title, r.org_name, r.contract_no
+           FROM revenue_payments p JOIN revenues r ON r.id = p.revenue_id
+           WHERE p.paid_at >= ? AND p.paid_at <= ?
+           ORDER BY p.paid_at`
+        )
+        .all(from, toIncl);
+      const settled = db
+        .query(
+          `SELECT r.id, r.title, r.org_name, r.amount, r.contract_no,
+                  (SELECT COALESCE(SUM(p.amount),0) FROM revenue_payments p WHERE p.revenue_id = r.id) AS paid_amount,
+                  (SELECT MAX(p.paid_at) FROM revenue_payments p WHERE p.revenue_id = r.id) AS last_payment
+           FROM revenues r
+           WHERE r.amount > 0
+             AND (SELECT COALESCE(SUM(p.amount),0) FROM revenue_payments p WHERE p.revenue_id = r.id) >= r.amount
+             AND (SELECT MAX(p.paid_at) FROM revenue_payments p WHERE p.revenue_id = r.id) >= ?
+             AND (SELECT MAX(p.paid_at) FROM revenue_payments p WHERE p.revenue_id = r.id) <= ?
+           ORDER BY last_payment`
+        )
+        .all(from, toIncl);
+      const paidTotal = payments.reduce((s: number, p: any) => s + p.amount, 0);
+      return ok({
+        from,
+        to,
+        payments,
+        settled,
+        totals: { paid: paidTotal, count: payments.length, orgs: new Set(payments.map((p: any) => p.org_name)).size, settled: settled.length },
+      });
+    }
+
+    /* فهرست قراردادها */
+    if (!seg[1] && method === "GET") {
+      const searchQ = str(url.searchParams.get("q") ?? "", 60);
+      const status = str(url.searchParams.get("status") ?? "", 10);
+      let sql = REV_SELECT + " WHERE 1=1";
+      const args: any[] = [];
+      if (searchQ) {
+        sql += " AND (r.title LIKE ? OR r.org_name LIKE ? OR IFNULL(r.contract_no,'') LIKE ?)";
+        args.push(`%${searchQ}%`, `%${searchQ}%`, `%${searchQ}%`);
+      }
+      if (status) {
+        sql += ` AND ${REV_STATUS_SQL} = ?`;
+        args.push(status);
+      }
+      sql += " ORDER BY r.id DESC LIMIT 300";
+      return ok(db.prepare(sql).all(...args));
+    }
+
+    const revId = Number(seg[1]) || 0;
+
+    /* جزئیات قرارداد — پرداخت‌ها و مستندات */
+    if (revId && method === "GET" && !seg[2]) {
+      const rev = db.prepare(`${REV_SELECT} WHERE r.id = ?`).get(revId) as any;
+      if (!rev) return fail("NOT_FOUND", "قرارداد یافت نشد", 404);
+      rev.payments = db
+        .query("SELECT * FROM revenue_payments WHERE revenue_id = ? ORDER BY paid_at DESC, id DESC")
+        .all(revId);
+      rev.docs = db
+        .query("SELECT id, filename, original_name, mime, size, created_at FROM revenue_docs WHERE revenue_id = ? ORDER BY id DESC")
+        .all(revId);
+      return ok(rev);
+    }
+
+    const guard = requireRole(admin, "operator");
+    if (guard) return guard;
+
+    /* پرداخت‌های قرارداد */
+    if (revId && seg[2] === "payments") {
+      const rev = db.query("SELECT * FROM revenues WHERE id = ?").get(revId) as any;
+      if (!rev) return fail("NOT_FOUND", "قرارداد یافت نشد", 404);
+      if (method === "POST") {
+        const amount = Math.round(Number(body.amount) || 0);
+        if (amount <= 0) return fail("BAD_INPUT", "مبلغ پرداخت باید بزرگ‌تر از صفر باشد");
+        let paidAt = str(body.paid_at, 30) || now();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(paidAt)) paidAt += "T12:00:00.000Z";
+        const r = db
+          .prepare(
+            "INSERT INTO revenue_payments (revenue_id, amount, paid_at, method, reference, note, created_at) VALUES (?,?,?,?,?,?,?)"
+          )
+          .run(revId, amount, paidAt, str(body.method, 40) || null, str(body.reference, 60) || null, str(body.note, 200) || null, now());
+        changeLog("revenue", revId, "update", admin.display_name, `پرداخت ${amount} تومان — ${rev.org_name}`);
+        audit(admin.id, admin.display_name, "revenue_payment", `${amount} تومان — ${rev.org_name}`, ip);
+        return ok({ id: Number(r.lastInsertRowid) }, 201);
+      }
+      if (method === "DELETE" && seg[3]) {
+        const pay = db.query("SELECT * FROM revenue_payments WHERE id = ? AND revenue_id = ?").get(Number(seg[3]), revId) as any;
+        if (!pay) return fail("NOT_FOUND", "پرداخت یافت نشد", 404);
+        db.prepare("DELETE FROM revenue_payments WHERE id = ?").run(pay.id);
+        changeLog("revenue", revId, "update", admin.display_name, `حذف پرداخت ${pay.amount} تومان`);
+        audit(admin.id, admin.display_name, "revenue_payment_delete", `${pay.amount} تومان — قرارداد #${revId}`, ip);
+        return ok({ deleted: true });
+      }
+      return fail("NOT_FOUND", "مسیر پرداخت یافت نشد", 404);
+    }
+
+    /* مستندات قرارداد — آپلود و حذف فایل */
+    if (revId && seg[2] === "docs") {
+      const rev = db.query("SELECT id FROM revenues WHERE id = ?").get(revId);
+      if (!rev) return fail("NOT_FOUND", "قرارداد یافت نشد", 404);
+      if (method === "POST") {
+        let form: FormData;
+        try {
+          form = await req.formData();
+        } catch {
+          return fail("BAD_INPUT", "فایلی ارسال نشده است");
+        }
+        const file = form.get("file");
+        if (!(file instanceof File) || !file.size) return fail("BAD_INPUT", "فایلی ارسال نشده است");
+        if (file.size > 15 * 1024 * 1024) return fail("TOO_LARGE", "حجم فایل باید کمتر از ۱۵ مگابایت باشد", 413);
+        const ext = ((file.name.split(".").pop() || "").toLowerCase().replace(/[^a-z0-9]/g, "") || "bin").slice(0, 8);
+        const DOC_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif", "pdf", "doc", "docx", "xls", "xlsx", "txt"]);
+        if (!DOC_EXTS.has(ext)) return fail("BAD_INPUT", "فرمت فایل پشتیبانی نمی‌شود (تصویر، PDF یا فایل آفیس)");
+        const safeName = `${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+        await Bun.write(join(UPLOAD_DIR, safeName), await file.arrayBuffer());
+        const r = db
+          .prepare("INSERT INTO revenue_docs (revenue_id, filename, original_name, mime, size, created_at) VALUES (?,?,?,?,?,?)")
+          .run(revId, safeName, file.name.slice(0, 200), file.type || null, file.size, now());
+        changeLog("revenue", revId, "update", admin.display_name, `سند: ${file.name.slice(0, 80)}`);
+        audit(admin.id, admin.display_name, "revenue_doc", `${file.name.slice(0, 80)} — قرارداد #${revId}`, ip);
+        return ok({ id: Number(r.lastInsertRowid), filename: safeName }, 201);
+      }
+      if (method === "DELETE" && seg[3]) {
+        const doc = db.query("SELECT * FROM revenue_docs WHERE id = ? AND revenue_id = ?").get(Number(seg[3]), revId) as any;
+        if (!doc) return fail("NOT_FOUND", "سند یافت نشد", 404);
+        try {
+          const p = join(UPLOAD_DIR, doc.filename);
+          if (existsSync(p)) unlinkSync(p);
+        } catch {}
+        db.prepare("DELETE FROM revenue_docs WHERE id = ?").run(doc.id);
+        audit(admin.id, admin.display_name, "revenue_doc_delete", `${doc.original_name} — قرارداد #${revId}`, ip);
+        return ok({ deleted: true });
+      }
+      return fail("NOT_FOUND", "مسیر سند یافت نشد", 404);
+    }
+
+    /* ثبت قرارداد جدید */
+    if (!revId && method === "POST") {
+      const title = str(body.title, 120);
+      const orgName = str(body.org_name, 120);
+      if (!title) return fail("BAD_INPUT", "عنوان قرارداد الزامی است");
+      if (!orgName) return fail("BAD_INPUT", "نام سازمان یا شرکت الزامی است");
+      const amount = Math.max(0, Math.round(Number(body.amount) || 0));
+      const cs = revDate(body.contract_start);
+      const ce = revDate(body.contract_end);
+      if (cs && ce && ce < cs) return fail("BAD_INPUT", "تاریخ پایان قرارداد نمی‌تواند قبل از تاریخ شروع باشد");
+      const r = db
+        .prepare(
+          "INSERT INTO revenues (title, org_name, amount, contract_no, contract_start, contract_end, terms, contact_name, contact_phone, notes, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+        )
+        .run(
+          title,
+          orgName,
+          amount,
+          str(body.contract_no, 60) || null,
+          cs,
+          ce,
+          str(body.terms, 2000) || null,
+          str(body.contact_name, 80) || null,
+          str(body.contact_phone, 30) || null,
+          str(body.notes, 1000) || null,
+          now(),
+          now()
+        );
+      changeLog("revenue", Number(r.lastInsertRowid), "create", admin.display_name, `${title} — ${orgName}`);
+      audit(admin.id, admin.display_name, "revenue_create", title, ip);
+      return ok({ id: Number(r.lastInsertRowid) }, 201);
+    }
+
+    if (!revId) return fail("NOT_FOUND", "قرارداد یافت نشد", 404);
+    if (method === "PUT") {
+      const cur = db.query("SELECT * FROM revenues WHERE id = ?").get(revId) as any;
+      if (!cur) return fail("NOT_FOUND", "قرارداد یافت نشد", 404);
+      const cs = body.contract_start !== undefined ? revDate(body.contract_start) : cur.contract_start;
+      const ce = body.contract_end !== undefined ? revDate(body.contract_end) : cur.contract_end;
+      if (cs && ce && ce < cs) return fail("BAD_INPUT", "تاریخ پایان قرارداد نمی‌تواند قبل از تاریخ شروع باشد");
+      db.prepare(
+        "UPDATE revenues SET title=?, org_name=?, amount=?, contract_no=?, contract_start=?, contract_end=?, terms=?, contact_name=?, contact_phone=?, notes=?, updated_at=? WHERE id=?"
+      ).run(
+        body.title !== undefined ? str(body.title, 120) || cur.title : cur.title,
+        body.org_name !== undefined ? str(body.org_name, 120) || cur.org_name : cur.org_name,
+        body.amount !== undefined ? Math.max(0, Math.round(Number(body.amount) || 0)) : cur.amount,
+        body.contract_no !== undefined ? str(body.contract_no, 60) || null : cur.contract_no,
+        cs,
+        ce,
+        body.terms !== undefined ? str(body.terms, 2000) || null : cur.terms,
+        body.contact_name !== undefined ? str(body.contact_name, 80) || null : cur.contact_name,
+        body.contact_phone !== undefined ? str(body.contact_phone, 30) || null : cur.contact_phone,
+        body.notes !== undefined ? str(body.notes, 1000) || null : cur.notes,
+        now(),
+        revId
+      );
+      changeLog("revenue", revId, "update", admin.display_name, cur.title);
+      audit(admin.id, admin.display_name, "revenue_update", cur.title, ip);
+      return ok({ updated: true });
+    }
+    if (method === "DELETE") {
+      const docs = db.query("SELECT filename FROM revenue_docs WHERE revenue_id = ?").all(revId) as any[];
+      for (const doc of docs) {
+        try {
+          const p = join(UPLOAD_DIR, doc.filename);
+          if (existsSync(p)) unlinkSync(p);
+        } catch {}
+      }
+      db.prepare("DELETE FROM revenues WHERE id = ?").run(revId);
+      changeLog("revenue", revId, "delete", admin.display_name);
+      audit(admin.id, admin.display_name, "revenue_delete", `#${revId}`, ip);
+      return ok({ deleted: true });
+    }
+  }
+
+  /* ---------- invoices (فاکتور تبلیغات) ---------- */
+  if (seg[0] === "invoices") {
+    if (!seg[1] && method === "GET") {
+      const searchQ = str(url.searchParams.get("q") ?? "", 60);
+      const status = str(url.searchParams.get("status") ?? "", 12);
+      let sql = "SELECT * FROM invoices WHERE 1=1";
+      const args: any[] = [];
+      if (searchQ) {
+        sql += " AND (customer_name LIKE ? OR number LIKE ? OR IFNULL(title,'') LIKE ?)";
+        args.push(`%${searchQ}%`, `%${searchQ}%`, `%${searchQ}%`);
+      }
+      if (status) {
+        sql += " AND status = ?";
+        args.push(status);
+      }
+      sql += " ORDER BY id DESC LIMIT 300";
+      return ok(db.prepare(sql).all(...args));
+    }
+    const id = Number(seg[1]) || 0;
+    if (id && method === "GET") {
+      const row = db.query("SELECT * FROM invoices WHERE id = ?").get(id);
+      if (!row) return fail("NOT_FOUND", "فاکتور یافت نشد", 404);
+      return ok(row);
+    }
+    const guard = requireRole(admin, "operator");
+    if (guard) return guard;
+
+    const parseItems = (raw: any): { desc: string; qty: number; price: number }[] => {
+      let arr: any[] = [];
+      try {
+        arr = typeof raw === "string" ? JSON.parse(raw) : Array.isArray(raw) ? raw : [];
+      } catch {
+        arr = [];
+      }
+      return arr
+        .map((it) => ({
+          desc: str(it?.desc, 150),
+          qty: Math.max(1, Math.round(Number(it?.qty) || 1)),
+          price: Math.max(0, Math.round(Number(it?.price) || 0)),
+        }))
+        .filter((it) => it.desc);
+    };
+    const invTotal = (items: any[], discount: number) =>
+      Math.max(items.reduce((s: number, it: any) => s + it.qty * it.price, 0) - discount, 0);
+
+    if (!id && method === "POST") {
+      const customer = str(body.customer_name, 120);
+      if (!customer) return fail("BAD_INPUT", "نام مشتری الزامی است");
+      const items = parseItems(body.items);
+      if (!items.length) return fail("BAD_INPUT", "حداقل یک قلم فاکتور با شرح خدمات الزامی است");
+      const discount = Math.max(0, Math.round(Number(body.discount) || 0));
+      const total = invTotal(items, discount);
+      const status = ["issued", "paid", "cancelled"].includes(body.status) ? body.status : "issued";
+      const issueDate = revDate(body.issue_date) ?? new Date().toISOString().slice(0, 10);
+      /* شماره‌گذاری خودکار بر اساس سال شمسی: INV-1404-0001 */
+      let jy = "";
+      try {
+        jy = new Intl.DateTimeFormat("en-u-ca-persian", { year: "numeric" }).format().replace(/[^0-9]/g, "");
+      } catch {}
+      if (!jy) jy = String(new Date().getFullYear());
+      const count = (db.query("SELECT COUNT(*) AS c FROM invoices WHERE number LIKE ?").get(`INV-${jy}-%`) as any).c;
+      let inserted: any = null;
+      let number = "";
+      for (let t = 0; t < 20; t++) {
+        number = `INV-${jy}-${String(count + 1 + t).padStart(4, "0")}`;
+        try {
+          inserted = db
+            .prepare(
+              "INSERT INTO invoices (number, title, customer_name, customer_phone, items, discount, total, status, issue_date, due_date, notes, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+            )
+            .run(
+              number,
+              str(body.title, 120) || "خدمات تبلیغات",
+              customer,
+              str(body.customer_phone, 30) || null,
+              JSON.stringify(items),
+              discount,
+              total,
+              status,
+              issueDate,
+              revDate(body.due_date),
+              str(body.notes, 1000) || null,
+              now(),
+              now()
+            );
+          break;
+        } catch {
+          /* شماره تکراری — با شماره بعدی ادامه می‌دهیم */
+        }
+      }
+      if (!inserted) return fail("INTERNAL", "صدور فاکتور ناموفق بود", 500);
+      changeLog("invoice", Number(inserted.lastInsertRowid), "create", admin.display_name, `${number} — ${customer}`);
+      audit(admin.id, admin.display_name, "invoice_create", `${number} — ${customer}`, ip);
+      return ok({ id: Number(inserted.lastInsertRowid), number }, 201);
+    }
+    if (!id) return fail("NOT_FOUND", "فاکتور یافت نشد", 404);
+    if (method === "PUT") {
+      const cur = db.query("SELECT * FROM invoices WHERE id = ?").get(id) as any;
+      if (!cur) return fail("NOT_FOUND", "فاکتور یافت نشد", 404);
+      let items: any[];
+      if (body.items !== undefined) {
+        items = parseItems(body.items);
+        if (!items.length) return fail("BAD_INPUT", "حداقل یک قلم فاکتور الزامی است");
+      } else {
+        try {
+          items = JSON.parse(cur.items || "[]");
+        } catch {
+          items = [];
+        }
+      }
+      const discount = body.discount !== undefined ? Math.max(0, Math.round(Number(body.discount) || 0)) : cur.discount;
+      const total = invTotal(items, discount);
+      const status = body.status !== undefined ? (["issued", "paid", "cancelled"].includes(body.status) ? body.status : cur.status) : cur.status;
+      db.prepare(
+        "UPDATE invoices SET title=?, customer_name=?, customer_phone=?, items=?, discount=?, total=?, status=?, issue_date=?, due_date=?, notes=?, updated_at=? WHERE id=?"
+      ).run(
+        body.title !== undefined ? str(body.title, 120) || cur.title : cur.title,
+        body.customer_name !== undefined ? str(body.customer_name, 120) || cur.customer_name : cur.customer_name,
+        body.customer_phone !== undefined ? str(body.customer_phone, 30) || null : cur.customer_phone,
+        JSON.stringify(items),
+        discount,
+        total,
+        status,
+        body.issue_date !== undefined ? revDate(body.issue_date) || cur.issue_date : cur.issue_date,
+        body.due_date !== undefined ? revDate(body.due_date) : cur.due_date,
+        body.notes !== undefined ? str(body.notes, 1000) || null : cur.notes,
+        now(),
+        id
+      );
+      changeLog("invoice", id, "update", admin.display_name, cur.number);
+      audit(admin.id, admin.display_name, status !== cur.status ? "invoice_status" : "invoice_update", cur.number, ip);
+      return ok({ updated: true });
+    }
+    if (method === "DELETE") {
+      const cur = db.query("SELECT number FROM invoices WHERE id = ?").get(id) as any;
+      if (!cur) return fail("NOT_FOUND", "فاکتور یافت نشد", 404);
+      db.prepare("DELETE FROM invoices WHERE id = ?").run(id);
+      changeLog("invoice", id, "delete", admin.display_name, cur.number);
+      audit(admin.id, admin.display_name, "invoice_delete", cur.number, ip);
       return ok({ deleted: true });
     }
   }

@@ -4,6 +4,7 @@
    ⚠️ این پوشه قفل‌شده است — LOCK.md را ببینید. حذف نکنید.
    ============================================================ */
 import { handleApi } from "./src/api";
+import { UPLOAD_DIR } from "./src/db";
 import { extname, join } from "node:path";
 
 const PORT = 3035;
@@ -23,7 +24,7 @@ const MIME: Record<string, string> = {
 
 Bun.serve({
   port: PORT,
-  maxRequestBodySize: 1024 * 1024, // 1MB کافی برای پنل؛ جلوگیری از سوءاستفاده
+  maxRequestBodySize: 20 * 1024 * 1024, // سقف ۲۰ مگابایت — برای آپلود مستندات قراردادها
   async fetch(req) {
     const url = new URL(req.url);
     // پشتیبانی از پیشوند /admin (دروازه) و مسیر مستقیم
@@ -33,6 +34,24 @@ Bun.serve({
 
     if (pathname.startsWith("/api/v1/")) {
       return handleApi(req, new URL(pathname + url.search, url.origin));
+    }
+
+    // فایل‌های مستندات قراردادها (uploads)
+    if (pathname.startsWith("/uploads/")) {
+      const name = pathname.slice("/uploads/".length);
+      if (name && !name.includes("..") && !name.includes("/")) {
+        const f = Bun.file(join(UPLOAD_DIR, name));
+        if (await f.exists()) {
+          return new Response(f, {
+            headers: {
+              "Content-Type": f.type || "application/octet-stream",
+              "Cache-Control": "no-store",
+              "X-Content-Type-Options": "nosniff",
+            },
+          });
+        }
+      }
+      return new Response("Not found", { status: 404 });
     }
 
     // فایل‌های استاتیک پنل

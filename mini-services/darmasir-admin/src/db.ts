@@ -9,6 +9,10 @@ import { hashPassword } from "./auth";
 const DB_DIR = join(import.meta.dir, "..", "data");
 mkdirSync(DB_DIR, { recursive: true });
 
+/* پوشه ذخیره مستندات قراردادها (تصویر/PDF/آفیس) */
+export const UPLOAD_DIR = join(import.meta.dir, "..", "uploads");
+mkdirSync(UPLOAD_DIR, { recursive: true });
+
 export const db = new Database(join(DB_DIR, "admin.db"));
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA foreign_keys = ON;");
@@ -117,6 +121,56 @@ CREATE TABLE IF NOT EXISTS change_log (
 CREATE TABLE IF NOT EXISTS api_stats (
   day TEXT PRIMARY KEY,
   count INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS revenues (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  org_name TEXT NOT NULL,
+  amount INTEGER NOT NULL DEFAULT 0,
+  contract_no TEXT,
+  contract_start TEXT,
+  contract_end TEXT,
+  terms TEXT,
+  contact_name TEXT,
+  contact_phone TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS revenue_payments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  revenue_id INTEGER NOT NULL REFERENCES revenues(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  paid_at TEXT NOT NULL,
+  method TEXT,
+  reference TEXT,
+  note TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS revenue_docs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  revenue_id INTEGER NOT NULL REFERENCES revenues(id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  mime TEXT,
+  size INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS invoices (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  number TEXT UNIQUE NOT NULL,
+  title TEXT,
+  customer_name TEXT NOT NULL,
+  customer_phone TEXT,
+  items TEXT NOT NULL DEFAULT '[]',
+  discount INTEGER NOT NULL DEFAULT 0,
+  total INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'issued',
+  issue_date TEXT,
+  due_date TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 );
 `);
 

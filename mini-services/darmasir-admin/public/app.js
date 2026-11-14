@@ -1,6 +1,6 @@
 /* ============================================================
    پنل مدیریت درمسیر — اپلیکیشن تک‌صفحه‌ای فارسی RTL
-   نسخه ۲.۶ — پشتیبانی شهر برای خطوط و ایستگاه‌ها + فیلتر شهر
+   نسخه ۲.۷ — درآمدها و قراردادهای سازمانی، فاکتور تبلیغات، صورت‌حساب PDF
    ============================================================ */
 "use strict";
 
@@ -32,6 +32,31 @@ function faTime(iso) {
 
 function faNum(n) {
   return Number(n || 0).toLocaleString("fa-IR");
+}
+
+function faDate(iso) {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleDateString("fa-IR"); } catch { return "—"; }
+}
+
+function faMoney(n) {
+  return faNum(n) + " تومان";
+}
+
+/* نمایش خلاصه مبلغ برای شاخص‌ها — میلیارد / میلیون / هزار */
+function faMoneyShort(n) {
+  n = Number(n || 0);
+  if (n >= 1e9) return (n / 1e9).toLocaleString("fa-IR", { maximumFractionDigits: 1 }) + " میلیارد تومان";
+  if (n >= 1e6) return (n / 1e6).toLocaleString("fa-IR", { maximumFractionDigits: 1 }) + " میلیون تومان";
+  if (n >= 1e3) return (n / 1e3).toLocaleString("fa-IR", { maximumFractionDigits: 1 }) + " هزار تومان";
+  return faNum(n) + " تومان";
+}
+
+function localDate(d) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+function todayLocal() {
+  return localDate(new Date());
 }
 
 async function api(path, opts = {}) {
@@ -161,6 +186,8 @@ const PAGES = [
   { id: "lines", title: "خطوط", icon: "alt_route" },
   { id: "stations", title: "ایستگاه‌ها", icon: "location_on" },
   { id: "ads", title: "تبلیغات و بنرها", icon: "campaign" },
+  { id: "revenues", title: "درآمدها و قراردادها", icon: "payments" },
+  { id: "invoices", title: "فاکتور تبلیغات", icon: "receipt_long" },
   { id: "voice", title: "دستیار صوتی", icon: "record_voice_over" },
   { id: "settings", title: "تنظیمات سامانه", icon: "settings", super: true },
   { id: "reports", title: "گزارش‌ها و تحلیل داده", icon: "monitoring" },
@@ -270,7 +297,7 @@ function layout(cur) {
         <div class="brand">
           <div class="brand-logo"><span class="material fill">subway</span></div>
           <div class="brand-txt">
-            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۶</span></div>
+            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۷</span></div>
             <span class="brand-sub">پنل مدیریت سامانه ناوبری شهری</span>
           </div>
         </div>
@@ -309,6 +336,8 @@ async function renderPage(id) {
     else if (id === "lines") await pageLines(host);
     else if (id === "stations") await pageStations(host);
     else if (id === "ads") await pageAds(host);
+    else if (id === "revenues") await pageRevenues(host);
+    else if (id === "invoices") await pageInvoices(host);
     else if (id === "voice") await pageVoice(host);
     else if (id === "settings") await pageSettings(host);
     else if (id === "reports") await pageReports(host);
@@ -331,6 +360,12 @@ async function pageDashboard(host) {
       ${kpi("سفرهای ثبت‌شده", "route", d.trips_total, "از ابتدا تا امروز", "t-surface")}
       ${kpi("تبلیغ فعال", "campaign", d.ads_active, "کمپین در حال نمایش", "t-dim")}
       ${kpi("شهرهای تحت پوشش", "location_city", d.cities_total ?? 0, "شهر با شبکه فعال", "t-primary")}
+    </div>
+    <div class="kpi-grid kpi-grid-4">
+      ${kpi("درآمد قراردادها", "payments", faMoneyShort(d.revenues_total ?? 0), `${faNum(d.revenues_count ?? 0)} قرارداد سازمانی`, "t-primary")}
+      ${kpi("وصول‌شده", "savings", faMoneyShort(d.revenues_paid ?? 0), "مجموع پرداخت‌های ثبت‌شده", "t-tertiary")}
+      ${kpi("در انتظار وصول", "hourglass_top", faMoneyShort((d.revenues_total ?? 0) - (d.revenues_paid ?? 0)), "مانده قراردادها", "t-dim")}
+      ${kpi("فاکتور تبلیغات", "receipt_long", faNum(d.invoices_count ?? 0), `${faNum(d.invoices_paid ?? 0)} فاکتور پرداخت‌شده`, "t-surface")}
     </div>
     <div class="kpi-grid kpi-grid-3">
       ${kpi("خط فعال", "alt_route", d.lines_active, "خط در حال سرویس‌دهی", "t-primary")}
@@ -369,6 +404,17 @@ async function pageDashboard(host) {
       </div>
     </div>
     <div class="card" style="margin-top:16px">
+      <h3><span class="material" style="color:var(--primary)">payments</span>پرداخت‌های اخیر درآمد</h3>
+      <div class="feed">
+        ${(d.recent_payments || []).length ? (d.recent_payments || []).map((p) => `
+          <div class="feed-item">
+            <span class="fi-dot" style="background:var(--tertiary-container)"></span>
+            <div class="fi-body"><b>${esc(p.org_name)}</b><p>${esc(p.title)} — ${faMoney(p.amount)}${p.method ? " · " + esc(p.method) : ""}</p></div>
+            <span class="fi-time">${faTime(p.paid_at)}</span>
+          </div>`).join("") : `<div class="empty"><span class="material">payments</span>هنوز پرداختی از قراردادها ثبت نشده است</div>`}
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
       <h3><span class="material" style="color:var(--primary)">location_city</span>پوشش شهرها — خطوط و ایستگاه‌های فعال به تفکیک شهر</h3>
       ${(d.lines_by_city || []).length ? (() => {
         const maxSt = Math.max(...(d.lines_by_city || []).map((c) => c.stations || 0), 1);
@@ -400,6 +446,10 @@ function actionLabel(a) {
     ad_reset_stats: "بازنشانی آمار تبلیغ",
     lexicon_create: "افزودن مدخل تلفظ", lexicon_import: "درون‌ریزی ایستگاه‌ها به فرهنگ",
     settings_update: "بروزرسانی تنظیمات",
+    revenue_create: "ثبت قرارداد درآمد", revenue_update: "ویرایش قرارداد درآمد", revenue_delete: "حذف قرارداد درآمد",
+    revenue_payment: "ثبت پرداخت درآمد", revenue_payment_delete: "حذف پرداخت درآمد",
+    revenue_doc: "آپلود مستند قرارداد", revenue_doc_delete: "حذف مستند قرارداد",
+    invoice_create: "صدور فاکتور", invoice_update: "ویرایش فاکتور", invoice_delete: "حذف فاکتور", invoice_status: "تغییر وضعیت فاکتور",
     admin_create: "ایجاد مدیر", admin_update: "ویرایش مدیر", admin_delete: "حذف مدیر",
   }[a] || a;
 }
@@ -1238,6 +1288,510 @@ function openAdForm(ad) {
   };
 }
 
+/* ---------- درآمدها و قراردادها ---------- */
+
+const REV_STATUS = {
+  pending: ["در انتظار وصول", "warn"],
+  partial: ["پرداخت ناقص", "info"],
+  paid: ["تسویه‌شده", "ok"],
+};
+const PAY_METHODS = ["واریز بانکی", "کارت به کارت", "نقدی", "چک", "درگاه آنلاین"];
+
+async function pageRevenues(host) {
+  const writable = can("operator");
+  let lastRows = [];
+  host.innerHTML = `
+    ${pageHead("درآمدها و قراردادها", "ثبت قراردادهای درآمدی با سازمان‌ها و شرکت‌ها همراه با مستندات، شرایط و بازه قرارداد؛ پیگیری پرداخت‌ها و دریافت صورت‌حساب دوره‌ای PDF.",
+      `${writable ? `<button class="btn btn-primary" id="rv-add"><span class="material">add</span><span>قرارداد درآمد جدید</span></button>` : ""}
+       <button class="btn" id="rv-stmt"><span class="material">receipt</span><span>صورت‌حساب دوره‌ای (PDF)</span></button>`)}
+    <div id="rv-kpis"></div>
+    <div class="toolbar">
+      <input id="rv-q" placeholder="جست‌وجوی عنوان، سازمان یا شماره قرارداد…" style="min-width:240px" />
+      <select id="rv-status" aria-label="فیلتر وضعیت">
+        <option value="">همه وضعیت‌ها</option>
+        <option value="pending">در انتظار وصول</option>
+        <option value="partial">پرداخت ناقص</option>
+        <option value="paid">تسویه‌شده</option>
+      </select>
+      <span class="toolbar-note" id="rv-count"></span>
+    </div>
+    <div id="rv-table"></div>`;
+
+  const load = async () => {
+    const q = document.getElementById("rv-q").value.trim();
+    const st = document.getElementById("rv-status").value;
+    const rows = await api(`revenues?q=${encodeURIComponent(q)}&status=${st}`);
+    lastRows = rows;
+    const total = rows.reduce((s, r) => s + (r.amount || 0), 0);
+    const paid = rows.reduce((s, r) => s + (r.paid_amount || 0), 0);
+    const settled = rows.filter((r) => r.status === "paid").length;
+    document.getElementById("rv-kpis").innerHTML = `
+      <div class="kpi-grid kpi-grid-5">
+        ${kpi("قراردادها", "handshake", rows.length, "قرارداد در این نما", "t-primary")}
+        ${kpi("مبلغ کل قراردادها", "payments", faMoneyShort(total), "مجموع ارزش قراردادها", "t-surface")}
+        ${kpi("وصول‌شده", "savings", faMoneyShort(paid), total ? faNum(Math.round((paid / total) * 100)) + "٪ از مبلغ کل" : "بدون پرداخت", "t-tertiary")}
+        ${kpi("مانده وصول", "hourglass_top", faMoneyShort(total - paid), "در انتظار پرداخت", "t-dim")}
+        ${kpi("تسویه‌شده", "task_alt", settled, "قرارداد با پرداخت کامل", "t-primary")}
+      </div>`;
+    document.getElementById("rv-count").textContent = `${faNum(rows.length)} قرارداد`;
+    document.getElementById("rv-table").innerHTML = rows.length ? `
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>قرارداد / سازمان</th><th>مبلغ کل</th><th>وضعیت وصول</th><th>بازه قرارداد</th><th class="cell-center">مستندات</th><th>ثبت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+        <tbody>
+          ${rows.map((r) => {
+            const [lbl, cls] = REV_STATUS[r.status] || [r.status, "off"];
+            const pct = r.amount ? Math.min(Math.round((r.paid_amount / r.amount) * 100), 100) : 0;
+            const left = r.contract_end ? Math.ceil((new Date(r.contract_end + "T23:59:59") - Date.now()) / 86400000) : null;
+            return `<tr>
+              <td><b>${esc(r.title)}</b><span class="cell-sub">${esc(r.org_name)}${r.contract_no ? " — قرارداد شماره " + esc(r.contract_no) : ""}</span></td>
+              <td><b>${faMoney(r.amount)}</b></td>
+              <td>
+                <div class="cell-meter">
+                  <div class="meter-row"><span class="m-imp">${faMoney(r.paid_amount)}</span><span class="m-ctr">${faNum(pct)}٪</span></div>
+                  <div class="meter wide"><div class="meter-fill ${pct >= 100 ? "good" : ""}" style="width:${Math.max(pct, 3)}%"></div></div>
+                </div>
+                <span class="badge ${cls}" style="margin-top:6px">${lbl}</span>
+              </td>
+              <td class="cell-range">
+                <span>${faDate(r.contract_start)}</span>
+                <span class="m-live" style="display:block">تا ${faDate(r.contract_end)}</span>
+                ${left !== null ? `<span class="day-chip ${left < 0 ? "bad" : ""}">${left < 0 ? "قرارداد منقضی شده" : faNum(left) + " روز مانده"}</span>` : '<span class="cell-sub">بدون بازه</span>'}
+              </td>
+              <td class="cell-center"><span class="badge ${r.docs_count ? "info" : "off"}">${faNum(r.docs_count)} سند</span></td>
+              <td>${faDate(r.created_at)}</td>
+              <td><div class="acts">
+                <button class="icon-btn" data-detail="${r.id}" title="جزئیات، پرداخت‌ها و مستندات"><span class="material">folder_open</span></button>
+                ${writable ? `<button class="icon-btn" data-edit="${r.id}" title="ویرایش قرارداد"><span class="material">edit</span></button>
+                <button class="icon-btn danger" data-del="${r.id}" data-name="${esc(r.title)}" title="حذف قرارداد"><span class="material">delete</span></button>` : ""}
+              </div></td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table></div>` : `<div class="card"><div class="empty"><span class="material">handshake</span>قراردادی ثبت نشده است — با دکمه «قرارداد درآمد جدید» شروع کنید</div></div>`;
+    document.querySelectorAll("[data-detail]").forEach((b) => (b.onclick = () => openRevenueDetail(lastRows.find((x) => x.id === Number(b.dataset.detail)))));
+    if (writable) {
+      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openRevenueForm(rows.find((x) => x.id === Number(b.dataset.edit)), load)));
+      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+        confirmDialog(`قرارداد «${b.dataset.name}» و همه پرداخت‌ها و مستنداتش حذف شود؟ این عملیات بازگشت‌پذیر نیست.`, async () => {
+          await api(`revenues/${b.dataset.del}`, { method: "DELETE" });
+          toast("قرارداد حذف شد", "ok2"); load();
+        })));
+    }
+  };
+  document.getElementById("rv-q").oninput = load;
+  document.getElementById("rv-status").onchange = load;
+  const addBtn = document.getElementById("rv-add");
+  if (addBtn) addBtn.onclick = () => openRevenueForm(null, load);
+  document.getElementById("rv-stmt").onclick = () => openStatementModal();
+  await load();
+}
+
+/* آپلود چند فایل مستندات برای قرارداد */
+async function uploadRevenueDocs(rid, files) {
+  const token = localStorage.getItem(TOKEN_KEY);
+  for (const f of files) {
+    const fd = new FormData();
+    fd.append("file", f, f.name);
+    const res = await fetch(apiPath(`revenues/${rid}/docs`), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const json = await res.json().catch(() => null);
+    if (!json || !json.ok) throw new Error((json && json.error && json.error.message) || `آپلود «${f.name}» ناموفق بود`);
+  }
+}
+
+function openRevenueForm(rev, after) {
+  const isEdit = !!rev;
+  const close = modal(isEdit ? "ویرایش قرارداد درآمد" : "قرارداد درآمد جدید", `
+    <div class="field"><label>عنوان قرارداد *</label><input id="f-rtitle" value="${esc(rev?.title || "")}" placeholder="مثلاً تبلیغات بنری یک‌ساله" /></div>
+    <div class="grid cols-2">
+      <div class="field"><label>سازمان / شرکت *</label><input id="f-rorg" value="${esc(rev?.org_name || "")}" placeholder="نام سازمان یا شرکت" /></div>
+      <div class="field"><label>شماره قرارداد (اختیاری)</label><input id="f-rno" value="${esc(rev?.contract_no || "")}" placeholder="مثلاً ۱۴۰۴/۱۲۳" /></div>
+    </div>
+    <div class="grid cols-2">
+      <div class="field"><label>مبلغ کل قرارداد (تومان) *</label><input id="f-ramount" type="number" min="0" value="${rev?.amount ?? ""}" placeholder="مثلاً ۵۰۰۰۰۰۰۰۰" /></div>
+      <div class="field"><label>وضعیت وصول</label><div class="order-chip" style="font-size:12px; padding:8px 14px; display:inline-block">${(REV_STATUS[isEdit && rev.status ? rev.status : "pending"] || ["—"])[0]} — با ثبت پرداخت‌ها بروزرسانی می‌شود</div></div>
+    </div>
+    <div class="grid cols-2">
+      <div class="field"><label>تاریخ شروع قرارداد</label><input id="f-rstart" type="date" value="${esc(rev?.contract_start || "")}" /></div>
+      <div class="field"><label>تاریخ پایان قرارداد</label><input id="f-rend" type="date" value="${esc(rev?.contract_end || "")}" /></div>
+    </div>
+    <div class="field"><label>شرایط قرارداد</label><textarea id="f-rterms" rows="3" placeholder="شرایط، تعهدات و جزئیات توافق با سازمان…">${esc(rev?.terms || "")}</textarea></div>
+    <div class="grid cols-2">
+      <div class="field"><label>نام رابط سازمان (اختیاری)</label><input id="f-rcontact" value="${esc(rev?.contact_name || "")}" /></div>
+      <div class="field"><label>تلفن رابط (اختیاری)</label><input id="f-rphone" value="${esc(rev?.contact_phone || "")}" style="direction:ltr" /></div>
+    </div>
+    <div class="field"><label>یادداشت (اختیاری)</label><input id="f-rnotes" value="${esc(rev?.notes || "")}" /></div>
+    <div class="field"><label>مستندات قرارداد (تصویر / PDF — چند فایل)</label><input id="f-rdocs" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" />
+      <span class="hint">${isEdit ? "فایل‌های انتخابی به مستندات فعلی اضافه می‌شوند." : "پس از ثبت قرارداد، فایل‌ها به‌طور خودکار آپلود می‌شوند. سقف هر فایل ۱۵ مگابایت."}</span></div>`,
+    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "ثبت قرارداد"}</button>`);
+  document.getElementById("f-cancel").onclick = close;
+  document.getElementById("f-save").onclick = async () => {
+    const body = {
+      title: document.getElementById("f-rtitle").value.trim(),
+      org_name: document.getElementById("f-rorg").value.trim(),
+      contract_no: document.getElementById("f-rno").value.trim(),
+      amount: Number(document.getElementById("f-ramount").value) || 0,
+      contract_start: document.getElementById("f-rstart").value,
+      contract_end: document.getElementById("f-rend").value,
+      terms: document.getElementById("f-rterms").value.trim(),
+      contact_name: document.getElementById("f-rcontact").value.trim(),
+      contact_phone: document.getElementById("f-rphone").value.trim(),
+      notes: document.getElementById("f-rnotes").value.trim(),
+    };
+    if (!body.title) { toast("عنوان قرارداد الزامی است", "err"); return; }
+    if (!body.org_name) { toast("نام سازمان یا شرکت الزامی است", "err"); return; }
+    if (body.contract_start && body.contract_end && body.contract_end < body.contract_start) {
+      toast("تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد", "err"); return;
+    }
+    const files = Array.from(document.getElementById("f-rdocs").files || []);
+    const saveBtn = document.getElementById("f-save");
+    saveBtn.disabled = true;
+    try {
+      const r = await api(isEdit ? `revenues/${rev.id}` : "revenues", { method: isEdit ? "PUT" : "POST", body });
+      const rid = isEdit ? rev.id : r.id;
+      if (files.length) {
+        toast(`در حال آپلود ${faNum(files.length)} سند…`, "ok2");
+        await uploadRevenueDocs(rid, files);
+        toast(`${faNum(files.length)} سند آپلود شد`, "ok2");
+      }
+      toast(isEdit ? "قرارداد بروزرسانی شد" : "قرارداد ثبت شد", "ok2");
+      close();
+      after ? after() : renderPage("revenues");
+    } catch (ex) { toast(ex.message, "err"); }
+    saveBtn.disabled = false;
+  };
+}
+
+async function openRevenueDetail(rev) {
+  if (!rev) return;
+  const writable = can("operator");
+  const close0 = modal("در حال بارگذاری…", '<div class="empty"><span class="material">hourglass_empty</span>در حال دریافت جزئیات…</div>', "");
+  try {
+    const r = await api(`revenues/${rev.id}`);
+    const [lbl, cls] = REV_STATUS[r.status] || [r.status, "off"];
+    const pct = r.amount ? Math.min(Math.round((r.paid_amount / r.amount) * 100), 100) : 0;
+    const remaining = Math.max((r.amount || 0) - (r.paid_amount || 0), 0);
+    const qp = new URLSearchParams(location.search).get("XTransformPort");
+    const docUrl = (f) => `uploads/${f}${qp ? "?XTransformPort=" + encodeURIComponent(qp) : ""}`;
+    const sizeFmt = (s) => s >= 1048576 ? (s / 1048576).toLocaleString("fa-IR", { maximumFractionDigits: 1 }) + " مگابایت" : Math.max(1, Math.round(s / 1024)) + " کیلوبایت";
+    const docIcon = (d) => (d.mime && d.mime.startsWith("image")) || /\.(png|jpe?g|webp|gif)$/i.test(d.filename) ? "image" : /\.pdf$/i.test(d.filename) ? "picture_as_pdf" : "description";
+    const close = modal(`قرارداد — ${r.title}`, `
+      <div class="detail-grid">
+        <div class="detail-row"><span>سازمان / شرکت</span><b>${esc(r.org_name)}</b></div>
+        ${r.contract_no ? `<div class="detail-row"><span>شماره قرارداد</span><b>${esc(r.contract_no)}</b></div>` : ""}
+        <div class="detail-row"><span>مبلغ کل</span><b>${faMoney(r.amount)}</b></div>
+        <div class="detail-row"><span>وصول‌شده</span><b>${faMoney(r.paid_amount)} (${faNum(pct)}٪)</b></div>
+        <div class="detail-row"><span>مانده</span><b>${faMoney(remaining)}</b></div>
+        <div class="detail-row"><span>وضعیت</span><span class="badge ${cls}">${lbl}</span></div>
+        <div class="detail-row"><span>بازه قرارداد</span><b>${faDate(r.contract_start)} تا ${faDate(r.contract_end)}</b></div>
+        ${r.contact_name ? `<div class="detail-row"><span>رابط سازمان</span><b>${esc(r.contact_name)}${r.contact_phone ? " — " + esc(r.contact_phone) : ""}</b></div>` : ""}
+      </div>
+      ${r.terms ? `<div class="field"><label>شرایط قرارداد</label><div class="terms-box">${esc(r.terms)}</div></div>` : ""}
+      ${r.notes ? `<p class="card-sub" style="margin-top:8px">یادداشت: ${esc(r.notes)}</p>` : ""}
+      <h4 style="margin:18px 0 0; font-size:13px"><span class="material" style="vertical-align:middle; font-size:16px; color:var(--primary)">payments</span> پرداخت‌ها (${faNum(r.payments.length)})</h4>
+      <div class="pay-list">
+        ${r.payments.length ? r.payments.map((p) => `
+          <div class="pay-item">
+            <span class="material" style="color:var(--tertiary-container)">check_circle</span>
+            <div style="flex:1"><b>${faMoney(p.amount)}</b><div class="p-meta">${faTime(p.paid_at)}${p.method ? " · " + esc(p.method) : ""}${p.reference ? " · پیگیری: " + esc(p.reference) : ""}${p.note ? " · " + esc(p.note) : ""}</div></div>
+            ${writable ? `<button class="icon-btn danger" data-paydel="${p.id}" title="حذف پرداخت"><span class="material">delete</span></button>` : ""}
+          </div>`).join("") : '<p class="card-sub">هنوز پرداختی ثبت نشده است.</p>'}
+      </div>
+      ${writable ? `
+      <div style="margin-top:10px; padding:12px; background:var(--surface-low); border-radius:10px">
+        <div class="grid cols-2">
+          <div class="field"><label>مبلغ پرداخت (تومان)</label><input id="f-pamount" type="number" min="1" placeholder="مثلاً ۱۰۰۰۰۰۰۰۰" /></div>
+          <div class="field"><label>تاریخ پرداخت</label><input id="f-pdate" type="date" value="${todayLocal()}" /></div>
+        </div>
+        <div class="grid cols-2" style="margin-top:8px">
+          <div class="field"><label>نحوه پرداخت</label><select id="f-pmethod">${PAY_METHODS.map((m) => `<option>${m}</option>`).join("")}</select></div>
+          <div class="field"><label>شماره پیگیری (اختیاری)</label><input id="f-pref" /></div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="f-payadd" style="margin-top:6px"><span class="material">add</span><span>ثبت پرداخت</span></button>
+      </div>` : ""}
+      <h4 style="margin:18px 0 0; font-size:13px"><span class="material" style="vertical-align:middle; font-size:16px; color:var(--primary)">folder</span> مستندات (${faNum(r.docs.length)})</h4>
+      <div class="doc-list">
+        ${r.docs.length ? r.docs.map((d) => `
+          <div class="doc-item">
+            <span class="material">${docIcon(d)}</span>
+            <b title="${esc(d.original_name)}">${esc(d.original_name)}</b>
+            <small>${sizeFmt(d.size)} — ${faDate(d.created_at)}</small>
+            <a class="icon-btn" href="${docUrl(d.filename)}" target="_blank" rel="noopener" title="مشاهده / دانلود"><span class="material">download</span></a>
+            ${writable ? `<button class="icon-btn danger" data-docdel="${d.id}" title="حذف سند"><span class="material">delete</span></button>` : ""}
+          </div>`).join("") : '<p class="card-sub">سندی آپلود نشده است.</p>'}
+      </div>
+      ${writable ? `
+      <div class="field" style="margin-top:10px"><label>افزودن مستند جدید</label><input id="f-docfile" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" />
+        <button class="btn btn-sm" id="f-docadd" style="margin-top:8px"><span class="material">upload</span><span>آپلود مستندات</span></button></div>` : ""}`,
+      `<button class="btn" id="f-cancel">بستن</button>`);
+    /* مودال اصلی جای مودال بارگذاری را می‌گیرد — نیازی به بستن جداگانه نیست */
+    document.getElementById("f-cancel").onclick = close;
+    if (writable) {
+      document.getElementById("f-payadd").onclick = async () => {
+        const amount = Number(document.getElementById("f-pamount").value) || 0;
+        if (amount <= 0) { toast("مبلغ پرداخت را وارد کنید", "err"); return; }
+        try {
+          await api(`revenues/${r.id}/payments`, {
+            method: "POST",
+            body: {
+              amount,
+              paid_at: document.getElementById("f-pdate").value,
+              method: document.getElementById("f-pmethod").value,
+              reference: document.getElementById("f-pref").value.trim(),
+            },
+          });
+          toast("پرداخت ثبت شد", "ok2");
+          renderPage("revenues");
+          openRevenueDetail(rev);
+        } catch (ex) { toast(ex.message, "err"); }
+      };
+      document.querySelectorAll("[data-paydel]").forEach((b) => (b.onclick = () =>
+        confirmDialog("این پرداخت حذف شود؟", async () => {
+          await api(`revenues/${r.id}/payments/${b.dataset.paydel}`, { method: "DELETE" });
+          toast("پرداخت حذف شد", "ok2");
+          renderPage("revenues");
+          openRevenueDetail(rev);
+        })));
+      document.getElementById("f-docadd").onclick = async () => {
+        const files = Array.from(document.getElementById("f-docfile").files || []);
+        if (!files.length) { toast("ابتدا فایل را انتخاب کنید", "err"); return; }
+        try {
+          await uploadRevenueDocs(r.id, files);
+          toast(`${faNum(files.length)} سند آپلود شد`, "ok2");
+          renderPage("revenues");
+          openRevenueDetail(rev);
+        } catch (ex) { toast(ex.message, "err"); }
+      };
+      document.querySelectorAll("[data-docdel]").forEach((b) => (b.onclick = () =>
+        confirmDialog("این سند حذف شود؟", async () => {
+          await api(`revenues/${r.id}/docs/${b.dataset.docdel}`, { method: "DELETE" });
+          toast("سند حذف شد", "ok2");
+          renderPage("revenues");
+          openRevenueDetail(rev);
+        })));
+    }
+  } catch (ex) {
+    close0();
+    toast(ex.message, "err");
+  }
+}
+
+/* صورت‌حساب دوره‌ای — انتخاب بازه و دریافت PDF */
+function openStatementModal() {
+  const close = modal("صورت‌حساب دوره‌ای درآمد", `
+    <p class="card-sub" style="margin-top:0">بازه زمانی را انتخاب کنید؛ سند PDF صورت‌حساب در پنجره جدید باز می‌شود و می‌توانید آن را چاپ یا به‌صورت PDF ذخیره کنید.</p>
+    <div class="presets">
+      <button type="button" class="btn btn-sm" data-range="this-month">ماه جاری</button>
+      <button type="button" class="btn btn-sm" data-range="last-month">ماه گذشته</button>
+      <button type="button" class="btn btn-sm" data-range="this-year">از ابتدای سال</button>
+      <button type="button" class="btn btn-sm" data-range="last-year">سال گذشته</button>
+      <button type="button" class="btn btn-sm" data-range="all">همه زمان‌ها</button>
+    </div>
+    <div class="grid cols-2">
+      <div class="field"><label>از تاریخ</label><input id="st-from" type="date" /></div>
+      <div class="field"><label>تا تاریخ</label><input id="st-to" type="date" /></div>
+    </div>`,
+    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-print"><span class="material">picture_as_pdf</span><span>دریافت PDF</span></button>`);
+  const setRange = (k) => {
+    const t = new Date();
+    let from, to;
+    if (k === "this-month") { from = new Date(t.getFullYear(), t.getMonth(), 1); to = t; }
+    else if (k === "last-month") { from = new Date(t.getFullYear(), t.getMonth() - 1, 1); to = new Date(t.getFullYear(), t.getMonth(), 0); }
+    else if (k === "this-year") { from = new Date(t.getFullYear(), 0, 1); to = t; }
+    else if (k === "last-year") { from = new Date(t.getFullYear() - 1, 0, 1); to = new Date(t.getFullYear() - 1, 11, 31); }
+    else { from = new Date(2000, 0, 1); to = t; }
+    document.getElementById("st-from").value = localDate(from);
+    document.getElementById("st-to").value = localDate(to);
+  };
+  document.querySelectorAll("[data-range]").forEach((b) => (b.onclick = () => setRange(b.dataset.range)));
+  setRange("this-month");
+  document.getElementById("f-cancel").onclick = close;
+  document.getElementById("f-print").onclick = () => {
+    const from = document.getElementById("st-from").value;
+    const to = document.getElementById("st-to").value;
+    if (!from || !to) { toast("هر دو تاریخ را مشخص کنید", "err"); return; }
+    printOpen(`mode=statement&from=${from}&to=${to}`);
+    close();
+  };
+}
+
+/* بازکردن سند چاپی — سازگار با دروازه XTransformPort */
+function printOpen(query) {
+  const qp = new URLSearchParams(location.search).get("XTransformPort");
+  window.open(`print.html?${query}${qp ? `&XTransformPort=${encodeURIComponent(qp)}` : ""}`, "_blank", "noopener");
+}
+
+/* ---------- فاکتور تبلیغات ---------- */
+
+const INV_STATUS = {
+  issued: ["صادرشده", "info"],
+  paid: ["پرداخت‌شده", "ok"],
+  cancelled: ["لغوشده", "off"],
+};
+
+async function pageInvoices(host) {
+  const writable = can("operator");
+  let lastRows = [];
+  host.innerHTML = `
+    ${pageHead("فاکتور تبلیغات", "صدور فاکتور خدمات تبلیغاتی برای مشتریان با اقلام و تخفیف، شماره‌گذاری خودکار شمسی، پیگیری وضعیت پرداخت و چاپ PDF تمیز برای ارسال به مشتری.",
+      writable ? `<button class="btn btn-primary" id="iv-add"><span class="material">add</span><span>فاکتور جدید</span></button>` : "")}
+    <div id="iv-kpis"></div>
+    <div class="toolbar">
+      <input id="iv-q" placeholder="جست‌وجوی شماره فاکتور یا نام مشتری…" style="min-width:240px" />
+      <select id="iv-status" aria-label="فیلتر وضعیت">
+        <option value="">همه وضعیت‌ها</option>
+        <option value="issued">صادرشده</option>
+        <option value="paid">پرداخت‌شده</option>
+        <option value="cancelled">لغوشده</option>
+      </select>
+      <span class="toolbar-note" id="iv-count"></span>
+    </div>
+    <div id="iv-table"></div>`;
+
+  const load = async () => {
+    const q = document.getElementById("iv-q").value.trim();
+    const st = document.getElementById("iv-status").value;
+    const rows = (await api(`invoices?q=${encodeURIComponent(q)}&status=${st}`)).map((v) => {
+      let items = [];
+      try { items = JSON.parse(v.items || "[]"); } catch {}
+      return { ...v, items };
+    });
+    lastRows = rows;
+    const valid = rows.filter((v) => v.status !== "cancelled");
+    const total = valid.reduce((s, v) => s + (v.total || 0), 0);
+    const paid = valid.filter((v) => v.status === "paid").reduce((s, v) => s + (v.total || 0), 0);
+    const overdue = valid.filter((v) => v.status === "issued" && v.due_date && v.due_date < todayLocal()).length;
+    document.getElementById("iv-kpis").innerHTML = `
+      <div class="kpi-grid kpi-grid-5">
+        ${kpi("فاکتورها", "receipt_long", rows.length, "فاکتور صادرشده", "t-primary")}
+        ${kpi("مبلغ صادرشده", "payments", faMoneyShort(total), "مجموع فاکتورهای معتبر", "t-surface")}
+        ${kpi("پرداخت‌شده", "savings", faMoneyShort(paid), "فاکتورهای تسویه‌شده", "t-tertiary")}
+        ${kpi("مانده", "hourglass_top", faMoneyShort(total - paid), "در انتظار پرداخت مشتری", "t-dim")}
+        ${kpi("سررسید گذشته", "event_busy", overdue, "پرداخت‌نشده با سررسید گذشته", overdue ? "t-tertiary" : "t-surface")}
+      </div>`;
+    document.getElementById("iv-count").textContent = `${faNum(rows.length)} فاکتور`;
+    document.getElementById("iv-table").innerHTML = rows.length ? `
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>شماره فاکتور</th><th>مشتری</th><th>موضوع</th><th>مبلغ نهایی</th><th>وضعیت</th><th>صدور</th><th>سررسید</th><th>عملیات</th></tr></thead>
+        <tbody>
+          ${rows.map((v) => {
+            const [lbl, cls] = INV_STATUS[v.status] || [v.status, "off"];
+            const isOverdue = v.status === "issued" && v.due_date && v.due_date < todayLocal();
+            return `<tr>
+              <td><b>${esc(v.number)}</b><span class="cell-sub">${faNum(v.items.length)} قلم خدمت</span></td>
+              <td><b>${esc(v.customer_name)}</b>${v.customer_phone ? `<span class="cell-sub" style="direction:ltr; display:block">${esc(v.customer_phone)}</span>` : ""}</td>
+              <td>${esc(v.title || "خدمات تبلیغات")}</td>
+              <td><b>${faMoney(v.total)}</b>${v.discount ? `<span class="cell-sub">تخفیف: ${faMoney(v.discount)}</span>` : ""}</td>
+              <td><div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start"><span class="badge ${cls}">${lbl}</span>${isOverdue ? '<span class="badge warn">سررسید گذشته</span>' : ""}</div></td>
+              <td>${faDate(v.issue_date)}</td>
+              <td>${faDate(v.due_date)}</td>
+              <td><div class="acts">
+                <button class="icon-btn" data-print="${v.id}" title="چاپ / PDF فاکتور"><span class="material">picture_as_pdf</span></button>
+                ${writable ? `<button class="icon-btn" data-edit="${v.id}" title="ویرایش فاکتور"><span class="material">edit</span></button>
+                <button class="icon-btn danger" data-del="${v.id}" data-name="${esc(v.number)}" title="حذف فاکتور"><span class="material">delete</span></button>` : ""}
+              </div></td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table></div>` : `<div class="card"><div class="empty"><span class="material">receipt_long</span>فاکتوری صادر نشده است — با دکمه «فاکتور جدید» اولین فاکتور را بسازید</div></div>`;
+    document.querySelectorAll("[data-print]").forEach((b) => (b.onclick = () => printOpen(`mode=invoice&id=${b.dataset.print}`)));
+    if (writable) {
+      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openInvoiceForm(lastRows.find((x) => x.id === Number(b.dataset.edit)), load)));
+      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+        confirmDialog(`فاکتور «${b.dataset.name}» حذف شود؟`, async () => {
+          await api(`invoices/${b.dataset.del}`, { method: "DELETE" });
+          toast("فاکتور حذف شد", "ok2"); load();
+        })));
+    }
+  };
+  document.getElementById("iv-q").oninput = load;
+  document.getElementById("iv-status").onchange = load;
+  const addBtn = document.getElementById("iv-add");
+  if (addBtn) addBtn.onclick = () => openInvoiceForm(null, load);
+  await load();
+}
+
+/* سازنده فاکتور با اقلام پویا */
+function openInvoiceForm(inv, after) {
+  const isEdit = !!inv;
+  const items = isEdit && Array.isArray(inv.items) ? inv.items.map((it) => ({ ...it })) : [{ desc: "", qty: 1, price: "" }];
+  const close = modal(isEdit ? "ویرایش فاکتور" : "فاکتور جدید تبلیغات", `
+    <div class="grid cols-2">
+      <div class="field"><label>نام مشتری / کسب‌وکار *</label><input id="f-cust" value="${esc(inv?.customer_name || "")}" placeholder="نام مشتری" /></div>
+      <div class="field"><label>تلفن مشتری (اختیاری)</label><input id="f-custphone" value="${esc(inv?.customer_phone || "")}" style="direction:ltr" /></div>
+    </div>
+    <div class="field"><label>موضوع فاکتور</label><input id="f-ititle" value="${esc(inv?.title || "خدمات تبلیغات")}" /></div>
+    <div class="field"><label>اقلام فاکتور</label>
+      <div id="iv-items"></div>
+      <button type="button" class="btn btn-sm" id="iv-additem"><span class="material">add</span><span>افزودن ردیف</span></button>
+    </div>
+    <div class="grid cols-2">
+      <div class="field"><label>تخفیف (تومان)</label><input id="f-disc" type="number" min="0" value="${inv?.discount ?? 0}" /></div>
+      <div class="field"><label>مبلغ نهایی</label><div id="iv-total" style="font-weight:800; font-size:15px; color:var(--primary); padding:8px 0">—</div></div>
+    </div>
+    <div class="grid cols-2">
+      <div class="field"><label>تاریخ صدور</label><input id="f-issue" type="date" value="${esc(inv?.issue_date || todayLocal())}" /></div>
+      <div class="field"><label>سررسید پرداخت (اختیاری)</label><input id="f-due" type="date" value="${esc(inv?.due_date || "")}" /></div>
+    </div>
+    <div class="field"><label>وضعیت فاکتور</label>
+      <select id="f-istatus">
+        <option value="issued" ${(inv?.status || "issued") === "issued" ? "selected" : ""}>صادرشده</option>
+        <option value="paid" ${inv?.status === "paid" ? "selected" : ""}>پرداخت‌شده</option>
+        <option value="cancelled" ${inv?.status === "cancelled" ? "selected" : ""}>لغوشده</option>
+      </select></div>
+    <div class="field"><label>یادداشت برای مشتری (اختیاری)</label><textarea id="f-inotes" rows="2" placeholder="در پایین فاکتور چاپی درج می‌شود…">${esc(inv?.notes || "")}</textarea></div>`,
+    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "صدور فاکتور"}</button>`);
+
+  const updTotal = () => {
+    const sum = items.reduce((s, it) => s + (Number(it.qty) || 1) * (Number(it.price) || 0), 0);
+    const disc = Number(document.getElementById("f-disc").value) || 0;
+    document.getElementById("iv-total").textContent = faMoney(Math.max(sum - disc, 0));
+  };
+  const renderItems = () => {
+    const box = document.getElementById("iv-items");
+    box.innerHTML = items.map((it, i) => `
+      <div class="iv-row">
+        <input class="iv-desc" data-i="${i}" value="${esc(it.desc)}" placeholder="شرح خدمت (مثلاً بنر صفحه اصلی — یک ماه)" />
+        <input class="iv-qty" data-i="${i}" type="number" min="1" value="${it.qty ?? 1}" aria-label="تعداد" />
+        <input class="iv-price" data-i="${i}" type="number" min="0" value="${it.price ?? ""}" placeholder="مبلغ واحد" aria-label="مبلغ واحد (تومان)" />
+        <button type="button" class="icon-btn danger" data-rm="${i}" title="حذف ردیف" ${items.length === 1 ? "disabled" : ""}><span class="material">close</span></button>
+      </div>`).join("");
+    box.querySelectorAll(".iv-desc").forEach((el) => (el.oninput = () => { items[+el.dataset.i].desc = el.value; }));
+    box.querySelectorAll(".iv-qty").forEach((el) => (el.oninput = () => { items[+el.dataset.i].qty = Number(el.value) || 1; updTotal(); }));
+    box.querySelectorAll(".iv-price").forEach((el) => (el.oninput = () => { items[+el.dataset.i].price = Number(el.value) || 0; updTotal(); }));
+    box.querySelectorAll("[data-rm]").forEach((b) => (b.onclick = () => { items.splice(+b.dataset.rm, 1); renderItems(); }));
+    updTotal();
+  };
+  renderItems();
+  document.getElementById("iv-additem").onclick = () => { items.push({ desc: "", qty: 1, price: "" }); renderItems(); };
+  document.getElementById("f-disc").oninput = updTotal;
+  document.getElementById("f-cancel").onclick = close;
+  document.getElementById("f-save").onclick = async () => {
+    const body = {
+      customer_name: document.getElementById("f-cust").value.trim(),
+      customer_phone: document.getElementById("f-custphone").value.trim(),
+      title: document.getElementById("f-ititle").value.trim() || "خدمات تبلیغات",
+      items: items.filter((it) => it.desc.trim()),
+      discount: Number(document.getElementById("f-disc").value) || 0,
+      issue_date: document.getElementById("f-issue").value,
+      due_date: document.getElementById("f-due").value,
+      status: document.getElementById("f-istatus").value,
+      notes: document.getElementById("f-inotes").value.trim(),
+    };
+    if (!body.customer_name) { toast("نام مشتری الزامی است", "err"); return; }
+    if (!body.items.length) { toast("حداقل یک قلم با شرح خدمت وارد کنید", "err"); return; }
+    try {
+      const r = await api(isEdit ? `invoices/${inv.id}` : "invoices", { method: isEdit ? "PUT" : "POST", body });
+      toast(isEdit ? "فاکتور بروزرسانی شد" : `فاکتور ${r.number} صادر شد`, "ok2");
+      close();
+      after ? after() : renderPage("invoices");
+    } catch (ex) { toast(ex.message, "err"); }
+  };
+}
+
 /* ---------- دستیار صوتی ---------- */
 
 async function pageVoice(host) {
@@ -1549,7 +2103,7 @@ async function pageReports(host) {
 }
 
 function entityLabel(e) {
-  return { app_user: "کاربر", line: "خط", station: "ایستگاه", ad: "تبلیغ", voice_lexicon: "فرهنگ تلفظ" }[e] || e;
+  return { app_user: "کاربر", line: "خط", station: "ایستگاه", city: "شهر", ad: "تبلیغ", revenue: "قرارداد درآمد", invoice: "فاکتور", voice_lexicon: "فرهنگ تلفظ" }[e] || e;
 }
 
 /* ---------- امنیت ---------- */
