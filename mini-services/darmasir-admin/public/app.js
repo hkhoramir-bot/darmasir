@@ -277,7 +277,11 @@ function layout(cur) {
         <nav class="nav" aria-label="ناوبری پنل">${nav}</nav>
       </div>
       <div class="side-foot">
-        <div class="side-meta"><span class="material">database</span><span>پایگاه داده محلی فعال — بدون وابستگی خارجی</span></div>
+        <div class="side-user">
+          <div class="avatar" aria-hidden="true">${esc((me.display_name || "?").slice(0, 1))}</div>
+          <div class="who"><b>${esc(me.display_name)}</b><span>${ROLE_LABEL[me.role] || me.role} — ${esc(me.username || "")}</span></div>
+        </div>
+        <div class="side-meta"><span class="material">database</span><span>پایگاه داده محلی فعال</span></div>
         <button class="logout-btn" id="logout-btn"><span class="material">logout</span><span>خروج از حساب</span></button>
       </div>
     </aside>
@@ -288,12 +292,8 @@ function layout(cur) {
           <span class="material">search</span>
           <input id="top-search" type="search" placeholder="جستجو در جدول‌های این صفحه…" aria-label="جستجو در صفحه" />
         </div>
+        <span class="spacer"></span>
         <div class="db-chip"><span class="pulse"></span><span>اتصال پایگاه داده فعال</span></div>
-        <span class="top-divider"></span>
-        <div class="me-box">
-          <div class="who"><b>${esc(me.display_name)}</b><span>${ROLE_LABEL[me.role] || me.role} — ${esc(me.username || "")}</span></div>
-          <div class="avatar">${esc((me.display_name || "?").slice(0, 1))}</div>
-        </div>
       </header>
       <main class="content" id="page-content"><div class="empty"><span class="material">hourglass_empty</span>در حال بارگذاری…</div></main>
     </div>
@@ -325,11 +325,12 @@ async function pageDashboard(host) {
   const maxApi = Math.max(...d.api_last7.map((x) => x.count), 1);
   host.innerHTML = `
     ${pageHead("داشبورد مدیریتی", "نمای کلی آمار کاربران، سفرها، تبلیغات و وضعیت سرویس‌های درمسیر")}
-    <div class="kpi-grid">
+    <div class="kpi-grid kpi-grid-5">
       ${kpi("کل کاربران", "group", d.users_total, "کاربر ثبت‌شده در سامانه", "t-primary")}
       ${kpi("کاربران فعال", "trending_up", d.users_active, "کاربر با نشست اخیر", "t-tertiary")}
       ${kpi("سفرهای ثبت‌شده", "route", d.trips_total, "از ابتدا تا امروز", "t-surface")}
       ${kpi("تبلیغ فعال", "campaign", d.ads_active, "کمپین در حال نمایش", "t-dim")}
+      ${kpi("شهرهای تحت پوشش", "location_city", d.cities_total ?? 0, "شهر با شبکه فعال", "t-primary")}
     </div>
     <div class="kpi-grid kpi-grid-3">
       ${kpi("خط فعال", "alt_route", d.lines_active, "خط در حال سرویس‌دهی", "t-primary")}
@@ -366,6 +367,23 @@ async function pageDashboard(host) {
             </div>`).join("") : `<div class="empty"><span class="material">inbox</span>فعالیتی ثبت نشده است</div>`}
         </div>
       </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="material" style="color:var(--primary)">location_city</span>پوشش شهرها — خطوط و ایستگاه‌های فعال به تفکیک شهر</h3>
+      ${(d.lines_by_city || []).length ? (() => {
+        const maxSt = Math.max(...(d.lines_by_city || []).map((c) => c.stations || 0), 1);
+        return `
+        <div class="city-coverage">
+          ${(d.lines_by_city || []).map((c) => `
+            <div class="cc-row">
+              <div class="cc-head">
+                <span class="cc-city"><span class="material">location_city</span>${esc(c.city)}</span>
+                <span class="cc-nums"><span class="badge info">${faNum(c.lines)} خط فعال</span><span class="badge ok">${faNum(c.stations)} ایستگاه</span></span>
+              </div>
+              <div class="meter"><div class="meter-fill" style="width:${Math.max(Math.round(((c.stations || 0) / maxSt) * 100), 3)}%"></div></div>
+            </div>`).join("")}
+        </div>`;
+      })() : `<div class="empty"><span class="material">location_city</span>هنوز شهری ثبت نشده است</div>`}
     </div>`;
 }
 
@@ -520,32 +538,118 @@ function openUserForm(user, after) {
   };
 }
 
+/* ---------- شهرها ---------- */
+
+async function pageCities(host) {
+  const writable = can("operator");
+  let lastRows = [];
+  host.innerHTML = `
+    ${pageHead("شهرها", "تعریف شهرهای تحت پوشش؛ هر خط و ایستگاه به یک شهر متصل می‌شود و در کل پنل بر اساس شهر فیلتر می‌گردد.",
+      writable ? `<button class="btn btn-primary" id="c-add"><span class="material">add</span><span>شهر جدید</span></button>` : "")}
+    <div class="toolbar">
+      <input id="c-q" placeholder="جست‌وجوی نام شهر…" style="min-width:220px" />
+      <span class="toolbar-note" id="c-count"></span>
+    </div>
+    <div id="c-table"></div>`;
+  const load = async () => {
+    const rows = await api("cities");
+    lastRows = rows;
+    const q = document.getElementById("c-q").value.trim();
+    const shown = q ? rows.filter((c) => c.name.includes(q)) : rows;
+    document.getElementById("c-count").textContent = `${faNum(rows.length)} شهر ثبت‌شده`;
+    document.getElementById("c-table").innerHTML = shown.length ? `
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>نام شهر</th><th class="cell-center">خطوط متصل</th><th class="cell-center">ایستگاه‌ها</th><th>تاریخ ثبت</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+        <tbody>
+          ${shown.map((c) => `
+            <tr>
+              <td><div class="cell-media"><div class="thumb thumb-empty city-thumb"><span class="material">location_city</span></div><b>${esc(c.name)}</b></div></td>
+              <td class="cell-center"><span class="badge info">${faNum(c.lines_count)}</span></td>
+              <td class="cell-center"><span class="badge ok">${faNum(c.stations_count)}</span></td>
+              <td>${faTime(c.created_at)}</td>
+              <td><span class="badge ${c.is_active ? "ok" : "off"}">${c.is_active ? "فعال" : "غیرفعال"}</span></td>
+              ${writable ? `<td><div class="acts">
+                <button class="icon-btn" data-edit="${c.id}" title="ویرایش شهر"><span class="material">edit</span></button>
+                <button class="icon-btn danger" data-del="${c.id}" data-name="${esc(c.name)}" title="حذف شهر"><span class="material">delete</span></button>
+              </div></td>` : ""}
+            </tr>`).join("")}
+        </tbody>
+      </table></div>` : `<div class="card"><div class="empty"><span class="material">location_city</span>شهری یافت نشد</div></div>`;
+    if (writable) {
+      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openCityForm(rows.find((x) => x.id === Number(b.dataset.edit)), load)));
+      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+        confirmDialog(`شهر «${b.dataset.name}» حذف شود؟ (فقط اگر خط یا ایستگاهی به آن متصل نباشد)`, async () => {
+          try {
+            await api(`cities/${b.dataset.del}`, { method: "DELETE" });
+            toast("شهر حذف شد", "ok2"); load();
+          } catch (ex) { toast(ex.message, "err"); }
+        })));
+    }
+  };
+  document.getElementById("c-q").oninput = load;
+  const addBtn = document.getElementById("c-add");
+  if (addBtn) addBtn.onclick = () => openCityForm(null, load);
+  await load();
+}
+
+function openCityForm(city, after) {
+  const isEdit = !!city;
+  const close = modal(isEdit ? "ویرایش شهر" : "شهر جدید", `
+    <div class="field"><label>نام شهر</label><input id="f-cityname" value="${esc(city?.name || "")}" placeholder="مثلاً شیراز" /></div>
+    <div class="field"><label>وضعیت</label>
+      <select id="f-cityactive"><option value="1" ${!city || city.is_active ? "selected" : ""}>فعال</option><option value="0" ${city && !city.is_active ? "selected" : ""}>غیرفعال</option></select></div>
+    ${isEdit ? '<span class="hint">با تغییر نام شهر، اتصال خطوط و ایستگاه‌های این شهر حفظ می‌شود.</span>' : '<span class="hint">پس از ثبت، شهر در فرم خطوط، ایستگاه‌ها و فیلترها قابل انتخاب است.</span>'}`,
+    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+  document.getElementById("f-cancel").onclick = close;
+  document.getElementById("f-save").onclick = async () => {
+    const name = document.getElementById("f-cityname").value.trim();
+    if (!name) { toast("نام شهر الزامی است", "err"); return; }
+    try {
+      await api(isEdit ? `cities/${city.id}` : "cities", {
+        method: isEdit ? "PUT" : "POST",
+        body: { name, is_active: Number(document.getElementById("f-cityactive").value) },
+      });
+      toast(isEdit ? "شهر بروزرسانی شد" : "شهر اضافه شد", "ok2");
+      close(); after ? after() : renderPage("cities");
+    } catch (ex) { toast(ex.message, "err"); }
+  };
+}
+
 /* ---------- خطوط ---------- */
 
 async function pageLines(host) {
   const writable = can("operator");
   let mode = "metro";
+  let cityId = "";
+  const cities = await api("cities");
   host.innerHTML = `
-    ${pageHead("خطوط", "مدیریت خطوط مترو، اتوبوس و اتوبوس تندرو؛ مشاهده، ترتیب‌دهی و اصلاح داده‌های حمل‌ونقل.",
+    ${pageHead("خطوط", "مدیریت خطوط مترو، اتوبوس و اتوبوس تندرو؛ هر خط به یک شهر متصل است و می‌توانید بر اساس شهر فیلتر کنید.",
       writable ? `<button class="btn btn-primary" id="l-add"><span class="material">add</span><span>خط جدید</span></button>` : "")}
     <div class="toolbar">
+      <select id="l-city" aria-label="فیلتر شهر">
+        <option value="">همه شهرها</option>
+        ${cities.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}
+      </select>
       <select id="l-mode">
         <option value="metro">مترو</option>
         <option value="bus">اتوبوس</option>
         <option value="brt">اتوبوس تندرو</option>
       </select>
+      <span class="toolbar-note" id="l-count"></span>
     </div>
     <div id="l-table"></div>`;
   const load = async () => {
-    const rows = await api(`lines?mode=${mode}`);
+    const rows = await api(`lines?mode=${mode}&city_id=${cityId}`);
+    document.getElementById("l-count").textContent = `${faNum(rows.length)} خط${cityId ? " در " + esc((cities.find((c) => String(c.id) === String(cityId)) || {}).name || "") : ""}`;
     document.getElementById("l-table").innerHTML = rows.length ? `
       <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th></th><th>نام خط</th><th>شماره</th><th>سرخط‌ها</th><th>جهت</th><th>ایستگاه‌ها</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+        <thead><tr><th></th><th>نام خط</th><th>شهر</th><th>شماره</th><th>سرخط‌ها</th><th>جهت</th><th>ایستگاه‌ها</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
         <tbody>
           ${rows.map((l) => `
             <tr>
               <td><span class="dot" style="background:${esc(l.color)}"></span></td>
               <td><b>${esc(l.name)}</b></td>
+              <td>${l.city_name ? `<span class="placement-chip"><span class="material">location_city</span>${esc(l.city_name)}</span>` : '<span class="badge off">بدون شهر</span>'}</td>
               <td>${l.number ?? "—"}</td>
               <td>${esc((l.terminals || "").split("|").filter(Boolean).join(" ← ")) || "—"}</td>
               <td>${esc(l.direction || "—")}</td>
@@ -568,7 +672,7 @@ async function pageLines(host) {
         await api("lines/duplicate", { method: "POST", body: { id: Number(b.dataset.dup) } });
         toast(`خط «${b.dataset.name}» تکثیر شد (غیرفعال)`, "ok2"); load();
       }));
-      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openLineForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openLineForm(rows.find((x) => x.id === Number(b.dataset.edit)), load, cities)));
       document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
         confirmDialog(`خط «${b.dataset.name}» و ایستگاه‌هایش حذف شوند؟`, async () => {
           await api(`lines/${b.dataset.del}`, { method: "DELETE" });
@@ -582,15 +686,22 @@ async function pageLines(host) {
     load();
   };
   document.getElementById("l-mode").onchange = (e) => { mode = e.target.value; load(); };
+  document.getElementById("l-city").onchange = (e) => { cityId = e.target.value; load(); };
   const addBtn = document.getElementById("l-add");
-  if (addBtn) addBtn.onclick = () => openLineForm(null, load);
+  if (addBtn) addBtn.onclick = () => openLineForm(null, load, cities);
   await load();
 }
 
-function openLineForm(line, after) {
+function openLineForm(line, after, cities = []) {
   const isEdit = !!line;
   const close = modal(isEdit ? "ویرایش خط" : "خط جدید", `
     <div class="field"><label>نام خط</label><input id="f-name" value="${esc(line?.name || "")}" placeholder="مثلاً خط ۱" /></div>
+    <div class="field"><label>شهر</label>
+      <select id="f-city">
+        <option value="">— انتخاب شهر —</option>
+        ${cities.map((c) => `<option value="${c.id}" ${String(line?.city_id ?? "") === String(c.id) ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+      </select>
+      <span class="hint">خط به شهر متصل می‌شود و در اپلیکیشن و فیلترهای پنل بر اساس آن دسته‌بندی می‌گردد.</span></div>
     <div class="field"><label>دسته</label>
       <select id="f-mode">
         <option value="metro" ${line?.mode === "metro" ? "selected" : ""}>مترو</option>
@@ -610,6 +721,7 @@ function openLineForm(line, after) {
   document.getElementById("f-save").onclick = async () => {
     const body = {
       name: document.getElementById("f-name").value.trim(),
+      city_id: document.getElementById("f-city").value,
       mode: document.getElementById("f-mode").value,
       number: document.getElementById("f-number").value,
       color: document.getElementById("f-color").value.trim(),
@@ -618,6 +730,7 @@ function openLineForm(line, after) {
       is_active: Number(document.getElementById("f-active").value),
     };
     if (!body.name) { toast("نام خط الزامی است", "err"); return; }
+    if (!body.city_id) { toast("تعیین شهر خط الزامی است", "err"); return; }
     try {
       await api(isEdit ? `lines/${line.id}` : "lines", { method: isEdit ? "PUT" : "POST", body });
       toast(isEdit ? "خط بروزرسانی شد" : "خط اضافه شد", "ok2");
@@ -630,29 +743,56 @@ function openLineForm(line, after) {
 
 async function pageStations(host) {
   const writable = can("operator");
-  const lines = await api("lines");
+  const [lines, cities] = await Promise.all([api("lines"), api("cities")]);
   if (!lines.length) { host.innerHTML = `${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط و مختصات جغرافیایی.")}<div class="card"><div class="empty"><span class="material">location_off</span>ابتدا یک خط ثبت کنید</div></div>`; return; }
   host.innerHTML = `
-    ${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط، ترتیب قرارگیری و مختصات جغرافیایی.",
+    ${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط، ترتیب قرارگیری و مختصات جغرافیایی؛ ایستگاه‌ها به شهر خط خود متصل می‌شوند.",
       `${writable ? `<button class="btn" id="s-bulk"><span class="material">playlist_add</span><span>افزودن گروهی</span></button>
       <button class="btn btn-primary" id="s-add"><span class="material">add</span><span>ایستگاه جدید</span></button>` : ""}`)}
     <div class="toolbar">
-      <select id="s-line">${lines.map((l) => `<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select>
+      <select id="s-city" aria-label="فیلتر شهر">
+        <option value="">همه شهرها</option>
+        ${cities.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}
+      </select>
+      <select id="s-line" aria-label="فیلتر خط"></select>
       <span class="toolbar-note" id="s-count"></span>
     </div>
     <div id="s-table"></div>`;
+
+  const fillLineOptions = () => {
+    const cityId = document.getElementById("s-city").value;
+    const shown = cityId ? lines.filter((l) => String(l.city_id) === cityId) : lines;
+    const prev = document.getElementById("s-line").value;
+    document.getElementById("s-line").innerHTML =
+      `<option value="">همه خط‌ها${cityId ? " این شهر" : ""}</option>` +
+      shown.map((l) => `<option value="${l.id}">${esc(l.name)}${l.city_name ? " — " + esc(l.city_name) : ""}</option>`).join("");
+    // اگر خط قبلی در شهر جدید نیست، به «همه خط‌ها» برگرد
+    if (prev && !shown.some((l) => String(l.id) === prev)) document.getElementById("s-line").value = "";
+    else document.getElementById("s-line").value = prev;
+  };
+  fillLineOptions();
+
   const load = async () => {
-    const lineId = Number(document.getElementById("s-line").value);
-    const rows = await api(`stations?line_id=${lineId}`);
-    document.getElementById("s-count").textContent = `${faNum(rows.length)} ایستگاه در این خط`;
+    const cityId = document.getElementById("s-city").value;
+    const lineId = document.getElementById("s-line").value;
+    const rows = lineId ? await api(`stations?line_id=${lineId}`) : cityId ? await api(`stations?city_id=${cityId}`) : await api("stations");
+    const showLineCol = !lineId;
+    const showCityCol = !cityId;
+    document.getElementById("s-count").textContent = lineId
+      ? `${faNum(rows.length)} ایستگاه در این خط`
+      : cityId
+        ? `${faNum(rows.length)} ایستگاه در شهر ${esc((cities.find((c) => c.id === Number(cityId)) || {}).name || "")}`
+        : `${faNum(rows.length)} ایستگاه در همه شهرها`;
     document.getElementById("s-table").innerHTML = rows.length ? `
       <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>ترتیب</th><th>نام ایستگاه</th><th>عرض جغرافیایی</th><th>طول جغرافیایی</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+        <thead><tr><th>ترتیب</th><th>نام ایستگاه</th>${showLineCol ? "<th>خط</th>" : ""}${showCityCol ? "<th>شهر</th>" : ""}<th>عرض جغرافیایی</th><th>طول جغرافیایی</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
         <tbody>
           ${rows.map((s) => `
             <tr>
               <td><span class="order-chip">${faNum(s.order_index)}</span></td>
               <td><b>${esc(s.name)}</b></td>
+              ${showLineCol ? `<td><span class="dot" style="background:${esc(s.line_color || "#009640")}"></span> ${esc(s.line_name || "—")}</td>` : ""}
+              ${showCityCol ? `<td>${s.city_name ? `<span class="placement-chip"><span class="material">location_city</span>${esc(s.city_name)}</span>` : '<span class="badge off">بدون شهر</span>'}</td>` : ""}
               <td>${s.lat ?? "—"}</td>
               <td>${s.lng ?? "—"}</td>
               <td><span class="badge ${s.is_active ? "ok" : "off"}">${s.is_active ? "فعال" : "غیرفعال"}</span></td>
@@ -664,7 +804,7 @@ async function pageStations(host) {
               </div></td>` : ""}
             </tr>`).join("")}
         </tbody>
-      </table></div>` : `<div class="card"><div class="empty"><span class="material">location_off</span>ایستگاهی در این خط ثبت نشده است</div></div>`;
+      </table></div>` : `<div class="card"><div class="empty"><span class="material">location_off</span>ایستگاهی در این محدوده ثبت نشده است</div></div>`;
     if (writable) {
       document.querySelectorAll("[data-up]").forEach((b) => (b.onclick = async () => {
         const r = await api("stations/reorder", { method: "POST", body: { id: Number(b.dataset.up), dir: "up" } });
@@ -676,7 +816,7 @@ async function pageStations(host) {
         if (!r.moved) { toast("به پایین فهرست رسیده است", "err"); return; }
         load();
       }));
-      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openStationForm(rows.find((x) => x.id === Number(b.dataset.edit)), load, lines)));
+      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openStationForm(rows.find((x) => x.id === Number(b.dataset.edit)), load, lines, cities)));
       document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
         confirmDialog(`ایستگاه «${b.dataset.name}» حذف شود؟`, async () => {
           await api(`stations/${b.dataset.del}`, { method: "DELETE" });
@@ -685,19 +825,27 @@ async function pageStations(host) {
     }
   };
   document.getElementById("s-line").onchange = load;
+  document.getElementById("s-city").onchange = () => { fillLineOptions(); load(); };
   if (writable) {
-    document.getElementById("s-add").onclick = () => openStationForm(null, load, lines);
-    document.getElementById("s-bulk").onclick = () => openStationBulk(load, lines);
+    document.getElementById("s-add").onclick = () => openStationForm(null, load, lines, cities);
+    document.getElementById("s-bulk").onclick = () => openStationBulk(load, lines, cities);
   }
   await load();
 }
 
 /* افزودن گروهی ایستگاه — هر خط یک نام */
-function openStationBulk(after, lines) {
-  const lineId = document.getElementById("s-line").value;
+function openStationBulk(after, lines, cities = []) {
+  const cityId = document.getElementById("s-city")?.value || "";
+  const lineId = document.getElementById("s-line")?.value || "";
+  const shownLines = cityId ? lines.filter((l) => String(l.city_id) === cityId) : lines;
   const close = modal("افزودن گروهی ایستگاه", `
+    <div class="field"><label>شهر مقصد</label>
+      <select id="b-city" disabled>
+        ${cities.map((c) => `<option value="${c.id}" ${String(c.id) === String(cityId) ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+      </select>
+      <span class="hint">شهر ایستگاه‌های جدید به‌طور خودکار از شهر خط مقصد گرفته می‌شود.</span></div>
     <div class="field"><label>خط مقصد</label>
-      <select id="b-line">${lines.map((l) => `<option value="${l.id}" ${String(l.id) === String(lineId) ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
+      <select id="b-line">${shownLines.map((l) => `<option value="${l.id}" ${String(l.id) === String(lineId) ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
     <div class="field"><label>نام ایستگاه‌ها (هر خط یک نام — به ترتیب مسیر)</label>
       <textarea id="b-names" rows="8" placeholder="مثلاً:
 کهریزک
@@ -717,12 +865,20 @@ function openStationBulk(after, lines) {
   };
 }
 
-function openStationForm(station, after, lines) {
+function openStationForm(station, after, lines, cities = []) {
   const isEdit = !!station;
-  const curLine = isEdit ? station.line_id : Number(document.getElementById("s-line").value);
+  const curLine = isEdit ? station.line_id : Number(document.getElementById("s-line")?.value) || (lines[0] ? lines[0].id : null);
+  const cityOfLine = (lineId) => (lines.find((l) => l.id === Number(lineId)) || {}).city_id ?? "";
+  let curCity = isEdit ? (station.city_id ?? cityOfLine(curLine)) : cityOfLine(curLine);
   const close = modal(isEdit ? "ویرایش ایستگاه" : "ایستگاه جدید", `
+    <div class="field"><label>شهر</label>
+      <select id="f-city">
+        <option value="">— هماهنگ با شهر خط —</option>
+        ${cities.map((c) => `<option value="${c.id}" ${String(curCity ?? "") === String(c.id) ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+      </select>
+      <span class="hint">به‌طور پیش‌فرض شهر ایستگاه از شهر خط مقصد گرفته می‌شود؛ در صورت نیاز شهر دیگر را انتخاب کنید.</span></div>
     <div class="field"><label>خط</label>
-      <select id="f-line">${lines.map((l) => `<option value="${l.id}" ${l.id === curLine ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select>
+      <select id="f-line">${lines.map((l) => `<option value="${l.id}" ${l.id === curLine ? "selected" : ""}>${esc(l.name)}${l.city_name ? " — " + esc(l.city_name) : ""}</option>`).join("")}</select>
       ${isEdit ? '<span class="hint">با تغییر خط، ایستگاه به خط مقصد منتقل می‌شود.</span>' : ""}</div>
     <div class="field"><label>نام ایستگاه</label><input id="f-name" value="${esc(station?.name || "")}" placeholder="مثلاً تجریش" /></div>
     <div class="grid cols-2">
@@ -733,9 +889,15 @@ function openStationForm(station, after, lines) {
     <div class="field"><label>وضعیت</label>
       <select id="f-active"><option value="1" ${!station || station.is_active ? "selected" : ""}>فعال</option><option value="0" ${station && !station.is_active ? "selected" : ""}>غیرفعال</option></select></div>`,
     `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+  // هماهنگی خودکار شهر با خط انتخاب‌شده (تا وقتی مدیر شهر را دستی عوض نکرده)
+  document.getElementById("f-line").onchange = (e) => {
+    const cid = cityOfLine(e.target.value);
+    if (cid) document.getElementById("f-city").value = String(cid);
+  };
   document.getElementById("f-cancel").onclick = close;
   document.getElementById("f-save").onclick = async () => {
     const body = {
+      city_id: document.getElementById("f-city").value,
       line_id: Number(document.getElementById("f-line").value),
       name: document.getElementById("f-name").value.trim(),
       lat: document.getElementById("f-lat").value,
