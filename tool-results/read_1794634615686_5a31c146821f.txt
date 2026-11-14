@@ -1,0 +1,947 @@
+     1→     1→<!DOCTYPE html>
+     2→     2→
+     3→     3→<html dir="rtl" lang="fa"><head>
+     4→     4→<meta charset="utf-8"/>
+     5→     5→<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+     6→     6→<title>درمسیر - مدیریت تبلیغات و بنرهای درون‌برنامه‌ای (پنل وب مدیریت)</title>
+     7→     7→<!-- Google Fonts: Vazirmatn for Persian Typography -->
+     8→     8→<link href="https://fonts.googleapis.com" rel="preconnect"/>
+     9→     9→<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    10→    10→<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    11→    11→<!-- Material Symbols Outlined -->
+    12→    12→<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    13→    13→<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    14→    14→<!-- Tailwind CSS CDN with forms and container-queries -->
+    15→    15→<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    16→    16→<!-- Tailwind Configuration verbatim as provided -->
+    17→    17→<script id="tailwind-config">
+    18→    18→    tailwind.config = {
+    19→    19→      darkMode: "class",
+    20→    20→      theme: {
+    21→    21→        extend: {
+    22→    22→          "colors": {
+    23→    23→            "primary-fixed": "#d5e3ff",
+    24→    24→            "surface-bright": "#f9f9ff",
+    25→    25→            "surface-container-highest": "#d8e3fb",
+    26→    26→            "surface-container-lowest": "#ffffff",
+    27→    27→            "primary-fixed-dim": "#a8c8ff",
+    28→    28→            "surface-dim": "#cfdaf2",
+    29→    29→            "on-tertiary-container": "#6ae79a",
+    30→    30→            "on-secondary": "#ffffff",
+    31→    31→            "on-primary-fixed-variant": "#004689",
+    32→    32→            "secondary-fixed-dim": "#ffb4aa",
+    33→    33→            "on-primary": "#ffffff",
+    34→    34→            "primary": "#00417f",
+    35→    35→            "on-secondary-fixed": "#410001",
+    36→    36→            "secondary": "#bc000c",
+    37→    37→            "error-container": "#ffdad6",
+    38→    38→            "on-tertiary": "#ffffff",
+    39→    39→            "on-primary-fixed": "#001b3c",
+    40→    40→            "on-secondary-container": "#fffbff",
+    41→    41→            "on-error": "#ffffff",
+    42→    42→            "on-surface": "#111c2d",
+    43→    43→            "surface-tint": "#1a5eac",
+    44→    44→            "secondary-fixed": "#ffdad5",
+    45→    45→            "on-error-container": "#93000a",
+    46→    46→            "tertiary": "#004c28",
+    47→    47→            "surface-variant": "#d8e3fb",
+    48→    48→            "inverse-on-surface": "#ecf1ff",
+    49→    49→            "background": "#f9f9ff",
+    50→    50→            "surface-container-high": "#dee8ff",
+    51→    51→            "outline-variant": "#c2c6d3",
+    52→    52→            "error": "#ba1a1a",
+    53→    53→            "tertiary-fixed-dim": "#61de92",
+    54→    54→            "inverse-surface": "#263143",
+    55→    55→            "tertiary-container": "#006638",
+    56→    56→            "on-background": "#111c2d",
+    57→    57→            "inverse-primary": "#a8c8ff",
+    58→    58→            "outline": "#727782",
+    59→    59→            "on-tertiary-fixed-variant": "#00522c",
+    60→    60→            "secondary-container": "#e32220",
+    61→    61→            "on-secondary-fixed-variant": "#930007",
+    62→    62→            "primary-container": "#0d58a6",
+    63→    63→            "on-primary-container": "#b6d0ff",
+    64→    64→            "surface-container": "#e7eeff",
+    65→    65→            "surface-container-low": "#f0f3ff",
+    66→    66→            "on-surface-variant": "#424751",
+    67→    67→            "tertiary-fixed": "#7efbac",
+    68→    68→            "surface": "#f9f9ff",
+    69→    69→            "on-tertiary-fixed": "#00210e"
+    70→    70→          },
+    71→    71→          "borderRadius": {
+    72→    72→            "DEFAULT": "0.25rem",
+    73→    73→            "lg": "0.5rem",
+    74→    74→            "xl": "0.75rem",
+    75→    75→            "full": "9999px"
+    76→    76→          },
+    77→    77→          "spacing": {
+    78→    78→            "space-xs": "0.25rem",
+    79→    79→            "gutter": "1rem",
+    80→    80→            "space-lg": "1.5rem",
+    81→    81→            "margin": "1rem",
+    82→    82→            "space-md": "1rem",
+    83→    83→            "space-xl": "2rem",
+    84→    84→            "space-sm": "0.5rem"
+    85→    85→          },
+    86→    86→          "fontFamily": {
+    87→    87→            "title-md": ["Vazirmatn"],
+    88→    88→            "title-lg": ["Vazirmatn"],
+    89→    89→            "body-md": ["Vazirmatn"],
+    90→    90→            "headline-xl": ["Vazirmatn"],
+    91→    91→            "body-sm": ["Vazirmatn"],
+    92→    92→            "body-lg": ["Vazirmatn"],
+    93→    93→            "label-md": ["Vazirmatn"],
+    94→    94→            "label-sm": ["Vazirmatn"],
+    95→    95→            "headline-md": ["Vazirmatn"],
+    96→    96→            "headline-lg": ["Vazirmatn"],
+    97→    97→            "label-lg": ["Vazirmatn"]
+    98→    98→          },
+    99→    99→          "fontSize": {
+   100→   100→            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+   101→   101→            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+   102→   102→            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+   103→   103→            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+   104→   104→            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+   105→   105→            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+   106→   106→            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+   107→   107→            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+   108→   108→            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+   109→   109→            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+   110→   110→            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+   111→   111→          }
+   112→   112→        },
+   113→   113→      },
+   114→   114→    }
+   115→   115→  </script>
+   116→   116→<style>
+   117→   117→    .material-symbols-outlined {
+   118→   118→      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+   119→   119→      display: inline-block;
+   120→   120→      vertical-align: middle;
+   121→   121→      line-height: 1;
+   122→   122→    }
+   123→   123→    body {
+   124→   124→      font-family: 'Vazirmatn', sans-serif;
+   125→   125→      text-rendering: optimizeLegibility;
+   126→   126→      -webkit-font-smoothing: antialiased;
+   127→   127→    }
+   128→   128→    /* Hide scrollbars for slick mockups */
+   129→   129→    .no-scrollbar::-webkit-scrollbar {
+   130→   130→      display: none;
+   131→   131→    }
+   132→   132→    .no-scrollbar {
+   133→   133→      -ms-overflow-style: none;
+   134→   134→      scrollbar-width: none;
+   135→   135→    }
+   136→   136→  </style>
+   137→   137→</head>
+   138→   138→<body class="bg-background text-on-surface min-h-screen antialiased flex flex-row selection:bg-primary-fixed selection:text-primary">
+   139→   139→<!-- ========================================================================= -->
+   140→   140→<!-- SIDE NAVIGATION BAR (Right Sidebar for RTL, matches Shared Components JSON) -->
+   141→   141→<!-- ========================================================================= -->
+   142→   142→<aside class="fixed right-0 top-0 h-full w-72 flex flex-col z-40 bg-surface-container-lowest dark:bg-inverse-surface border-l border-outline-variant dark:border-outline shadow-sm justify-between">
+   143→   143→<!-- Header brand & Title -->
+   144→   144→<div>
+   145→   145→<div class="p-6 border-b border-outline-variant/50 flex items-center justify-between">
+   146→   146→<div class="flex items-center gap-3">
+   147→   147→<div class="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm">
+   148→   148→<span class="material-symbols-outlined text-[28px]" data-icon="subway" style="font-variation-settings: 'FILL' 1;">subway</span>
+   149→   149→</div>
+   150→   150→<div>
+   151→   151→<div class="flex items-center gap-2">
+   152→   152→<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">درمسیر</span>
+   153→   153→<span class="bg-primary-fixed text-primary px-2 py-0.5 rounded-full font-label-sm text-label-sm">نسخه ۲.۴</span>
+   154→   154→</div>
+   155→   155→<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">پنل مدیریت سامانه ناوبری شهری</p>
+   156→   156→</div>
+   157→   157→</div>
+   158→   158→</div>
+   159→   159→<!-- Navigation Tabs (8 items with "تبلیغات و بنرها" ACTIVE) -->
+   160→   160→<nav class="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-270px)] no-scrollbar">
+   161→   161→<!-- 1. داشبورد مدیریتی -->
+   162→   162→<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+   163→   163→<span class="material-symbols-outlined text-[22px]" data-icon="dashboard">dashboard</span>
+   164→   164→<span>داشبورد مدیریتی</span>
+   165→   165→</a>
+   166→   166→<!-- 2. کاربران -->
+   167→   167→<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+   168→   168→<span class="material-symbols-outlined text-[22px]" data-icon="group">group</span>
+   169→   169→<span>کاربران</span>
+   170→   170→</a>
+   171→   171→<!-- 3. خطوط و ایستگاه‌ها -->
+   172→   172→<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+   173→   173→<span class="material-symbols-outlined text-[22px]" data-icon="alt_route">alt_route</span>
+   174→   174→<span>خطوط و ایستگاه‌ها</span>
+   175→   175→</a>
+   176→   176→<!-- 4. تبلیغات و بنرها (ACTIVE ITEM via style_active_navigation) -->
+   177→   177→<a class="flex items-center gap-3 bg-primary-container text-on-primary-container dark:bg-primary-fixed dark:text-on-primary-fixed rounded-xl px-4 py-3 font-title-md text-title-md transition-all shadow-sm" href="#">
+   178→   178→<span class="material-symbols-outlined text-[22px]" data-icon="campaign" style="font-variation-settings: 'FILL' 1;">campaign</span>
+   179→   179→<span class="flex-1">تبلیغات و بنرها</span>
+   180→   180→<span class="w-2 h-2 rounded-full bg-tertiary-fixed ring-2 ring-tertiary"></span>
+   181→   181→</a>
+   182→   182→<!-- 5. دستیار صوتی و آواشناسی -->
+   183→   183→<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+   184→   184→<span class="material-symbols-outlined text-[22px]" data-icon="record_voice_over">record_voice_over</span>
+   185→   185→<span>دستیار صوتی و آواشناسی</span>
+   186→   186→</a>
+   187→   187→<!-- 6. تنظیمات سامانه -->
+   188→   188→<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+   189→   189→<span class="material-symbols-outlined text-[22px]" data-icon="settings">settings</span>
+   190→   190→<span>تنظیمات سامانه</span>
+   191→   191→</a>
+   192→   192→<!-- 7. گزارش‌ها و تحلیل داده -->
+   193→   193→<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+   194→   194→<span class="material-symbols-outlined text-[22px]" data-icon="monitoring">monitoring</span>
+   195→   195→<span>گزارش‌ها و تحلیل داده</span>
+   196→   196→</a>
+   197→   197→<!-- 8. امنیت و وقایع‌نگاری -->
+   198→   198→<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+   199→   199→<span class="material-symbols-outlined text-[22px]" data-icon="security">security</span>
+   200→   200→<span>امنیت و وقایع‌نگاری</span>
+   201→   201→</a>
+   202→   202→</nav>
+   203→   203→</div>
+   204→   204→<!-- Bottom Footer Links & CTA -->
+   205→   205→<div class="p-4 border-t border-outline-variant/60 bg-surface-container-low/40 space-y-2">
+   206→   206→<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary px-3 py-2 rounded-lg font-body-sm text-body-sm transition-colors" href="#">
+   207→   207→<span class="material-symbols-outlined text-[18px]" data-icon="api">api</span>
+   208→   208→<span>مستندات API</span>
+   209→   209→</a>
+   210→   210→<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary px-3 py-2 rounded-lg font-body-sm text-body-sm transition-colors" href="#">
+   211→   211→<span class="material-symbols-outlined text-[18px]" data-icon="help">help</span>
+   212→   212→<span>پشتیبانی فنی</span>
+   213→   213→</a>
+   214→   214→<button class="w-full flex items-center justify-center gap-2 text-secondary bg-surface-container-lowest border border-outline-variant hover:bg-error-container hover:text-on-error-container px-4 py-2.5 rounded-xl font-label-md text-label-md transition-colors shadow-sm">
+   215→   215→<span class="material-symbols-outlined text-[18px]" data-icon="logout">logout</span>
+   216→   216→<span>خروج از حساب</span>
+   217→   217→</button>
+   218→   218→</div>
+   219→   219→</aside>
+   220→   220→<!-- ========================================================================= -->
+   221→   221→<!-- TOP APP BAR / ADMIN HEADER (Matches JSON Shared Component TopNavBar) -->
+   222→   222→<!-- ========================================================================= -->
+   223→   223→<header class="fixed top-0 left-0 right-72 z-30 h-16 flex items-center justify-between px-6 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm">
+   224→   224→<!-- Search Bar (on_right for RTL layout) -->
+   225→   225→<div class="flex items-center gap-4 flex-1 max-w-xl">
+   226→   226→<div class="relative w-full">
+   227→   227→<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-icon="search">search</span>
+   228→   228→<input class="w-full pl-4 pr-10 py-2 bg-surface-container-low rounded-xl border border-outline-variant/70 font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="جستجوی کمپین، حامی مالی، جایگاه تبلیغاتی یا شناسه بنر..." type="text"/>
+   229→   229→</div>
+   230→   230→<!-- Cloudflare D1/R2 Connection Status Chip -->
+   231→   231→<div class="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container border border-outline-variant/50 shrink-0">
+   232→   232→<span class="relative flex h-2 w-2">
+   233→   233→<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+   234→   234→<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+   235→   235→</span>
+   236→   236→<span class="font-label-sm text-label-sm text-on-surface-variant">اتصال D1 و R2 فعال (D1 Ads Table)</span>
+   237→   237→</div>
+   238→   238→</div>
+   239→   239→<!-- Trailing Actions & Profile -->
+   240→   240→<div class="flex items-center gap-3">
+   241→   241→<!-- Trailing Icon Actions: dns, schedule, notifications -->
+   242→   242→<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-on-surface rounded-lg transition-colors" title="وضعیت سرور DNS و لبه کلودفلر">
+   243→   243→<span class="material-symbols-outlined text-[20px]" data-icon="dns">dns</span>
+   244→   244→</button>
+   245→   245→<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-on-surface rounded-lg transition-colors" title="زمان‌بندی کرون جاب‌ها">
+   246→   246→<span class="material-symbols-outlined text-[20px]" data-icon="schedule">schedule</span>
+   247→   247→</button>
+   248→   248→<div class="relative">
+   249→   249→<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-on-surface rounded-lg transition-colors" title="اعلان‌های سیستم تبلیغات">
+   250→   250→<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+   251→   251→<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary"></span>
+   252→   252→</button>
+   253→   253→</div>
+   254→   254→<div class="h-6 w-px bg-outline-variant mx-1"></div>
+   255→   255→<!-- Admin Profile Info -->
+   256→   256→<div class="flex items-center gap-3 pr-2">
+   257→   257→<div class="text-left hidden sm:block">
+   258→   258→<div class="font-title-md text-[13px] leading-tight font-bold text-on-surface">مهندس شریفی</div>
+   259→   259→<div class="font-label-sm text-label-sm text-on-surface-variant">مدیر ارشد سامانه</div>
+   260→   260→</div>
+   261→   261→<div class="w-9 h-9 rounded-full ring-2 ring-primary/20 overflow-hidden bg-primary-fixed flex items-center justify-center text-primary font-bold">
+   262→   262→<img class="w-full h-full object-cover" data-alt="Professional studio portrait of an Iranian senior technical operations director with a modern trimmed beard wearing business attire against a calm ambient studio lighting setup. The aesthetic is clean, sharp, corporate and reliable, adhering to the deep blue and slate palette of the Metro Yar design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3jm6WuZIIPO3Q5ENrvos3aOdA-cCINzIc2-1jcR2Kyn2DVb1rSeuPxukogKIYOScfsH7dvKGkF6RI10WnWwYizv72iSmm230ZLznpfRtBge_Yox-j_mrFoFlYl5mFHGnDoxf45nOfQ8vTb2JAdIn4HjWaDHngfr-CTdMBEDxiaQBFyQzWERmtFQ8jl4zFzCM6tLJI8dn0ZxqljJiwPKSaD0TGfVDR5N2Zm8ZJQg"/>
+   263→   263→</div>
+   264→   264→</div>
+   265→   265→</div>
+   266→   266→</header>
+   267→   267→<!-- ========================================================================= -->
+   268→   268→<!-- MAIN WORKSPACE / CONTENT CANVAS -->
+   269→   269→<!-- ========================================================================= -->
+   270→   270→<main class="mr-72 mt-16 p-8 flex-1 min-h-[calc(100vh-4rem)] max-w-[1600px] overflow-x-hidden">
+   271→   271→<!-- 1. Main Action Bar & Page Title -->
+   272→   272→<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 mb-6 border-b border-outline-variant/60">
+   273→   273→<div>
+   274→   274→<div class="flex items-center gap-3">
+   275→   275→<h1 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">مدیریت تبلیغات، بنرها و اسپانسری خطوط</h1>
+   276→   276→<span class="bg-tertiary/10 text-tertiary px-3 py-1 rounded-full font-label-md text-label-md flex items-center gap-1.5">
+   277→   277→<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+   278→   278→            سامانه فعال و همگام با کلاینت
+   279→   279→          </span>
+   280→   280→</div>
+   281→   281→<p class="font-body-md text-body-md text-on-surface-variant mt-1.5 max-w-4xl">
+   282→   282→          پیکربندی کمپین‌های درون‌برنامه‌ای، زمان‌بندی نمایش، تفکیک جایگاه‌های مسافری و پایش تحلیلی نرخ کلیک (CTR) بدون نیاز به به‌روزرسانی اپلیکیشن
+   283→   283→        </p>
+   284→   284→</div>
+   285→   285→<!-- Action Buttons -->
+   286→   286→<div class="flex items-center flex-wrap gap-2.5">
+   287→   287→<!-- Emergency Kill Switch (PRD requirement) -->
+   288→   288→<button class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-error/40 text-error hover:bg-error-container hover:text-on-error-container font-label-lg text-label-lg transition-all active:scale-[0.98]">
+   289→   289→<span class="material-symbols-outlined text-[18px]" data-icon="power_settings_new">power_settings_new</span>
+   290→   290→<span>خاموش‌سازی اضطراری کل تبلیغات</span>
+   291→   291→</button>
+   292→   292→<!-- Export CSV/Excel -->
+   293→   293→<button class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-lg text-label-lg transition-all shadow-sm">
+   294→   294→<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+   295→   295→<span>خروجی مالی (CSV)</span>
+   296→   296→</button>
+   297→   297→<!-- Primary CTA: Create Ad -->
+   298→   298→<button class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary/90 font-label-lg text-label-lg transition-all shadow-md active:scale-[0.98]">
+   299→   299→<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+   300→   300→<span>ایجاد کمپین / بنر جدید</span>
+   301→   301→</button>
+   302→   302→</div>
+   303→   303→</div>
+   304→   304→<!-- 2. KPI Metric Cards (4 Bento/Metric Cards) -->
+   305→   305→<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+   306→   306→<!-- Card 1 -->
+   307→   307→<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+   308→   308→<div class="flex items-center justify-between mb-3">
+   309→   309→<span class="font-label-lg text-label-lg text-on-surface-variant">کمپین‌های فعال هم‌زمان</span>
+   310→   310→<div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
+   311→   311→<span class="material-symbols-outlined text-[22px]" data-icon="campaign">campaign</span>
+   312→   312→</div>
+   313→   313→</div>
+   314→   314→<div class="flex items-baseline gap-2">
+   315→   315→<span class="font-headline-xl text-headline-xl font-bold text-on-surface">۸ کمپین</span>
+   316→   316→<span class="font-body-sm text-body-sm text-on-surface-variant">از ۱۰ جایگاه اختصاص‌یافته</span>
+   317→   317→</div>
+   318→   318→<div class="mt-3 flex items-center gap-1.5 text-primary font-label-md text-label-md">
+   319→   319→<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+   320→   320→<span>۳ کمپین در انتظار شروع زمان‌بندی‌شده</span>
+   321→   321→</div>
+   322→   322→</div>
+   323→   323→<!-- Card 2 -->
+   324→   324→<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+   325→   325→<div class="flex items-center justify-between mb-3">
+   326→   326→<span class="font-label-lg text-label-lg text-on-surface-variant">کل نمایش بنرها (Impression امروز)</span>
+   327→   327→<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
+   328→   328→<span class="material-symbols-outlined text-[22px]" data-icon="visibility">visibility</span>
+   329→   329→</div>
+   330→   330→</div>
+   331→   331→<div class="flex items-baseline gap-2">
+   332→   332→<span class="font-headline-xl text-headline-xl font-bold text-on-surface">۴۸۲,۱۰۰</span>
+   333→   333→<span class="font-body-sm text-body-sm text-on-surface-variant">نمایش در کلاینت</span>
+   334→   334→</div>
+   335→   335→<div class="mt-3 flex items-center gap-1.5 text-tertiary font-label-md text-label-md">
+   336→   336→<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+   337→   337→<span>+۱۲.۴٪ نسبت به روز گذشته در همین ساعت</span>
+   338→   338→</div>
+   339→   339→</div>
+   340→   340→<!-- Card 3 -->
+   341→   341→<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+   342→   342→<div class="flex items-center justify-between mb-3">
+   343→   343→<span class="font-label-lg text-label-lg text-on-surface-variant">نرخ کلیک میانگین (CTR)</span>
+   344→   344→<div class="w-10 h-10 rounded-xl bg-tertiary-fixed/40 flex items-center justify-center text-tertiary">
+   345→   345→<span class="material-symbols-outlined text-[22px]" data-icon="ads_click">ads_click</span>
+   346→   346→</div>
+   347→   347→</div>
+   348→   348→<div class="flex items-baseline gap-2">
+   349→   349→<span class="font-headline-xl text-headline-xl font-bold text-on-surface">۳.۸۲٪</span>
+   350→   350→<span class="font-body-sm text-body-sm text-tertiary font-bold">بسیار عالی</span>
+   351→   351→</div>
+   352→   352→<div class="mt-3 flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+   353→   353→<span class="material-symbols-outlined text-[16px]" data-icon="database">database</span>
+   354→   354→<span>۱۸,۴۱۵ کلیک ثبت‌شده مستقیم در D1</span>
+   355→   355→</div>
+   356→   356→</div>
+   357→   357→<!-- Card 4 -->
+   358→   358→<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+   359→   359→<div class="flex items-center justify-between mb-3">
+   360→   360→<span class="font-label-lg text-label-lg text-on-surface-variant">درآمد تخمینی جاری ماهانه</span>
+   361→   361→<div class="w-10 h-10 rounded-xl bg-primary-fixed-dim/40 flex items-center justify-center text-primary">
+   362→   362→<span class="material-symbols-outlined text-[22px]" data-icon="payments">payments</span>
+   363→   363→</div>
+   364→   364→</div>
+   365→   365→<div class="flex items-baseline gap-1">
+   366→   366→<span class="font-headline-xl text-headline-xl font-bold text-on-surface">۱۴۲,۵۰۰,۰۰۰</span>
+   367→   367→<span class="font-label-md text-label-md text-on-surface-variant">تومان</span>
+   368→   368→</div>
+   369→   369→<div class="mt-3 flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+   370→   370→<span class="material-symbols-outlined text-[16px] text-tertiary" data-icon="verified_user">verified_user</span>
+   371→   371→<span>پایش شفاف بدون اشتراک‌گذاری دیتای مسافر</span>
+   372→   372→</div>
+   373→   373→</div>
+   374→   374→</div>
+   375→   375→<!-- 3. Main Content Split: Left (70%) Table & Right (30%) Live Device Preview -->
+   376→   376→<div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+   377→   377→<!-- LEFT SECTION: 70% Width (approx 8 of 12 columns) -->
+   378→   378→<div class="xl:col-span-8 space-y-6">
+   379→   379→<!-- Table Container Card -->
+   380→   380→<div class="bg-surface-container-lowest border border-outline-variant/70 rounded-xl shadow-sm overflow-hidden">
+   381→   381→<!-- Filter Tabs & Quick Search -->
+   382→   382→<div class="p-5 border-b border-outline-variant/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+   383→   383→<div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+   384→   384→<button class="px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md whitespace-nowrap shadow-sm">
+   385→   385→                همه کمپین‌ها (۱۱)
+   386→   386→              </button>
+   387→   387→<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md whitespace-nowrap transition-colors">
+   388→   388→                فعال در حال نمایش
+   389→   389→              </button>
+   390→   390→<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md whitespace-nowrap transition-colors">
+   391→   391→                زمان‌بندی‌شده
+   392→   392→              </button>
+   393→   393→<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md whitespace-nowrap transition-colors">
+   394→   394→                منقضی / بایگانی
+   395→   395→              </button>
+   396→   396→<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md whitespace-nowrap transition-colors">
+   397→   397→                بنرهای بومی (Native)
+   398→   398→              </button>
+   399→   399→</div>
+   400→   400→<div class="flex items-center gap-2">
+   401→   401→<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container font-label-md text-label-md">
+   402→   402→<span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
+   403→   403→<span>فیلتر جایگاه</span>
+   404→   404→</button>
+   405→   405→</div>
+   406→   406→</div>
+   407→   407→<!-- Campaigns Table -->
+   408→   408→<div class="overflow-x-auto">
+   409→   409→<table class="w-full text-right border-collapse">
+   410→   410→<thead>
+   411→   411→<tr class="bg-surface-container-low/60 border-b border-outline-variant/60 text-on-surface-variant font-label-md text-label-md">
+   412→   412→<th class="py-3.5 px-4 font-semibold">عنوان و تصویر بنر</th>
+   413→   413→<th class="py-3.5 px-4 font-semibold">حامی مالی / سفارش‌دهنده</th>
+   414→   414→<th class="py-3.5 px-4 font-semibold">جایگاه نمایش در اپ</th>
+   415→   415→<th class="py-3.5 px-4 font-semibold">بازه زمانی</th>
+   416→   416→<th class="py-3.5 px-4 font-semibold">آمار کلیک / نمایش</th>
+   417→   417→<th class="py-3.5 px-4 font-semibold text-center">وضعیت زنده</th>
+   418→   418→<th class="py-3.5 px-4 font-semibold text-center">عملیات</th>
+   419→   419→</tr>
+   420→   420→</thead>
+   421→   421→<tbody class="divide-y divide-outline-variant/40 font-body-sm text-body-sm">
+   422→   422→<!-- Row 1: سامان پرداخت / بانک شهر -->
+   423→   423→<tr class="hover:bg-surface-container-low/30 transition-colors">
+   424→   424→<td class="py-4 px-4">
+   425→   425→<div class="flex items-center gap-3">
+   426→   426→<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+   427→   427→<img class="w-full h-full object-cover" data-alt="Digital promotional advertising banner graphic for metro smart ticket card recharge offering ten percent bonus, modern minimalist Persian graphic style with subway card illustration and blue tones matching the Metro Yar design system palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS-SSmyglF-1Z7-6hyWsmPnzzocHWr_zml0bSTLi3s1uOjYzUBgiDBevnZQOMoBPt_W8RKeg0rX19J5M4ZHTdDwhij8hf5nhh4RxNwsnl8xNGvN_aMyZOfoz5_BA0U7QGFcUkUOMzz1TrDCS4LnxX1Qd_Z6RmaedKK71ETNGSNqhq6I5R9UsdMIfe9T9LY90XnrjWPVbAzMOc6E7jq5PaqbxtkfW6J-jc-vENvNQ"/>
+   428→   428→</div>
+   429→   429→<div>
+   430→   430→<span class="font-title-md text-[14px] font-bold text-on-surface block">شارژ سریع کارت بلیت با ۱۰٪ هدیه</span>
+   431→   431→<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-1092 • لینک مستقیم پرداخت</span>
+   432→   432→</div>
+   433→   433→</div>
+   434→   434→</td>
+   435→   435→<td class="py-4 px-4 text-on-surface">
+   436→   436→<span class="font-medium">سامان پرداخت / بانک شهر</span>
+   437→   437→<span class="block text-on-surface-variant font-label-sm text-label-sm">قرارداد فصلی مصوب</span>
+   438→   438→</td>
+   439→   439→<td class="py-4 px-4">
+   440→   440→<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary-fixed text-primary font-label-sm text-label-sm">
+   441→   441→<span class="material-symbols-outlined text-[14px]" data-icon="view_carousel">view_carousel</span>
+   442→   442→                      بالای صفحه اصلی و تب ذخیره‌ها
+   443→   443→                    </span>
+   444→   444→</td>
+   445→   445→<td class="py-4 px-4 text-on-surface-variant">
+   446→   446→<span>تا ۲۹ اسفند ۱۴۰۳</span>
+   447→   447→<span class="block text-label-sm text-tertiary">۲۴ روز باقی‌مانده</span>
+   448→   448→</td>
+   449→   449→<td class="py-4 px-4">
+   450→   450→<div class="space-y-1">
+   451→   451→<div class="flex items-center justify-between text-label-sm">
+   452→   452→<span class="font-bold text-on-surface">۱۸۵K نمایش</span>
+   453→   453→<span class="text-primary font-bold">۸.۲K کلیک (۴.۴٪)</span>
+   454→   454→</div>
+   455→   455→<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+   456→   456→<div class="h-full bg-primary rounded-full" style="width: 78%;"></div>
+   457→   457→</div>
+   458→   458→</div>
+   459→   459→</td>
+   460→   460→<td class="py-4 px-4 text-center">
+   461→   461→<label class="relative inline-flex items-center cursor-pointer">
+   462→   462→<input checked="" class="sr-only peer" type="checkbox"/>
+   463→   463→<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+   464→   464→</label>
+   465→   465→</td>
+   466→   466→<td class="py-4 px-4 text-center">
+   467→   467→<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+   468→   468→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+   469→   469→<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+   470→   470→</button>
+   471→   471→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+   472→   472→<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+   473→   473→</button>
+   474→   474→<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+   475→   475→<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+   476→   476→</button>
+   477→   477→</div>
+   478→   478→</td>
+   479→   479→</tr>
+   480→   480→<!-- Row 2: بیمه حوادث سفر مسافران مترو -->
+   481→   481→<tr class="hover:bg-surface-container-low/30 transition-colors">
+   482→   482→<td class="py-4 px-4">
+   483→   483→<div class="flex items-center gap-3">
+   484→   484→<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+   485→   485→<img class="w-full h-full object-cover" data-alt="Digital banner for public passenger travel insurance provided by Iranian insurance company, showcasing shield icon, train silhouette in vibrant teal and corporate deep blue, crisp professional layout adhering to high contrast typography standards." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTkC_o8AC8Hu2IRJxbUMSYPuHXNHTc0G3g6L2J27R2Nou94rYosRPJLFyHKuxBTHVoKI6EqVxBN_ZYZb03MsZ-8yhl0ehBv3fdRD6BsFmE_b-VpgNCVvmTllicwFBa6NMP4bk7nTScSS5JT57MhwdHy_NiGwRts7v322pcxUHUy9QwMjUGDmBGq7c0D0HEN4Vr7a6dmdj91xKcCY_SDWLvUbWbcb9NssVbLGUc7w"/>
+   486→   486→</div>
+   487→   487→<div>
+   488→   488→<span class="font-title-md text-[14px] font-bold text-on-surface block">بیمه حوادث سفر مسافران مترو</span>
+   489→   489→<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-1088 • پوشش سراسری</span>
+   490→   490→</div>
+   491→   491→</div>
+   492→   492→</td>
+   493→   493→<td class="py-4 px-4 text-on-surface">
+   494→   494→<span class="font-medium">بیمه ایران</span>
+   495→   495→<span class="block text-on-surface-variant font-label-sm text-label-sm">اسپانسر رسمی ایستگاه‌ها</span>
+   496→   496→</td>
+   497→   497→<td class="py-4 px-4">
+   498→   498→<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm">
+   499→   499→<span class="material-symbols-outlined text-[14px]" data-icon="map">map</span>
+   500→   500→                      جزئیات ایستگاه و پایین نقشه
+   501→   501→                    </span>
+   502→   502→</td>
+   503→   503→<td class="py-4 px-4 text-on-surface-variant">
+   504→   504→<span>۱۵ بهمن - ۱۵ فروردین</span>
+   505→   505→<span class="block text-label-sm text-tertiary">فعال در تمام ساعات</span>
+   506→   506→</td>
+   507→   507→<td class="py-4 px-4">
+   508→   508→<div class="space-y-1">
+   509→   509→<div class="flex items-center justify-between text-label-sm">
+   510→   510→<span class="font-bold text-on-surface">۹۴K نمایش</span>
+   511→   511→<span class="text-primary font-bold">۳.۱K کلیک (۳.۳٪)</span>
+   512→   512→</div>
+   513→   513→<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+   514→   514→<div class="h-full bg-primary rounded-full" style="width: 55%;"></div>
+   515→   515→</div>
+   516→   516→</div>
+   517→   517→</td>
+   518→   518→<td class="py-4 px-4 text-center">
+   519→   519→<label class="relative inline-flex items-center cursor-pointer">
+   520→   520→<input checked="" class="sr-only peer" type="checkbox"/>
+   521→   521→<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+   522→   522→</label>
+   523→   523→</td>
+   524→   524→<td class="py-4 px-4 text-center">
+   525→   525→<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+   526→   526→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+   527→   527→<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+   528→   528→</button>
+   529→   529→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+   530→   530→<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+   531→   531→</button>
+   532→   532→<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+   533→   533→<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+   534→   534→</button>
+   535→   535→</div>
+   536→   536→</td>
+   537→   537→</tr>
+   538→   538→<!-- Row 3: فودکورت ایستگاه تقاطعی میدان ولیعصر -->
+   539→   539→<tr class="hover:bg-surface-container-low/30 transition-colors">
+   540→   540→<td class="py-4 px-4">
+   541→   541→<div class="flex items-center gap-3">
+   542→   542→<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+   543→   543→<img class="w-full h-full object-cover" data-alt="Appetizing banner for a food court located directly inside a major metro interchange junction in Tehran, showing warm cafe lighting, modern Persian interior, fresh food photography with clean typography and subtle discount tag." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSzS6evzf2X9UqJHJwEPS1bw8-rRhvT8Qvn3AwyxIoryvHliCUG8q0AuuBR5Z6HozkrCyxD9SjsOl4I0rLYUAy2DyLaehx_FbcE0uQANWNZVYcfs_1cIdf0h4-GvXPriem8aZBQnESfnyhqezPEUPiRy0VXNpRa1joqzKRXfng1iJwN5WQOq_264zZRcjhxgzpuDQ38GSvTzNvh8OdchYidi6ILeUEl2_i8rWxVg"/>
+   544→   544→</div>
+   545→   545→<div>
+   546→   546→<span class="font-title-md text-[14px] font-bold text-on-surface block">فودکورت ایستگاه تقاطعی میدان ولیعصر</span>
+   547→   547→<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-1074 • ویژه خط ۳ و ۶</span>
+   548→   548→</div>
+   549→   549→</div>
+   550→   550→</td>
+   551→   551→<td class="py-4 px-4 text-on-surface">
+   552→   552→<span class="font-medium">کسب‌وکارهای ایستگاهی</span>
+   553→   553→<span class="block text-on-surface-variant font-label-sm text-label-sm">قرارداد بهره‌برداری غرفه‌ها</span>
+   554→   554→</td>
+   555→   555→<td class="py-4 px-4">
+   556→   556→<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary-fixed/50 text-secondary font-label-sm text-label-sm">
+   557→   557→<span class="material-symbols-outlined text-[14px]" data-icon="store">store</span>
+   558→   558→                      پاپ‌آپ امکانات پیرامون ایستگاه
+   559→   559→                    </span>
+   560→   560→</td>
+   561→   561→<td class="py-4 px-4 text-on-surface-variant">
+   562→   562→<span>تا پایان هفته</span>
+   563→   563→<span class="block text-label-sm text-secondary">مهلت محدود</span>
+   564→   564→</td>
+   565→   565→<td class="py-4 px-4">
+   566→   566→<div class="space-y-1">
+   567→   567→<div class="flex items-center justify-between text-label-sm">
+   568→   568→<span class="font-bold text-on-surface">۶۲K نمایش</span>
+   569→   569→<span class="text-primary font-bold">۱.۹K کلیک (۳.۰٪)</span>
+   570→   570→</div>
+   571→   571→<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+   572→   572→<div class="h-full bg-primary rounded-full" style="width: 42%;"></div>
+   573→   573→</div>
+   574→   574→</div>
+   575→   575→</td>
+   576→   576→<td class="py-4 px-4 text-center">
+   577→   577→<label class="relative inline-flex items-center cursor-pointer">
+   578→   578→<input checked="" class="sr-only peer" type="checkbox"/>
+   579→   579→<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+   580→   580→</label>
+   581→   581→</td>
+   582→   582→<td class="py-4 px-4 text-center">
+   583→   583→<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+   584→   584→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+   585→   585→<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+   586→   586→</button>
+   587→   587→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+   588→   588→<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+   589→   589→</button>
+   590→   590→<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+   591→   591→<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+   592→   592→</button>
+   593→   593→</div>
+   594→   594→</td>
+   595→   595→</tr>
+   596→   596→<!-- Row 4: تخفیف ویژه اسنپ/تپسی برای خروجی‌های مترو -->
+   597→   597→<tr class="hover:bg-surface-container-low/30 transition-colors">
+   598→   598→<td class="py-4 px-4">
+   599→   599→<div class="flex items-center gap-3">
+   600→   600→<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+   601→   601→<img class="w-full h-full object-cover" data-alt="Digital ride hailing taxi promotion card with green and yellow accent colors, illustrating last mile connectivity from subway exits with smartphone GPS routing graphic and sleek Persian discount voucher lettering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHuH30inHFKJGUOkJc4SDn5xsX5vG2PhsRA5CjFtlGGe9OsAzSm8CnbSWwRSy_7G_CnX9sCl127kteiX7BOgrHMlakNmedeojY6xXu5ShXgkqQuffVuXVeij-w4rlVO0FCcWb7eUZfwUELMT-59DkKQoI2z8kfu9dKTKJG3Jozp9Zq9A7HBsFdPgh06iBIZa0pjO1D_WW2EqS7Y_mqwqrPiPaaM-c8K-tMA7PR2g"/>
+   602→   602→</div>
+   603→   603→<div>
+   604→   604→<span class="font-title-md text-[14px] font-bold text-on-surface block">تخفیف ویژه تاکسی برای خروجی‌های مترو</span>
+   605→   605→<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-1065 • اتصال آخرین کیلومتر</span>
+   606→   606→</div>
+   607→   607→</div>
+   608→   608→</td>
+   609→   609→<td class="py-4 px-4 text-on-surface">
+   610→   610→<span class="font-medium">تاکسی‌های اینترنتی</span>
+   611→   611→<span class="block text-on-surface-variant font-label-sm text-label-sm">طرح تلفیقی سفر چندوجهی</span>
+   612→   612→</td>
+   613→   613→<td class="py-4 px-4">
+   614→   614→<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm">
+   615→   615→<span class="material-symbols-outlined text-[14px]" data-icon="local_taxi">local_taxi</span>
+   616→   616→                      خروجی تجریش و تئاتر شهر
+   617→   617→                    </span>
+   618→   618→</td>
+   619→   619→<td class="py-4 px-4 text-on-surface-variant">
+   620→   620→<span class="text-on-surface font-medium">ساعات اوج ۱۷ تا ۲۱</span>
+   621→   621→<span class="block text-label-sm text-primary">زمان‌بندی هوشمند خودکار</span>
+   622→   622→</td>
+   623→   623→<td class="py-4 px-4">
+   624→   624→<div class="space-y-1">
+   625→   625→<div class="flex items-center justify-between text-label-sm">
+   626→   626→<span class="font-bold text-on-surface">۳۸K نمایش</span>
+   627→   627→<span class="text-primary font-bold">۲.۴K کلیک (۶.۳٪)</span>
+   628→   628→</div>
+   629→   629→<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+   630→   630→<div class="h-full bg-tertiary rounded-full" style="width: 88%;"></div>
+   631→   631→</div>
+   632→   632→</div>
+   633→   633→</td>
+   634→   634→<td class="py-4 px-4 text-center">
+   635→   635→<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-primary font-label-sm text-label-sm">
+   636→   636→<span class="material-symbols-outlined text-[14px]" data-icon="timer">timer</span>
+   637→   637→                      زمان‌بندی
+   638→   638→                    </span>
+   639→   639→</td>
+   640→   640→<td class="py-4 px-4 text-center">
+   641→   641→<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+   642→   642→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+   643→   643→<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+   644→   644→</button>
+   645→   645→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+   646→   646→<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+   647→   647→</button>
+   648→   648→<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+   649→   649→<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+   650→   650→</button>
+   651→   651→</div>
+   652→   652→</td>
+   653→   653→</tr>
+   654→   654→<!-- Row 5: کمپین فرهنگ ترافیک پاک شهرداری تهران -->
+   655→   655→<tr class="hover:bg-surface-container-low/30 transition-colors">
+   656→   656→<td class="py-4 px-4">
+   657→   657→<div class="flex items-center gap-3">
+   658→   658→<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+   659→   659→<img class="w-full h-full object-cover" data-alt="Clean civic culture social campaign banner promoting green public transit and bicycle usage in metropolitan Tehran with stylized transit lines, botanical green leaves, and modern friendly Iranian typography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAcJYsyZDnVJNWzMoMo4HwsILCIECbhhY3wWPsAf7ZEholZVScK7YNtYEQsCVQnSHAH8LWrxcCFE4a0WpQcO-LQj7Nweu0X2Inc7C7IN8uSa_D12eaGjJhnC4U7Dcztt2lBF8OjBLpzcSjmXzz9ATglbHPx0eVNXEc6Yzj4SCOrW257yRCno4uuGXIIcrnbpA6RN0C3prKo5tRIsRxrpnIfSbXE2yUKhEAH9OHfw"/>
+   660→   660→</div>
+   661→   661→<div>
+   662→   662→<span class="font-title-md text-[14px] font-bold text-on-surface block">کمپین فرهنگ ترافیک پاک</span>
+   663→   663→<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-0994 • پیام شهروندی</span>
+   664→   664→</div>
+   665→   665→</div>
+   666→   666→</td>
+   667→   667→<td class="py-4 px-4 text-on-surface">
+   668→   668→<span class="font-medium">معاونت حمل‌ونقل و ترافیک</span>
+   669→   669→<span class="block text-on-surface-variant font-label-sm text-label-sm">غیرتجاری / عام‌المنفعه</span>
+   670→   670→</td>
+   671→   671→<td class="py-4 px-4">
+   672→   672→<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm">
+   673→   673→<span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
+   674→   674→                      انتهای تنظیمات و درباره ما
+   675→   675→                    </span>
+   676→   676→</td>
+   677→   677→<td class="py-4 px-4 text-on-surface-variant">
+   678→   678→<span>دائمی بدون انقضا</span>
+   679→   679→<span class="block text-label-sm text-tertiary">سهمیه فرهنگی</span>
+   680→   680→</td>
+   681→   681→<td class="py-4 px-4">
+   682→   682→<div class="space-y-1">
+   683→   683→<div class="flex items-center justify-between text-label-sm">
+   684→   684→<span class="font-bold text-on-surface">۱۰۳K نمایش</span>
+   685→   685→<span class="text-on-surface-variant font-bold">۱.۱K کلیک (۱.۰٪)</span>
+   686→   686→</div>
+   687→   687→<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+   688→   688→<div class="h-full bg-outline rounded-full" style="width: 25%;"></div>
+   689→   689→</div>
+   690→   690→</div>
+   691→   691→</td>
+   692→   692→<td class="py-4 px-4 text-center">
+   693→   693→<label class="relative inline-flex items-center cursor-pointer">
+   694→   694→<input checked="" class="sr-only peer" type="checkbox"/>
+   695→   695→<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+   696→   696→</label>
+   697→   697→</td>
+   698→   698→<td class="py-4 px-4 text-center">
+   699→   699→<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+   700→   700→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+   701→   701→<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+   702→   702→</button>
+   703→   703→<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+   704→   704→<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+   705→   705→</button>
+   706→   706→<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+   707→   707→<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+   708→   708→</button>
+   709→   709→</div>
+   710→   710→</td>
+   711→   711→</tr>
+   712→   712→</tbody>
+   713→   713→</table>
+   714→   714→</div>
+   715→   715→<!-- Table Footer Pagination & Summary -->
+   716→   716→<div class="p-4 bg-surface-container-low/40 border-t border-outline-variant/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-on-surface-variant font-label-md text-label-md">
+   717→   717→<span>نمایش ۱ تا ۵ از مجموع ۱۱ بنر ثبت‌شده در پایگاه داده لبه</span>
+   718→   718→<div class="flex items-center gap-1">
+   719→   719→<button class="px-2.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface disabled:opacity-50">قبلی</button>
+   720→   720→<button class="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-bold">۱</button>
+   721→   721→<button class="px-3 py-1.5 rounded-lg hover:bg-surface-container text-on-surface">۲</button>
+   722→   722→<button class="px-3 py-1.5 rounded-lg hover:bg-surface-container text-on-surface">۳</button>
+   723→   723→<button class="px-2.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface">بعدی</button>
+   724→   724→</div>
+   725→   725→</div>
+   726→   726→</div>
+   727→   727→<!-- Ad Placement Slots Configuration Strip -->
+   728→   728→<div class="bg-surface-container-lowest border border-outline-variant/70 rounded-xl p-5 shadow-sm">
+   729→   729→<div class="flex items-center justify-between mb-4">
+   730→   730→<div class="flex items-center gap-2">
+   731→   731→<span class="material-symbols-outlined text-primary text-[24px]" data-icon="space_dashboard">space_dashboard</span>
+   732→   732→<h3 class="font-title-lg text-title-lg font-bold text-on-surface">ظرفیت و وضعیت جایگاه‌های مجاز درون‌برنامه‌ای</h3>
+   733→   733→</div>
+   734→   734→<span class="font-label-sm text-label-sm text-on-surface-variant">همگام‌سازی لحظه‌ای با Cloudflare Workers KV</span>
+   735→   735→</div>
+   736→   736→<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+   737→   737→<!-- Slot 1 -->
+   738→   738→<div class="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
+   739→   739→<div class="flex items-center justify-between mb-2">
+   740→   740→<span class="font-title-md text-[13px] font-bold text-on-surface">هدر صفحه اصلی</span>
+   741→   741→<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm">تکمیل ظرفیت</span>
+   742→   742→</div>
+   743→   743→<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">بنر شاخص بالای لیست خطوط و قطارهای نزدیک</p>
+   744→   744→<div class="mt-3 flex items-center justify-between font-label-sm text-label-sm">
+   745→   745→<span class="text-on-surface font-semibold">۱ بنر فعال</span>
+   746→   746→<span class="text-tertiary">۱۰۰٪ بهره‌وری</span>
+   747→   747→</div>
+   748→   748→</div>
+   749→   749→<!-- Slot 2 -->
+   750→   750→<div class="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
+   751→   751→<div class="flex items-center justify-between mb-2">
+   752→   752→<span class="font-title-md text-[13px] font-bold text-on-surface">بین ایستگاه‌های مسیریابی</span>
+   753→   753→<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm">۱ جایگاه آزاد</span>
+   754→   754→</div>
+   755→   755→<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">کارت فید بومی میان گره‌های تعویض خط</p>
+   756→   756→<div class="mt-3 flex items-center justify-between font-label-sm text-label-sm">
+   757→   757→<span class="text-on-surface font-semibold">۱ فعال / ۲ ظرفیت</span>
+   758→   758→<span class="text-primary">۵۰٪ اشغال</span>
+   759→   759→</div>
+   760→   760→</div>
+   761→   761→<!-- Slot 3 -->
+   762→   762→<div class="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
+   763→   763→<div class="flex items-center justify-between mb-2">
+   764→   764→<span class="font-title-md text-[13px] font-bold text-on-surface">خروجی‌ها و تاکسی‌ها</span>
+   765→   765→<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm">بهره‌برداری فعال</span>
+   766→   766→</div>
+   767→   767→<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">بنر اختصاصی تاکسی‌های آنلاین و اتوبوس BRT</p>
+   768→   768→<div class="mt-3 flex items-center justify-between font-label-sm text-label-sm">
+   769→   769→<span class="text-on-surface font-semibold">۱ بنر اختصاصی</span>
+   770→   770→<span class="text-tertiary">ساعات اوج</span>
+   771→   771→</div>
+   772→   772→</div>
+   773→   773→<!-- Slot 4 -->
+   774→   774→<div class="p-3.5 rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low transition-colors">
+   775→   775→<div class="flex items-center justify-between mb-2">
+   776→   776→<span class="font-title-md text-[13px] font-bold text-on-surface">پاپ‌آپ امکانات ایستگاه</span>
+   777→   777→<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">آماده رزرو</span>
+   778→   778→</div>
+   779→   779→<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">کارت تبلیغاتی شناور در مدال خدمات ایستگاه</p>
+   780→   780→<div class="mt-3 flex items-center justify-between font-label-sm text-label-sm">
+   781→   781→<span class="text-on-surface-variant">بدون کمپین فعال</span>
+   782→   782→<a class="text-primary hover:underline font-bold" href="#">+ اختصاص بنر</a>
+   783→   783→</div>
+   784→   784→</div>
+   785→   785→</div>
+   786→   786→</div>
+   787→   787→</div>
+   788→   788→<!-- RIGHT SECTION: 30% Width (approx 4 of 12 columns) - Live Mobile Preview & Compliance -->
+   789→   789→<div class="xl:col-span-4 space-y-6">
+   790→   790→<!-- Mobile Frame Mockup Container -->
+   791→   791→<div class="bg-surface-container-lowest border border-outline-variant/70 rounded-xl p-6 shadow-sm">
+   792→   792→<div class="flex items-center justify-between mb-4">
+   793→   793→<div class="flex items-center gap-2">
+   794→   794→<span class="material-symbols-outlined text-primary text-[20px]" data-icon="smartphone">smartphone</span>
+   795→   795→<h2 class="font-title-lg text-title-lg font-bold text-on-surface">پیش‌نمایش زنده در گوشی مسافر</h2>
+   796→   796→</div>
+   797→   797→<span class="inline-flex items-center gap-1 text-tertiary font-label-sm text-label-sm bg-tertiary/10 px-2.5 py-1 rounded-full">
+   798→   798→<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+   799→   799→              رندر مستقیم کلاینت
+   800→   800→            </span>
+   801→   801→</div>
+   802→   802→<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">
+   803→   803→            مشاهده محل استقرار بنر «شارژ سریع کارت بلیت با ۱۰٪ هدیه» در رابط کاربری مسافر (صفحه اصلی اپلیکیشن درمسیر)
+   804→   804→          </p>
+   805→   805→<!-- Smartphone Chassis -->
+   806→   806→<div class="w-full max-w-[320px] mx-auto bg-inverse-surface rounded-[40px] p-3 shadow-xl ring-1 ring-outline-variant/40">
+   807→   807→<!-- Screen Area -->
+   808→   808→<div class="bg-[#F8FAFC] rounded-[32px] overflow-hidden border border-outline-variant/30 flex flex-col h-[560px] relative text-right">
+   809→   809→<!-- Phone Status Bar -->
+   810→   810→<div class="bg-surface-container-lowest pt-3 px-5 pb-2 flex items-center justify-between text-on-surface font-label-sm text-[11px] border-b border-outline-variant/20">
+   811→   811→<span class="font-bold">۰۹:۴۱</span>
+   812→   812→<div class="flex items-center gap-1.5">
+   813→   813→<span class="material-symbols-outlined text-[13px]" data-icon="wifi">wifi</span>
+   814→   814→<span class="material-symbols-outlined text-[13px]" data-icon="signal_cellular_alt">signal_cellular_alt</span>
+   815→   815→<span class="material-symbols-outlined text-[13px]" data-icon="battery_full">battery_full</span>
+   816→   816→</div>
+   817→   817→</div>
+   818→   818→<!-- Mini App Header -->
+   819→   819→<div class="bg-surface-container-lowest px-4 py-3 border-b border-outline-variant/30 flex items-center justify-between">
+   820→   820→<div class="flex items-center gap-2">
+   821→   821→<div class="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white">
+   822→   822→<span class="material-symbols-outlined text-[16px]" data-icon="subway" style="font-variation-settings: 'FILL' 1;">subway</span>
+   823→   823→</div>
+   824→   824→<div>
+   825→   825→<span class="font-title-md text-[13px] font-bold text-on-surface block leading-tight">درمسیر</span>
+   826→   826→<span class="font-label-sm text-[10px] text-on-surface-variant">متروی تهران و حومه</span>
+   827→   827→</div>
+   828→   828→</div>
+   829→   829→<div class="flex items-center gap-1">
+   830→   830→<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="search">search</span>
+   831→   831→<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="tune">tune</span>
+   832→   832→</div>
+   833→   833→</div>
+   834→   834→<!-- Phone Content Scroll Area -->
+   835→   835→<div class="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar">
+   836→   836→<!-- [THE AD BANNER UNDER PREVIEW] -->
+   837→   837→<div class="relative group rounded-xl overflow-hidden border-2 border-primary shadow-md bg-gradient-to-l from-primary to-primary-container p-3 text-white transition-transform hover:scale-[1.01]">
+   838→   838→<div class="absolute top-2 left-2 bg-black/40 backdrop-blur-sm text-white px-1.5 py-0.5 rounded font-label-sm text-[9px] flex items-center gap-0.5">
+   839→   839→<span>آگهی</span>
+   840→   840→<span class="material-symbols-outlined text-[10px]" data-icon="campaign">campaign</span>
+   841→   841→</div>
+   842→   842→<div class="flex items-center gap-3">
+   843→   843→<div class="w-12 h-12 rounded-lg bg-white/10 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/20">
+   844→   844→<span class="material-symbols-outlined text-[24px] text-on-primary-container" data-icon="credit_card">credit_card</span>
+   845→   845→</div>
+   846→   846→<div class="pr-1">
+   847→   847→<span class="font-title-md text-[12px] font-bold block leading-snug">شارژ سریع کارت بلیت با ۱۰٪ هدیه</span>
+   848→   848→<span class="font-body-sm text-[10px] text-on-primary-container block mt-0.5">سامان پرداخت / بانک شهر</span>
+   849→   849→</div>
+   850→   850→</div>
+   851→   851→<div class="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between">
+   852→   852→<span class="font-label-sm text-[9px] text-white/80">بدون نیاز به صف در گیت ورودی</span>
+   853→   853→<span class="font-label-sm text-[10px] bg-white text-primary font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
+   854→   854→<span>شارژ آنی</span>
+   855→   855→<span class="material-symbols-outlined text-[11px]" data-icon="chevron_left">chevron_left</span>
+   856→   856→</span>
+   857→   857→</div>
+   858→   858→</div>
+   859→   859→<!-- Fake Metro App Content (Lines chips) -->
+   860→   860→<div>
+   861→   861→<span class="font-label-md text-[11px] font-bold text-on-surface block mb-2">خطوط فعال امروز</span>
+   862→   862→<div class="flex gap-1.5 overflow-x-auto no-scrollbar">
+   863→   863→<div class="px-2.5 py-1 rounded-lg bg-[#BC000C] text-white font-label-sm text-[10px] shrink-0 font-bold">خط ۱ (تجریش - کهریزک)</div>
+   864→   864→<div class="px-2.5 py-1 rounded-lg bg-[#00417F] text-white font-label-sm text-[10px] shrink-0 font-bold">خط ۲ (صادقیه - فرهنگسرا)</div>
+   865→   865→<div class="px-2.5 py-1 rounded-lg bg-[#006638] text-white font-label-sm text-[10px] shrink-0 font-bold">خط ۴ (کلاهدوز - ارم سبز)</div>
+   866→   866→</div>
+   867→   867→</div>
+   868→   868→<!-- Fake Station Arrival Card -->
+   869→   869→<div class="bg-white rounded-xl p-3 border border-outline-variant/50 shadow-sm space-y-2">
+   870→   870→<div class="flex items-center justify-between">
+   871→   871→<div class="flex items-center gap-2">
+   872→   872→<span class="w-2.5 h-2.5 rounded-full bg-[#BC000C]"></span>
+   873→   873→<span class="font-title-md text-[12px] font-bold text-on-surface">ایستگاه شهید بهشتی</span>
+   874→   874→</div>
+   875→   875→<span class="font-label-sm text-[10px] text-tertiary font-bold">ورود قطار تا ۲ دقیقه</span>
+   876→   876→</div>
+   877→   877→<div class="flex items-center justify-between text-[10px] text-on-surface-variant pt-1 border-t border-slate-100">
+   878→   878→<span>به سمت کهریزک (سکوی ۱)</span>
+   879→   879→<span class="material-symbols-outlined text-[14px]" data-icon="chevron_left">chevron_left</span>
+   880→   880→</div>
+   881→   881→</div>
+   882→   882→<!-- Secondary Ad Slot Mockup -->
+   883→   883→<div class="rounded-xl border border-dashed border-outline-variant/80 p-2.5 bg-surface-container-low/40 flex items-center justify-between text-[10px] text-on-surface-variant">
+   884→   884→<div class="flex items-center gap-1.5">
+   885→   885→<span class="material-symbols-outlined text-[16px] text-primary" data-icon="info">info</span>
+   886→   886→<span>پیام فرهنگ ترافیک پاک شهرداری</span>
+   887→   887→</div>
+   888→   888→<span class="font-label-sm text-[9px] bg-white px-1.5 py-0.5 rounded border border-outline-variant/40">اسپانسر</span>
+   889→   889→</div>
+   890→   890→</div>
+   891→   891→<!-- Fake App Bottom Navigation Bar -->
+   892→   892→<div class="bg-white/95 backdrop-blur-md border-t border-outline-variant/40 py-2 px-3 flex items-center justify-around text-on-surface-variant text-[10px]">
+   893→   893→<div class="flex flex-col items-center gap-0.5 text-primary font-bold">
+   894→   894→<span class="material-symbols-outlined text-[18px]" data-icon="train" style="font-variation-settings: 'FILL' 1;">train</span>
+   895→   895→<span>خطوط</span>
+   896→   896→</div>
+   897→   897→<div class="flex flex-col items-center gap-0.5">
+   898→   898→<span class="material-symbols-outlined text-[18px]" data-icon="alt_route">alt_route</span>
+   899→   899→<span>مسیریاب</span>
+   900→   900→</div>
+   901→   901→<div class="flex flex-col items-center gap-0.5">
+   902→   902→<span class="material-symbols-outlined text-[18px]" data-icon="explore">explore</span>
+   903→   903→<span>امکانات</span>
+   904→   904→</div>
+   905→   905→<div class="flex flex-col items-center gap-0.5">
+   906→   906→<span class="material-symbols-outlined text-[18px]" data-icon="settings">settings</span>
+   907→   907→<span>تنظیمات</span>
+   908→   908→</div>
+   909→   909→</div>
+   910→   910→<!-- Home Bar Indicator -->
+   911→   911→<div class="bg-white pb-1 pt-0.5 flex justify-center">
+   912→   912→<div class="w-24 h-1 rounded-full bg-slate-300"></div>
+   913→   913→</div>
+   914→   914→</div>
+   915→   915→</div>
+   916→   916→<!-- Quick Preview Device Switcher -->
+   917→   917→<div class="mt-4 pt-3 border-t border-outline-variant/50 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+   918→   918→<span>مدل شبیه‌سازی: iPhone 15 Pro</span>
+   919→   919→<div class="flex items-center gap-2">
+   920→   920→<button class="hover:text-primary underline">آزمون رندر تبلت</button>
+   921→   921→<span>•</span>
+   922→   922→<button class="hover:text-primary underline">بررسی حالت تیره</button>
+   923→   923→</div>
+   924→   924→</div>
+   925→   925→</div>
+   926→   926→<!-- Strict Data Privacy & Policy Notice (PRD requirement) -->
+   927→   927→<div class="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 shadow-sm space-y-3">
+   928→   928→<div class="flex items-start gap-3">
+   929→   929→<div class="w-8 h-8 rounded-lg bg-tertiary-fixed flex items-center justify-center text-tertiary shrink-0 mt-0.5">
+   930→   930→<span class="material-symbols-outlined text-[20px]" data-icon="verified_user">verified_user</span>
+   931→   931→</div>
+   932→   932→<div>
+   933→   933→<h4 class="font-title-md text-[14px] font-bold text-on-surface">سیاست صیانت از حریم خصوصی مسافران</h4>
+   934→   934→<p class="font-body-sm text-[12px] text-on-surface-variant leading-relaxed mt-1">
+   935→   935→                تضمین حریم خصوصی درمسیر: داده‌های مکان زنده مسافر و تاریخچه سفرهای ثبت‌شده تحت هیچ شرایطی در اختیار آگهی‌دهندگان قرار نمی‌گیرد. نمایش بنرها صرفاً بر مبنای ایستگاه انتخاب‌شده یا جایگاه‌های عمومی اپلیکیشن بدون ثبت کوکی ردیابی انجام می‌گردد.
+   936→   936→              </p>
+   937→   937→</div>
+   938→   938→</div>
+   939→   939→<div class="pt-2 border-t border-outline-variant/40 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+   940→   940→<span>تاییدیه شماره: MRT-PRIVACY-403</span>
+   941→   941→<a class="text-primary hover:underline font-bold" href="#">مشاهده منشور انطباق</a>
+   942→   942→</div>
+   943→   943→</div>
+   944→   944→</div>
+   945→   945→</div>
+   946→   946→</main>
+   947→   947→</body></html>
