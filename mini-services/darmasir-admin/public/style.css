@@ -472,3 +472,132 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 @media (min-width: 769px) {
   .burger { display: none !important; }
 }
+
+/* ============================================================
+   افزوده‌های نسخه ۲.۵ — امکانات کامل (هم‌خوان با سیستم مترویار)
+   ============================================================ */
+
+/* شبکه ۵ ستونه برای KPIهای آماری */
+.kpi-grid-5 { grid-template-columns: repeat(5, 1fr); margin-bottom: 24px; }
+@media (max-width: 1200px) { .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 768px) { .kpi-grid-5 { grid-template-columns: repeat(2, 1fr); } }
+
+/* چیپ ترتیب / اولویت */
+.order-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 34px; padding: 2px 8px; border-radius: 8px;
+  background: var(--surface-high); color: var(--primary); font-size: 11px; font-weight: 800;
+}
+
+/* یادداشت نوار ابزار */
+.toolbar-note { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+.toolbar .spacer { flex: 1; }
+
+/* چک‌باکس جدول */
+.tbl input[type="checkbox"] {
+  width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;
+}
+
+/* نوار عملیات گروهی */
+.bulkbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 20px; background: var(--primary-fixed);
+  border-top: 1px solid var(--primary-fixed-dim); border-bottom: 1px solid var(--primary-fixed-dim);
+  animation: fadeIn .15s ease;
+}
+.bulkbar-count { font-size: 12px; font-weight: 800; color: var(--primary); margin-inline-end: 6px; }
+
+/* میان‌برهای زمان‌بندی */
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+/* پیش‌نمایش زنده بنر */
+.preview-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+  color: #fff; border-radius: 12px; padding: 14px 16px; min-height: 92px;
+  box-shadow: 0 4px 14px rgba(0, 65, 127, 0.25); overflow: hidden;
+}
+.preview-banner img { width: 84px; height: 60px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid rgba(255,255,255,.25); }
+.preview-banner .pb-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.preview-banner .pb-row { display: flex; align-items: center; gap: 8px; }
+.preview-banner .pb-badge {
+  background: rgba(255, 255, 255, 0.92); color: var(--primary);
+  font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.preview-banner .pb-place {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(255, 255, 255, 0.18); color: #fff;
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.preview-banner .pb-place .material { font-size: 13px; }
+.preview-banner .pb-title { font-size: 14px; font-weight: 800; line-height: 1.5; }
+.preview-banner .pb-sub { font-size: 11px; opacity: .85; line-height: 1.6; }
+.preview-banner .pb-cta {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 2px;
+  margin-top: 4px; background: #fff; color: var(--primary);
+  font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 8px; cursor: default;
+}
+.preview-banner .pb-cta .material { font-size: 14px; }
+
+/* پروفایل کاربر */
+.detail-grid { display: flex; flex-direction: column; }
+.detail-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 0; border-bottom: 1px solid rgba(194, 198, 211, 0.35); font-size: 13px;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-row > span:first-child { color: var(--ink-2); font-size: 12px; }
+.trips-adjust { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* آزمایش نگاشت صوتی */
+.lex-test { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.lex-test input {
+  flex: 1; border: 1px solid rgba(194, 198, 211, 0.7); border-radius: 10px;
+  padding: 9px 12px; background: var(--surface); outline: none; min-height: 40px;
+}
+.lex-test input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.lex-result {
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--surface-low); border: 1px solid rgba(194, 198, 211, 0.5);
+  border-radius: 10px; padding: 10px 12px; font-size: 12.5px;
+}
+.lex-result .material { font-size: 18px; color: var(--tertiary-container); }
+.lex-toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
+.lex-toolbar input {
+  flex: 1; border: 1px solid rgba(194, 198, 211, 0.7); border-radius: 10px;
+  padding: 8px 12px; background: var(--surface); outline: none; min-height: 38px;
+}
+.lex-toolbar input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+
+/* نمودار دوگانه نمایش/کلیک */
+.legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-2); margin-bottom: 4px; font-weight: 600; }
+.lg { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+.lg-imp { background: var(--primary); }
+.lg-clk { background: var(--tertiary-container); }
+.bars-dual { height: 140px; }
+.bars .bar-pair { display: flex; align-items: flex-end; gap: 3px; height: 100%; }
+.bars .bar.imp { background: var(--primary); width: 12px; max-width: 16px; }
+.bars .bar.clk { background: var(--tertiary-container); width: 8px; max-width: 12px; border-radius: 4px 4px 2px 2px; }
+
+/* ترکیب وضعیت کاربران */
+.user-status-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.us-box {
+  flex: 1; min-width: 90px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: var(--surface-low); border: 1px solid rgba(194, 198, 211, 0.5);
+  border-radius: 12px; padding: 12px 8px; font-size: 11px; color: var(--ink-2);
+}
+.us-box b { font-size: 20px; color: var(--ink); }
+
+/* ابر ایستگاه‌ها */
+.station-cloud { display: flex; flex-wrap: wrap; gap: 8px; max-height: 140px; overflow-y: auto; }
+.station-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-low); border: 1px solid rgba(194, 198, 211, 0.5);
+  border-radius: 999px; padding: 4px 12px; font-size: 11.5px; font-weight: 600; color: var(--ink);
+}
+.station-chip small { color: var(--ink-3); font-weight: 500; }
+
+@media (max-width: 768px) {
+  .bulkbar { padding: 10px 14px; }
+  .preview-banner img { width: 64px; height: 48px; }
+}

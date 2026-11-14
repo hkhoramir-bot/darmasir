@@ -140,6 +140,17 @@ async function route(
     return ok({ id: admin.id, username: admin.username, display_name: admin.display_name, role: admin.role });
   }
 
+  if (path === "auth/change-password" && method === "POST") {
+    const current = typeof body.current_password === "string" ? body.current_password : "";
+    const next = typeof body.new_password === "string" ? body.new_password : "";
+    if (!verifyPassword(current, admin.password_hash))
+      return fail("INVALID_LOGIN", "گذرواژه فعلی نادرست است", 401);
+    if (next.length < 8) return fail("BAD_INPUT", "گذرواژه جدید باید حداقل ۸ کاراکتر باشد");
+    db.prepare("UPDATE admins SET password_hash = ? WHERE id = ?").run(hashPassword(next), admin.id);
+    audit(admin.id, admin.display_name, "password_change", "تغییر گذرواژه شخصی", ip);
+    return ok({ changed: true });
+  }
+
   if (path === "auth/logout" && method === "POST") {
     const auth = req.headers.get("Authorization") || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
@@ -192,6 +203,13 @@ async function route(
   /* ---------- users (کاربران اپ) ---------- */
   if (seg[0] === "users") {
     if (method === "GET") {
+      if (seg[1] && !isNaN(Number(seg[1]))) {
+        const u = db
+          .query("SELECT id, phone, display_name, status, trips_count, created_at, last_seen FROM app_users WHERE id = ?")
+          .get(Number(seg[1]));
+        if (!u) return fail("NOT_FOUND", "کاربر یافت نشد", 404);
+        return ok(u);
+      }
       const q = str(url.searchParams.get("q") ?? "", 60);
       const status = str(url.searchParams.get("status") ?? "", 20);
       let sql = "SELECT id, phone, display_name, status, trips_count, created_at, last_seen FROM app_users WHERE 1=1";
@@ -209,6 +227,29 @@ async function route(
     }
     const guard = requireRole(admin, "operator");
     if (guard) return guard;
+    if (path === "users/bulk-status" && method === "POST") {
+      const status = ["active", "limited", "disabled"].includes(body.status) ? body.status : null;
+      const ids: number[] = Array.isArray(body.ids) ? body.ids.map(Number).filter(Boolean) : [];
+      if (!status || !ids.length) return fail("BAD_INPUT", "وضعیت و فهرست کاربران الزامی است");
+      const stmt = db.prepare("UPDATE app_users SET status = ? WHERE id = ?");
+      let n = 0;
+      for (const id of ids) { stmt.run(status, id); n++; }
+      changeLog("app_user", null, "bulk_status", admin.display_name, `${n} کاربر → ${status}`);
+      audit(admin.id, admin.display_name, "user_bulk_status", `${n} کاربر → ${status}`, ip);
+      return ok({ updated: n });
+    }
+    if (seg[1] === "trips" && seg[2] && method === "POST") {
+      const id = Number(seg[2]);
+      const u = db.prepare("SELECT * FROM app_users WHERE id = ?").get(id) as any;
+      if (!u) return fail("NOT_FOUND", "کاربر یافت نشد", 404);
+      const delta = Math.round(Number(body.delta) || 0);
+      if (!delta) return fail("BAD_INPUT", "مقدار تغییر سفر الزامی است");
+      const next = Math.max(0, (u.trips_count || 0) + delta);
+      db.prepare("UPDATE app_users SET trips_count = ? WHERE id = ?").run(next, id);
+      changeLog("app_user", id, "update", admin.display_name, `سفرها: ${u.trips_count} → ${next}`);
+      audit(admin.id, admin.display_name, "user_update", `سفرهای کاربر #${id} → ${next}`, ip);
+      return ok({ trips_count: next });
+    }
     if (method === "POST") {
       const name = str(body.display_name, 80);
       const phone = str(body.phone, 20) || null;
@@ -263,13 +304,47 @@ async function route(
   if (seg[0] === "lines") {
     if (method === "GET") {
       const mode = str(url.searchParams.get("mode") ?? "", 10);
+      const baseSql =
+        "SELECT l.*, (SELECT COUNT(*) FROM stations s WHERE s.line_id = l.id AND s.is_active = 1) AS station_count FROM lines l";
       const rows = mode
-        ? db.prepare("SELECT * FROM lines WHERE mode = ? ORDER BY sort").all(mode)
-        : db.prepare("SELECT * FROM lines ORDER BY sort").all();
+        ? db.prepare(`${baseSql} WHERE l.mode = ? ORDER BY l.sort`).all(mode)
+        : db.prepare(`${baseSql} ORDER BY l.sort`).all();
       return ok(rows);
     }
     const guard = requireRole(admin, "operator");
     if (guard) return guard;
+    if (path === "lines/reorder" && method === "POST") {
+      const id = Number(body.id);
+      const dir = body.dir === "up" ? "up" : body.dir === "down" ? "down" : null;
+      if (!id || !dir) return fail("BAD_INPUT", "شناسه خط و جهت جابه‌جایی الزامی است");
+      const cur = db.prepare("SELECT * FROM lines WHERE id = ?").get(id) as any;
+      if (!cur) return fail("NOT_FOUND", "خط یافت نشد", 404);
+      const neighbor = (
+        dir === "up"
+          ? db.query("SELECT * FROM lines WHERE mode = ? AND sort < ? ORDER BY sort DESC LIMIT 1").get(cur.mode, cur.sort)
+          : db.query("SELECT * FROM lines WHERE mode = ? AND sort > ? ORDER BY sort LIMIT 1").get(cur.mode, cur.sort)
+      ) as any | undefined;
+      if (!neighbor) return ok({ moved: false });
+      db.prepare("UPDATE lines SET sort = ? WHERE id = ?").run(neighbor.sort, cur.id);
+      db.prepare("UPDATE lines SET sort = ? WHERE id = ?").run(cur.sort, neighbor.id);
+      changeLog("line", id, "update", admin.display_name, `جابه‌جایی ترتیب ${cur.name}`);
+      audit(admin.id, admin.display_name, "line_update", `ترتیب ${cur.name}`, ip);
+      return ok({ moved: true });
+    }
+    if (path === "lines/duplicate" && method === "POST") {
+      const id = Number(body.id);
+      const cur = db.prepare("SELECT * FROM lines WHERE id = ?").get(id) as any;
+      if (!cur) return fail("NOT_FOUND", "خط یافت نشد", 404);
+      const maxSort = (db.query("SELECT COALESCE(MAX(sort),0) AS m FROM lines").get() as any).m;
+      const r = db
+        .prepare(
+          "INSERT INTO lines (mode, number, name, color, terminals, direction, is_active, sort) VALUES (?,?,?,?,?,?,0,?)"
+        )
+        .run(cur.mode, cur.number, `${cur.name} (کپی)`, cur.color, cur.terminals, cur.direction, maxSort + 1);
+      changeLog("line", Number(r.lastInsertRowid), "create", admin.display_name, `${cur.name} (کپی)`);
+      audit(admin.id, admin.display_name, "line_create", `تکثیر ${cur.name}`, ip);
+      return ok({ id: Number(r.lastInsertRowid) }, 201);
+    }
     if (method === "POST") {
       const name = str(body.name, 80);
       if (!name) return fail("BAD_INPUT", "نام خط الزامی است");
@@ -333,6 +408,49 @@ async function route(
     }
     const guard = requireRole(admin, "operator");
     if (guard) return guard;
+    if (path === "stations/reorder" && method === "POST") {
+      const id = Number(body.id);
+      const dir = body.dir === "up" ? "up" : body.dir === "down" ? "down" : null;
+      if (!id || !dir) return fail("BAD_INPUT", "شناسه ایستگاه و جهت جابه‌جایی الزامی است");
+      const cur = db.prepare("SELECT * FROM stations WHERE id = ?").get(id) as any;
+      if (!cur) return fail("NOT_FOUND", "ایستگاه یافت نشد", 404);
+      const neighbor = (
+        dir === "up"
+          ? db.query("SELECT * FROM stations WHERE line_id = ? AND order_index < ? ORDER BY order_index DESC LIMIT 1").get(cur.line_id, cur.order_index)
+          : db.query("SELECT * FROM stations WHERE line_id = ? AND order_index > ? ORDER BY order_index LIMIT 1").get(cur.line_id, cur.order_index)
+      ) as any | undefined;
+      if (!neighbor) return ok({ moved: false });
+      db.prepare("UPDATE stations SET order_index = ? WHERE id = ?").run(neighbor.order_index, cur.id);
+      db.prepare("UPDATE stations SET order_index = ? WHERE id = ?").run(cur.order_index, neighbor.id);
+      changeLog("station", id, "update", admin.display_name, `جابه‌جایی ${cur.name}`);
+      audit(admin.id, admin.display_name, "station_update", `ترتیب ${cur.name}`, ip);
+      return ok({ moved: true });
+    }
+    if (path === "stations/bulk" && method === "POST") {
+      const lineId = Number(body.line_id);
+      const namesRaw = typeof body.names === "string" ? body.names : "";
+      if (!lineId) return fail("BAD_INPUT", "خط الزامی است");
+      const line = db.prepare("SELECT id FROM lines WHERE id = ?").get(lineId);
+      if (!line) return fail("NOT_FOUND", "خط یافت نشد", 404);
+      const names = namesRaw
+        .split(/\n|\r|،/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 200);
+      if (!names.length) return fail("BAD_INPUT", "حداقل یک نام ایستگاه وارد کنید (هر خط یک نام)");
+      const maxOrder = (db.query("SELECT COALESCE(MAX(order_index), -1) AS m FROM stations WHERE line_id = ?").get(lineId) as any).m;
+      const ins = db.prepare("INSERT INTO stations (line_id, name, order_index, is_active) VALUES (?,?,?,1)");
+      let added = 0;
+      const dup = db.prepare("SELECT id FROM stations WHERE line_id = ? AND name = ?");
+      names.forEach((name: string, i: number) => {
+        if (dup.get(lineId, name)) return;
+        ins.run(lineId, name, maxOrder + 1 + i);
+        added++;
+      });
+      changeLog("station", null, "bulk_create", admin.display_name, `${added} ایستگاه به خط #${lineId}`);
+      audit(admin.id, admin.display_name, "station_bulk", `${added} ایستگاه افزوده شد`, ip);
+      return ok({ added, skipped: names.length - added }, 201);
+    }
     if (method === "POST") {
       const lineId = Number(body.line_id);
       const name = str(body.name, 80);
@@ -386,32 +504,136 @@ async function route(
   }
 
   /* ---------- ads ---------- */
+  const AD_PLACEMENTS = ["home", "map", "plan", "station", "line", "splash", "drawer"];
   if (seg[0] === "ads") {
+    // ثبت نمایش/کلیک از کلاینت — با آمار روزانه
     if (seg[1] && seg[2] === "track" && method === "POST") {
       const id = Number(seg[1]);
       const type = str(body.type, 10);
-      if (type === "impression") db.prepare("UPDATE ads SET impressions = impressions + 1 WHERE id = ?").run(id);
-      else if (type === "click") db.prepare("UPDATE ads SET clicks = clicks + 1 WHERE id = ?").run(id);
-      else return fail("BAD_INPUT", "نوع ثبت نامعتبر است");
+      const day = new Date().toISOString().slice(0, 10);
+      if (type === "impression") {
+        db.prepare("UPDATE ads SET impressions = impressions + 1 WHERE id = ?").run(id);
+        db.prepare(
+          "INSERT INTO ad_stats_daily (ad_id, day, impressions, clicks) VALUES (?, ?, 1, 0) ON CONFLICT(ad_id, day) DO UPDATE SET impressions = impressions + 1"
+        ).run(id, day);
+      } else if (type === "click") {
+        db.prepare("UPDATE ads SET clicks = clicks + 1 WHERE id = ?").run(id);
+        db.prepare(
+          "INSERT INTO ad_stats_daily (ad_id, day, impressions, clicks) VALUES (?, ?, 0, 1) ON CONFLICT(ad_id, day) DO UPDATE SET clicks = clicks + 1"
+        ).run(id, day);
+      } else return fail("BAD_INPUT", "نوع ثبت نامعتبر است");
       return ok({ tracked: true });
     }
+
+    // عملیات گروهی: فعال‌سازی/غیرفعال‌سازی/حذف چند کمپین
+    if (path === "ads/bulk" && method === "POST") {
+      const guard = requireRole(admin, "operator");
+      if (guard) return guard;
+      const action = str(body.action, 20);
+      const ids: number[] = Array.isArray(body.ids) ? body.ids.map(Number).filter(Boolean) : [];
+      if (!ids.length) return fail("BAD_INPUT", "حداقل یک کمپین انتخاب کنید");
+      if (!["activate", "deactivate", "delete"].includes(action)) return fail("BAD_INPUT", "عملیات نامعتبر است");
+      let n = 0;
+      for (const id of ids) {
+        if (action === "delete") {
+          db.prepare("DELETE FROM ad_stats_daily WHERE ad_id = ?").run(id);
+          db.prepare("DELETE FROM ads WHERE id = ?").run(id);
+        } else {
+          db.prepare("UPDATE ads SET is_active = ?, updated_at = ? WHERE id = ?").run(action === "activate" ? 1 : 0, now(), id);
+        }
+        n++;
+      }
+      changeLog("ad", null, action === "delete" ? "bulk_delete" : "bulk_update", admin.display_name, `${n} کمپین`);
+      audit(admin.id, admin.display_name, `ad_bulk_${action}`, `${n} کمپین`, ip);
+      return ok({ affected: n });
+    }
+
+    // آمار تحلیلی روزانه برای نمودارها
+    if (path === "ads/stats" && method === "GET") {
+      const days = Math.min(Math.max(Number(url.searchParams.get("days")) || 14, 1), 90);
+      const since = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10);
+      const daily = db
+        .query(
+          "SELECT day, SUM(impressions) AS impressions, SUM(clicks) AS clicks FROM ad_stats_daily WHERE day >= ? GROUP BY day ORDER BY day"
+        )
+        .all(since);
+      const perAd = db
+        .query(
+          `SELECT a.id, a.title, a.placement, a.is_active, a.impressions, a.clicks,
+                  CASE WHEN a.impressions > 0 THEN ROUND(a.clicks * 100.0 / a.impressions, 2) ELSE 0 END AS ctr
+           FROM ads a ORDER BY ctr DESC, a.impressions DESC`
+        )
+        .all();
+      const totals = db
+        .query("SELECT COALESCE(SUM(impressions),0) AS impressions, COALESCE(SUM(clicks),0) AS clicks FROM ad_stats_daily WHERE day >= ?")
+        .get(since) as any;
+      return ok({ days, daily, per_ad: perAd, totals });
+    }
+
     if (method === "GET") {
-      return ok(db.prepare("SELECT * FROM ads ORDER BY id DESC").all());
+      return ok(db.prepare("SELECT * FROM ads ORDER BY priority DESC, id DESC").all());
     }
     const guard = requireRole(admin, "operator");
     if (guard) return guard;
+
+    // تکثیر کمپین
+    if (seg[1] && seg[2] === "duplicate" && method === "POST") {
+      const cur = db.prepare("SELECT * FROM ads WHERE id = ?").get(Number(seg[1])) as any;
+      if (!cur) return fail("NOT_FOUND", "تبلیغ یافت نشد", 404);
+      const r = db
+        .prepare(
+          "INSERT INTO ads (title, subtitle, badge, cta_text, advertiser, image_url, link_url, placement, priority, starts_at, ends_at, is_active, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,?)"
+        )
+        .run(
+          `${cur.title} (کپی)`,
+          cur.subtitle,
+          cur.badge,
+          cur.cta_text,
+          cur.advertiser,
+          cur.image_url,
+          cur.link_url,
+          cur.placement,
+          cur.priority,
+          cur.starts_at,
+          cur.ends_at,
+          now()
+        );
+      changeLog("ad", Number(r.lastInsertRowid), "create", admin.display_name, `${cur.title} (کپی)`);
+      audit(admin.id, admin.display_name, "ad_create", `تکثیر ${cur.title}`, ip);
+      return ok({ id: Number(r.lastInsertRowid) }, 201);
+    }
+
+    // بازنشانی آمار کمپین
+    if (seg[1] && seg[2] === "reset-stats" && method === "POST") {
+      const id = Number(seg[1]);
+      const cur = db.prepare("SELECT id FROM ads WHERE id = ?").get(id);
+      if (!cur) return fail("NOT_FOUND", "تبلیغ یافت نشد", 404);
+      db.prepare("UPDATE ads SET impressions = 0, clicks = 0 WHERE id = ?").run(id);
+      db.prepare("DELETE FROM ad_stats_daily WHERE ad_id = ?").run(id);
+      changeLog("ad", id, "update", admin.display_name, "بازنشانی آمار");
+      audit(admin.id, admin.display_name, "ad_reset_stats", `#${id}`, ip);
+      return ok({ reset: true });
+    }
+
     if (method === "POST") {
       const title = str(body.title, 120);
       if (!title) return fail("BAD_INPUT", "عنوان تبلیغ الزامی است");
+      if (body.starts_at && body.ends_at && new Date(body.starts_at) > new Date(body.ends_at))
+        return fail("BAD_INPUT", "تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد");
       const r = db
         .prepare(
-          "INSERT INTO ads (title, image_url, link_url, placement, starts_at, ends_at, is_active, created_at) VALUES (?,?,?,?,?,?,?,?)"
+          "INSERT INTO ads (title, subtitle, badge, cta_text, advertiser, image_url, link_url, placement, priority, starts_at, ends_at, is_active, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
         )
         .run(
           title,
+          str(body.subtitle, 200) || null,
+          str(body.badge, 30) || null,
+          str(body.cta_text, 40) || null,
+          str(body.advertiser, 80) || null,
           str(body.image_url, 500) || null,
           str(body.link_url, 500) || null,
-          ["home", "map", "plan"].includes(body.placement) ? body.placement : "home",
+          AD_PLACEMENTS.includes(body.placement) ? body.placement : "home",
+          Math.min(Math.max(Number(body.priority) || 0, 0), 100),
           str(body.starts_at, 30) || null,
           str(body.ends_at, 30) || null,
           body.is_active ? 1 : 0,
@@ -426,17 +648,29 @@ async function route(
     if (method === "PUT") {
       const cur = db.prepare("SELECT * FROM ads WHERE id = ?").get(id) as any;
       if (!cur) return fail("NOT_FOUND", "تبلیغ یافت نشد", 404);
-      const next = { ...cur, ...body, title: body.title !== undefined ? str(body.title, 120) || cur.title : cur.title };
+      const next = {
+        ...cur,
+        ...body,
+        title: body.title !== undefined ? str(body.title, 120) || cur.title : cur.title,
+      };
+      if (next.starts_at && next.ends_at && new Date(next.starts_at) > new Date(next.ends_at))
+        return fail("BAD_INPUT", "تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد");
       db.prepare(
-        "UPDATE ads SET title=?, image_url=?, link_url=?, placement=?, starts_at=?, ends_at=?, is_active=? WHERE id=?"
+        "UPDATE ads SET title=?, subtitle=?, badge=?, cta_text=?, advertiser=?, image_url=?, link_url=?, placement=?, priority=?, starts_at=?, ends_at=?, is_active=?, updated_at=? WHERE id=?"
       ).run(
         next.title,
+        str(next.subtitle, 200) || null,
+        str(next.badge, 30) || null,
+        str(next.cta_text, 40) || null,
+        str(next.advertiser, 80) || null,
         next.image_url,
         next.link_url,
-        ["home", "map", "plan"].includes(next.placement) ? next.placement : "home",
+        AD_PLACEMENTS.includes(next.placement) ? next.placement : "home",
+        Math.min(Math.max(Number(next.priority) || 0, 0), 100),
         next.starts_at,
         next.ends_at,
         next.is_active ? 1 : 0,
+        now(),
         id
       );
       changeLog("ad", id, "update", admin.display_name, next.title);
@@ -444,6 +678,7 @@ async function route(
       return ok({ updated: true });
     }
     if (method === "DELETE") {
+      db.prepare("DELETE FROM ad_stats_daily WHERE ad_id = ?").run(id);
       db.prepare("DELETE FROM ads WHERE id = ?").run(id);
       changeLog("ad", id, "delete", admin.display_name);
       audit(admin.id, admin.display_name, "ad_delete", `#${id}`, ip);
@@ -454,10 +689,33 @@ async function route(
   /* ---------- voice lexicon ---------- */
   if (seg[0] === "voice-lexicon") {
     if (method === "GET") {
-      return ok(db.prepare("SELECT * FROM voice_lexicon ORDER BY priority DESC, id DESC").all());
+      const q = str(url.searchParams.get("q") ?? "", 60);
+      const rows = q
+        ? db
+            .prepare("SELECT * FROM voice_lexicon WHERE spoken LIKE ? OR written LIKE ? ORDER BY priority DESC, id DESC")
+            .all(`%${q}%`, `%${q}%`)
+        : db.prepare("SELECT * FROM voice_lexicon ORDER BY priority DESC, id DESC").all();
+      return ok(rows);
     }
     const guard = requireRole(admin, "operator");
     if (guard) return guard;
+    // درون‌ریزی خودکار نام ایستگاه‌ها به فرهنگ تلفظ
+    if (path === "voice-lexicon/import-stations" && method === "POST") {
+      const stations = db.query("SELECT DISTINCT name FROM stations WHERE is_active = 1 ORDER BY name").all() as any[];
+      const exists = new Set(
+        (db.query("SELECT spoken FROM voice_lexicon").all() as any[]).map((r) => r.spoken)
+      );
+      const ins = db.prepare("INSERT INTO voice_lexicon (spoken, written, priority) VALUES (?,?,?)");
+      let added = 0;
+      for (const s of stations) {
+        if (exists.has(s.name)) continue;
+        ins.run(s.name, s.name, 5);
+        added++;
+      }
+      changeLog("voice_lexicon", null, "bulk_create", admin.display_name, `${added} ایستگاه وارد شد`);
+      audit(admin.id, admin.display_name, "lexicon_import", `${added} ایستگاه`, ip);
+      return ok({ added, total_stations: stations.length });
+    }
     if (method === "POST") {
       const spoken = str(body.spoken, 120);
       const written = str(body.written, 120);
@@ -508,6 +766,12 @@ async function route(
         "voice_enabled",
         "voice_service",
         "support_message",
+        "support_phone",
+        "ads_rotation_seconds",
+        "max_ads_per_placement",
+        "force_update_version",
+        "store_link",
+        "default_city",
       ];
       let changed = 0;
       for (const [k, v] of Object.entries(body)) {
@@ -527,11 +791,39 @@ async function route(
 
   /* ---------- reports ---------- */
   if (path === "reports" && method === "GET") {
-    const stats = db.query("SELECT day, count FROM api_stats ORDER BY day DESC LIMIT 14").all();
-    const ads = db.query("SELECT title, impressions, clicks, is_active FROM ads").all();
+    const range = Math.min(Math.max(Number(url.searchParams.get("days")) || 14, 7), 90);
+    const since = new Date(Date.now() - (range - 1) * 86400000).toISOString().slice(0, 10);
+    const stats = db.query("SELECT day, count FROM api_stats WHERE day >= ? ORDER BY day DESC LIMIT ?").all(since, range);
+    const adsDaily = db
+      .query(
+        "SELECT day, SUM(impressions) AS impressions, SUM(clicks) AS clicks FROM ad_stats_daily WHERE day >= ? GROUP BY day ORDER BY day"
+      )
+      .all(since);
+    const adsRanking = db
+      .query(
+        `SELECT id, title, placement, is_active, impressions, clicks,
+                CASE WHEN impressions > 0 THEN ROUND(clicks * 100.0 / impressions, 2) ELSE 0 END AS ctr
+         FROM ads ORDER BY ctr DESC, impressions DESC`
+      )
+      .all();
     const changes = db.query("SELECT entity, action, admin_name, details, created_at FROM change_log ORDER BY id DESC LIMIT 30").all();
     const sessions = (db.query("SELECT COUNT(*) AS c FROM sessions WHERE expires_at > ?").get(now()) as any).c;
-    return ok({ api_stats: stats, ads, changes, active_sessions: sessions });
+    const usersByStatus = db.query("SELECT status, COUNT(*) AS count FROM app_users GROUP BY status").all();
+    const topStations = db
+      .query("SELECT s.name, l.name AS line_name, l.color FROM stations s JOIN lines l ON l.id = s.line_id WHERE s.is_active = 1 LIMIT 8")
+      .all();
+    const totals = (db.query("SELECT COALESCE(SUM(impressions),0) AS imp, COALESCE(SUM(clicks),0) AS clk FROM ad_stats_daily WHERE day >= ?").get(since) as any);
+    return ok({
+      range,
+      api_stats: stats,
+      ads_daily: adsDaily,
+      ads_ranking: adsRanking,
+      users_by_status: usersByStatus,
+      top_stations: topStations,
+      ads_totals: { impressions: totals.imp, clicks: totals.clk },
+      changes,
+      active_sessions: sessions,
+    });
   }
 
   /* ---------- security (فقط مدیر کل) ---------- */
@@ -544,13 +836,26 @@ async function route(
         .all(),
       sessions: db
         .query(
-          `SELECT s.token, s.created_at, s.expires_at, s.ip, a.username, a.display_name
+          `SELECT s.token, s.created_at, s.expires_at, s.ip, s.user_agent, a.username, a.display_name
            FROM sessions s JOIN admins a ON a.id = s.admin_id
            WHERE s.expires_at > ? ORDER BY s.created_at DESC`
         )
         .all(now()),
       audit: db.query("SELECT * FROM audit_log ORDER BY id DESC LIMIT 100").all(),
     });
+  }
+
+  /* ---------- ابطال نشست (فقط مدیر کل) ---------- */
+  if (seg[0] === "sessions" && seg[1] && method === "DELETE") {
+    const guard = requireRole(admin, "super");
+    if (guard) return guard;
+    const token = seg[1];
+    const row = db.query("SELECT admin_id FROM sessions WHERE token = ?").get(token) as any;
+    if (!row) return fail("NOT_FOUND", "نشست یافت نشد", 404);
+    if (row.admin_id === admin.id) return fail("FORBIDDEN", "برای خروج از نشست خود از دکمه خروج استفاده کنید", 403);
+    db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+    audit(admin.id, admin.display_name, "session_revoke", "ابطال نشست مدیر", ip);
+    return ok({ revoked: true });
   }
 
   if (seg[0] === "admins") {

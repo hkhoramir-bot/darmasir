@@ -111,6 +111,29 @@ CREATE TABLE IF NOT EXISTS api_stats (
 );
 `);
 
+/* ---------------- Migrations (idempotent — برای ارتقای پایگاه‌های موجود) ---------------- */
+
+const adsCols = (db.query("PRAGMA table_info(ads)").all() as any[]).map((c) => c.name);
+const addAdCol = (name: string, ddl: string) => {
+  if (!adsCols.includes(name)) db.exec(`ALTER TABLE ads ADD COLUMN ${ddl};`);
+};
+addAdCol("subtitle", "subtitle TEXT");
+addAdCol("badge", "badge TEXT");
+addAdCol("cta_text", "cta_text TEXT");
+addAdCol("advertiser", "advertiser TEXT");
+addAdCol("priority", "priority INTEGER NOT NULL DEFAULT 0");
+addAdCol("updated_at", "updated_at TEXT");
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS ad_stats_daily (
+  ad_id INTEGER NOT NULL REFERENCES ads(id) ON DELETE CASCADE,
+  day TEXT NOT NULL,
+  impressions INTEGER NOT NULL DEFAULT 0,
+  clicks INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (ad_id, day)
+);
+`);
+
 export const now = () => new Date().toISOString();
 
 export function bumpApiStats() {
@@ -208,8 +231,77 @@ export function seed() {
   const adCount = (db.query("SELECT COUNT(*) AS c FROM ads").get() as any).c;
   if (adCount === 0) {
     db.prepare(
-      "INSERT INTO ads (title, placement, is_active, created_at) VALUES (?,?,0,?)"
-    ).run("بنر نمونه — جای تبلیغ واقعی شما", "home", now());
+      "INSERT INTO ads (title, subtitle, badge, cta_text, advertiser, placement, priority, is_active, created_at) VALUES (?,?,?,?,?,?,?,?,?)"
+    ).run(
+      "بنر نمونه — جای تبلیغ واقعی شما",
+      "فضای این بنر برای تبلیغ کسب‌وکار شما آماده است",
+      "جدید",
+      "مشاهده",
+      "نمونه‌ستان",
+      "home",
+      5,
+      0,
+      now()
+    );
+  }
+
+  // نمونه‌های راهنما فقط وقتی تنها بنر پیش‌فرض وجود دارد (idempotent)
+  const adRows = db.query("SELECT COUNT(*) AS c FROM ads WHERE title != 'بنر نمونه — جای تبلیغ واقعی شما'").get() as any;
+  if (adRows.c === 0) {
+    const t = now();
+    const insAd = db.prepare(
+      "INSERT INTO ads (title, subtitle, badge, cta_text, advertiser, image_url, link_url, placement, priority, starts_at, ends_at, is_active, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    );
+    const plus7 = new Date(Date.now() + 7 * 86400000).toISOString();
+    const plus30 = new Date(Date.now() + 30 * 86400000).toISOString();
+    insAd.run(
+      "کارت یک‌بارگذاری مترو تهران",
+      "شارژ مستقیم کارت مترو از داخل اپلیکیشن — بدون صف",
+      "پیشنهاد ویژه",
+      "شارژ کارت",
+      "شهر من",
+      "",
+      "https://example.com/charge",
+      "home",
+      20,
+      t,
+      plus30,
+      1,
+      t
+    );
+    insAd.run(
+      "گردشگری مشهد — قطار شهری",
+      "راهنمای کامل خطوط مترو مشهد برای زائران و مسافران",
+      "همکار",
+      "مشاهده راهنما",
+      "آژانس نور",
+      "",
+      "https://example.com/mashhad",
+      "map",
+      10,
+      t,
+      plus7,
+      1,
+      t
+    );
+    // آمار روزانه نمونه برای نمایش نمودار گزارش‌ها (۱۴ روز گذشته)
+    const ads = db.query("SELECT id FROM ads WHERE is_active = 1").all() as any[];
+    const insStat = db.prepare(
+      "INSERT INTO ad_stats_daily (ad_id, day, impressions, clicks) VALUES (?,?,?,?) ON CONFLICT(ad_id, day) DO UPDATE SET impressions = excluded.impressions, clicks = excluded.clicks"
+    );
+    ads.forEach((ad, idx) => {
+      for (let i = 13; i >= 0; i--) {
+        const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+        const base = 120 + idx * 40 + Math.round(Math.sin(i / 2) * 30) + (13 - i) * 6;
+        const imp = Math.max(30, base);
+        const clk = Math.max(1, Math.round(imp * (0.02 + 0.015 * idx + Math.abs(Math.cos(i / 3)) * 0.02)));
+        insStat.run(ad.id, day, imp, clk);
+      }
+    });
+    // جمع آمار روزانه نمونه در شمارنده کلی هر تبلیغ
+    db.exec(
+      "UPDATE ads SET impressions = COALESCE((SELECT SUM(impressions) FROM ad_stats_daily WHERE ad_id = ads.id),0), clicks = COALESCE((SELECT SUM(clicks) FROM ad_stats_daily WHERE ad_id = ads.id),0) WHERE title != 'بنر نمونه — جای تبلیغ واقعی شما'"
+    );
   }
 
   const userCount = (db.query("SELECT COUNT(*) AS c FROM app_users").get() as any).c;
@@ -237,6 +329,19 @@ export function seed() {
     ins.run("ولنجک", "ولنجک", 8);
     ins.run("میلاد", "بیمارستان میلاد", 6);
   }
+
+  // کلیدهای تنظیمات جدید — افزوده شدن حتی اگر جدول قبلاً پر شده باشد (idempotent)
+  const ensureSetting = (key: string, value: string) => {
+    if (!db.query("SELECT key FROM settings WHERE key = ?").get(key)) {
+      db.prepare("INSERT INTO settings (key, value, updated_at) VALUES (?,?,?)").run(key, value, now());
+    }
+  };
+  ensureSetting("ads_rotation_seconds", "6");
+  ensureSetting("max_ads_per_placement", "3");
+  ensureSetting("support_phone", "۰۲۱-۹۶۳۰۰۰۰۰");
+  ensureSetting("force_update_version", "");
+  ensureSetting("store_link", "https://cafebazaar.ir/app/ir.metrojo.app");
+  ensureSetting("default_city", "تهران");
 }
 
 seed();
