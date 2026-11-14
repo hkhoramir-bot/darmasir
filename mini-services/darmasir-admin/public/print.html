@@ -84,6 +84,11 @@
     .actions button.ghost { background: #fff; color: var(--primary); border: 1px solid var(--line); box-shadow: none; }
     .loading { text-align: center; padding: 60px 20px; color: var(--ink2); font-size: 14px; }
     .loading .material { font-size: 34px; display: block; margin-bottom: 10px; color: var(--primary); }
+    .loading.err { color: #bc000c; }
+    .loading.err .material { color: #bc000c; }
+    .spin { display: inline-block; width: 34px; height: 34px; border: 3px solid var(--line); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .actions button[disabled] { opacity: .55; cursor: wait; }
     @media (max-width: 740px) {
       .meta-grid { grid-template-columns: 1fr; }
       .sum-cards { grid-template-columns: 1fr; }
@@ -98,11 +103,20 @@
   </style>
 </head>
 <body>
-  <div class="sheet" id="sheet"><div class="loading">در حال آماده‌سازی سند…</div></div>
+  <div class="sheet" id="sheet"><div class="loading" id="loadbox"><span class="spin"></span>در حال آماده‌سازی سند…</div></div>
   <div class="actions">
-    <button onclick="window.print()">چاپ / ذخیره PDF</button>
+    <button id="btn-dl" disabled><span>دانلود فایل PDF</span></button>
+    <button id="btn-print" disabled>چاپ / ذخیره PDF</button>
     <button class="ghost" onclick="window.close()">بستن پنجره</button>
   </div>
-  <script src="print.js"></script>
+  <script>
+    /* اسکریپت‌ها باید پارامتر دروازه را همراه داشته باشند — وگرنه از سمت پورت ۳۰۰۰ پاسخ ۴۰۴ می‌گیرند */
+    (function () {
+      var q = window.__ASSET_Q || "";
+      document.write('<script src="vendor/html2canvas.min.js' + q + '"><\/script>');
+      document.write('<script src="vendor/jspdf.umd.min.js' + q + '"><\/script>');
+      document.write('<script src="print.js' + q + '"><\/script>');
+    })();
+  </script>
 </body>
 </html>

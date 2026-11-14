@@ -1,6 +1,6 @@
 /* ============================================================
    پنل مدیریت درمسیر — اپلیکیشن تک‌صفحه‌ای فارسی RTL
-   نسخه ۲.۷ — درآمدها و قراردادهای سازمانی، فاکتور تبلیغات، صورت‌حساب PDF
+   نسخه ۲.۸ — رفع خروجی PDF (دانلود مستقیم فایل) + انتخاب سریع مانده پرداخت
    ============================================================ */
 "use strict";
 
@@ -297,7 +297,7 @@ function layout(cur) {
         <div class="brand">
           <div class="brand-logo"><span class="material fill">subway</span></div>
           <div class="brand-txt">
-            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۷</span></div>
+            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۸</span></div>
             <span class="brand-sub">پنل مدیریت سامانه ناوبری شهری</span>
           </div>
         </div>
@@ -1502,6 +1502,17 @@ async function openRevenueDetail(rev) {
       </div>
       ${writable ? `
       <div style="margin-top:10px; padding:12px; background:var(--surface-low); border-radius:10px">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px; padding:9px 12px; background:#fff; border:1px dashed var(--primary); border-radius:10px">
+          <div style="display:flex; align-items:center; gap:8px; font-size:13px">
+            <span class="material" style="font-size:18px; color:var(--primary)">account_balance_wallet</span>
+            <span>مانده باقی‌مانده قرارداد:</span>
+            <b style="color:var(--primary); font-size:15px">${faMoney(remaining)}</b>
+            ${remaining > 0 ? `<span class="hint">${faNum(pct)}٪ پرداخت شده</span>` : ""}
+          </div>
+          ${remaining > 0
+            ? `<button class="btn btn-sm" id="f-payfill" title="درج خودکار مبلغ مانده در فیلد پرداخت"><span class="material">bolt</span><span>انتخاب مانده و پرداخت</span></button>`
+            : `<span class="badge ok">تسویه کامل — مانده‌ای باقی نمانده</span>`}
+        </div>
         <div class="grid cols-2">
           <div class="field"><label>مبلغ پرداخت (تومان)</label><input id="f-pamount" type="number" min="1" placeholder="مثلاً ۱۰۰۰۰۰۰۰۰" /></div>
           <div class="field"><label>تاریخ پرداخت</label><input id="f-pdate" type="date" value="${todayLocal()}" /></div>
@@ -1530,23 +1541,36 @@ async function openRevenueDetail(rev) {
     /* مودال اصلی جای مودال بارگذاری را می‌گیرد — نیازی به بستن جداگانه نیست */
     document.getElementById("f-cancel").onclick = close;
     if (writable) {
+      /* انتخاب سریع مانده — درج خودکار مبلغ باقی‌مانده در فیلد پرداخت */
+      const fillBtn = document.getElementById("f-payfill");
+      if (fillBtn) fillBtn.onclick = () => {
+        const inp = document.getElementById("f-pamount");
+        inp.value = remaining;
+        inp.focus();
+        toast("مبلغ مانده در فیلد پرداخت قرار گرفت — «ثبت پرداخت» را بزنید", "ok2");
+      };
       document.getElementById("f-payadd").onclick = async () => {
         const amount = Number(document.getElementById("f-pamount").value) || 0;
         if (amount <= 0) { toast("مبلغ پرداخت را وارد کنید", "err"); return; }
-        try {
-          await api(`revenues/${r.id}/payments`, {
-            method: "POST",
-            body: {
-              amount,
-              paid_at: document.getElementById("f-pdate").value,
-              method: document.getElementById("f-pmethod").value,
-              reference: document.getElementById("f-pref").value.trim(),
-            },
-          });
-          toast("پرداخت ثبت شد", "ok2");
-          renderPage("revenues");
-          openRevenueDetail(rev);
-        } catch (ex) { toast(ex.message, "err"); }
+        const submit = async () => {
+          try {
+            await api(`revenues/${r.id}/payments`, {
+              method: "POST",
+              body: {
+                amount,
+                paid_at: document.getElementById("f-pdate").value,
+                method: document.getElementById("f-pmethod").value,
+                reference: document.getElementById("f-pref").value.trim(),
+              },
+            });
+            toast("پرداخت ثبت شد", "ok2");
+            renderPage("revenues");
+            openRevenueDetail(rev);
+          } catch (ex) { toast(ex.message, "err"); }
+        };
+        if (remaining > 0 && amount > remaining) {
+          confirmDialog(`مبلغ پرداخت (${faMoney(amount)}) از مانده قرارداد (${faMoney(remaining)}) بیشتر است؛ مبلغ اضافه به‌عنوان اضافه‌پرداخت ثبت می‌شود. ادامه می‌دهید؟`, submit);
+        } else await submit();
       };
       document.querySelectorAll("[data-paydel]").forEach((b) => (b.onclick = () =>
         confirmDialog("این پرداخت حذف شود؟", async () => {
