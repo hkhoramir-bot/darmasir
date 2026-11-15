@@ -46,9 +46,10 @@ html {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  /* نسخه ۱۳ — زیرمجموعه با «همهٔ» ۱۳۴ آیکون استفاده‌شده در اپ
-     (نسخه ۱۲ کلیدهای چشم visibility/visibility_off را نداشت) */
-  src: url("/fonts/material-symbols-subset.woff2?v=13") format("woff2");
+  /* نسخه ۱۴ — زیرمجموعه با ۱۳۷ آیکون استفاده‌شده در اپ
+     (نسخه ۱۳ آیکون‌های چندوسیله‌ای directions_bus/local_taxi/directions_car/
+     alt_route/hourglass_empty/tune/explore/touch_app را نداشت) */
+  src: url("/fonts/material-symbols-subset.woff2?v=14") format("woff2");
 }
 
 /* ============================================================

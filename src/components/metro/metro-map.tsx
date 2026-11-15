@@ -73,6 +73,27 @@ const TEHRAN_LINES = LINES.filter((l) => l.cityId === "tehran");
 const PERSPECTIVE_PX = 1000;
 const TILT_3D_DEG = 42;
 
+/* ---------- نمای پیش‌فرض نقشه (3D) + ذخیره انتخاب کاربر ----------
+   طبق دستور بازطراحی: نقشه سه‌بعدی پیش‌فرض است و کاربر می‌تواند
+   هر لحظه به دوبعدی برگردد؛ انتخاب در حافظه دستگاه ذخیره می‌شود. */
+const MAP_VIEW3D_KEY = "mq-map-view3d";
+
+function readView3d(): boolean {
+  try {
+    return localStorage.getItem(MAP_VIEW3D_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function writeView3d(v: boolean) {
+  try {
+    localStorage.setItem(MAP_VIEW3D_KEY, v ? "1" : "0");
+  } catch {
+    /* حافظه در دسترس نیست */
+  }
+}
+
 /* ---------- خطوط نمایان، ایستگاه‌های تبادلی و رنگ هر ایستگاه ----------
    خطوط خاموش‌شده (کلید چشم) در «همه» محاسبات کنار گذاشته می‌شوند:
    مسیر خط، ایستگاه‌های انحصاری آن، برچسب‌ها و نشان‌ها. ایستگاه مشترکی
@@ -241,7 +262,20 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
   const [fontsTick, setFontsTick] = useState(0);
 
   /* ---------- نمای دوبعدی/سه‌بعدی + چرخش قطب‌نما ---------- */
-  const [tilt3d, setTilt3d] = useState(false);
+  const [tilt3d, setTilt3dState] = useState(false);
+
+  /* بازیابی انتخاب ذخیره‌شده نمای 3D بعد از mount (بدون اختلاف SSR) */
+  useEffect(() => {
+    setTilt3dState(readView3d());
+  }, []);
+
+  const setTilt3d = useCallback((valueOrFn: boolean | ((v: boolean) => boolean)) => {
+    setTilt3dState((prev) => {
+      const next = typeof valueOrFn === "function" ? valueOrFn(prev) : valueOrFn;
+      writeView3d(next);
+      return next;
+    });
+  }, []);
   const [rotationDeg, setRotationDeg] = useState(0);
   const view3dRef = useRef({ tilt: 0, rotation: 0 });
 
@@ -706,7 +740,8 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
         const st = MAP_STATION_BY_ID.get(stationId);
         if (st) zoomToStation(st.x, st.y);
       },
-      toggle3D: () => setTilt3d((v) => !v),
+      toggle3D: () =>
+        setTilt3d((v) => !v),
       rotateBy: (deg: number) => setRotationDeg((v) => (((v + deg) % 360) + 360) % 360),
     }),
     [zoomAt, resetView, locateMe, zoomToStation]
@@ -1224,6 +1259,31 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
       {/* ================= کنترل‌های شناور داخلی — فقط وقتی صفحه کنترل ندارد ================= */}
       {showControls && (
         <div className="absolute bottom-2.5 left-2.5 flex flex-col gap-1.5">
+          {/* تعویض نمای دوبعدی/سه‌بعدی — طبق دستور بازطراحی */}
+          <button
+            onClick={() => setTilt3d((v) => !v)}
+            aria-pressed={tilt3d}
+            aria-label={tilt3d ? "رفتن به نمای دوبعدی" : "رفتن به نمای سه‌بعدی"}
+            title={tilt3d ? "نمای دوبعدی" : "نمای سه‌بعدی"}
+            className={`h-9 w-11 rounded-xl shadow border flex items-center justify-center font-bold text-[11px] active:scale-95 transition-all ${
+              tilt3d
+                ? "bg-metro-primary-c text-white border-metro-primary-c"
+                : "bg-metro-card text-metro-primary-c border-metro-outline-var"
+            }`}
+          >
+            {tilt3d ? "3D" : "2D"}
+          </button>
+          {/* قطب‌نما — چرخش ۴۵ درجه‌ای نقشه */}
+          <button
+            onClick={() => setRotationDeg((v) => (((v + 45) % 360) + 360) % 360)}
+            aria-label="چرخش نقشه"
+            title="چرخش نقشه (هر لمس ۴۵ درجه)"
+            className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          >
+            <span style={{ display: "inline-flex", transform: `rotate(${rotationDeg}deg)` }}>
+              <MI name="explore" size={18} />
+            </span>
+          </button>
           <button
             onClick={locateMe}
             aria-label="نزدیک‌ترین ایستگاه به من"

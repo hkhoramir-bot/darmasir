@@ -7,10 +7,10 @@ import { ThemeProvider } from "@/components/metro/theme-provider";
 import JourneyMonitor from "@/components/metro/journey-monitor";
 
 export const metadata: Metadata = {
-  title: "متروجو | دستیار صوتی و ناوبری مترو",
+  title: "درمسیر | دستیار هوشمند سفر شهری",
   description:
-    "متروجو — دستیار هوشمند سفر با مترو: مسیریاب، دستیار صوتی، نقشه خطوط، زمان‌بندی قطارها و وضعیت شلوغی",
-  applicationName: "متروجو",
+    "درمسیر — دستیار هوشمند جامع حمل‌ونقل شهری: مسیریاب چندوسیله‌ای، دستیار صوتی، نقشه تعاملی لایه‌ها، ذخیره‌ها و تاریخچه سفر",
+  applicationName: "درمسیر",
   manifest: "/manifest.json",
   icons: {
     icon: "/metrojo-app-icon.png",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "متروجو",
+    title: "درمسیر",
   },
 };
 

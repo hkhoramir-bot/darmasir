@@ -22,9 +22,20 @@ import { useToast } from "@/hooks/use-toast";
 import JourneyCard from "@/components/metro/journey-card";
 
 /* ============================================================
-   خانه متروجو — بازسازی دقیق طبق طرح Stitch (_16/code.html)
-   بخش‌ها: بنر تبلیغ، دستیار صوتی، دسترسی سریع، مسیریاب زنده
+   خانه درمسیر — دستیار هوشمند جامع حمل‌ونقل شهری
+   طبق طراحی ZIP (stitch _1) و دستور کاربر:
+   - میانبرهای ۴گانه: خانه / محل کار / مقصدهای اخیر / ذخیره‌شده
+   - مقایسه ۶ روش سفر (مترو/اتوبوس/BRT/تاکسی/خودرو/ترکیبی)
+   - زمان و هزینه فقط با داده واقعی — بدون هیچ عدد ساختگی
    ============================================================ */
+
+/* روش‌های حمل‌ونقل بدون داده واقعی — طبق دستور، هیچ عدد ساختگی نمایش داده نمی‌شود */
+const NOT_READY_MODES = [
+  { id: "bus", label: "اتوبوس", icon: "directions_bus" },
+  { id: "brt", label: "تندرو BRT", icon: "directions_bus" },
+  { id: "taxi", label: "تاکسی", icon: "local_taxi" },
+  { id: "car", label: "خودرو", icon: "directions_car" },
+] as const;
 
 interface DailyRouteRow {
   id: string;
@@ -106,6 +117,10 @@ export default function Page() {
   /* ---- مسیرهای روزمره ---- */
   const [daily, setDaily] = useState<DailyRouteRow[]>([]);
 
+  /* ---- مقصدهای اخیر — فقط از تاریخچه واقعی سفر (وب: دیتابیس، اندروید: پل محلی) ---- */
+  const [recentDests, setRecentDests] = useState<{ id: string; name: string }[]>([]);
+  const [recentOpen, setRecentOpen] = useState(false);
+
   /* ---- وضعیت صوت ---- */
   const [voiceResult, setVoiceResult] = useState<string | null>(null);
   const originRef = useRef<HTMLInputElement>(null);
@@ -150,11 +165,26 @@ export default function Page() {
     };
   }, [near]);
 
-  /* ---- دریافت مسیرهای روزمره ---- */
+  /* ---- دریافت مسیرهای روزمره + مقصدهای اخیر از تاریخچه واقعی ---- */
   useEffect(() => {
     fetch("/api/daily-routes")
       .then((r) => (r.ok ? r.json() : { routes: [] }))
       .then((d) => setDaily(d.routes ?? []))
+      .catch(() => {});
+    fetch("/api/history")
+      .then((r) => (r.ok ? r.json() : { trips: [] }))
+      .then((d) => {
+        const trips: { toStationId?: string; toName?: string }[] = d?.trips ?? [];
+        const seen = new Set<string>();
+        const list: { id: string; name: string }[] = [];
+        for (const t of trips) {
+          if (!t?.toStationId || seen.has(t.toStationId)) continue;
+          seen.add(t.toStationId);
+          list.push({ id: t.toStationId, name: t.toName ?? t.toStationId });
+          if (list.length >= 6) break;
+        }
+        setRecentDests(list);
+      })
       .catch(() => {});
   }, []);
 
@@ -333,15 +363,7 @@ export default function Page() {
       <AppBar />
       <main className="flex-1 w-full max-w-md mx-auto px-4 pt-3 pb-28">
         <div className="space-y-4">
-          {/* 1. بنر تبلیغات */}
-          <section className="bg-gradient-to-l from-primary/5 via-surface-container-low to-surface-container-lowest rounded-2xl p-4 border border-primary/20 shadow-sm relative overflow-hidden group">
-            <div className="flex items-center justify-center py-2 text-center text-xs font-medium text-outline">
-              <MI name="campaign" size={16} className="ml-1.5" />
-              بخش تبلیغ
-            </div>
-          </section>
-
-          {/* 2. دستیار صوتی */}
+          {/* 1. دستیار صوتی */}
           <section className="bg-gradient-to-b from-surface-container-lowest to-surface-container-low rounded-2xl p-5 border border-outline-variant/40 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
             {/* هاله محیطی */}
             <div className="absolute -top-12 -left-12 w-44 h-44 bg-primary-fixed/40 rounded-full blur-2xl pointer-events-none"></div>
@@ -392,19 +414,16 @@ export default function Page() {
             </div>
           </section>
 
-          {/* 3. دسترسی سریع مسافر */}
+          {/* 2. میانبرهای روزمره مسافر — طبق دستور: خانه/محل کار/اخیر/ذخیره‌شده (بدون ایستگاه و وضعیت شبکه) */}
           <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MI name="electric_bolt" size={20} className="text-primary" />
-                <h3 className="font-bold text-xs text-on-surface">دسترسی سریع مسافر</h3>
+                <h3 className="font-bold text-xs text-on-surface">میانبرهای روزمره مسافر</h3>
               </div>
-              <span className="text-[10px] font-bold text-tertiary bg-tertiary-fixed/40 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                بروزرسانی زنده
-              </span>
+              <span className="text-[9px] font-bold text-outline bg-surface-container px-2 py-0.5 rounded-full">مستقل از روش سفر</span>
             </div>
-            <div className="grid grid-cols-5 gap-2 text-center pt-1">
+            <div className="grid grid-cols-4 gap-2 text-center pt-1">
               <button
                 onClick={() => applyDailyRoute("home")}
                 className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
@@ -425,38 +444,58 @@ export default function Page() {
                 </div>
                 <span className="text-[11px] font-medium text-on-surface group-hover:text-tertiary truncate w-full">محل کار</span>
               </button>
+              {/* مقصدهای اخیر — فقط از تاریخچه واقعی سفر */}
               <button
-                onClick={() => router.push("/map")}
+                onClick={() => setRecentOpen((v) => !v)}
+                aria-expanded={recentOpen}
                 className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
                 type="button"
               >
-                <div className="w-12 h-12 rounded-2xl bg-primary-fixed/50 group-hover:bg-primary-fixed text-primary flex items-center justify-center transition-colors shadow-sm">
-                  <MI name="download_for_offline" size={24} />
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 group-hover:bg-amber-100 dark:bg-primary/10 dark:group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm">
+                  <MI name="history" size={24} />
                 </div>
-                <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">نقشه آفلاین</span>
+                <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">مقصدهای اخیر</span>
               </button>
+              {/* مقصدهای ذخیره‌شده — صفحه ذخیره‌ها */}
               <button
-                onClick={() => router.push("/lines")}
+                onClick={() => router.push("/saved")}
                 className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
                 type="button"
               >
-                <div className="w-12 h-12 rounded-2xl bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-colors shadow-sm">
-                  <MI name="schedule" size={24} />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 group-hover:bg-emerald-100 dark:bg-primary/10 dark:group-hover:bg-primary/20 text-tertiary flex items-center justify-center transition-colors shadow-sm">
+                  <MI name="bookmark" size={24} />
                 </div>
-                <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">زمان‌بندی</span>
-              </button>
-              <button
-                onClick={() => router.push("/status")}
-                className="flex flex-col items-center gap-1.5 group active:scale-95 transition-all"
-                type="button"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 group-hover:bg-blue-100 dark:bg-primary/10 dark:group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-sm relative">
-                  <MI name="groups" size={24} />
-                  <span className="absolute top-1 left-1 w-2 h-2 rounded-full bg-emerald-500"></span>
-                </div>
-                <span className="text-[11px] font-medium text-on-surface group-hover:text-primary truncate w-full">شلوغی سکو</span>
+                <span className="text-[11px] font-medium text-on-surface group-hover:text-tertiary truncate w-full">ذخیره‌شده‌ها</span>
               </button>
             </div>
+
+            {/* لیست مقصدهای اخیر — فقط با داده واقعی تاریخچه؛ خالی = پیام صادقانه */}
+            {recentOpen && (
+              <div className="fade-in border-t border-outline-variant/30 pt-2.5 space-y-1.5">
+                {recentDests.length > 0 ? (
+                  <>
+                    <p className="text-[10px] font-bold text-on-surface-variant">از تاریخچه سفرهای شما:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {recentDests.map((d) => (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => router.push(`/plan?to=${d.id}`)}
+                          className="flex items-center gap-1.5 bg-surface-container px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-on-surface hover:bg-surface-container-high active:scale-95 transition-all"
+                        >
+                          <MI name="location_on" size={14} className="text-secondary shrink-0" />
+                          <span className="truncate max-w-[160px]">{d.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-outline leading-relaxed py-1">
+                    هنوز مقصدی در تاریخچه سفر ثبت نشده است. پس از اولین مسیریابی، مقصدهای اخیر اینجا نمایش داده می‌شود.
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
           {/* 4. مسیریاب سریع روزانه */}
@@ -665,6 +704,102 @@ export default function Page() {
                   خارج از ساعات سرویس
                 </span>
               )}
+            </div>
+          </section>
+
+          {/* 4. مقایسه مدهای سفر شهری — ۶ روش؛ زمان/هزینه فقط با داده واقعی */}
+          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MI name="alt_route" size={20} className="text-primary" />
+                <h3 className="font-bold text-xs text-on-surface">مقایسه مدهای سفر شهری</h3>
+              </div>
+              <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">فقط داده واقعی</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {/* مترو — داده واقعی موتور مسیریابی */}
+              <button
+                type="button"
+                onClick={() => plan && openPlan()}
+                className={`relative bg-surface-container-low border rounded-xl p-2.5 flex flex-col items-center text-center transition-all ${
+                  plan ? "border-2 border-primary shadow-sm active:scale-[0.97]" : "border-outline-variant/30"
+                }`}
+              >
+                {plan && (
+                  <span className="absolute -top-2 bg-primary text-on-primary text-[9px] px-1.5 py-0.5 rounded-full font-bold">پیشنهادی</span>
+                )}
+                <div className="w-8 h-8 rounded-lg bg-primary-fixed text-primary flex items-center justify-center">
+                  <MI name="directions_subway" size={20} />
+                </div>
+                <span className="text-[11px] font-bold text-on-surface mt-1.5">مترو</span>
+                {plan ? (
+                  <>
+                    <span className="text-sm font-bold text-primary mt-0.5">
+                      {toFa(plan.totalMinutes)} <span className="text-[10px] font-normal text-on-surface-variant">دقیقه</span>
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant mt-0.5">{toFa(plan.fare.toLocaleString("fa-IR"))} تومان</span>
+                  </>
+                ) : (
+                  <span className="text-[9px] font-bold text-outline mt-1 bg-surface-container px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                    <MI name="hourglass_empty" size={11} />آماده‌نشده
+                  </span>
+                )}
+              </button>
+              {/* سفر ترکیبی — پیاده + مترو؛ فقط اگر داده واقعی وجود داشته باشد */}
+              <button
+                type="button"
+                onClick={() => plan && openPlan()}
+                className={`bg-surface-container-low border rounded-xl p-2.5 flex flex-col items-center text-center transition-all ${
+                  plan ? "border-outline-variant/30 hover:bg-surface-container active:scale-[0.97]" : "border-outline-variant/30"
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-tertiary-fixed/60 text-tertiary flex items-center justify-center">
+                  <MI name="alt_route" size={20} />
+                </div>
+                <span className="text-[11px] font-bold text-on-surface mt-1.5">ترکیبی</span>
+                {plan ? (
+                  <>
+                    <span className="text-sm font-bold text-tertiary mt-0.5">
+                      {toFa(plan.totalMinutes)} <span className="text-[10px] font-normal text-on-surface-variant">دقیقه</span>
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant mt-0.5">
+                      پیاده + مترو{plan.transfers > 0 ? ` • ${toFa(plan.transfers)} تبادل` : " • بدون تعویض خط"}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[9px] font-bold text-outline mt-1 bg-surface-container px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                    <MI name="hourglass_empty" size={11} />آماده‌نشده
+                  </span>
+                )}
+              </button>
+              {/* روش‌های بدون داده واقعی — برچسب صادقانه «قابلیت آماده‌نشده» */}
+              {NOT_READY_MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => toast({ title: `${m.label}: قابلیت آماده‌نشده`, description: "داده واقعی این روش هنوز در دسترس نیست و عدد ساختگی نمایش داده نمی‌شود" })}
+                  className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-2.5 flex flex-col items-center text-center hover:bg-surface-container active:scale-[0.97] transition-all"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-surface-container text-on-surface-variant flex items-center justify-center">
+                    <MI name={m.icon} size={20} />
+                  </div>
+                  <span className="text-[11px] font-bold text-on-surface mt-1.5">{m.label}</span>
+                  <span className="text-[9px] font-bold text-outline mt-1 bg-surface-container px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                    <MI name="hourglass_empty" size={11} />آماده‌نشده
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-outline-variant leading-relaxed">
+              زمان و هزینه فقط برای روش‌هایی نمایش داده می‌شود که داده واقعی دارند. اتوبوس، BRT، تاکسی و خودرو پس از اتصال به داده رسمی فعال می‌شوند.
+            </p>
+          </section>
+
+          {/* 5. بنر تبلیغات */}
+          <section className="bg-gradient-to-l from-primary/5 via-surface-container-low to-surface-container-lowest rounded-2xl p-4 border border-primary/20 shadow-sm relative overflow-hidden group">
+            <div className="flex items-center justify-center py-2 text-center text-xs font-medium text-outline">
+              <MI name="campaign" size={16} className="ml-1.5" />
+              بخش تبلیغ
             </div>
           </section>
 
