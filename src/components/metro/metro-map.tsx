@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import {
   MAP_LINES,
   MAP_STATIONS,
@@ -15,10 +15,21 @@ import { MI } from "./ui";
 
 /* ============================================================
    نقشه تعاملی مترو — موتور ژست چندلمسی (پینچ/جابجایی بدون خطا)
-   + موتور برچسب «فضای صفحه»: متن همیشه با اندازه ثابت و خوانا،
-     موقعیت‌یابی زنده روی نقشه و حذف هوشمند همپوشانی
-   + راهنمای خطوط + موقعیت‌یاب GPS
+   + موتور برچسب «فضای صفحه» + موقعیت‌یابی زنده
+   + نمای دوبعدی/سه‌بعدی (چرخش CSS با ریاضی وارونِ دقیق برای تعامل)
+   + چرخش قطب‌نما + مسیر منتخب روی نقشه
    ============================================================ */
+
+export interface MetroMapHandle {
+  zoomIn(): void;
+  zoomOut(): void;
+  resetView(): void;
+  locateMe(): void;
+  /** پرواز نرم به ایستگاه — از جستجو و انتخاب مقصد استفاده می‌شود */
+  flyToStation(stationId: string): void;
+  toggle3D(): void;
+  rotateBy(deg: number): void;
+}
 
 interface MetroMapProps {
   onStationSelect?: (stationId: string) => void;
@@ -27,6 +38,12 @@ interface MetroMapProps {
   hiddenLineIds?: string[];
   /** تغییر وضعیت چشم هر خط */
   onToggleLine?: (lineId: string) => void;
+  /** ترتیب ایستگاه‌های مسیر منتخب — رسم خط پررنگ مسیر روی نقشه */
+  routeStations?: string[];
+  /** پنهان کردن دکمه‌ها و راهنمای داخلی — صفحه کنترل‌های خودش را می‌سازد */
+  showControls?: boolean;
+  /** همگام‌سازی وضعیت نما (برای برچسب دکمه‌های صفحه) */
+  onViewChange?: (v: { tilt3d: boolean; rotationDeg: number }) => void;
   className?: string;
 }
 
@@ -42,6 +59,19 @@ const TAP_SLOP_PX = 7; // حرکت بیشتر از این = جابجایی، ن�
 const STALE_POINTER_MS = 1500; // اشاره‌گر بدون هیچ رویداد جدید بعد از این مدت = مرده
 
 const TEHRAN_LINES = LINES.filter((l) => l.cityId === "tehran");
+
+/* ---------- ریاضی نمای سه‌بعدی ----------
+   CSS روی SVG اعمال می‌شود: rotateX(tilt) rotateZ(rotation) داخل
+   پوشش دارای perspective(P). برای تبدیل نقطه صفحه به مختصات تخت
+   نقشه، وارونِ همین زنجیره محاسبه می‌شود:
+   ۱) rotateZ(φ): x1 = x·cosφ − y·sinφ، y1 = x·sinφ + y·cosφ
+   ۲) rotateX(θ): y2 = y1·cosθ، z2 = y1·sinθ
+   ۳) perspective(P): s = P/(P − z2)، x_s = x1·s، y_s = y2·s
+   وارون: y1 = P·y_s/(P·cosθ + y_s·sinθ)، s = P/(P − y1·sinθ)،
+   x1 = x_s/s و سپس وارون rotateZ. در حالت 2D (θ=۰، φ=۰) همه این‌ها
+   همانی است — یعنی رفتار فعلی نقشه دست‌نخورده می‌ماند. */
+const PERSPECTIVE_PX = 1000;
+const TILT_3D_DEG = 42;
 
 /* ---------- خطوط نمایان، ایستگاه‌های تبادلی و رنگ هر ایستگاه ----------
    خطوط خاموش‌شده (کلید چشم) در «همه» محاسبات کنار گذاشته می‌شوند:
@@ -191,18 +221,37 @@ type LocateState =
   | { kind: "far" }
   | { kind: "error"; message: string };
 
-export default function MetroMap({
-  onStationSelect,
-  highlightStations,
-  hiddenLineIds,
-  onToggleLine,
-  className = "",
-}: MetroMapProps) {
+export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
+  {
+    onStationSelect,
+    highlightStations,
+    hiddenLineIds,
+    onToggleLine,
+    routeStations,
+    showControls = true,
+    onViewChange,
+    className = "",
+  },
+  ref
+) {
   const [t, setT] = useState<Transform>({ scale: 1, tx: 0, ty: 0 });
   const [legendOpen, setLegendOpen] = useState(false);
   const [locate, setLocate] = useState<LocateState>({ kind: "idle" });
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [fontsTick, setFontsTick] = useState(0);
+
+  /* ---------- نمای دوبعدی/سه‌بعدی + چرخش قطب‌نما ---------- */
+  const [tilt3d, setTilt3d] = useState(false);
+  const [rotationDeg, setRotationDeg] = useState(0);
+  const view3dRef = useRef({ tilt: 0, rotation: 0 });
+
+  useEffect(() => {
+    view3dRef.current = {
+      tilt: tilt3d ? TILT_3D_DEG : 0,
+      rotation: rotationDeg,
+    };
+    onViewChange?.({ tilt3d, rotationDeg });
+  }, [tilt3d, rotationDeg, onViewChange]);
 
   /* ---------- خطوط نمایان (کلید چشم) + شبکه اشغال خطوط ---------- */
   const hiddenSet = useMemo(() => new Set(hiddenLineIds ?? []), [hiddenLineIds]);
@@ -212,6 +261,8 @@ export default function MetroMap({
   /* ---------- آینه همزمان ترنسفورم — جلوگیری از رقابت با React ---------- */
   const tRef = useRef<Transform>({ scale: 1, tx: 0, ty: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
+  /* پوشش ریشه (بدون ترنسفورم) — مبنای مختصات «چیدمان» حتی در نمای 3D */
+  const rootRef = useRef<HTMLDivElement>(null);
 
   /* اشاره‌گرهای فعال — پایه ژست چندلمسی (t = آخرین زمان دیدن اشاره‌گر) */
   const pointersRef = useRef<Map<number, { x: number; y: number; t: number }>>(new Map());
@@ -270,12 +321,12 @@ export default function MetroMap({
   const commit = useCallback((next: Transform) => {
     const scale = clamp(next.scale, MIN_SCALE, MAX_SCALE);
     /* پنجره دید واقعی بر حسب واحدهای viewBox — با احتساب letterbox حالت meet.
-       clamp قبلی فقط مرکز بوم را مبنا می‌گرفت و در بزرگ‌نمایی اجازه می‌داد
-       کل نقشه از پنجره دید خارج شود (کاربر حس می‌کرد pan خراب است). */
+       مبنای اندازه‌گیری «جعبه چیدمان» پوشش ریشه است؛ این عنصر ترنسفورم ندارد
+       و در نمای 3D هم مختصات تخت را می‌دهد. */
     let wx0 = 0, wy0 = 0, winW = MAP_CANVAS.w, winH = MAP_CANVAS.h;
-    const svg = svgRef.current;
-    if (svg) {
-      const rect = svg.getBoundingClientRect();
+    const host = rootRef.current;
+    if (host) {
+      const rect = host.getBoundingClientRect();
       if (rect.width > 2 && rect.height > 2) {
         const f = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
         wx0 = -((rect.width - MAP_CANVAS.w * f) / 2) / f;
@@ -297,38 +348,86 @@ export default function MetroMap({
     setT(fixed);
   }, []);
 
-  /** تبدیل مختصات صفحه به مختصات viewBox (با احتساب letterbox وضعیت meet) */
-  const viewPoint = useCallback((clientX: number, clientY: number) => {
-    const svg = svgRef.current;
-    if (!svg) return { vx: 0, vy: 0 };
-    const rect = svg.getBoundingClientRect();
-    const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
-    const ox = (rect.width - MAP_CANVAS.w * fit) / 2;
-    const oy = (rect.height - MAP_CANVAS.h * fit) / 2;
-    return {
-      vx: (clientX - rect.left - ox) / (fit * tRef.current.scale) - tRef.current.tx / tRef.current.scale,
-      vy: (clientY - rect.top - oy) / (fit * tRef.current.scale) - tRef.current.ty / tRef.current.scale,
-    };
+  /** تبدیل نقطه صفحه به مختصات تخت چیدمان — با وارون دقیق نمای 3D */
+  const unprojectClient = useCallback((clientX: number, clientY: number) => {
+    const host = rootRef.current;
+    if (!host) return { x: clientX, y: clientY };
+    const rect = host.getBoundingClientRect();
+    const { tilt, rotation } = view3dRef.current;
+    let x = clientX - (rect.left + rect.width / 2);
+    let y = clientY - (rect.top + rect.height / 2);
+    if (tilt !== 0 || rotation !== 0) {
+      const th = (tilt * Math.PI) / 180;
+      const ph = (rotation * Math.PI) / 180;
+      const ct = Math.cos(th);
+      const st = Math.sin(th);
+      const cf = Math.cos(ph);
+      const sf = Math.sin(ph);
+      // وارون rotateX + perspective برای مؤلفه عمودی
+      const denom = PERSPECTIVE_PX * ct + y * st;
+      const y1 = Math.abs(denom) < 1e-6 ? y : (PERSPECTIVE_PX * y) / denom;
+      const s = PERSPECTIVE_PX / Math.max(120, PERSPECTIVE_PX - y1 * st);
+      const x1 = x / s;
+      // وارون rotateZ
+      x = x1 * cf + y1 * sf;
+      y = -x1 * sf + y1 * cf;
+    }
+    return { x: x + rect.width / 2, y: y + rect.height / 2 };
   }, []);
+
+  /** نسبت fit برای یک جعبه چیدمان — هم‌روش با commit */
+  const fit0 = useCallback((rect: { width: number; height: number }) => {
+    return Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+  }, []);
+
+  /** هندسه چیدمان: جعبه بدون ترنسفورم + نسبت fit + آفست letterbox */
+  const hostGeo = useCallback(() => {
+    const host = rootRef.current;
+    if (!host) return null;
+    const rect = host.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return null;
+    const fit = fit0(rect);
+    return {
+      rect,
+      fit,
+      ox: (rect.width - MAP_CANVAS.w * fit) / 2,
+      oy: (rect.height - MAP_CANVAS.h * fit) / 2,
+    };
+  }, [fit0]);
+
+  /** تبدیل مختصات صفحه به مختصات viewBox (با احتساب letterbox و نمای 3D) */
+  const viewPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      const g = hostGeo();
+      if (!g) return { vx: 0, vy: 0 };
+      const p = unprojectClient(clientX, clientY);
+      return {
+        vx:
+          (p.x - g.rect.left - g.ox) / (g.fit * tRef.current.scale) -
+          tRef.current.tx / tRef.current.scale,
+        vy:
+          (p.y - g.rect.top - g.oy) / (g.fit * tRef.current.scale) -
+          tRef.current.ty / tRef.current.scale,
+      };
+    },
+    [unprojectClient, hostGeo]
+  );
 
   /** بزرگ‌نمایی حول یک نقطه صفحه (پیش‌فرض: مرکز) — لنگر ثابت می‌ماند */
   const zoomAt = useCallback(
     (factor: number, clientX?: number, clientY?: number) => {
       const t0 = tRef.current;
-      const svg = svgRef.current;
-      if (!svg) {
+      const g = hostGeo();
+      if (!g) {
         commit({ ...t0, scale: t0.scale * factor });
         return;
       }
-      const rect = svg.getBoundingClientRect();
-      const cx = clientX ?? rect.left + rect.width / 2;
-      const cy = clientY ?? rect.top + rect.height / 2;
-      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
-      const ox = (rect.width - MAP_CANVAS.w * fit) / 2;
-      const oy = (rect.height - MAP_CANVAS.h * fit) / 2;
-      // نقطه لنگر در مختصات viewBox فعلی
-      const ax = (cx - rect.left - ox) / fit;
-      const ay = (cy - rect.top - oy) / fit;
+      const cx = clientX ?? g.rect.left + g.rect.width / 2;
+      const cy = clientY ?? g.rect.top + g.rect.height / 2;
+      // نقطه لنگر — با وارون 3D به مختصات تخت برگردانده می‌شود
+      const p = unprojectClient(cx, cy);
+      const ax = (p.x - g.rect.left - g.ox) / g.fit;
+      const ay = (p.y - g.rect.top - g.oy) / g.fit;
       const scale = clamp(t0.scale * factor, MIN_SCALE, MAX_SCALE);
       commit({
         scale,
@@ -336,7 +435,7 @@ export default function MetroMap({
         ty: ay - ((ay - t0.ty) * scale) / t0.scale,
       });
     },
-    [commit]
+    [commit, hostGeo, unprojectClient]
   );
 
   /* ---------- چرخ ماوس (غیر-Passive تا preventDefault کار کند) ---------- */
@@ -423,18 +522,16 @@ export default function MetroMap({
       }
       const [p1, p2] = [...pointersRef.current.values()];
       const t0 = tRef.current;
-      const svg = svgRef.current;
-      if (!svg) return;
-      const rect = svg.getBoundingClientRect();
-      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
-      const ox = (rect.width - MAP_CANVAS.w * fit) / 2;
-      const oy = (rect.height - MAP_CANVAS.h * fit) / 2;
-      const mx = (p1.x + p2.x) / 2;
-      const my = (p1.y + p2.y) / 2;
+      const g = hostGeo();
+      if (!g) return;
+      // فاصله و نقطه میانی در «فضای تخت» — وارون 3D برای هر انگشت
+      const f1 = unprojectClient(p1.x, p1.y);
+      const f2 = unprojectClient(p2.x, p2.y);
+      const fm = unprojectClient((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
       pinchRef.current = {
-        dist0: Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1,
-        vx0: (mx - rect.left - ox) / fit,
-        vy0: (my - rect.top - oy) / fit,
+        dist0: Math.hypot(f1.x - f2.x, f1.y - f2.y) || 1,
+        vx0: (fm.x - g.rect.left - g.ox) / g.fit,
+        vy0: (fm.y - g.rect.top - g.oy) / g.fit,
         s0: t0.scale,
         tx0: t0.tx,
         ty0: t0.ty,
@@ -448,20 +545,17 @@ export default function MetroMap({
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now() });
 
     if (pinchRef.current && pointersRef.current.size >= 2) {
-      // پینچ: مقیاس + حفظ لنگر زیر انگشتان
+      // پینچ: مقیاس + حفظ لنگر زیر انگشتان — همه در فضای تخت (وارون 3D)
       const [p1, p2] = [...pointersRef.current.values()];
       const p0 = pinchRef.current;
-      const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1;
-      const svg = svgRef.current;
-      if (!svg) return;
-      const rect = svg.getBoundingClientRect();
-      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
-      const ox = (rect.width - MAP_CANVAS.w * fit) / 2;
-      const oy = (rect.height - MAP_CANVAS.h * fit) / 2;
-      const mx = (p1.x + p2.x) / 2;
-      const my = (p1.y + p2.y) / 2;
-      const vxm = (mx - rect.left - ox) / fit;
-      const vym = (my - rect.top - oy) / fit;
+      const g = hostGeo();
+      if (!g) return;
+      const f1 = unprojectClient(p1.x, p1.y);
+      const f2 = unprojectClient(p2.x, p2.y);
+      const fm = unprojectClient((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
+      const dist = Math.hypot(f1.x - f2.x, f1.y - f2.y) || 1;
+      const vxm = (fm.x - g.rect.left - g.ox) / g.fit;
+      const vym = (fm.y - g.rect.top - g.oy) / g.fit;
       const scale = clamp((p0.s0 * dist) / p0.dist0, MIN_SCALE, MAX_SCALE);
       // نقطه میانی اولیه باید زیر انگشتان بماند
       const cx = (p0.vx0 - p0.tx0) / p0.s0;
@@ -477,12 +571,13 @@ export default function MetroMap({
 
     if (panRef.current && pointersRef.current.size === 1) {
       const p0 = panRef.current;
-      const svg = svgRef.current;
-      if (!svg) return;
-      const rect = svg.getBoundingClientRect();
-      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
-      const dx = (e.clientX - p0.startX) / fit;
-      const dy = (e.clientY - p0.startY) / fit;
+      const g = hostGeo();
+      if (!g) return;
+      // جابجایی در فضای تخت — در نمای 3D با وارون دقیق محاسبه می‌شود
+      const s0 = unprojectClient(p0.startX, p0.startY);
+      const s1 = unprojectClient(e.clientX, e.clientY);
+      const dx = (s1.x - s0.x) / g.fit;
+      const dy = (s1.y - s0.y) / g.fit;
       if (Math.abs(e.clientX - p0.startX) > TAP_SLOP_PX || Math.abs(e.clientY - p0.startY) > TAP_SLOP_PX) {
         if (!movedRef.current) {
           // گذر از آستانه درگ — کپچر روی SVG تا pointerup حتی روی کارت‌های
@@ -520,18 +615,16 @@ export default function MetroMap({
   /* ---------- مرکز کردن دید روی یک ایستگاه ---------- */
   const zoomToStation = useCallback(
     (sx: number, sy: number) => {
-      const svg = svgRef.current;
-      if (!svg) return;
-      const rect = svg.getBoundingClientRect();
-      const fit = Math.min(rect.width / MAP_CANVAS.w, rect.height / MAP_CANVAS.h);
+      const g = hostGeo();
+      if (!g) return;
       const scale = 2.4;
       commit({
         scale,
-        tx: rect.width / (2 * fit) - scale * sx,
-        ty: rect.height / (2 * fit) - scale * sy,
+        tx: g.rect.width / (2 * g.fit) - scale * sx,
+        ty: g.rect.height / (2 * g.fit) - scale * sy,
       });
     },
-    [commit]
+    [commit, hostGeo]
   );
 
   /* ---------- موقعیت‌یاب GPS ---------- */
@@ -601,6 +694,24 @@ export default function MetroMap({
     setLocate({ kind: "idle" });
   }, [commit]);
 
+  /* ---------- API دستوری برای کنترل‌های طراحی‌شده صفحه ---------- */
+  useImperativeHandle(
+    ref,
+    (): MetroMapHandle => ({
+      zoomIn: () => zoomAt(1.3),
+      zoomOut: () => zoomAt(0.77),
+      resetView,
+      locateMe,
+      flyToStation: (stationId: string) => {
+        const st = MAP_STATION_BY_ID.get(stationId);
+        if (st) zoomToStation(st.x, st.y);
+      },
+      toggle3D: () => setTilt3d((v) => !v),
+      rotateBy: (deg: number) => setRotationDeg((v) => (((v + deg) % 360) + 360) % 360),
+    }),
+    [zoomAt, resetView, locateMe, zoomToStation]
+  );
+
   const highlighted = useMemo(() => {
     const set = new Set<string>();
     for (const id of highlightStations ?? []) {
@@ -668,10 +779,12 @@ export default function MetroMap({
       if (x1 <= x0 || y1 <= y0) return null;
       return { x0, y0, x1, y1 };
     };
-    const legendZone = htmlZone(10, 10, 158, legendOpen ? (onToggleLine ? 240 : 185) : 40);
+    const legendZone = showControls ? htmlZone(10, 10, 158, legendOpen ? (onToggleLine ? 240 : 185) : 40) : null;
     if (legendZone) boxes.push(legendZone);
-    // ستون دکمه‌های شناور پایین-چپ (۴ دکمه ۳۶px با فاصله)
-    const controlsZone = htmlZone(8, box.h - 196, 44, 188);
+    // ستون کنترل‌های شناور — داخلی: پایین-چپ؛ کنترل صفحه: ستون چپ از بالای نوار فیلتر
+    const controlsZone = showControls
+      ? htmlZone(8, box.h - 196, 44, 188)
+      : htmlZone(8, 128, 52, Math.min(280, Math.max(120, box.h - 210)));
     if (controlsZone) boxes.push(controlsZone);
 
     /* ---------- نشان شماره خطوط (اندازه ثابت، پشته‌ای در ایستگاه مشترک) ---------- */
@@ -796,22 +909,47 @@ export default function MetroMap({
     }
 
     return { labels, badges };
-  }, [t, fit, fontsTick, highlighted, legendOpen, box.w, box.h, visible, hitsStroke, onToggleLine]);
+  }, [t, fit, fontsTick, highlighted, legendOpen, box.w, box.h, visible, hitsStroke, onToggleLine, showControls]);
+
+  /* مسیر منتخب — فقط ایستگاه‌هایی که روی خطوط نمایان هستند */
+  const routePath = useMemo(() => {
+    if (!routeStations || routeStations.length < 2) return null;
+    const pts: { x: number; y: number }[] = [];
+    for (const id of routeStations) {
+      if (!visible.stationIds.has(id)) continue;
+      const s = MAP_STATION_BY_ID.get(id);
+      if (s) pts.push(s);
+    }
+    return pts.length >= 2 ? pts : null;
+  }, [routeStations, visible.stationIds]);
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl ${className}`}>
-      {/* لایه SVG نقشه */}
+    <div
+      ref={rootRef}
+      className={`relative overflow-hidden rounded-2xl ${className}`}
+      style={{ perspective: `${PERSPECTIVE_PX}px`, perspectiveOrigin: "center center" }}
+    >
+      {/* لایه SVG نقشه — در نمای سه‌بعدی با چرخش CSS مایل می‌شود؛
+          تعامل‌ها با وارون دقیق همان زنجیره ترنسفورم محاسبه می‌شوند */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${MAP_CANVAS.w} ${MAP_CANVAS.h}`}
         className="w-full h-full map-viewport select-none"
-        style={{ touchAction: "none" }}
+        style={{
+          touchAction: "none",
+          transform:
+            tilt3d || rotationDeg !== 0
+              ? `rotateX(${tilt3d ? TILT_3D_DEG : 0}deg) rotateZ(${rotationDeg}deg)`
+              : undefined,
+          transition: "transform 320ms cubic-bezier(0.4, 0, 0.2, 1)",
+          willChange: "transform",
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endPointer}
         onPointerCancel={endPointer}
         role="img"
-        aria-label="نقشه شماتیک شبکه متروی تهران — با دو انگشت بزرگ‌نمایی کنید"
+        aria-label="نقشه تعاملی حمل‌ونقل تهران — با دو انگشت بزرگ‌نمایی کنید"
       >
         <defs>
           <pattern id="map-grid" width="30" height="30" patternUnits="userSpaceOnUse">
@@ -843,6 +981,40 @@ export default function MetroMap({
               />
             </g>
           ))}
+
+          {/* مسیر منتخب — نوار پررنگ مسیر روی خطوط */}
+          {routePath && (
+            <g pointerEvents="none">
+              <polyline
+                points={routePath.map((p) => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke="var(--mq-card)"
+                strokeWidth={13}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={0.9}
+              />
+              <polyline
+                points={routePath.map((p) => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke="#0d58a6"
+                strokeWidth={8.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={0.92}
+              />
+              <polyline
+                points={routePath.map((p) => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="2 10"
+                opacity={0.9}
+              />
+            </g>
+          )}
 
           {/* ایستگاه‌ها — فقط ایستگاه‌های خطوط نمایان؛ حلقه با رنگ خط (سبک نقشه کلاسیک) */}
           {MAP_STATIONS.map((s) => {
@@ -941,7 +1113,8 @@ export default function MetroMap({
         )}
       </svg>
 
-      {/* ================= کارت راهنمای خطوط (جای دکمه در هر دو حالت ثابت است) ================= */}
+      {/* ================= کارت راهنمای خطوط — فقط در حالت کنترل داخلی ================= */}
+      {showControls && (
       <div className="absolute top-2.5 left-2.5 w-[9.5rem] rounded-xl bg-metro-card/95 backdrop-blur border border-metro-outline-var shadow-md overflow-hidden">
         <button
           onClick={() => setLegendOpen((o) => !o)}
@@ -1001,6 +1174,7 @@ export default function MetroMap({
           </div>
         )}
       </div>
+      )}
 
       {/* ================= نتیجه موقعیت‌یاب ================= */}
       {locate.kind === "busy" && (
@@ -1047,37 +1221,39 @@ export default function MetroMap({
         </div>
       )}
 
-      {/* ================= کنترل‌های شناور (بزرگ‌نمایی + موقعیت) ================= */}
-      <div className="absolute bottom-2.5 left-2.5 flex flex-col gap-1.5">
-        <button
-          onClick={locateMe}
-          aria-label="نزدیک‌ترین ایستگاه به من"
-          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
-        >
-          <MI name="my_location" size={18} />
-        </button>
-        <button
-          onClick={() => zoomAt(1.25)}
-          aria-label="بزرگ‌نمایی"
-          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
-        >
-          <MI name="add" size={18} />
-        </button>
-        <button
-          onClick={() => zoomAt(0.8)}
-          aria-label="کوچک‌نمایی"
-          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
-        >
-          <MI name="remove" size={18} />
-        </button>
-        <button
-          onClick={resetView}
-          aria-label="بازگشت به نمای کامل"
-          className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
-        >
-          <MI name="center_focus_strong" size={18} />
-        </button>
-      </div>
+      {/* ================= کنترل‌های شناور داخلی — فقط وقتی صفحه کنترل ندارد ================= */}
+      {showControls && (
+        <div className="absolute bottom-2.5 left-2.5 flex flex-col gap-1.5">
+          <button
+            onClick={locateMe}
+            aria-label="نزدیک‌ترین ایستگاه به من"
+            className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          >
+            <MI name="my_location" size={18} />
+          </button>
+          <button
+            onClick={() => zoomAt(1.25)}
+            aria-label="بزرگ‌نمایی"
+            className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          >
+            <MI name="add" size={18} />
+          </button>
+          <button
+            onClick={() => zoomAt(0.8)}
+            aria-label="کوچک‌نمایی"
+            className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          >
+            <MI name="remove" size={18} />
+          </button>
+          <button
+            onClick={resetView}
+            aria-label="بازگشت به نمای کامل"
+            className="w-9 h-9 rounded-xl bg-metro-card shadow border border-metro-outline-var flex items-center justify-center text-metro-primary-c active:scale-95 transition-all"
+          >
+            <MI name="center_focus_strong" size={18} />
+          </button>
+        </div>
+      )}
     </div>
   );
-}
+});

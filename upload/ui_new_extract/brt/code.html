@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+
+<html class="h-full" dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>درمسیر - جزئیات مسیر BRT و تاکسی</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Vazirmatn Persian Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-error": "#ffffff",
+            "tertiary": "#004c28",
+            "surface-container-high": "#dee8ff",
+            "on-secondary": "#ffffff",
+            "error": "#ba1a1a",
+            "primary-fixed-dim": "#a8c8ff",
+            "primary-fixed": "#d5e3ff",
+            "on-background": "#111c2d",
+            "on-primary-fixed": "#001b3c",
+            "on-surface-variant": "#424751",
+            "surface-container": "#e7eeff",
+            "surface-container-lowest": "#ffffff",
+            "background": "#f9f9ff",
+            "on-tertiary-fixed-variant": "#00522c",
+            "surface-container-low": "#f0f3ff",
+            "outline": "#727782",
+            "secondary": "#bc000c",
+            "secondary-fixed": "#ffdad5",
+            "surface": "#f9f9ff",
+            "primary": "#00417f",
+            "surface-dim": "#cfdaf2",
+            "on-primary-fixed-variant": "#004689",
+            "on-secondary-fixed-variant": "#930007",
+            "primary-container": "#0d58a6",
+            "tertiary-fixed-dim": "#61de92",
+            "surface-tint": "#1a5eac",
+            "surface-bright": "#f9f9ff",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            "inverse-on-surface": "#ecf1ff",
+            "surface-variant": "#d8e3fb",
+            "on-secondary-fixed": "#410001",
+            "on-tertiary-fixed": "#00210e",
+            "on-tertiary": "#ffffff",
+            "on-primary": "#ffffff",
+            "inverse-surface": "#263143",
+            "secondary-container": "#e32220",
+            "surface-container-highest": "#d8e3fb",
+            "on-tertiary-container": "#6ae79a",
+            "outline-variant": "#c2c6d3",
+            "tertiary-fixed": "#7efbac",
+            "tertiary-container": "#006638",
+            "inverse-primary": "#a8c8ff",
+            "on-surface": "#111c2d",
+            "on-primary-container": "#b6d0ff",
+            "on-secondary-container": "#fffbff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2rem",
+            "space-lg": "1.5rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem"
+          },
+          "fontFamily": {
+            "title-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+            "headline-lg": ["24px", {"lineHeight": "36px", "fontWeight": "700"}],
+            "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+            "body-sm": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "label-sm": ["10px", {"lineHeight": "14px", "fontWeight": "700"}],
+            "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+            "headline-md": ["20px", {"lineHeight": "30px", "fontWeight": "700"}],
+            "headline-xl": ["32px", {"lineHeight": "44px", "fontWeight": "800"}],
+            "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background-color: #f9f9ff;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+    /* Hide scrollbars for crisp UI */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex justify-center selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Mobile Viewport Container (Simulating high-end mobile app shell) -->
+<div class="w-full max-w-md bg-background min-h-screen relative flex flex-col pb-28 shadow-xl">
+<!-- ۱. هدر بالای صفحه (TopAppBar Header) -->
+<header class="sticky top-0 z-40 bg-surface/95 backdrop-blur-md px-margin h-16 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-space-sm">
+<button aria-label="بازگشت" class="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-headline-md">arrow_forward</span>
+</button>
+<div>
+<h1 class="text-title-md font-title-md text-primary font-bold">جزئیات مسیر BRT و تاکسی</h1>
+<span class="text-label-sm font-label-sm text-outline flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse inline-block"></span>
+            بروزرسانی زنده خطوط ویژه
+          </span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button aria-label="اشتراک‌گذاری مسیر" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button aria-label="راهنما" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+</header>
+<main class="flex-1 px-margin pt-space-sm space-y-space-md">
+<!-- ۲. کادر مبدأ و مقصد (Origin & Destination Card) -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm border border-outline-variant/60 relative overflow-hidden">
+<div class="flex items-start gap-space-sm">
+<!-- Graphical Route Connector Dots -->
+<div class="flex flex-col items-center pt-1.5 self-stretch">
+<div class="w-3.5 h-3.5 rounded-full border-2 border-tertiary-container bg-tertiary-fixed flex items-center justify-center">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+</div>
+<div class="w-0.5 flex-1 bg-gradient-to-b from-tertiary-container via-outline-variant to-secondary-container my-1"></div>
+<div class="w-3.5 h-3.5 rounded-full border-2 border-secondary bg-secondary-fixed flex items-center justify-center">
+<div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+</div>
+</div>
+<!-- Locations Details -->
+<div class="flex-1 space-y-3">
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline block">مبدأ حرکت</span>
+<span class="text-body-md font-body-md font-bold text-on-surface">میدان انقلاب اسلامی</span>
+</div>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded-full bg-surface-container text-primary font-semibold">منطقه ۶</span>
+</div>
+<div class="h-px bg-outline-variant/40"></div>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline block">مقصد نهایی</span>
+<span class="text-body-md font-body-md font-bold text-on-surface">بیمارستان میلاد / میدان ونک</span>
+</div>
+<div class="flex items-center gap-1 text-primary-container bg-primary-fixed/40 px-2.5 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px]">route</span>
+<span class="text-label-sm font-label-sm font-bold">۱۱.۴ کیلومتر</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ۳. تب‌ها و فیلترهای روش سفر (Multi-modal transit selector) -->
+<section>
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+<!-- تب ۱: همه مسیرها -->
+<button class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 hover:bg-surface-container text-label-md font-label-md transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-[18px]">alt_route</span>
+<span>همه مسیرها</span>
+<span class="text-label-sm bg-surface-container px-1.5 rounded-full">۴</span>
+</button>
+<!-- تب ۲: مترو -->
+<button class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 hover:bg-surface-container text-label-md font-label-md transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">directions_subway</span>
+<span>مترو ترکیبی</span>
+</button>
+<!-- تب ۳: BRT (انتخاب‌شده با کادر و هایلایت مشخص) -->
+<button class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary-container text-on-secondary shadow-md font-bold text-label-md font-label-md border-2 border-secondary active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[19px] material-symbols-fill">directions_bus</span>
+<span>اتوبوس BRT + تاکسی</span>
+<span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+</button>
+<!-- تب ۴: تاکسی و سواری -->
+<button class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest text-on-surface-variant border border-outline-variant/70 hover:bg-surface-container text-label-md font-label-md transition-all active:scale-95" type="button">
+<span class="material-symbols-outlined text-[18px] text-amber-600">local_taxi</span>
+<span>تاکسی خطی</span>
+</button>
+</div>
+</section>
+<!-- ۴. کارت اصلی برجسته و انتخاب‌شده (Selected Card) -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md border-2 border-secondary/80 shadow-md relative overflow-hidden space-y-3.5">
+<!-- Badge and Status Ribbon -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 bg-tertiary-fixed text-on-tertiary-fixed px-2.5 py-1 rounded-full text-label-sm font-label-sm font-bold">
+<span class="material-symbols-outlined text-[15px] material-symbols-fill">verified</span>
+<span>اقتصادی‌ترین مسیر • ترافیک روان خط ویژه</span>
+</div>
+<span class="text-label-sm font-label-sm text-outline font-medium">کد مسیر: BRT-4X</span>
+</div>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-2 gap-space-sm pt-1">
+<div class="bg-surface-container-low rounded-lg p-2.5 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-title-lg">schedule</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-outline block">مدت زمان کل</span>
+<div class="flex items-baseline gap-1">
+<span class="text-headline-md font-headline-md text-on-surface font-extrabold">۳۶</span>
+<span class="text-label-md font-label-md text-on-surface-variant">دقیقه</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-2.5 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-title-lg">payments</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-outline block">هزینه تخمینی</span>
+<div class="flex items-baseline gap-1">
+<span class="text-headline-md font-headline-md text-on-surface font-extrabold">۲۸,۰۰۰</span>
+<span class="text-label-md font-label-md text-on-surface-variant">تومان</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Live BRT Dispatch Tracker -->
+<div class="bg-amber-50 rounded-lg p-2.5 border border-amber-200/80 flex items-center justify-between text-amber-950">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center animate-pulse">
+<span class="material-symbols-outlined text-[18px]">departure_board</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm font-bold block">سرفاصله ورود اتوبوس خط ۴</span>
+<span class="text-body-sm font-body-sm text-amber-900">ایستگاه میدان انقلاب اسلامی</span>
+</div>
+</div>
+<div class="text-left bg-white/80 px-2 py-1 rounded-md border border-amber-300">
+<span class="text-title-md font-title-md font-extrabold text-amber-700">۲</span>
+<span class="text-label-sm font-label-sm text-amber-900">دقیقه دیگر</span>
+</div>
+</div>
+<!-- Call to Action: Start Navigation -->
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined material-symbols-fill">navigation</span>
+<span class="text-title-md font-title-md">شروع پیمایش زنده با راهنمای صوتی</span>
+<span class="material-symbols-outlined text-headline-sm">volume_up</span>
+</button>
+</section>
+<!-- ۵. شماتیک و نقشه مسیر خط ویژه BRT (Schematic visual card) -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/60 shadow-sm space-y-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary">map</span>
+<h2 class="text-title-md font-title-md text-on-surface font-bold">شماتیک کریدور خط ویژه</h2>
+</div>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-bold">
+            خط ۴ BRT (پایانه جنوب - پایانه افشار)
+          </span>
+</div>
+<!-- Schematic Strip Visualizer -->
+<div class="relative bg-surface-container-low rounded-lg p-3 border border-outline-variant/40">
+<div class="flex items-center justify-between text-center relative z-10">
+<!-- Node 1: Enghelab -->
+<div class="flex flex-col items-center">
+<span class="w-6 h-6 rounded-full bg-secondary text-white text-[10px] font-bold flex items-center justify-center ring-4 ring-secondary-fixed">۱</span>
+<span class="text-label-sm font-label-sm font-bold text-on-surface mt-1">م. انقلاب</span>
+<span class="text-[10px] text-outline">ورود BRT</span>
+</div>
+<!-- Intermediary Line Segment -->
+<div class="h-1.5 flex-1 bg-secondary mx-1 rounded-full relative">
+<div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white px-1.5 rounded-full border border-secondary text-[9px] font-bold text-secondary">
+                ۶ ایستگاه
+              </div>
+</div>
+<!-- Node 2: Pol-e Nasr Interchange -->
+<div class="flex flex-col items-center">
+<span class="w-6 h-6 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center ring-4 ring-amber-100">۲</span>
+<span class="text-label-sm font-label-sm font-bold text-on-surface mt-1">پل نصر (گیشا)</span>
+<span class="text-[10px] text-amber-700 font-bold">تعویض به تاکسی</span>
+</div>
+<!-- Intermediary Line Segment -->
+<div class="h-1.5 flex-1 bg-dashed border-b-2 border-dashed border-amber-500 mx-1"></div>
+<!-- Node 3: Milad Hospital -->
+<div class="flex flex-col items-center">
+<span class="w-6 h-6 rounded-full bg-tertiary text-white text-[10px] font-bold flex items-center justify-center ring-4 ring-tertiary-fixed">۳</span>
+<span class="text-label-sm font-label-sm font-bold text-on-surface mt-1">بیمارستان میلاد</span>
+<span class="text-[10px] text-tertiary font-bold">مقصد</span>
+</div>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">info</span>
+          امکان تعویض به BRT خط ۷ (راه‌آهن - تجریش) نیز در تقاطع توحید مهیاست.
+        </p>
+</section>
+<!-- ۶. تایم‌لاین گام‌به‌گام و راهنمای لحظه‌ای سفر (Step-by-step Timeline) -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/60 shadow-sm space-y-4">
+<div class="flex items-center justify-between border-b border-outline-variant/40 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">timeline</span>
+<h2 class="text-title-md font-title-md text-on-surface font-bold">راهنمای گام‌به‌گام پیمایش</h2>
+</div>
+<span class="text-label-md font-label-md text-outline">۵ مرحله</span>
+</div>
+<!-- Step List -->
+<ol class="relative border-r-2 border-outline-variant/60 mr-3.5 space-y-5">
+<!-- گام ۱: پیاده‌روی ۱۲۰ متر -->
+<li class="mr-4 relative">
+<span class="absolute -right-[23px] top-0 w-4 h-4 rounded-full bg-outline-variant border-2 border-surface-container-lowest flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+</span>
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="text-label-lg font-label-lg font-bold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-outline">directions_walk</span>
+                  پیاده‌روی تا ایستگاه اتوبوس تندرو
+                </span>
+<span class="text-label-sm font-label-sm text-outline font-semibold">۲ دقیقه</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                مسافت ۱۲۰ متر به سمت شمال میدان انقلاب، ورودی ایستگاه مرکزی خط ۴
+              </p>
+</div>
+</li>
+<!-- گام ۲: سوار شدن به خط ۴ BRT -->
+<li class="mr-4 relative">
+<span class="absolute -right-[25px] top-0 w-5 h-5 rounded-full bg-secondary text-white text-[11px] font-bold flex items-center justify-center ring-4 ring-secondary-fixed">
+<span class="material-symbols-outlined text-[14px]">directions_bus</span>
+</span>
+<div class="bg-surface-container-low rounded-lg p-3 border border-secondary/20 space-y-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-secondary font-bold block">خط ۴ اتوبوس‌های تندرو</span>
+<span class="text-title-md font-title-md font-bold text-on-surface">به سمت پایانه شهید افشار (پارک‌وی)</span>
+</div>
+<div class="text-left">
+<span class="text-label-lg font-label-lg font-bold text-secondary">۱۸ دقیقه</span>
+<span class="text-label-sm font-label-sm text-outline block">۶ ایستگاه</span>
+</div>
+</div>
+<!-- Intermediate station list toggle -->
+<details class="text-label-sm font-label-sm text-on-surface-variant pt-1 group">
+<summary class="cursor-pointer text-primary hover:underline flex items-center gap-1 font-semibold">
+<span>مشاهده نام ایستگاه‌های میانی</span>
+<span class="material-symbols-outlined text-[16px] group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="pr-2 pt-2 space-y-1 text-outline border-r border-outline-variant/60 mr-1 mt-1">
+<div>۱. باقرخان</div>
+<div>۲. ستارخان / توحید (تقاطع خط ۱ BRT)</div>
+<div>۳. پاتریس لومومبا</div>
+<div>۴. کوی نصر (گیشا)</div>
+<div>۵. پل نصر (ایستگاه پیاده شدن)</div>
+</div>
+</details>
+</div>
+</li>
+<!-- گام ۳: پیاده شدن در پل نصر -->
+<li class="mr-4 relative">
+<span class="absolute -right-[23px] top-0 w-4 h-4 rounded-full bg-amber-500 border-2 border-surface-container-lowest flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+</span>
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="text-label-lg font-label-lg font-bold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-amber-600">transfer_within_a_station</span>
+                  خروج از ایستگاه اتوبوس تندرو پل نصر
+                </span>
+<span class="text-label-sm font-label-sm text-outline">تغییر وسیله</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                از سکوی اتوبوس خارج شده و به سمت پایانه تاکسیرانی ضلع شمال‌شرقی پل نصر بروید (۸۰ متر).
+              </p>
+</div>
+</li>
+<!-- گام ۴: سوار شدن به تاکسی خطی ونک / همت -->
+<li class="mr-4 relative">
+<span class="absolute -right-[25px] top-0 w-5 h-5 rounded-full bg-amber-600 text-white text-[11px] font-bold flex items-center justify-center ring-4 ring-amber-100">
+<span class="material-symbols-outlined text-[14px]">local_taxi</span>
+</span>
+<div class="bg-surface-container-low rounded-lg p-3 border border-amber-300/40 space-y-1.5">
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-amber-800 font-bold block">تاکسی خطی ویژه اتوبان همت</span>
+<span class="text-title-md font-title-md font-bold text-on-surface">خط گیشا - میدان ونک / بیمارستان میلاد</span>
+</div>
+<div class="text-left">
+<span class="text-label-lg font-label-lg font-bold text-amber-800">۱۴ دقیقه</span>
+<span class="text-label-sm font-label-sm text-outline block">کرایه ۲۰,۰۰۰ ت</span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                راننده در زیرگذر اختصاصی بیمارستان میلاد توقف دارد.
+              </p>
+</div>
+</li>
+<!-- گام ۵: رسیدن به مقصد نهایی -->
+<li class="mr-4 relative">
+<span class="absolute -right-[24px] top-0 w-4 h-4 rounded-full bg-tertiary border-2 border-surface-container-lowest flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-white"></span>
+</span>
+<div class="space-y-0.5">
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md font-bold text-tertiary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[20px] material-symbols-fill">location_on</span>
+                  ورود به ورودی اصلی بیمارستان میلاد
+                </span>
+<span class="text-label-sm font-label-sm bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded-full font-bold">مقصد</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                ساعت تقریبی رسیدن: ساعت ۱۶:۴۸ (بر اساس ترافیک لحظه‌ای بزرگراه همت)
+              </p>
+</div>
+</li>
+</ol>
+</section>
+<!-- جایگاه اطلاعیه ترافیکی و گزارش کاربران -->
+<section class="bg-surface-container rounded-xl p-3 flex items-center justify-between border border-outline-variant/50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">campaign</span>
+<div>
+<span class="text-label-md font-label-md font-bold text-on-surface block">گزارش وضعیت لحظه‌ای مسافران</span>
+<span class="text-label-sm font-label-sm text-outline">بدون تاخیر در خط ۴ • وضعیت آب‌وهوا: معتدل</span>
+</div>
+</div>
+<button class="text-label-sm font-label-sm text-primary font-bold hover:underline" type="button">
+          ثبت گزارش
+        </button>
+</section>
+</main>
+<!-- ۷. نوار ناوبری پایینی کپسولی شناور رسمی ۵ تبه درمسیر (Bottom Navigation Bar) -->
+<!-- Prohibiting border-t line as per mandate; using clean shadow and backdrop filter -->
+<nav aria-label="ناوبری اصلی" class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto h-20 z-50 bg-surface-container-lowest/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(15,23,42,0.06)] flex items-center justify-around px-2">
+<!-- ۱. خانه -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container px-3 py-1.5 rounded-xl transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="text-label-sm font-label-sm mt-0.5">خانه</span>
+</a>
+<!-- ۲. نقشه -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container px-3 py-1.5 rounded-xl transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined text-[24px]">map</span>
+<span class="text-label-sm font-label-sm mt-0.5">نقشه</span>
+</a>
+<!-- ۳. مسیریابی (تب فعال و هایلایت‌شده - Active Highlight) -->
+<a class="flex flex-col items-center justify-center bg-primary-fixed text-on-primary-fixed rounded-full px-4 py-1.5 shadow-sm active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined text-[24px] material-symbols-fill">alt_route</span>
+<span class="text-label-sm font-label-sm font-bold mt-0.5">مسیریابی</span>
+</a>
+<!-- ۴. ذخیره‌ها -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container px-3 py-1.5 rounded-xl transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined text-[24px]">bookmark</span>
+<span class="text-label-sm font-label-sm mt-0.5">ذخیره‌ها</span>
+</a>
+<!-- ۵. حساب من -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container px-3 py-1.5 rounded-xl transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="text-label-sm font-label-sm mt-0.5">حساب من</span>
+</a>
+</nav>
+</div>
+</body></html>

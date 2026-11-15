@@ -1,0 +1,425 @@
+<!DOCTYPE html><html dir="rtl" lang="fa"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>درمسیر | دستیار هوشمند سفر شهری</title>
+<!-- Google Fonts: Vazirmatn -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-container": "#006638",
+            "secondary": "#bc000c",
+            "surface-container-highest": "#d8e3fb",
+            "secondary-container": "#e32220",
+            "on-primary-container": "#b6d0ff",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "surface-bright": "#f9f9ff",
+            "tertiary": "#004c28",
+            "tertiary-fixed": "#7efbac",
+            "surface-container-high": "#dee8ff",
+            "secondary-fixed": "#ffdad5",
+            "primary-fixed": "#d5e3ff",
+            "primary-fixed-dim": "#a8c8ff",
+            "on-surface-variant": "#424751",
+            "on-primary-fixed": "#001b3c",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "surface-container": "#e7eeff",
+            "inverse-primary": "#a8c8ff",
+            "on-secondary-fixed": "#410001",
+            "tertiary-fixed-dim": "#61de92",
+            "on-secondary": "#ffffff",
+            "surface-dim": "#cfdaf2",
+            "on-secondary-container": "#fffbff",
+            "inverse-on-surface": "#ecf1ff",
+            "primary-container": "#0d58a6",
+            "on-tertiary-fixed-variant": "#00522c",
+            "outline": "#727782",
+            "background": "#f9f9ff",
+            "primary": "#00417f",
+            "on-secondary-fixed-variant": "#930007",
+            "on-surface": "#111c2d",
+            "on-error-container": "#93000a",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-tertiary-fixed": "#00210e",
+            "on-primary-fixed-variant": "#004689",
+            "inverse-surface": "#263143",
+            "surface-variant": "#d8e3fb",
+            "surface-container-low": "#f0f3ff",
+            "surface": "#f9f9ff",
+            "on-tertiary-container": "#6ae79a",
+            "outline-variant": "#c2c6d3",
+            "surface-tint": "#1a5eac",
+            "error": "#ba1a1a",
+            "on-primary": "#ffffff",
+            "on-background": "#111c2d"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "gutter": "1rem",
+            "space-xs": "0.25rem",
+            "margin": "1rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "headline-xl": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "headline-xl": ["32px", {"lineHeight": "44px", "fontWeight": "800"}],
+            "label-sm": ["10px", {"lineHeight": "14px", "fontWeight": "700"}],
+            "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+            "headline-lg": ["24px", {"lineHeight": "36px", "fontWeight": "700"}],
+            "headline-md": ["20px", {"lineHeight": "30px", "fontWeight": "700"}],
+            "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+            "title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+            "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+            "body-sm": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .pulse-ring {
+      box-shadow: 0 0 0 0 rgba(13, 88, 166, 0.4);
+      animation: pulseWave 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+    @keyframes pulseWave {
+      0% {
+        box-shadow: 0 0 0 0 rgba(13, 88, 166, 0.35);
+      }
+      70% {
+        box-shadow: 0 0 0 14px rgba(13, 88, 166, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(13, 88, 166, 0);
+      }
+    }
+    /* Hide scrollbar for clean horizontal scrolling */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen selection:bg-primary-container selection:text-on-primary">
+<!-- Mobile Viewport Constrained Container -->
+<div class="max-w-md mx-auto min-h-screen bg-background relative flex flex-col pb-28 shadow-xl">
+<!-- 1. TOP APP BAR (Shared Component Anchor) -->
+<header class="bg-surface/95 backdrop-blur-md text-primary w-full px-4 h-16 sticky top-0 z-40 flex justify-between items-center shadow-sm">
+<!-- Right/Leading: Brand Name + Hamburger Menu -->
+<div class="flex items-center gap-3">
+<button aria-label="منو" class="w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="text-title-lg font-title-lg font-extrabold text-primary tracking-tight">درمسیر</span>
+<span class="text-[10px] bg-primary-fixed text-primary px-1.5 py-0.5 rounded font-bold">بتا</span>
+</div>
+<span class="text-[11px] text-on-surface-variant leading-tight">دستیار هوشمند سفر شهری</span>
+</div>
+</div>
+<!-- Center & Trailing: City Selector + Notification -->
+<div class="flex items-center gap-2">
+<!-- Active City Capsule -->
+<button class="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-2.5 py-1.5 rounded-full border border-outline-variant/40 active:scale-95 transition-all duration-150">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+<span class="text-label-md font-label-md text-primary font-bold">تهران</span>
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="expand_more">expand_more</span>
+</button>
+<!-- Notification Button -->
+<button aria-label="اعلانات" class="relative w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2.5 left-2.5 w-2 h-2 bg-secondary rounded-full"></span>
+</button>
+</div>
+</header>
+<!-- MAIN SCROLLABLE CONTENT CANVAS -->
+<main class="flex-1 px-4 pt-3 space-y-6">
+<!-- 2. AI VOICE ASSISTANT BANNER -->
+<section class="bg-gradient-to-b from-blue-50/70 via-indigo-50/40 to-transparent dark:from-slate-800/60 dark:to-slate-900/40 rounded-3xl p-6 flex flex-col items-center justify-center text-center border border-blue-100/60 dark:border-slate-800 shadow-sm relative overflow-hidden">
+  <div class="relative flex items-center justify-center my-2">
+    <div class="w-24 h-24 rounded-full bg-blue-100/80 dark:bg-blue-950/60 flex items-center justify-center animate-pulse transition-all">
+      <button aria-label="جستجوی صوتی" class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer" id="voiceBtn">
+        <span class="material-symbols-outlined text-[32px]" data-icon="mic" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">mic</span>
+      </button>
+    </div>
+  </div>
+  <h2 class="text-lg font-bold text-on-surface dark:text-white mt-4">لمس کنید و صحبت کنید</h2>
+  <p class="text-xs text-on-surface-variant dark:text-slate-400 mt-1">نام ایستگاه مبدأ و مقصد را بگویید</p>
+  <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-slate-800 text-primary dark:text-blue-400 text-xs font-medium border border-blue-100 dark:border-slate-700/60">
+    <span class="material-symbols-outlined text-sm" data-icon="chat">chat</span>
+    <span>«از اینجا تا تجریش چقدر راهه؟»</span>
+  </div>
+</section>
+<!-- 3. ORIGIN & DESTINATION PLANNING CARD -->
+<section class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-6">
+<div class="relative flex flex-col gap-2.5">
+<!-- Origin Row -->
+<div class="flex items-center gap-3 bg-surface-container-low/70 rounded-xl px-3 py-2.5 border border-outline-variant/20">
+<div class="w-7 h-7 rounded-full bg-emerald-100 text-tertiary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]" data-icon="my_location">my_location</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-[10px] text-on-surface-variant font-medium">مبدأ سفر</div>
+<div class="text-body-md font-body-md font-semibold text-on-surface truncate">موقعیت فعلی من (میدان انقلاب)</div>
+</div>
+<button class="text-label-sm font-label-sm text-primary font-bold hover:underline shrink-0">روی نقشه</button>
+</div>
+<!-- Flip Origin / Destination Floating Button -->
+<div class="absolute left-6 top-[44px] z-10">
+<button aria-label="تعویض مبدأ و مقصد" class="w-8 h-8 rounded-full bg-surface-container-lowest text-primary shadow-md border border-outline-variant/40 flex items-center justify-center hover:bg-surface-container active:rotate-180 transition-all duration-300">
+<span class="material-symbols-outlined text-[18px]" data-icon="swap_vert">swap_vert</span>
+</button>
+</div>
+<!-- Destination Row -->
+<div class="flex items-center gap-3 bg-surface-container-low/70 rounded-xl px-3 py-2.5 border border-outline-variant/20">
+<div class="w-7 h-7 rounded-full bg-rose-100 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]" data-icon="location_on" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">location_on</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-[10px] text-on-surface-variant font-medium">مقصد سفر</div>
+<input class="w-full bg-transparent border-0 p-0 text-body-md font-body-md font-medium text-on-surface placeholder:text-outline focus:ring-0" placeholder="جستجو یا انتخاب ایستگاه، خیابان، مکان..." type="text">
+</div>
+<button class="w-7 h-7 flex items-center justify-center text-outline hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+</button>
+</div>
+</div>
+<!-- Quick Destination Chips -->
+<div class="mt-3 pt-3 border-t border-outline-variant/20">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[11px] font-bold text-on-surface-variant">مقصدهای سریع و اخیر:</span>
+<span class="text-[11px] text-primary cursor-pointer hover:underline">مشاهده همه</span>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+<button class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-label-md font-label-md text-on-surface hover:bg-surface-container-high transition-colors shrink-0">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="local_hospital">local_hospital</span>
+<span>بیمارستان میلاد</span>
+</button>
+<button class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-label-md font-label-md text-on-surface hover:bg-surface-container-high transition-colors shrink-0">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="directions_subway">directions_subway</span>
+<span>تجریش</span>
+</button>
+<button class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg text-label-md font-label-md text-on-surface hover:bg-surface-container-high transition-colors shrink-0">
+<span class="material-symbols-outlined text-[16px] text-amber-600" data-icon="near_me">near_me</span>
+<span>میدان آزادی</span>
+</button>
+</div>
+</div>
+</section>
+<!-- 4. MULTI-MODAL TRANSIT COMPARISON TABS -->
+<section class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<h2 class="text-title-md font-title-md font-bold text-on-surface">مقایسه مدهای سفر شهری</h2>
+<span class="text-[11px] text-primary font-medium">بهینه‌ترین زمان</span>
+</div>
+<!-- 4 Grid Modal Cards -->
+<div class="grid grid-cols-4 gap-2">
+<!-- Mode 1: Metro -->
+<div class="bg-surface-container-lowest border-2 border-primary rounded-xl p-2.5 flex flex-col items-center justify-between text-center relative shadow-sm cursor-pointer">
+<div class="absolute -top-2 bg-primary text-on-primary text-[9px] px-1.5 py-0.2 rounded-full font-bold">پیشنهادی</div>
+<div class="w-8 h-8 rounded-lg bg-primary-fixed text-primary flex items-center justify-center mt-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="directions_subway">directions_subway</span>
+</div>
+<div class="text-label-md font-label-md font-bold text-on-surface mt-1.5">مترو</div>
+<div class="text-title-sm font-bold text-primary text-[15px] mt-0.5">۲۴ <span class="text-[10px] font-normal text-on-surface-variant">دقیقه</span></div>
+<div class="text-[10px] text-on-surface-variant mt-0.5">۴,۲۰۰ ت</div>
+</div>
+<!-- Mode 2: BRT / Bus -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex flex-col items-center justify-between text-center hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="directions_bus">directions_bus</span>
+</div>
+<div class="text-label-md font-label-md font-bold text-on-surface mt-1.5">تندرو BRT</div>
+<div class="text-title-sm font-bold text-on-surface text-[15px] mt-0.5">۳۸ <span class="text-[10px] font-normal text-on-surface-variant">دقیقه</span></div>
+<div class="text-[10px] text-on-surface-variant mt-0.5">۳,۱۰۰ ت</div>
+</div>
+<!-- Mode 3: Combined / Multimodal -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex flex-col items-center justify-between text-center hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-8 h-8 rounded-lg bg-emerald-100 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="alt_route">alt_route</span>
+</div>
+<div class="text-label-md font-label-md font-bold text-on-surface mt-1.5">ترکیبی</div>
+<div class="text-title-sm font-bold text-on-surface text-[15px] mt-0.5">۲۹ <span class="text-[10px] font-normal text-on-surface-variant">دقیقه</span></div>
+<div class="text-[10px] text-on-surface-variant mt-0.5">سریع‌ترین</div>
+</div>
+<!-- Mode 4: Taxi / Car -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex flex-col items-center justify-between text-center hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-8 h-8 rounded-lg bg-rose-100 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" data-icon="local_taxi">local_taxi</span>
+</div>
+<div class="text-label-md font-label-md font-bold text-on-surface mt-1.5">تاکسی</div>
+<div class="text-title-sm font-bold text-on-surface text-[15px] mt-0.5">۴۵ <span class="text-[10px] font-normal text-on-surface-variant">دقیقه</span></div>
+<div class="text-[10px] text-secondary font-medium mt-0.5">ترافیک سنگین</div>
+</div>
+</div>
+</section>
+<!-- 5. SMART ROUTE SUMMARY & LIVE COMMUTE CARD -->
+<section class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 p-6 space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<span class="text-title-md font-title-md font-bold text-primary">مسیر هوشمند فعال</span>
+</div>
+<span class="text-[11px] bg-tertiary-container text-on-tertiary px-2 py-0.5 rounded-full font-bold">ورود قطار: ۳ دقیقه دیگر</span>
+</div>
+<!-- Route Breakdown Visualization -->
+<div class="bg-surface-container-low rounded-xl p-3 flex items-center justify-between">
+<!-- Step 1: Walk -->
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="directions_walk">directions_walk</span>
+<span class="text-[10px] font-bold text-on-surface-variant mt-0.5">۴ دقیقه</span>
+<span class="text-[9px] text-outline">۳۵۰ متر</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-[16px]" data-icon="chevron_left">chevron_left</span>
+<!-- Step 2: Line 4 -->
+<div class="flex flex-col items-center">
+<div class="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+<span>خط ۴</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant mt-1">تئاتر شهر</span>
+<span class="text-[9px] text-outline">۳ ایستگاه</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-[16px]" data-icon="chevron_left">chevron_left</span>
+<!-- Step 3: Transfer to Line 3 -->
+<div class="flex flex-col items-center">
+<div class="bg-sky-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+<span>خط ۳</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant mt-1">میدان جهاد</span>
+<span class="text-[9px] text-outline">۴ ایستگاه</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-[16px]" data-icon="chevron_left">chevron_left</span>
+<!-- Step 4: Final Walk -->
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="pin_drop">pin_drop</span>
+<span class="text-[10px] font-bold text-on-surface-variant mt-0.5">مقصد</span>
+<span class="text-[9px] text-emerald-700 font-semibold">بیمارستان</span>
+</div>
+</div>
+<!-- Metric Details Row -->
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant pt-1 px-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="schedule">schedule</span>
+<span>کل زمان: <strong>۲۸ دقیقه</strong></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="transfer_within_a_station">transfer_within_a_station</span>
+<span>تعویض خط: <strong>۱ بار</strong></span>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="bg-primary text-on-primary text-label-md font-label-md font-bold px-3 py-1 rounded-lg hover:bg-primary-container active:scale-95 transition-all">شروع سفر</button>
+</div>
+</div>
+</section>
+<!-- 6. COMMUTER QUICK SHORTCUTS (خلاصه میانبرها) -->
+<section class="space-y-3">
+<h2 class="text-title-md font-title-md font-bold text-on-surface px-1">میانبرهای روزمره مسافر</h2>
+<div class="grid grid-cols-4 gap-2"><button class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex flex-col items-center text-center hover:bg-surface-container active:scale-95 transition-all"><div class="w-10 h-10 rounded-full bg-blue-50 text-primary flex items-center justify-center mb-1.5"><span class="material-symbols-outlined text-[22px]" data-icon="home" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">home</span></div><span class="text-label-md font-label-md font-bold text-on-surface truncate w-full">به خانه</span><span class="text-[10px] text-outline mt-0.5">۱۹ دقیقه</span></button><button class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex flex-col items-center text-center hover:bg-surface-container active:scale-95 transition-all"><div class="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center mb-1.5"><span class="material-symbols-outlined text-[22px]" data-icon="work">work</span></div><span class="text-label-md font-label-md font-bold text-on-surface truncate w-full">محل کار</span><span class="text-[10px] text-outline mt-0.5">۳۲ دقیقه</span></button><button class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex flex-col items-center text-center hover:bg-surface-container active:scale-95 transition-all"><div class="w-10 h-10 rounded-full bg-emerald-50 text-tertiary flex items-center justify-center mb-1.5"><span class="material-symbols-outlined text-[22px]" data-icon="near_me">near_me</span></div><span class="text-label-md font-label-md font-bold text-on-surface truncate w-full">ایستگاه‌ها</span><span class="text-[10px] text-outline mt-0.5">۴ ایستگاه</span></button><button class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-2.5 flex flex-col items-center text-center hover:bg-surface-container active:scale-95 transition-all"><div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5"><span class="material-symbols-outlined text-[22px]" data-icon="traffic">traffic</span></div><span class="text-label-md font-label-md font-bold text-on-surface truncate w-full">وضعیت شبکه</span><span class="text-[10px] text-emerald-600 font-bold mt-0.5">۹۲٪ روان</span></button></div>
+</section>
+<!-- 7. REAL-TIME TRANSIT LINE STATUS (وضعیت تردد خطوط) -->
+
+<!-- 8. CIVIC AD BANNER SLOT (سند توسعه درمسیر) -->
+<section class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex items-center justify-between"><div class="flex items-center gap-3 min-w-0 flex-1"><div class="w-11 h-11 rounded-xl bg-gradient-to-b from-blue-100 to-indigo-100 flex items-center justify-center text-primary shrink-0 shadow-sm"><span class="material-symbols-outlined text-[24px]" data-icon="campaign">campaign</span></div><div class="min-w-0"><div class="flex items-center gap-1.5 mb-0.5"><span class="text-label-md font-label-md font-bold text-on-surface truncate">تخفیف ویژه تاکسی و بلیت سینما</span><span class="text-[9px] bg-outline-variant/30 text-on-surface-variant font-bold px-1.5 py-0.2 rounded shrink-0">آگهی</span></div><div class="text-[11px] text-on-surface-variant truncate">تا ۴۰٪ تخفیف اولین سفر آخر هفته در اسنپ و تپسی</div></div></div><button class="bg-primary text-on-primary text-label-md font-label-md font-bold px-3 py-1.5 rounded-lg shrink-0 hover:bg-primary-container active:scale-95 transition-all duration-150 mr-2">دریافت کد</button></section>
+</main>
+<!-- 9. FLOATING 5-TAB BOTTOM NAVIGATION BAR (سند توسعه درمسیر) -->
+<!-- Preserving active state, exact casing, no top/bottom line borders, shadows, and blurred dock -->
+<nav class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto z-50 flex justify-around items-center px-3 py-2 bg-surface/95 backdrop-blur-md shadow-[0_-4px_16px_rgba(15,23,42,0.06)] rounded-t-2xl">
+<!-- Tab 1: خانه (Active state mapped from JSON rules) -->
+<button aria-label="خانه" class="flex flex-col items-center justify-center bg-primary-container text-on-primary rounded-xl px-3.5 py-1.5 transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="home" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">home</span>
+<span class="text-label-sm font-label-sm font-bold mt-0.5">خانه</span>
+</button>
+<!-- Tab 2: نقشه -->
+<button aria-label="نقشه" class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 transition-colors hover:bg-surface-container-high rounded-xl active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="map">map</span>
+<span class="text-label-sm font-label-sm mt-0.5">نقشه</span>
+</button>
+<!-- Tab 3: مسیریابی (مرکزی متمایز) -->
+<button aria-label="مسیریابی" class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 transition-colors hover:bg-surface-container-high rounded-xl active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="alt_route">alt_route</span>
+<span class="text-label-sm font-label-sm mt-0.5">مسیریابی</span>
+</button>
+<!-- Tab 4: ذخیره‌ها -->
+<button aria-label="ذخیره‌ها" class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 transition-colors hover:bg-surface-container-high rounded-xl active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="bookmark">bookmark</span>
+<span class="text-label-sm font-label-sm mt-0.5">ذخیره‌ها</span>
+</button>
+<!-- Tab 5: حساب من -->
+<button aria-label="حساب من" class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1.5 transition-colors hover:bg-surface-container-high rounded-xl active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
+<span class="text-label-sm font-label-sm mt-0.5">حساب من</span>
+</button>
+</nav>
+</div>
+<!-- Interactive Micro-interactions Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const voiceBtn = document.getElementById('voiceBtn');
+      if (voiceBtn) {
+        voiceBtn.addEventListener('click', () => {
+          voiceBtn.classList.toggle('bg-rose-600');
+          voiceBtn.classList.toggle('text-white');
+          const isListening = voiceBtn.classList.contains('bg-rose-600');
+          if (isListening) {
+            alert('در حال شنیدن صدای شما... بفرمایید به کدام مقصد می‌روید؟');
+          }
+        });
+      }
+    });
+  </script>
+
+
+</body></html>

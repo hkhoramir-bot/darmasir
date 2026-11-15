@@ -7,8 +7,9 @@ import { toFa } from "@/lib/metro-data";
 import { isInIframe, openStandaloneTab } from "@/components/metro/voice";
 
 /* ============================================================
-   کروم اپ متروجو — دقیقاً بر اساس code.html تاییدشده
-   (AppBar + Drawer منو + ناوبری شناور قرصی)
+   کروم اپ درمسیر — بر اساس طراحی جدید ui.zip
+   (AppBar + Drawer منو + ناوبری ۵ تابه: خانه، نقشه، مسیریابی،
+   ذخیره‌ها، حساب من)
    ============================================================ */
 
 /* ------------------------- استور پوسته ------------------------- */
@@ -68,7 +69,7 @@ export function MI({
   );
 }
 
-/* --------------- هدر اصلی (بر اساس طراحی code.html — نسخه ۷) --------------- */
+/* --------------- هدر اصلی (بر اساس طراحی جدید درمسیر) --------------- */
 const CITY_OPTIONS: { id: ShellCity | "shiraz" | "tabriz"; name: string; soon?: boolean }[] = [
   { id: "tehran", name: "تهران" },
   { id: "mashhad", name: "مشهد" },
@@ -83,6 +84,7 @@ export function AppBar() {
   const setDrawer = useShell((s) => s.setDrawer);
   const [cityOpen, setCityOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const cityName = city === "tehran" ? "تهران" : city === "mashhad" ? "مشهد" : "اصفهان";
 
@@ -108,18 +110,29 @@ export function AppBar() {
         <div className="flex items-center gap-2">
           <img
             src="/metrojo-symbol.png"
-            alt="لوگوی متروجو"
+            alt="لوگوی درمسیر"
             className="w-8 h-8 rounded-full object-contain shrink-0 shadow-sm"
           />
           <div className="flex flex-col">
-            <h1 className="text-base font-bold text-primary tracking-tight leading-tight">متروجو</h1>
-            <span className="text-xs text-outline">دستیار صوتی و ناوبری</span>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-base font-extrabold text-primary tracking-tight leading-tight">درمسیر</h1>
+              <span className="text-[9px] bg-primary-fixed text-primary px-1.5 py-0.5 rounded font-bold leading-none">بتا</span>
+            </div>
+            <span className="text-[11px] text-on-surface-variant leading-tight">دستیار هوشمند سفر شهری</span>
           </div>
         </div>
       </div>
 
-      {/* چپ (انتهای RTL): انتخابگر شهر */}
+      {/* چپ (انتهای RTL): اعلان‌ها + انتخابگر شهر */}
       <div className="flex items-center gap-2 relative min-w-0" ref={dropRef}>
+        <button
+          aria-label="اعلان‌ها و اطلاعیه‌ها"
+          onClick={() => router.push("/status")}
+          className="relative w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all"
+        >
+          <MI name="notifications" size={22} />
+          <span className="absolute top-2.5 left-2.5 w-2 h-2 bg-secondary rounded-full" aria-hidden />
+        </button>
         <button
           id="cityToggleBtn"
           aria-label="انتخاب شهر"
@@ -160,15 +173,16 @@ export function AppBar() {
 }
 
 /* ------------------------- دراور منو (دقیقاً code.html) ------------------------- */
-const DRAWER_LINKS: { label: string; icon: string; href: string }[] = [
+const DRAWER_LINKS: { label: string; icon: string; href: string; hint?: string }[] = [
   { label: "خانه", icon: "home", href: "/" },
-  { label: "خطوط و نقشه", icon: "route", href: "/lines" },
+  { label: "نقشه تعاملی حمل‌ونقل", icon: "map", href: "/map" },
+  { label: "مسیریابی چندمرحله‌ای", icon: "alt_route", href: "/plan" },
+  { label: "ذخیره‌ها و مقاصد برگزیده", icon: "bookmark", href: "/saved" },
+  { label: "حساب من", icon: "person", href: "/settings" },
+  { label: "خطوط مترو", icon: "route", href: "/lines" },
   { label: "ایستگاه‌ها", icon: "directions_subway", href: "/stations" },
   { label: "وضعیت خطوط و اطلاعیه‌ها", icon: "campaign", href: "/status" },
-  { label: "مسیرهای برگزیده", icon: "bookmark_add", href: "/saved" },
-  { label: "نقشه تعاملی شبکه", icon: "map", href: "/map" },
   { label: "تاریخچه سفر", icon: "history", href: "/history" },
-  { label: "تنظیمات", icon: "settings", href: "/settings" },
 ];
 
 /** تطبیق مسیر فعال — با اسلش انتهایی و زیرصفحه‌ها هم کار می‌کند */
@@ -261,9 +275,9 @@ export function MenuDrawer() {
                 <MI name="subway" size={20} />
               </div>
               <div>
-                <h2 className="font-bold text-sm text-primary">متروجو هوشمند</h2>
+                <h2 className="font-bold text-sm text-primary">درمسیر هوشمند</h2>
                 <span className="text-[10px] text-tertiary font-bold bg-tertiary-fixed/40 px-1.5 py-0.5 rounded">
-                  نسخه {toFa("4.8.17")} آنلاین
+                  نسخه {toFa("4.9.0")} — دستیار سفر شهری
                 </span>
               </div>
             </div>
@@ -390,12 +404,12 @@ export function PageHeader({
 }
 
 /* ---------------------------------
-   ناوبری پایین شناور (دقیقاً code.html)
+   ناوبری پایین شناور (طراحی جدید — نوار کامل ۵ تابه)
    نکته مهم: عنصر دارای backdrop-filter نباید خودش transition/transform
    داشته باشد — در WebView اندروید این ترکیب هنگام اسکرول باعث تار شدن
    «کل صفحه» می‌شود. به همین دلیل:
    - انیمیشن نمایش/مخفی‌سازی (همراه دراور) روی wrapper انجام می‌شود
-   - قرص شیشه‌ای خودش کاملاً ثابت است و فقط ناحیه پشت خودش را تار می‌کند
+   - نوار شیشه‌ای خودش کاملاً ثابت است و فقط ناحیه پشت خودش را تار می‌کند
    --------------------------------- */
 function HomeIconSvg() {
   return (
@@ -419,19 +433,40 @@ function MapIconSvg() {
     </svg>
   );
 }
-function TrainIconSvg() {
+
+/* آیکون‌های SVG تازه برای تاب‌های جدید — سبک خطی یکدست با بقیه */
+function RouteIconSvg() {
   return (
     <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden>
-      <rect x="4" y="3" width="16" height="13" rx="2" />
-      <path d="M4 11h16M12 3v8M8 19l-2 3M16 19l2 3M9 16h6" />
+      <circle cx="6" cy="19" r="3" />
+      <circle cx="18" cy="5" r="3" />
+      <path d="M12 19h4.5a3.5 3.5 0 000-7h-9a3.5 3.5 0 010-7H12" strokeLinecap="round" />
+    </svg>
+  );
+}
+function BookmarkIconSvg() {
+  return (
+    <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 4h12a1 1 0 011 1v16l-7-4-7 4V5a1 1 0 011-1z" />
+    </svg>
+  );
+}
+function PersonIconSvg() {
+  return (
+    <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="8" r="4" />
+      <path strokeLinecap="round" d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
     </svg>
   );
 }
 
+/* ناوبری ۵ تابه طبق طراحی جدید: خانه، نقشه، مسیریابی، ذخیره‌ها، حساب من */
 const NAV_ITEMS = [
   { href: "/", label: "خانه", Icon: HomeIconSvg },
-  { href: "/lines", label: "خطوط و نقشه", Icon: MapIconSvg },
-  { href: "/stations", label: "ایستگاه‌ها", Icon: TrainIconSvg },
+  { href: "/map", label: "نقشه", Icon: MapIconSvg },
+  { href: "/plan", label: "مسیریابی", Icon: RouteIconSvg },
+  { href: "/saved", label: "ذخیره‌ها", Icon: BookmarkIconSvg },
+  { href: "/settings", label: "حساب من", Icon: PersonIconSvg },
 ];
 
 export function BottomNav() {
@@ -444,11 +479,11 @@ export function BottomNav() {
       className={`fixed inset-x-0 bottom-0 z-50 flex justify-center pointer-events-none transition-[opacity,visibility] duration-300 ${
         drawerOpen ? "opacity-0 invisible" : "opacity-100 visible"
       }`}
-      style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-hidden={drawerOpen}
     >
       <nav
-        className="mj-nav-frost pointer-events-auto w-[90%] max-w-[360px] bg-surface-container-lowest/90 backdrop-blur-lg rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-outline-variant/40 p-1.5 flex items-center justify-between flex-nowrap"
+        className="mj-nav-frost pointer-events-auto w-full max-w-md bg-surface/95 backdrop-blur-lg rounded-t-2xl shadow-[0_-4px_16px_rgba(15,23,42,0.08)] border-t border-outline-variant/30 px-2 py-1.5 flex justify-around items-center flex-nowrap"
         dir="rtl"
         aria-label="ناوبری اصلی"
       >
@@ -459,14 +494,14 @@ export function BottomNav() {
               key={href}
               onClick={() => router.push(href)}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-1.5 rounded-full transition-all active:scale-95 shrink-0 ${
+              className={`flex flex-col items-center justify-center rounded-xl transition-all active:scale-95 shrink-0 ${
                 active
-                  ? "bg-primary-container text-white px-5 py-2.5 font-bold text-sm shadow-sm"
-                  : "text-on-surface-variant px-3 py-2 font-medium text-sm hover:bg-surface-container hover:text-on-surface"
+                  ? "bg-primary-container text-white px-3.5 py-1.5 font-bold shadow-sm"
+                  : "text-on-surface-variant px-2.5 py-1.5 font-medium hover:bg-surface-container hover:text-on-surface"
               }`}
             >
               <Icon />
-              <span className="whitespace-nowrap leading-none">{label}</span>
+              <span className="text-[10px] whitespace-nowrap leading-tight mt-0.5">{label}</span>
             </button>
           );
         })}

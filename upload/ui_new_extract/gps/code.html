@@ -1,0 +1,704 @@
+<!DOCTYPE html><html class="h-full" dir="rtl" lang="fa"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>درمسیر - حساب من و تنظیمات پیشرفته (پروفایل مسافر و عیب‌یابی GPS)</title>
+<!-- Persian Typography (Vazirmatn) -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration with Design System Tokens -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed-dim": "#a8c8ff",
+            "surface-container": "#e7eeff",
+            "outline": "#727782",
+            "secondary-fixed": "#ffdad5",
+            "on-secondary-fixed-variant": "#930007",
+            "on-secondary": "#ffffff",
+            "background": "#f9f9ff",
+            "on-background": "#111c2d",
+            "inverse-surface": "#263143",
+            "surface-variant": "#d8e3fb",
+            "secondary-container": "#e32220",
+            "surface-container-low": "#f0f3ff",
+            "surface-bright": "#f9f9ff",
+            "surface-container-high": "#dee8ff",
+            "outline-variant": "#c2c6d3",
+            "on-surface": "#111c2d",
+            "on-error": "#ffffff",
+            "tertiary-container": "#006638",
+            "on-tertiary-container": "#6ae79a",
+            "tertiary-fixed": "#7efbac",
+            "on-tertiary": "#ffffff",
+            "primary": "#00417f",
+            "on-primary-container": "#b6d0ff",
+            "on-primary": "#ffffff",
+            "tertiary-fixed-dim": "#61de92",
+            "error": "#ba1a1a",
+            "primary-container": "#0d58a6",
+            "surface-dim": "#cfdaf2",
+            "on-tertiary-fixed-variant": "#00522c",
+            "primary-fixed": "#d5e3ff",
+            "on-secondary-container": "#fffbff",
+            "inverse-on-surface": "#ecf1ff",
+            "secondary": "#bc000c",
+            "on-secondary-fixed": "#410001",
+            "on-surface-variant": "#424751",
+            "surface-tint": "#1a5eac",
+            "surface": "#f9f9ff",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed": "#00210e",
+            "surface-container-highest": "#d8e3fb",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-primary-fixed": "#001b3c",
+            "tertiary": "#004c28",
+            "inverse-primary": "#a8c8ff",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#004689"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "margin": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "2rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "headline-xl": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-filled {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Smooth Pulse for Live Diagnostic Signal */
+    @keyframes subtlePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(1.15); }
+    }
+    .live-ping {
+      animation: subtlePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    /* Hide scrollbars for streamlined app look */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen pb-28 select-none flex flex-col justify-between">
+<!-- =========================================================================
+       1. TOP APP BAR & STATUS HEADER
+       ========================================================================= -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest/95 backdrop-blur-md px-margin py-3 border-b border-outline-variant/40 shadow-sm flex items-center justify-between"><div class="flex items-center gap-2.5">
+  <button id="menuToggleBtn" onclick="document.getElementById('sideMenuDrawer').classList.remove('hidden')" class="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors active:scale-95" title="منوی تنظیمات و راهنما">
+    <span class="material-symbols-outlined text-xl">menu</span>
+  </button>
+  <div class="flex items-center gap-2">
+    <div class="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-lg">person</span>
+    </div>
+    <div>
+      <h1 class="text-title-md font-title-md text-on-surface">پروفایل مسافر</h1>
+      <div class="flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span>
+        <span class="text-label-sm font-label-sm text-tertiary font-medium">حساب فعال مسافر</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="flex items-center gap-1">
+  <button class="w-9 h-9 flex items-center justify-center rounded-xl text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors active:scale-95" title="ویرایش مشخصات فردی">
+    <span class="material-symbols-outlined text-lg">edit</span>
+  </button>
+  <button class="w-9 h-9 flex items-center justify-center rounded-xl text-secondary hover:bg-secondary-fixed/50 transition-colors active:scale-95" title="خروج از حساب">
+    <span class="material-symbols-outlined text-lg">logout</span>
+  </button>
+</div></header>
+<!-- =========================================================================
+       MAIN CONTENT CONTAINER
+       ========================================================================= -->
+<main class="max-w-md mx-auto w-full px-margin space-y-4 pt-3 flex-1"><!-- 1. VIP USER PROFILE SUMMARY CARD -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3.5">
+      <div class="relative cursor-pointer group" onclick="openAvatarModal()" title="تغییر عکس پروفایل">
+  <div id="userAvatarContainer" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-primary-container text-white flex items-center justify-center font-bold text-headline-sm shadow-md ring-2 ring-primary-fixed overflow-hidden transition-transform group-hover:scale-105 active:scale-95">
+    <span id="avatarInitials">ار</span>
+    <img id="avatarImage" src="" alt="عکس پروفایل" class="w-full h-full object-cover hidden">
+  </div>
+  <div class="absolute -bottom-1 -left-1 bg-tertiary-container text-white rounded-full p-0.5 ring-2 ring-surface-container-lowest" title="هویت تأیید شده">
+    <span class="material-symbols-outlined text-xs block">verified</span>
+  </div>
+  <button type="button" class="absolute -top-1 -right-1 w-6 h-6 bg-primary text-white rounded-full ring-2 ring-surface-container-lowest shadow flex items-center justify-center hover:bg-primary-container transition-colors" aria-label="ویرایش عکس پروفایل">
+    <span class="material-symbols-outlined text-[13px] leading-none">photo_camera</span>
+  </button>
+</div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 class="text-title-lg font-title-lg text-on-surface">امیرحسین رضایی</h2>
+          
+        </div>
+        <p class="text-body-sm font-body-sm text-on-surface-variant font-mono mt-0.5" dir="ltr">+98 912 *** 4567</p>
+      </div>
+    </div>
+    <button class="flex items-center gap-1 px-3 py-1.5 text-label-md font-label-md text-primary bg-surface-container rounded-xl hover:bg-surface-container-high transition-colors active:scale-95">
+      <span class="material-symbols-outlined text-sm">manage_accounts</span>
+      <span>ویرایش</span>
+    </button>
+  </div>
+</section>
+
+<!-- 2. TRANSIT WALLET & VIRTUAL METRO CARD -->
+<section class="bg-gradient-to-r from-primary-container to-primary text-white rounded-2xl p-4 shadow-md relative overflow-hidden">
+  <div class="absolute -left-6 -bottom-6 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+  <div class="flex items-center justify-between pb-3 border-b border-white/20">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-xl">contactless</span>
+      <span class="text-label-md font-medium text-white/90">کارت بلیت مجازی شهروندی درمسیر</span>
+    </div>
+    <span class="font-mono text-label-sm bg-white/20 px-2 py-0.5 rounded-md" dir="ltr">ID: 6037-9912-8401</span>
+  </div>
+  <div class="mt-3 flex items-center justify-between">
+    <div>
+      <span class="text-label-sm text-white/80 block">موجودی کیف پول و بلیت:</span>
+      <div class="flex items-baseline gap-1 mt-0.5">
+        <span class="text-headline-md font-bold tracking-tight">۴۸,۵۰۰</span>
+        <span class="text-label-sm text-white/80">تومان</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="flex items-center gap-1 bg-white text-primary px-3 py-1.5 rounded-xl text-label-md font-bold hover:bg-surface-container active:scale-95 transition-all shadow-sm">
+        <span class="material-symbols-outlined text-sm">add_card</span>
+        <span>شارژ موجودی</span>
+      </button>
+      <button class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center text-white active:scale-95 transition-all" title="نمایش بارکد بلیت">
+        <span class="material-symbols-outlined text-lg">qr_code_2</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- 3. PASSENGER METRICS 4-COLUMN BENTO GRID -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40">
+  <h3 class="text-title-md font-title-md text-on-surface mb-3 flex items-center gap-2">
+    <span class="material-symbols-outlined text-primary text-lg">monitoring</span>
+    <span>آمار و دستاوردهای سفر من</span>
+  </h3>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+    <div class="bg-surface-container-low p-3 rounded-xl text-center">
+      <span class="text-headline-md font-headline-md text-primary block">۶۴</span>
+      <span class="text-label-sm font-label-sm text-on-surface-variant block mt-0.5">سفر موفق با ناوگان</span>
+    </div>
+    <div class="bg-surface-container-low p-3 rounded-xl text-center">
+      <span class="text-headline-md font-headline-md text-tertiary-container block">۱۸ <span class="text-label-sm">ساعت</span></span>
+      <span class="text-label-sm font-label-sm text-on-surface-variant block mt-0.5">صرفه‌جویی در ترافیک</span>
+    </div>
+    <div class="bg-surface-container-low p-3 rounded-xl text-center">
+      <div class="flex items-center justify-center gap-1 text-headline-md font-headline-md text-on-surface">
+        <span>۴.۹</span>
+        <span class="material-symbols-outlined text-primary text-base material-symbols-filled">star</span>
+      </div>
+      <span class="text-label-sm font-label-sm text-on-surface-variant block mt-0.5">امتیاز مسافر نمونه</span>
+    </div>
+    <div class="bg-surface-container-low p-3 rounded-xl text-center">
+      <span class="text-headline-md font-headline-md text-tertiary block">۲۴ <span class="text-label-sm">kg</span></span>
+      <span class="text-label-sm font-label-sm text-on-surface-variant block mt-0.5">کاهش آلایندگی کربن</span>
+    </div>
+  </div>
+</section>
+
+<!-- 4. RECENT TRIPS SUMMARY -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40 space-y-3">
+  <div class="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+    <h3 class="text-title-md font-title-md text-on-surface flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary text-lg">history</span>
+      <span>آخرین سفرهای انجام‌شده</span>
+    </h3>
+    <button class="text-label-sm font-label-sm text-primary font-bold hover:underline">مشاهده همه سفرها</button>
+  </div>
+  <!-- Trip 1 -->
+  <div class="bg-surface-container-low p-3 rounded-xl flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+        <span class="material-symbols-outlined text-lg">directions_subway</span>
+      </div>
+      <div>
+        <div class="flex items-center gap-1.5 text-label-lg font-label-lg text-on-surface">
+          <span>میدان انقلاب</span>
+          <span class="material-symbols-outlined text-xs text-outline">arrow_back</span>
+          <span>بیمارستان میلاد</span>
+        </div>
+        <div class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-0.5">
+          <span>امروز ساعت ۰۸:۲۵</span>
+          <span>•</span>
+          <span class="text-primary font-medium">۲۸ دقیقه (۱ تعویض خط)</span>
+        </div>
+      </div>
+    </div>
+    <span class="material-symbols-outlined text-outline text-lg">chevron_left</span>
+  </div>
+  <!-- Trip 2 -->
+  <div class="bg-surface-container-low p-3 rounded-xl flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+        <span class="material-symbols-outlined text-lg">directions_bus</span>
+      </div>
+      <div>
+        <div class="flex items-center gap-1.5 text-label-lg font-label-lg text-on-surface">
+          <span>چهارراه ولیعصر</span>
+          <span class="material-symbols-outlined text-xs text-outline">arrow_back</span>
+          <span>میدان ونک (خط ۷ BRT)</span>
+        </div>
+        <div class="flex items-center gap-2 text-label-sm text-on-surface-variant mt-0.5">
+          <span>دیروز ساعت ۱۷:۴۰</span>
+          <span>•</span>
+          <span class="text-primary font-medium">۲۲ دقیقه</span>
+        </div>
+      </div>
+    </div>
+    <span class="material-symbols-outlined text-outline text-lg">chevron_left</span>
+  </div>
+</section>
+
+<!-- 5. USER SUPPORT TICKETS -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40 space-y-3">
+  <div class="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+    <div class="flex items-center gap-2">
+      <div class="p-1.5 rounded-lg bg-surface-container text-primary">
+        <span class="material-symbols-outlined text-lg">support_agent</span>
+      </div>
+      <div>
+        <h3 class="text-title-md font-title-md text-on-surface">تیکت‌های فعال من</h3>
+        <p class="text-label-sm font-label-sm text-on-surface-variant">پیگیری سوالات و گزارش مشکلات سفر</p>
+      </div>
+    </div>
+    <button class="flex items-center gap-1 text-label-sm font-label-sm text-primary bg-surface-container hover:bg-surface-container-high px-2.5 py-1.5 rounded-lg transition-colors active:scale-95">
+      <span class="material-symbols-outlined text-sm">add</span>
+      <span>ثبت تیکت جدید</span>
+    </button>
+  </div>
+  <div class="bg-surface-container-low p-3 rounded-xl flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+        <span class="material-symbols-outlined text-lg">confirmation_number</span>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 text-label-md font-semibold text-on-surface">
+          <span>عدم تطابق زمان حرکت خط ۳ مترو</span>
+          
+        </div>
+        <div class="text-label-sm text-on-surface-variant mt-0.5">
+          <span>کد پیگیری: <span class="font-mono text-primary font-medium" dir="ltr">TCK-94820</span></span>
+          <span class="mx-1">•</span>
+          <span>ارسال شده: ۲ روز پیش</span>
+        </div>
+      </div>
+    </div>
+    <span class="material-symbols-outlined text-outline text-lg">chevron_left</span>
+  </div>
+</section>
+
+<!-- 6. ACCOUNT SECURITY & PREFERENCES -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/40 space-y-2">
+  <h3 class="text-title-md font-title-md text-on-surface pb-2 border-b border-outline-variant/30 flex items-center gap-2">
+    <span class="material-symbols-outlined text-primary text-lg">lock</span>
+    <span>امنیت حساب کاربری</span>
+  </h3>
+  <div class="space-y-1">
+    <a href="#security" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors text-on-surface">
+      <div class="flex items-center gap-2.5">
+        <span class="material-symbols-outlined text-base text-primary">password</span>
+        <span class="text-label-md font-medium">تغییر رمز عبور / ورود دومرحله‌ای</span>
+      </div>
+      <span class="material-symbols-outlined text-sm text-outline">chevron_left</span>
+    </a>
+    <a href="#devices" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors text-on-surface">
+      <div class="flex items-center gap-2.5">
+        <span class="material-symbols-outlined text-base text-primary">devices</span>
+        <span class="text-label-md font-medium">دستگاه‌های متصل به حساب</span>
+      </div>
+      <span class="material-symbols-outlined text-sm text-outline">chevron_left</span>
+    </a>
+    <button class="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-secondary-fixed/30 transition-colors text-secondary">
+      <div class="flex items-center gap-2.5">
+        <span class="material-symbols-outlined text-base">logout</span>
+        <span class="text-label-md font-medium">خروج از حساب کاربری</span>
+      </div>
+      <span class="material-symbols-outlined text-sm">chevron_left</span>
+    </button>
+  </div>
+</section></main><!-- HAMBURGER MENU DRAWER MODAL -->
+<!-- AVATAR EDIT MODAL / BOTTOM SHEET -->
+<div id="avatarModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity duration-300 opacity-0">
+  <!-- Backdrop click dismissal -->
+  <div class="absolute inset-0" onclick="closeAvatarModal()"></div>
+  
+  <div class="relative w-full max-w-md bg-surface-container-lowest rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 z-10 transform transition-transform duration-300 translate-y-full sm:translate-y-0 space-y-4 max-h-[90vh] overflow-y-auto" id="avatarModalContent">
+    <!-- Handle bar for mobile bottom sheet -->
+    <div class="w-12 h-1.5 bg-outline-variant/50 rounded-full mx-auto sm:hidden mb-1"></div>
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-primary-fixed/60 text-primary flex items-center justify-center">
+          <span class="material-symbols-outlined text-xl">add_a_photo</span>
+        </div>
+        <div>
+          <h3 class="text-title-md font-title-md text-on-surface">ویرایش تصویر پروفایل</h3>
+          <p class="text-label-sm font-label-sm text-on-surface-variant">انتخاب عکس یا آواتارهای سفارشی ناوگان</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeAvatarModal()" class="w-8 h-8 rounded-xl hover:bg-surface-container flex items-center justify-center text-outline transition-colors active:scale-95">
+        <span class="material-symbols-outlined text-xl">close</span>
+      </button>
+    </div>
+
+    <!-- Actions list -->
+    <div class="space-y-2">
+      <!-- Gallery Upload -->
+      <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+      <button type="button" onclick="document.getElementById('avatarFileInput').click()" class="w-full flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors text-on-surface active:scale-98 group">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-surface-container text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+            <span class="material-symbols-outlined text-lg">photo_library</span>
+          </div>
+          <div class="text-right">
+            <span class="text-label-lg font-medium block text-on-surface">انتخاب تصویر از گالری</span>
+            <span class="text-label-sm text-on-surface-variant block">فرمت‌های JPG، PNG و WebP</span>
+          </div>
+        </div>
+        <span class="material-symbols-outlined text-outline text-lg">chevron_left</span>
+      </button>
+
+      <!-- Take Photo -->
+      <button type="button" onclick="document.getElementById('avatarFileInput').click()" class="w-full flex items-center justify-between p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors text-on-surface active:scale-98 group">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-surface-container text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+            <span class="material-symbols-outlined text-lg">camera_alt</span>
+          </div>
+          <div class="text-right">
+            <span class="text-label-lg font-medium block text-on-surface">گرفتن عکس با دوربین</span>
+            <span class="text-label-sm text-on-surface-variant block">عکس فوری سلفی با تلفن همراه</span>
+          </div>
+        </div>
+        <span class="material-symbols-outlined text-outline text-lg">chevron_left</span>
+      </button>
+    </div>
+
+    <!-- Default Fleet Avatars -->
+    <div class="pt-2 border-t border-outline-variant/30 space-y-2.5">
+      <div class="flex items-center justify-between">
+        <span class="text-label-md font-semibold text-on-surface flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-primary text-base">directions_subway</span>
+          <span>آواتارهای پیش‌فرض مسافرتی و شهری</span>
+        </span>
+        <span class="text-label-sm text-on-surface-variant">لمس برای انتخاب</span>
+      </div>
+      <div class="grid grid-cols-4 gap-2.5">
+        <button type="button" onclick="selectPresetAvatar('metro')" class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-outline-variant/30 hover:border-primary hover:bg-primary-fixed/30 active:scale-95 transition-all text-center group">
+          <div class="w-11 h-11 rounded-xl bg-primary text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-2xl">subway</span>
+          </div>
+          <span class="text-label-sm font-medium text-on-surface">متروسوار</span>
+        </button>
+        <button type="button" onclick="selectPresetAvatar('bus')" class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-outline-variant/30 hover:border-primary hover:bg-primary-fixed/30 active:scale-95 transition-all text-center group">
+          <div class="w-11 h-11 rounded-xl bg-tertiary-container text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-2xl">directions_bus</span>
+          </div>
+          <span class="text-label-sm font-medium text-on-surface">اتوبوس BRT</span>
+        </button>
+        <button type="button" onclick="selectPresetAvatar('bike')" class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-outline-variant/30 hover:border-primary hover:bg-primary-fixed/30 active:scale-95 transition-all text-center group">
+          <div class="w-11 h-11 rounded-xl bg-primary-container text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-2xl">pedal_bike</span>
+          </div>
+          <span class="text-label-sm font-medium text-on-surface">دوچرخه‌سوار</span>
+        </button>
+        <button type="button" onclick="selectPresetAvatar('walker')" class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-outline-variant/30 hover:border-primary hover:bg-primary-fixed/30 active:scale-95 transition-all text-center group">
+          <div class="w-11 h-11 rounded-xl bg-surface-variant text-primary flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-2xl">directions_walk</span>
+          </div>
+          <span class="text-label-sm font-medium text-on-surface">پیاده‌رو</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Remove Current Avatar -->
+    <div class="pt-2 border-t border-outline-variant/30">
+      <button type="button" onclick="removeAvatar()" class="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl text-secondary hover:bg-secondary-fixed/40 transition-colors active:scale-98 font-label-md font-semibold">
+        <span class="material-symbols-outlined text-lg">delete</span>
+        <span>حذف تصویر فعلی و بازگشت به حروف نام</span>
+      </button>
+    </div>
+
+    <!-- Cancel Button -->
+    <button type="button" onclick="closeAvatarModal()" class="w-full py-2.5 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors font-label-lg font-bold active:scale-98">
+      انصراف
+    </button>
+  </div>
+</div>
+
+<!-- Interactive Script for Avatar Modal & Image Selection -->
+<script>
+  function openAvatarModal() {
+    const modal = document.getElementById('avatarModal');
+    const content = document.getElementById('avatarModalContent');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      modal.classList.remove('opacity-0');
+      modal.classList.add('opacity-100');
+      content.classList.remove('translate-y-full');
+      content.classList.add('translate-y-0');
+    });
+  }
+
+  function closeAvatarModal() {
+    const modal = document.getElementById('avatarModal');
+    const content = document.getElementById('avatarModalContent');
+    if (!modal) return;
+    modal.classList.remove('opacity-100');
+    modal.classList.add('opacity-0');
+    content.classList.remove('translate-y-0');
+    content.classList.add('translate-y-full');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 280);
+  }
+
+  function handleFileSelect(event) {
+    const file = event.target.files && event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        applyAvatarImage(e.target.result);
+        closeAvatarModal();
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function selectPresetAvatar(type) {
+    const container = document.getElementById('userAvatarContainer');
+    const initials = document.getElementById('avatarInitials');
+    const img = document.getElementById('avatarImage');
+    
+    if (!container) return;
+    img.classList.add('hidden');
+    initials.classList.remove('hidden');
+    
+    const icons = {
+      metro: '<span class="material-symbols-outlined text-2xl">subway</span>',
+      bus: '<span class="material-symbols-outlined text-2xl">directions_bus</span>',
+      bike: '<span class="material-symbols-outlined text-2xl">pedal_bike</span>',
+      walker: '<span class="material-symbols-outlined text-2xl">directions_walk</span>'
+    };
+    
+    initials.innerHTML = icons[type] || 'ار';
+    closeAvatarModal();
+  }
+
+  function applyAvatarImage(srcUrl) {
+    const initials = document.getElementById('avatarInitials');
+    const img = document.getElementById('avatarImage');
+    if (img && initials) {
+      img.src = srcUrl;
+      img.classList.remove('hidden');
+      initials.classList.add('hidden');
+    }
+  }
+
+  function removeAvatar() {
+    const initials = document.getElementById('avatarInitials');
+    const img = document.getElementById('avatarImage');
+    const fileInput = document.getElementById('avatarFileInput');
+    if (fileInput) fileInput.value = '';
+    if (img && initials) {
+      img.src = '';
+      img.classList.add('hidden');
+      initials.textContent = 'ار';
+      initials.classList.remove('hidden');
+    }
+    closeAvatarModal();
+  }
+</script><div id="sideMenuDrawer" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex justify-start">
+  <div class="w-80 max-w-[85vw] h-full bg-surface-container-lowest shadow-2xl p-4 flex flex-col justify-between overflow-y-auto">
+    <div class="space-y-4">
+      <!-- Drawer Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-primary-container text-white flex items-center justify-center font-bold text-xs">
+            د
+          </div>
+          <div>
+            <span class="text-title-md font-title-md text-on-surface block">منوی درمسیر</span>
+            <span class="text-label-sm text-on-surface-variant block">تنظیمات و اطلاعات سامانه</span>
+          </div>
+        </div>
+        <button onclick="document.getElementById('sideMenuDrawer').classList.add('hidden')" class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center text-outline active:scale-95">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+      </div>
+
+      <!-- Menu Items List -->
+      <nav class="space-y-1.5">
+        <a href="#gps" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-container-low text-on-surface">
+          <span class="material-symbols-outlined text-primary text-xl">satellite_alt</span>
+          <div>
+            <span class="text-label-md font-medium block">عیب‌یابی سلامت GPS و سنسورها</span>
+            <span class="text-label-sm text-tertiary block">وضعیت سخت‌افزار و دقت مکانی</span>
+          </div>
+        </a>
+        <a href="#voice" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-container-low text-on-surface">
+          <span class="material-symbols-outlined text-primary text-xl">record_voice_over</span>
+          <div>
+            <span class="text-label-md font-medium block">تنظیمات دستیار صوتی و هشدارها</span>
+            <span class="text-label-sm text-on-surface-variant block">گوینده، زنگ بیدارباش و هدایت</span>
+          </div>
+        </a>
+        <a href="#about" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-container-low text-on-surface">
+          <span class="material-symbols-outlined text-primary text-xl">info</span>
+          <div>
+            <span class="text-label-md font-medium block">درباره درمسیر</span>
+            <span class="text-label-sm text-on-surface-variant block">معرفی سامانه و اهداف سفر شهری</span>
+          </div>
+        </a>
+        <a href="tel:02191004820" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-container-low text-on-surface">
+          <span class="material-symbols-outlined text-primary text-xl">phone_in_talk</span>
+          <div>
+            <span class="text-label-md font-medium block">تماس با پشتیبانی ۲۴ ساعته</span>
+            <span class="text-label-sm text-primary font-mono block" dir="ltr">۰۲۱-۹۱۰۰۴۸۲۰</span>
+          </div>
+        </a>
+        <a href="#privacy" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-container-low text-on-surface">
+          <span class="material-symbols-outlined text-primary text-xl">shield_lock</span>
+          <div>
+            <span class="text-label-md font-medium block">قوانین و تضمین حریم خصوصی</span>
+            <span class="text-label-sm text-on-surface-variant block">عدم ذخیره مختصات GPS در سرور</span>
+          </div>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="pt-4 border-t border-outline-variant/30 text-center">
+      <span class="text-label-sm text-on-surface-variant block">اپلیکیشن درمسیر - نسخه ۲.۵.۰</span>
+      <span class="text-label-sm text-outline block mt-0.5">موتور هوشمند ناوبری کلان‌شهرها</span>
+    </div>
+  </div>
+  <!-- Backdrop click close zone -->
+  <div class="flex-1 h-full" onclick="document.getElementById('sideMenuDrawer').classList.add('hidden')"></div>
+</div>
+<!-- =========================================================================
+       7. OFFICIAL DOCKED 5-TAB NAVIGATION BAR (DERMASIR DESIGN SYSTEM)
+       Exact 5-destination shell: Home, Map, Route, Bookmarks, Account (Active)
+       ========================================================================= -->
+<nav aria-label="ناوبری اصلی برنامه" class="fixed bottom-0 left-0 w-full h-20 z-50 bg-surface-container-lowest/95 backdrop-blur-md shadow-lg border-t border-outline-variant/30 flex justify-around items-center px-space-md rtl:flex-row-reverse">
+<!-- Tab 5: حساب من (ACTIVE DESTINATION) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-white rounded-full px-4 py-1.5 shadow-sm active:scale-95 transition-all" href="#profile">
+<span class="material-symbols-outlined material-symbols-filled text-xl">person</span>
+<span class="text-label-sm font-label-sm font-bold mt-0.5">حساب من</span>
+</a>
+<!-- Tab 4: ذخیره‌ها -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 active:scale-95 transition-all" href="#bookmarks">
+<span class="material-symbols-outlined text-xl">bookmark</span>
+<span class="text-label-sm font-label-sm mt-0.5">ذخیره‌ها</span>
+</a>
+<!-- Tab 3: مسیریابی -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 active:scale-95 transition-all" href="#planner">
+<span class="material-symbols-outlined text-xl">route</span>
+<span class="text-label-sm font-label-sm mt-0.5">مسیریابی</span>
+</a>
+<!-- Tab 2: نقشه -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 active:scale-95 transition-all" href="#map">
+<span class="material-symbols-outlined text-xl">map</span>
+<span class="text-label-sm font-label-sm mt-0.5">نقشه</span>
+</a>
+<!-- Tab 1: خانه -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-3 py-1.5 active:scale-95 transition-all" href="#home">
+<span class="material-symbols-outlined text-xl">home</span>
+<span class="text-label-sm font-label-sm mt-0.5">خانه</span>
+</a>
+</nav>
+<!-- Lightweight Inline Interaction Script for GPS Refresh Demo -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const refreshBtn = document.getElementById('gpsRefreshBtn');
+      const refreshIcon = document.getElementById('refreshIcon');
+
+      if (refreshBtn && refreshIcon) {
+        refreshBtn.addEventListener('click', () => {
+          refreshIcon.classList.add('rotate-180');
+          refreshBtn.classList.add('opacity-75');
+          
+          setTimeout(() => {
+            refreshIcon.classList.remove('rotate-180');
+            refreshBtn.classList.remove('opacity-75');
+          }, 600);
+        });
+      }
+    });
+  </script>
+
+
+
+
+
+
+</body></html>

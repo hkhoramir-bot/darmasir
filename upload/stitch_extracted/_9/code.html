@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>درمسیر - مدیریت تبلیغات و بنرهای درون‌برنامه‌ای (پنل وب مدیریت)</title>
+<!-- Google Fonts: Vazirmatn for Persian Typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN with forms and container-queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration verbatim as provided -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed": "#d5e3ff",
+            "surface-bright": "#f9f9ff",
+            "surface-container-highest": "#d8e3fb",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed-dim": "#a8c8ff",
+            "surface-dim": "#cfdaf2",
+            "on-tertiary-container": "#6ae79a",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#004689",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-primary": "#ffffff",
+            "primary": "#00417f",
+            "on-secondary-fixed": "#410001",
+            "secondary": "#bc000c",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed": "#001b3c",
+            "on-secondary-container": "#fffbff",
+            "on-error": "#ffffff",
+            "on-surface": "#111c2d",
+            "surface-tint": "#1a5eac",
+            "secondary-fixed": "#ffdad5",
+            "on-error-container": "#93000a",
+            "tertiary": "#004c28",
+            "surface-variant": "#d8e3fb",
+            "inverse-on-surface": "#ecf1ff",
+            "background": "#f9f9ff",
+            "surface-container-high": "#dee8ff",
+            "outline-variant": "#c2c6d3",
+            "error": "#ba1a1a",
+            "tertiary-fixed-dim": "#61de92",
+            "inverse-surface": "#263143",
+            "tertiary-container": "#006638",
+            "on-background": "#111c2d",
+            "inverse-primary": "#a8c8ff",
+            "outline": "#727782",
+            "on-tertiary-fixed-variant": "#00522c",
+            "secondary-container": "#e32220",
+            "on-secondary-fixed-variant": "#930007",
+            "primary-container": "#0d58a6",
+            "on-primary-container": "#b6d0ff",
+            "surface-container": "#e7eeff",
+            "surface-container-low": "#f0f3ff",
+            "on-surface-variant": "#424751",
+            "tertiary-fixed": "#7efbac",
+            "surface": "#f9f9ff",
+            "on-tertiary-fixed": "#00210e"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "gutter": "1rem",
+            "space-lg": "1.5rem",
+            "margin": "1rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "title-md": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Hide scrollbars for slick mockups */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen antialiased flex flex-row selection:bg-primary-fixed selection:text-primary">
+<!-- ========================================================================= -->
+<!-- SIDE NAVIGATION BAR (Right Sidebar for RTL, matches Shared Components JSON) -->
+<!-- ========================================================================= -->
+<aside class="fixed right-0 top-0 h-full w-72 flex flex-col z-40 bg-surface-container-lowest dark:bg-inverse-surface border-l border-outline-variant dark:border-outline shadow-sm justify-between">
+<!-- Header brand & Title -->
+<div>
+<div class="p-6 border-b border-outline-variant/50 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[28px]" data-icon="subway" style="font-variation-settings: 'FILL' 1;">subway</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">درمسیر</span>
+<span class="bg-primary-fixed text-primary px-2 py-0.5 rounded-full font-label-sm text-label-sm">نسخه ۲.۴</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1">پنل مدیریت سامانه ناوبری شهری</p>
+</div>
+</div>
+</div>
+<!-- Navigation Tabs (8 items with "تبلیغات و بنرها" ACTIVE) -->
+<nav class="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-270px)] no-scrollbar">
+<!-- 1. داشبورد مدیریتی -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="dashboard">dashboard</span>
+<span>داشبورد مدیریتی</span>
+</a>
+<!-- 2. کاربران -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="group">group</span>
+<span>کاربران</span>
+</a>
+<!-- 3. خطوط و ایستگاه‌ها -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="alt_route">alt_route</span>
+<span>خطوط و ایستگاه‌ها</span>
+</a>
+<!-- 4. تبلیغات و بنرها (ACTIVE ITEM via style_active_navigation) -->
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container dark:bg-primary-fixed dark:text-on-primary-fixed rounded-xl px-4 py-3 font-title-md text-title-md transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="campaign" style="font-variation-settings: 'FILL' 1;">campaign</span>
+<span class="flex-1">تبلیغات و بنرها</span>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed ring-2 ring-tertiary"></span>
+</a>
+<!-- 5. دستیار صوتی و آواشناسی -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="record_voice_over">record_voice_over</span>
+<span>دستیار صوتی و آواشناسی</span>
+</a>
+<!-- 6. تنظیمات سامانه -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="settings">settings</span>
+<span>تنظیمات سامانه</span>
+</a>
+<!-- 7. گزارش‌ها و تحلیل داده -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="monitoring">monitoring</span>
+<span>گزارش‌ها و تحلیل داده</span>
+</a>
+<!-- 8. امنیت و وقایع‌نگاری -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px]" data-icon="security">security</span>
+<span>امنیت و وقایع‌نگاری</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Footer Links & CTA -->
+<div class="p-4 border-t border-outline-variant/60 bg-surface-container-low/40 space-y-2">
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary px-3 py-2 rounded-lg font-body-sm text-body-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="api">api</span>
+<span>مستندات API</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary px-3 py-2 rounded-lg font-body-sm text-body-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="help">help</span>
+<span>پشتیبانی فنی</span>
+</a>
+<button class="w-full flex items-center justify-center gap-2 text-secondary bg-surface-container-lowest border border-outline-variant hover:bg-error-container hover:text-on-error-container px-4 py-2.5 rounded-xl font-label-md text-label-md transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="logout">logout</span>
+<span>خروج از حساب</span>
+</button>
+</div>
+</aside>
+<!-- ========================================================================= -->
+<!-- TOP APP BAR / ADMIN HEADER (Matches JSON Shared Component TopNavBar) -->
+<!-- ========================================================================= -->
+<header class="fixed top-0 left-0 right-72 z-30 h-16 flex items-center justify-between px-6 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm">
+<!-- Search Bar (on_right for RTL layout) -->
+<div class="flex items-center gap-4 flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-icon="search">search</span>
+<input class="w-full pl-4 pr-10 py-2 bg-surface-container-low rounded-xl border border-outline-variant/70 font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="جستجوی کمپین، حامی مالی، جایگاه تبلیغاتی یا شناسه بنر..." type="text"/>
+</div>
+<!-- Cloudflare D1/R2 Connection Status Chip -->
+<div class="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container border border-outline-variant/50 shrink-0">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">اتصال D1 و R2 فعال (D1 Ads Table)</span>
+</div>
+</div>
+<!-- Trailing Actions & Profile -->
+<div class="flex items-center gap-3">
+<!-- Trailing Icon Actions: dns, schedule, notifications -->
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-on-surface rounded-lg transition-colors" title="وضعیت سرور DNS و لبه کلودفلر">
+<span class="material-symbols-outlined text-[20px]" data-icon="dns">dns</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-on-surface rounded-lg transition-colors" title="زمان‌بندی کرون جاب‌ها">
+<span class="material-symbols-outlined text-[20px]" data-icon="schedule">schedule</span>
+</button>
+<div class="relative">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-on-surface rounded-lg transition-colors" title="اعلان‌های سیستم تبلیغات">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary"></span>
+</button>
+</div>
+<div class="h-6 w-px bg-outline-variant mx-1"></div>
+<!-- Admin Profile Info -->
+<div class="flex items-center gap-3 pr-2">
+<div class="text-left hidden sm:block">
+<div class="font-title-md text-[13px] leading-tight font-bold text-on-surface">مهندس شریفی</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">مدیر ارشد سامانه</div>
+</div>
+<div class="w-9 h-9 rounded-full ring-2 ring-primary/20 overflow-hidden bg-primary-fixed flex items-center justify-center text-primary font-bold">
+<img class="w-full h-full object-cover" data-alt="Professional studio portrait of an Iranian senior technical operations director with a modern trimmed beard wearing business attire against a calm ambient studio lighting setup. The aesthetic is clean, sharp, corporate and reliable, adhering to the deep blue and slate palette of the Metro Yar design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3jm6WuZIIPO3Q5ENrvos3aOdA-cCINzIc2-1jcR2Kyn2DVb1rSeuPxukogKIYOScfsH7dvKGkF6RI10WnWwYizv72iSmm230ZLznpfRtBge_Yox-j_mrFoFlYl5mFHGnDoxf45nOfQ8vTb2JAdIn4HjWaDHngfr-CTdMBEDxiaQBFyQzWERmtFQ8jl4zFzCM6tLJI8dn0ZxqljJiwPKSaD0TGfVDR5N2Zm8ZJQg"/>
+</div>
+</div>
+</div>
+</header>
+<!-- ========================================================================= -->
+<!-- MAIN WORKSPACE / CONTENT CANVAS -->
+<!-- ========================================================================= -->
+<main class="mr-72 mt-16 p-8 flex-1 min-h-[calc(100vh-4rem)] max-w-[1600px] overflow-x-hidden">
+<!-- 1. Main Action Bar & Page Title -->
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 mb-6 border-b border-outline-variant/60">
+<div>
+<div class="flex items-center gap-3">
+<h1 class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">مدیریت تبلیغات، بنرها و اسپانسری خطوط</h1>
+<span class="bg-tertiary/10 text-tertiary px-3 py-1 rounded-full font-label-md text-label-md flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+            سامانه فعال و همگام با کلاینت
+          </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1.5 max-w-4xl">
+          پیکربندی کمپین‌های درون‌برنامه‌ای، زمان‌بندی نمایش، تفکیک جایگاه‌های مسافری و پایش تحلیلی نرخ کلیک (CTR) بدون نیاز به به‌روزرسانی اپلیکیشن
+        </p>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center flex-wrap gap-2.5">
+<!-- Emergency Kill Switch (PRD requirement) -->
+<button class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-error/40 text-error hover:bg-error-container hover:text-on-error-container font-label-lg text-label-lg transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[18px]" data-icon="power_settings_new">power_settings_new</span>
+<span>خاموش‌سازی اضطراری کل تبلیغات</span>
+</button>
+<!-- Export CSV/Excel -->
+<button class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-lg text-label-lg transition-all shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+<span>خروجی مالی (CSV)</span>
+</button>
+<!-- Primary CTA: Create Ad -->
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary/90 font-label-lg text-label-lg transition-all shadow-md active:scale-[0.98]">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+<span>ایجاد کمپین / بنر جدید</span>
+</button>
+</div>
+</div>
+<!-- 2. KPI Metric Cards (4 Bento/Metric Cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label-lg text-label-lg text-on-surface-variant">کمپین‌های فعال هم‌زمان</span>
+<div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]" data-icon="campaign">campaign</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl font-bold text-on-surface">۸ کمپین</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">از ۱۰ جایگاه اختصاص‌یافته</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-primary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span>۳ کمپین در انتظار شروع زمان‌بندی‌شده</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label-lg text-label-lg text-on-surface-variant">کل نمایش بنرها (Impression امروز)</span>
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]" data-icon="visibility">visibility</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl font-bold text-on-surface">۴۸۲,۱۰۰</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">نمایش در کلاینت</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-tertiary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+<span>+۱۲.۴٪ نسبت به روز گذشته در همین ساعت</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label-lg text-label-lg text-on-surface-variant">نرخ کلیک میانگین (CTR)</span>
+<div class="w-10 h-10 rounded-xl bg-tertiary-fixed/40 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[22px]" data-icon="ads_click">ads_click</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-xl text-headline-xl font-bold text-on-surface">۳.۸۲٪</span>
+<span class="font-body-sm text-body-sm text-tertiary font-bold">بسیار عالی</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="database">database</span>
+<span>۱۸,۴۱۵ کلیک ثبت‌شده مستقیم در D1</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label-lg text-label-lg text-on-surface-variant">درآمد تخمینی جاری ماهانه</span>
+<div class="w-10 h-10 rounded-xl bg-primary-fixed-dim/40 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]" data-icon="payments">payments</span>
+</div>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-xl text-headline-xl font-bold text-on-surface">۱۴۲,۵۰۰,۰۰۰</span>
+<span class="font-label-md text-label-md text-on-surface-variant">تومان</span>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px] text-tertiary" data-icon="verified_user">verified_user</span>
+<span>پایش شفاف بدون اشتراک‌گذاری دیتای مسافر</span>
+</div>
+</div>
+</div>
+<!-- 3. Main Content Split: Left (70%) Table & Right (30%) Live Device Preview -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+<!-- LEFT SECTION: 70% Width (approx 8 of 12 columns) -->
+<div class="xl:col-span-8 space-y-6">
+<!-- Table Container Card -->
+<div class="bg-surface-container-lowest border border-outline-variant/70 rounded-xl shadow-sm overflow-hidden">
+<!-- Filter Tabs & Quick Search -->
+<div class="p-5 border-b border-outline-variant/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+<button class="px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md whitespace-nowrap shadow-sm">
+                همه کمپین‌ها (۱۱)
+              </button>
+<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md whitespace-nowrap transition-colors">
+                فعال در حال نمایش
+              </button>
+<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md whitespace-nowrap transition-colors">
+                زمان‌بندی‌شده
+              </button>
+<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md whitespace-nowrap transition-colors">
+                منقضی / بایگانی
+              </button>
+<button class="px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md whitespace-nowrap transition-colors">
+                بنرهای بومی (Native)
+              </button>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
+<span>فیلتر جایگاه</span>
+</button>
+</div>
+</div>
+<!-- Campaigns Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="bg-surface-container-low/60 border-b border-outline-variant/60 text-on-surface-variant font-label-md text-label-md">
+<th class="py-3.5 px-4 font-semibold">عنوان و تصویر بنر</th>
+<th class="py-3.5 px-4 font-semibold">حامی مالی / سفارش‌دهنده</th>
+<th class="py-3.5 px-4 font-semibold">جایگاه نمایش در اپ</th>
+<th class="py-3.5 px-4 font-semibold">بازه زمانی</th>
+<th class="py-3.5 px-4 font-semibold">آمار کلیک / نمایش</th>
+<th class="py-3.5 px-4 font-semibold text-center">وضعیت زنده</th>
+<th class="py-3.5 px-4 font-semibold text-center">عملیات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/40 font-body-sm text-body-sm">
+<!-- Row 1: سامان پرداخت / بانک شهر -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-4">
+<div class="flex items-center gap-3">
+<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Digital promotional advertising banner graphic for metro smart ticket card recharge offering ten percent bonus, modern minimalist Persian graphic style with subway card illustration and blue tones matching the Metro Yar design system palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS-SSmyglF-1Z7-6hyWsmPnzzocHWr_zml0bSTLi3s1uOjYzUBgiDBevnZQOMoBPt_W8RKeg0rX19J5M4ZHTdDwhij8hf5nhh4RxNwsnl8xNGvN_aMyZOfoz5_BA0U7QGFcUkUOMzz1TrDCS4LnxX1Qd_Z6RmaedKK71ETNGSNqhq6I5R9UsdMIfe9T9LY90XnrjWPVbAzMOc6E7jq5PaqbxtkfW6J-jc-vENvNQ"/>
+</div>
+<div>
+<span class="font-title-md text-[14px] font-bold text-on-surface block">شارژ سریع کارت بلیت با ۱۰٪ هدیه</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-1092 • لینک مستقیم پرداخت</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-on-surface">
+<span class="font-medium">سامان پرداخت / بانک شهر</span>
+<span class="block text-on-surface-variant font-label-sm text-label-sm">قرارداد فصلی مصوب</span>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary-fixed text-primary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="view_carousel">view_carousel</span>
+                      بالای صفحه اصلی و تب ذخیره‌ها
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface-variant">
+<span>تا ۲۹ اسفند ۱۴۰۳</span>
+<span class="block text-label-sm text-tertiary">۲۴ روز باقی‌مانده</span>
+</td>
+<td class="py-4 px-4">
+<div class="space-y-1">
+<div class="flex items-center justify-between text-label-sm">
+<span class="font-bold text-on-surface">۱۸۵K نمایش</span>
+<span class="text-primary font-bold">۸.۲K کلیک (۴.۴٪)</span>
+</div>
+<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 78%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+</label>
+</td>
+<td class="py-4 px-4 text-center">
+<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+</button>
+<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: بیمه حوادث سفر مسافران مترو -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-4">
+<div class="flex items-center gap-3">
+<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Digital banner for public passenger travel insurance provided by Iranian insurance company, showcasing shield icon, train silhouette in vibrant teal and corporate deep blue, crisp professional layout adhering to high contrast typography standards." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTkC_o8AC8Hu2IRJxbUMSYPuHXNHTc0G3g6L2J27R2Nou94rYosRPJLFyHKuxBTHVoKI6EqVxBN_ZYZb03MsZ-8yhl0ehBv3fdRD6BsFmE_b-VpgNCVvmTllicwFBa6NMP4bk7nTScSS5JT57MhwdHy_NiGwRts7v322pcxUHUy9QwMjUGDmBGq7c0D0HEN4Vr7a6dmdj91xKcCY_SDWLvUbWbcb9NssVbLGUc7w"/>
+</div>
+<div>
+<span class="font-title-md text-[14px] font-bold text-on-surface block">بیمه حوادث سفر مسافران مترو</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-1088 • پوشش سراسری</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-on-surface">
+<span class="font-medium">بیمه ایران</span>
+<span class="block text-on-surface-variant font-label-sm text-label-sm">اسپانسر رسمی ایستگاه‌ها</span>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="map">map</span>
+                      جزئیات ایستگاه و پایین نقشه
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface-variant">
+<span>۱۵ بهمن - ۱۵ فروردین</span>
+<span class="block text-label-sm text-tertiary">فعال در تمام ساعات</span>
+</td>
+<td class="py-4 px-4">
+<div class="space-y-1">
+<div class="flex items-center justify-between text-label-sm">
+<span class="font-bold text-on-surface">۹۴K نمایش</span>
+<span class="text-primary font-bold">۳.۱K کلیک (۳.۳٪)</span>
+</div>
+<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 55%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+</label>
+</td>
+<td class="py-4 px-4 text-center">
+<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+</button>
+<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: فودکورت ایستگاه تقاطعی میدان ولیعصر -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-4">
+<div class="flex items-center gap-3">
+<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Appetizing banner for a food court located directly inside a major metro interchange junction in Tehran, showing warm cafe lighting, modern Persian interior, fresh food photography with clean typography and subtle discount tag." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSzS6evzf2X9UqJHJwEPS1bw8-rRhvT8Qvn3AwyxIoryvHliCUG8q0AuuBR5Z6HozkrCyxD9SjsOl4I0rLYUAy2DyLaehx_FbcE0uQANWNZVYcfs_1cIdf0h4-GvXPriem8aZBQnESfnyhqezPEUPiRy0VXNpRa1joqzKRXfng1iJwN5WQOq_264zZRcjhxgzpuDQ38GSvTzNvh8OdchYidi6ILeUEl2_i8rWxVg"/>
+</div>
+<div>
+<span class="font-title-md text-[14px] font-bold text-on-surface block">فودکورت ایستگاه تقاطعی میدان ولیعصر</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-1074 • ویژه خط ۳ و ۶</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-on-surface">
+<span class="font-medium">کسب‌وکارهای ایستگاهی</span>
+<span class="block text-on-surface-variant font-label-sm text-label-sm">قرارداد بهره‌برداری غرفه‌ها</span>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary-fixed/50 text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="store">store</span>
+                      پاپ‌آپ امکانات پیرامون ایستگاه
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface-variant">
+<span>تا پایان هفته</span>
+<span class="block text-label-sm text-secondary">مهلت محدود</span>
+</td>
+<td class="py-4 px-4">
+<div class="space-y-1">
+<div class="flex items-center justify-between text-label-sm">
+<span class="font-bold text-on-surface">۶۲K نمایش</span>
+<span class="text-primary font-bold">۱.۹K کلیک (۳.۰٪)</span>
+</div>
+<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 42%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+</label>
+</td>
+<td class="py-4 px-4 text-center">
+<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+</button>
+<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: تخفیف ویژه اسنپ/تپسی برای خروجی‌های مترو -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-4">
+<div class="flex items-center gap-3">
+<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Digital ride hailing taxi promotion card with green and yellow accent colors, illustrating last mile connectivity from subway exits with smartphone GPS routing graphic and sleek Persian discount voucher lettering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHuH30inHFKJGUOkJc4SDn5xsX5vG2PhsRA5CjFtlGGe9OsAzSm8CnbSWwRSy_7G_CnX9sCl127kteiX7BOgrHMlakNmedeojY6xXu5ShXgkqQuffVuXVeij-w4rlVO0FCcWb7eUZfwUELMT-59DkKQoI2z8kfu9dKTKJG3Jozp9Zq9A7HBsFdPgh06iBIZa0pjO1D_WW2EqS7Y_mqwqrPiPaaM-c8K-tMA7PR2g"/>
+</div>
+<div>
+<span class="font-title-md text-[14px] font-bold text-on-surface block">تخفیف ویژه تاکسی برای خروجی‌های مترو</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-1065 • اتصال آخرین کیلومتر</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-on-surface">
+<span class="font-medium">تاکسی‌های اینترنتی</span>
+<span class="block text-on-surface-variant font-label-sm text-label-sm">طرح تلفیقی سفر چندوجهی</span>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="local_taxi">local_taxi</span>
+                      خروجی تجریش و تئاتر شهر
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface-variant">
+<span class="text-on-surface font-medium">ساعات اوج ۱۷ تا ۲۱</span>
+<span class="block text-label-sm text-primary">زمان‌بندی هوشمند خودکار</span>
+</td>
+<td class="py-4 px-4">
+<div class="space-y-1">
+<div class="flex items-center justify-between text-label-sm">
+<span class="font-bold text-on-surface">۳۸K نمایش</span>
+<span class="text-primary font-bold">۲.۴K کلیک (۶.۳٪)</span>
+</div>
+<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 88%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-center">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-primary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="timer">timer</span>
+                      زمان‌بندی
+                    </span>
+</td>
+<td class="py-4 px-4 text-center">
+<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+</button>
+<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5: کمپین فرهنگ ترافیک پاک شهرداری تهران -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-4">
+<div class="flex items-center gap-3">
+<div class="w-14 h-9 rounded-lg overflow-hidden border border-outline-variant/50 shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Clean civic culture social campaign banner promoting green public transit and bicycle usage in metropolitan Tehran with stylized transit lines, botanical green leaves, and modern friendly Iranian typography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAcJYsyZDnVJNWzMoMo4HwsILCIECbhhY3wWPsAf7ZEholZVScK7YNtYEQsCVQnSHAH8LWrxcCFE4a0WpQcO-LQj7Nweu0X2Inc7C7IN8uSa_D12eaGjJhnC4U7Dcztt2lBF8OjBLpzcSjmXzz9ATglbHPx0eVNXEc6Yzj4SCOrW257yRCno4uuGXIIcrnbpA6RN0C3prKo5tRIsRxrpnIfSbXE2yUKhEAH9OHfw"/>
+</div>
+<div>
+<span class="font-title-md text-[14px] font-bold text-on-surface block">کمپین فرهنگ ترافیک پاک</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">شناسه: #BNR-0994 • پیام شهروندی</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-on-surface">
+<span class="font-medium">معاونت حمل‌ونقل و ترافیک</span>
+<span class="block text-on-surface-variant font-label-sm text-label-sm">غیرتجاری / عام‌المنفعه</span>
+</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-container text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
+                      انتهای تنظیمات و درباره ما
+                    </span>
+</td>
+<td class="py-4 px-4 text-on-surface-variant">
+<span>دائمی بدون انقضا</span>
+<span class="block text-label-sm text-tertiary">سهمیه فرهنگی</span>
+</td>
+<td class="py-4 px-4">
+<div class="space-y-1">
+<div class="flex items-center justify-between text-label-sm">
+<span class="font-bold text-on-surface">۱۰۳K نمایش</span>
+<span class="text-on-surface-variant font-bold">۱.۱K کلیک (۱.۰٪)</span>
+</div>
+<div class="w-28 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-outline rounded-full" style="width: 25%;"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tertiary"></div>
+</label>
+</td>
+<td class="py-4 px-4 text-center">
+<div class="flex items-center justify-center gap-1 text-on-surface-variant">
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="ویرایش بنر">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 hover:text-primary hover:bg-surface-container rounded-lg transition-colors" title="گزارش تفصیلی">
+<span class="material-symbols-outlined text-[18px]" data-icon="bar_chart">bar_chart</span>
+</button>
+<button class="p-1.5 hover:text-error hover:bg-error-container rounded-lg transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer Pagination & Summary -->
+<div class="p-4 bg-surface-container-low/40 border-t border-outline-variant/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-on-surface-variant font-label-md text-label-md">
+<span>نمایش ۱ تا ۵ از مجموع ۱۱ بنر ثبت‌شده در پایگاه داده لبه</span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface disabled:opacity-50">قبلی</button>
+<button class="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-bold">۱</button>
+<button class="px-3 py-1.5 rounded-lg hover:bg-surface-container text-on-surface">۲</button>
+<button class="px-3 py-1.5 rounded-lg hover:bg-surface-container text-on-surface">۳</button>
+<button class="px-2.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface">بعدی</button>
+</div>
+</div>
+</div>
+<!-- Ad Placement Slots Configuration Strip -->
+<div class="bg-surface-container-lowest border border-outline-variant/70 rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[24px]" data-icon="space_dashboard">space_dashboard</span>
+<h3 class="font-title-lg text-title-lg font-bold text-on-surface">ظرفیت و وضعیت جایگاه‌های مجاز درون‌برنامه‌ای</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">همگام‌سازی لحظه‌ای با Cloudflare Workers KV</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Slot 1 -->
+<div class="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-2">
+<span class="font-title-md text-[13px] font-bold text-on-surface">هدر صفحه اصلی</span>
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm">تکمیل ظرفیت</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">بنر شاخص بالای لیست خطوط و قطارهای نزدیک</p>
+<div class="mt-3 flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface font-semibold">۱ بنر فعال</span>
+<span class="text-tertiary">۱۰۰٪ بهره‌وری</span>
+</div>
+</div>
+<!-- Slot 2 -->
+<div class="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-2">
+<span class="font-title-md text-[13px] font-bold text-on-surface">بین ایستگاه‌های مسیریابی</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm">۱ جایگاه آزاد</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">کارت فید بومی میان گره‌های تعویض خط</p>
+<div class="mt-3 flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface font-semibold">۱ فعال / ۲ ظرفیت</span>
+<span class="text-primary">۵۰٪ اشغال</span>
+</div>
+</div>
+<!-- Slot 3 -->
+<div class="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/30 hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-2">
+<span class="font-title-md text-[13px] font-bold text-on-surface">خروجی‌ها و تاکسی‌ها</span>
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm">بهره‌برداری فعال</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">بنر اختصاصی تاکسی‌های آنلاین و اتوبوس BRT</p>
+<div class="mt-3 flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface font-semibold">۱ بنر اختصاصی</span>
+<span class="text-tertiary">ساعات اوج</span>
+</div>
+</div>
+<!-- Slot 4 -->
+<div class="p-3.5 rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-2">
+<span class="font-title-md text-[13px] font-bold text-on-surface">پاپ‌آپ امکانات ایستگاه</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm">آماده رزرو</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">کارت تبلیغاتی شناور در مدال خدمات ایستگاه</p>
+<div class="mt-3 flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface-variant">بدون کمپین فعال</span>
+<a class="text-primary hover:underline font-bold" href="#">+ اختصاص بنر</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT SECTION: 30% Width (approx 4 of 12 columns) - Live Mobile Preview & Compliance -->
+<div class="xl:col-span-4 space-y-6">
+<!-- Mobile Frame Mockup Container -->
+<div class="bg-surface-container-lowest border border-outline-variant/70 rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="smartphone">smartphone</span>
+<h2 class="font-title-lg text-title-lg font-bold text-on-surface">پیش‌نمایش زنده در گوشی مسافر</h2>
+</div>
+<span class="inline-flex items-center gap-1 text-tertiary font-label-sm text-label-sm bg-tertiary/10 px-2.5 py-1 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+              رندر مستقیم کلاینت
+            </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">
+            مشاهده محل استقرار بنر «شارژ سریع کارت بلیت با ۱۰٪ هدیه» در رابط کاربری مسافر (صفحه اصلی اپلیکیشن درمسیر)
+          </p>
+<!-- Smartphone Chassis -->
+<div class="w-full max-w-[320px] mx-auto bg-inverse-surface rounded-[40px] p-3 shadow-xl ring-1 ring-outline-variant/40">
+<!-- Screen Area -->
+<div class="bg-[#F8FAFC] rounded-[32px] overflow-hidden border border-outline-variant/30 flex flex-col h-[560px] relative text-right">
+<!-- Phone Status Bar -->
+<div class="bg-surface-container-lowest pt-3 px-5 pb-2 flex items-center justify-between text-on-surface font-label-sm text-[11px] border-b border-outline-variant/20">
+<span class="font-bold">۰۹:۴۱</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[13px]" data-icon="wifi">wifi</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="signal_cellular_alt">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[13px]" data-icon="battery_full">battery_full</span>
+</div>
+</div>
+<!-- Mini App Header -->
+<div class="bg-surface-container-lowest px-4 py-3 border-b border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[16px]" data-icon="subway" style="font-variation-settings: 'FILL' 1;">subway</span>
+</div>
+<div>
+<span class="font-title-md text-[13px] font-bold text-on-surface block leading-tight">درمسیر</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">متروی تهران و حومه</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="search">search</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="tune">tune</span>
+</div>
+</div>
+<!-- Phone Content Scroll Area -->
+<div class="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar">
+<!-- [THE AD BANNER UNDER PREVIEW] -->
+<div class="relative group rounded-xl overflow-hidden border-2 border-primary shadow-md bg-gradient-to-l from-primary to-primary-container p-3 text-white transition-transform hover:scale-[1.01]">
+<div class="absolute top-2 left-2 bg-black/40 backdrop-blur-sm text-white px-1.5 py-0.5 rounded font-label-sm text-[9px] flex items-center gap-0.5">
+<span>آگهی</span>
+<span class="material-symbols-outlined text-[10px]" data-icon="campaign">campaign</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-white/10 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/20">
+<span class="material-symbols-outlined text-[24px] text-on-primary-container" data-icon="credit_card">credit_card</span>
+</div>
+<div class="pr-1">
+<span class="font-title-md text-[12px] font-bold block leading-snug">شارژ سریع کارت بلیت با ۱۰٪ هدیه</span>
+<span class="font-body-sm text-[10px] text-on-primary-container block mt-0.5">سامان پرداخت / بانک شهر</span>
+</div>
+</div>
+<div class="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between">
+<span class="font-label-sm text-[9px] text-white/80">بدون نیاز به صف در گیت ورودی</span>
+<span class="font-label-sm text-[10px] bg-white text-primary font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
+<span>شارژ آنی</span>
+<span class="material-symbols-outlined text-[11px]" data-icon="chevron_left">chevron_left</span>
+</span>
+</div>
+</div>
+<!-- Fake Metro App Content (Lines chips) -->
+<div>
+<span class="font-label-md text-[11px] font-bold text-on-surface block mb-2">خطوط فعال امروز</span>
+<div class="flex gap-1.5 overflow-x-auto no-scrollbar">
+<div class="px-2.5 py-1 rounded-lg bg-[#BC000C] text-white font-label-sm text-[10px] shrink-0 font-bold">خط ۱ (تجریش - کهریزک)</div>
+<div class="px-2.5 py-1 rounded-lg bg-[#00417F] text-white font-label-sm text-[10px] shrink-0 font-bold">خط ۲ (صادقیه - فرهنگسرا)</div>
+<div class="px-2.5 py-1 rounded-lg bg-[#006638] text-white font-label-sm text-[10px] shrink-0 font-bold">خط ۴ (کلاهدوز - ارم سبز)</div>
+</div>
+</div>
+<!-- Fake Station Arrival Card -->
+<div class="bg-white rounded-xl p-3 border border-outline-variant/50 shadow-sm space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-[#BC000C]"></span>
+<span class="font-title-md text-[12px] font-bold text-on-surface">ایستگاه شهید بهشتی</span>
+</div>
+<span class="font-label-sm text-[10px] text-tertiary font-bold">ورود قطار تا ۲ دقیقه</span>
+</div>
+<div class="flex items-center justify-between text-[10px] text-on-surface-variant pt-1 border-t border-slate-100">
+<span>به سمت کهریزک (سکوی ۱)</span>
+<span class="material-symbols-outlined text-[14px]" data-icon="chevron_left">chevron_left</span>
+</div>
+</div>
+<!-- Secondary Ad Slot Mockup -->
+<div class="rounded-xl border border-dashed border-outline-variant/80 p-2.5 bg-surface-container-low/40 flex items-center justify-between text-[10px] text-on-surface-variant">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="info">info</span>
+<span>پیام فرهنگ ترافیک پاک شهرداری</span>
+</div>
+<span class="font-label-sm text-[9px] bg-white px-1.5 py-0.5 rounded border border-outline-variant/40">اسپانسر</span>
+</div>
+</div>
+<!-- Fake App Bottom Navigation Bar -->
+<div class="bg-white/95 backdrop-blur-md border-t border-outline-variant/40 py-2 px-3 flex items-center justify-around text-on-surface-variant text-[10px]">
+<div class="flex flex-col items-center gap-0.5 text-primary font-bold">
+<span class="material-symbols-outlined text-[18px]" data-icon="train" style="font-variation-settings: 'FILL' 1;">train</span>
+<span>خطوط</span>
+</div>
+<div class="flex flex-col items-center gap-0.5">
+<span class="material-symbols-outlined text-[18px]" data-icon="alt_route">alt_route</span>
+<span>مسیریاب</span>
+</div>
+<div class="flex flex-col items-center gap-0.5">
+<span class="material-symbols-outlined text-[18px]" data-icon="explore">explore</span>
+<span>امکانات</span>
+</div>
+<div class="flex flex-col items-center gap-0.5">
+<span class="material-symbols-outlined text-[18px]" data-icon="settings">settings</span>
+<span>تنظیمات</span>
+</div>
+</div>
+<!-- Home Bar Indicator -->
+<div class="bg-white pb-1 pt-0.5 flex justify-center">
+<div class="w-24 h-1 rounded-full bg-slate-300"></div>
+</div>
+</div>
+</div>
+<!-- Quick Preview Device Switcher -->
+<div class="mt-4 pt-3 border-t border-outline-variant/50 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>مدل شبیه‌سازی: iPhone 15 Pro</span>
+<div class="flex items-center gap-2">
+<button class="hover:text-primary underline">آزمون رندر تبلت</button>
+<span>•</span>
+<button class="hover:text-primary underline">بررسی حالت تیره</button>
+</div>
+</div>
+</div>
+<!-- Strict Data Privacy & Policy Notice (PRD requirement) -->
+<div class="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 shadow-sm space-y-3">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-lg bg-tertiary-fixed flex items-center justify-center text-tertiary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]" data-icon="verified_user">verified_user</span>
+</div>
+<div>
+<h4 class="font-title-md text-[14px] font-bold text-on-surface">سیاست صیانت از حریم خصوصی مسافران</h4>
+<p class="font-body-sm text-[12px] text-on-surface-variant leading-relaxed mt-1">
+                تضمین حریم خصوصی درمسیر: داده‌های مکان زنده مسافر و تاریخچه سفرهای ثبت‌شده تحت هیچ شرایطی در اختیار آگهی‌دهندگان قرار نمی‌گیرد. نمایش بنرها صرفاً بر مبنای ایستگاه انتخاب‌شده یا جایگاه‌های عمومی اپلیکیشن بدون ثبت کوکی ردیابی انجام می‌گردد.
+              </p>
+</div>
+</div>
+<div class="pt-2 border-t border-outline-variant/40 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+<span>تاییدیه شماره: MRT-PRIVACY-403</span>
+<a class="text-primary hover:underline font-bold" href="#">مشاهده منشور انطباق</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

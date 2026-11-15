@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>درمسیر | تنظیمات سامانه و نسخه‌گذاری اپلیکیشن</title>
+<!-- Google Fonts: Vazirmatn -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Forms and Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container": "#e7eeff",
+            "surface-tint": "#1a5eac",
+            "surface-container-low": "#f0f3ff",
+            "inverse-on-surface": "#ecf1ff",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-secondary-container": "#fffbff",
+            "on-secondary-fixed-variant": "#930007",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed": "#00210e",
+            "tertiary-fixed-dim": "#61de92",
+            "surface-dim": "#cfdaf2",
+            "primary-fixed": "#d5e3ff",
+            "error-container": "#ffdad6",
+            "surface-container-high": "#dee8ff",
+            "surface": "#f9f9ff",
+            "on-primary": "#ffffff",
+            "secondary-container": "#e32220",
+            "surface-variant": "#d8e3fb",
+            "on-error-container": "#93000a",
+            "primary-container": "#0d58a6",
+            "outline-variant": "#c2c6d3",
+            "on-tertiary-container": "#6ae79a",
+            "on-primary-container": "#b6d0ff",
+            "error": "#ba1a1a",
+            "surface-bright": "#f9f9ff",
+            "inverse-surface": "#263143",
+            "tertiary-container": "#006638",
+            "secondary": "#bc000c",
+            "on-tertiary-fixed-variant": "#00522c",
+            "on-error": "#ffffff",
+            "background": "#f9f9ff",
+            "primary": "#00417f",
+            "surface-container-highest": "#d8e3fb",
+            "on-primary-fixed-variant": "#004689",
+            "on-surface-variant": "#424751",
+            "tertiary": "#004c28",
+            "secondary-fixed": "#ffdad5",
+            "primary-fixed-dim": "#a8c8ff",
+            "outline": "#727782",
+            "on-background": "#111c2d",
+            "on-surface": "#111c2d",
+            "inverse-primary": "#a8c8ff",
+            "on-secondary": "#ffffff",
+            "on-secondary-fixed": "#410001",
+            "on-primary-fixed": "#001b3c",
+            "tertiary-fixed": "#7efbac",
+            "on-tertiary": "#ffffff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "margin": "1rem",
+            "gutter": "1rem",
+            "space-xl": "2rem",
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "body-lg": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "body-md": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }],
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Custom scrollbar for modern civic feel */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f0f3ff;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c2c6d3;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0d58a6;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen overflow-x-hidden selection:bg-primary selection:text-on-primary">
+<!-- ========================================================================= -->
+<!-- 1. SIDE NAVIGATION BAR (SHARED COMPONENT: SideNavBar)                      -->
+<!-- ========================================================================= -->
+<aside class="fixed right-0 top-0 h-full w-72 flex flex-col z-40 bg-surface-container-lowest dark:bg-inverse-surface border-l border-outline-variant dark:border-outline shadow-sm">
+<!-- Brand / Header Section -->
+<div class="px-6 py-5 border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-title-lg" data-icon="alt_route">alt_route</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-headline-md font-headline-md font-bold text-primary dark:text-inverse-primary">درمسیر</span>
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-high text-primary border border-outline-variant">نسخه ۲.۴</span>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant truncate max-w-[150px]">پنل مدیریت سامانه ناوبری شهری</p>
+</div>
+</div>
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary-fixed-dim opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-tertiary-container"></span>
+</span>
+</div>
+<!-- Navigation Tab Links (8 Items from JSON) -->
+<!-- Active Tab Autonomously Mapped: "تنظیمات سامانه" (Index 5) -->
+<nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+<!-- Item 0: داشبورد مدیریتی -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="dashboard">dashboard</span>
+<span>داشبورد مدیریتی</span>
+</a>
+<!-- Item 1: کاربران -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="group">group</span>
+<span>کاربران</span>
+</a>
+<!-- Item 2: خطوط و ایستگاه‌ها -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="alt_route">alt_route</span>
+<span>خطوط و ایستگاه‌ها</span>
+</a>
+<!-- Item 3: تبلیغات و بنرها -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="campaign">campaign</span>
+<span>تبلیغات و بنرها</span>
+</a>
+<!-- Item 4: دستیار صوتی و آواشناسی -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="record_voice_over">record_voice_over</span>
+<span>دستیار صوتی و آواشناسی</span>
+</a>
+<!-- Item 5: تنظیمات سامانه (ACTIVE TAB) -->
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container dark:bg-primary-fixed dark:text-on-primary-fixed rounded-xl px-4 py-3 font-title-md text-title-md transition-all shadow-sm active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-surface-container-lowest" data-icon="settings" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="text-surface-container-lowest font-bold">تنظیمات سامانه</span>
+<span class="mr-auto w-2 h-2 rounded-full bg-surface-container-lowest"></span>
+</a>
+<!-- Item 6: گزارش‌ها و تحلیل داده -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="monitoring">monitoring</span>
+<span>گزارش‌ها و تحلیل داده</span>
+</a>
+<!-- Item 7: امنیت و وقایع‌نگاری -->
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-inverse-on-surface rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="security">security</span>
+<span>امنیت و وقایع‌نگاری</span>
+</a>
+</nav>
+<!-- Footer Secondary Links & CTA from JSON -->
+<div class="p-4 border-t border-outline-variant space-y-2">
+<div class="flex items-center justify-between px-2 text-label-md font-label-md text-on-surface-variant">
+<a class="flex items-center gap-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-body-sm" data-icon="help">help</span>
+<span>پشتیبانی فنی</span>
+</a>
+<a class="flex items-center gap-1.5 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-body-sm" data-icon="api">api</span>
+<span>مستندات API</span>
+</a>
+</div>
+<button class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-error-container text-error hover:bg-error-container transition-colors text-label-md font-label-md">
+<span class="material-symbols-outlined text-body-md" data-icon="logout">logout</span>
+<span>خروج از حساب</span>
+</button>
+</div>
+</aside>
+<!-- ========================================================================= -->
+<!-- 2. TOP APP BAR (SHARED COMPONENT: TopNavBar)                               -->
+<!-- ========================================================================= -->
+<header class="fixed top-0 left-0 right-72 z-30 h-16 flex items-center justify-between px-8 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant shadow-sm">
+<!-- Right side (RTL Leading): Search Settings & Cluster Indicator -->
+<div class="flex items-center gap-4 flex-1 max-w-xl">
+<div class="relative w-80">
+<span class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-title-md" data-icon="search">search</span>
+</span>
+<input class="w-full pl-4 pr-10 py-1.5 rounded-lg border border-outline-variant bg-surface text-on-surface placeholder:text-outline text-body-sm font-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="جستجو در کلیدهای تنظیمات و پیکربندی ابری..." type="text"/>
+</div>
+<!-- Live Edge Infrastructure Sync Status Indicator -->
+<div class="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant text-label-sm font-label-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span>
+<span class="text-primary font-semibold">Production</span>
+<span class="text-outline">|</span>
+<span class="text-on-surface-variant">Cloudflare D1/KV Synced</span>
+<span class="text-label-sm font-label-sm bg-surface-container-lowest px-1.5 py-0.5 rounded text-tertiary font-mono">22ms</span>
+</div>
+</div>
+<!-- Left side (RTL Trailing): Actions and Profile -->
+<div class="flex items-center gap-3">
+<!-- Trailing Action Icons -->
+<button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="اعلانات سامانه">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary-container"></span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="زمان‌بندی همگام‌سازی">
+<span class="material-symbols-outlined" data-icon="schedule">schedule</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="وضعیت کلاستر DNS">
+<span class="material-symbols-outlined" data-icon="dns">dns</span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-1"></div>
+<!-- Admin Profile Entity -->
+<div class="flex items-center gap-3 pr-2 pl-1 py-1 rounded-xl hover:bg-surface-container transition-colors cursor-pointer">
+<div class="w-9 h-9 rounded-lg bg-surface-container-highest border border-outline-variant flex items-center justify-center font-bold text-primary text-title-md">
+          ع‌س
+        </div>
+<div class="text-right">
+<p class="text-label-md font-label-md text-on-surface leading-tight font-bold">علی‌رضا ستوده</p>
+<p class="text-label-sm font-label-sm text-outline">مدیر ارشد سامانه</p>
+</div>
+<span class="material-symbols-outlined text-outline text-title-md" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</header>
+<!-- ========================================================================= -->
+<!-- MAIN WORKSPACE CANVAS                                                     -->
+<!-- ========================================================================= -->
+<main class="mr-72 pt-20 px-8 pb-16 min-h-screen">
+<!-- Top Action & Version Release Banner -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-outline-variant">
+<div>
+<div class="flex items-center gap-2 text-label-md font-label-md text-outline mb-1">
+<span>سامانه ناوبری درمسیر</span>
+<span class="material-symbols-outlined text-body-sm" data-icon="chevron_left">chevron_left</span>
+<span>هسته ابری Workers</span>
+<span class="material-symbols-outlined text-body-sm" data-icon="chevron_left">chevron_left</span>
+<span class="text-primary font-bold">تنظیمات سامانه و نسخه‌گذاری</span>
+</div>
+<h1 class="text-headline-lg font-headline-lg text-on-surface">تنظیمات عمومی سامانه و مدیریت نسخه‌های اپلیکیشن</h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">پیکربندی پارامترهای موتور مسیربندی، اعمال فورس‌آپدیت و کنترل لبه شبکه توزیع بار Cloudflare</p>
+</div>
+<!-- Action Buttons & Kill Switch -->
+<div class="flex flex-wrap items-center gap-3">
+<!-- Emergency Maintenance Mode Kill-Switch Card -->
+<div class="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2 shadow-sm">
+<div class="text-right">
+<p class="text-label-md font-label-md font-bold text-secondary">حالت نگهداری اضطراری</p>
+<p class="text-label-sm font-label-sm text-outline">قطع موقت ترافیک مسافران</p>
+</div>
+<div class="flex items-center gap-2 pr-2 border-r border-outline-variant">
+<span class="text-label-sm font-label-sm font-bold text-outline">اپلیکیشن:</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+<span class="text-label-sm font-label-sm font-bold text-outline mr-2">پنل وب:</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Backup Secondary Action -->
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container transition-all active:scale-[0.98] text-label-md font-label-md shadow-sm">
+<span class="material-symbols-outlined text-outline" data-icon="cloud_download">cloud_download</span>
+<span>پشتیبان‌گیری اضطراری D1 / R2</span>
+</button>
+<!-- Push Config to Edge Primary Button -->
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-container text-surface-container-lowest hover:bg-primary transition-all active:scale-[0.98] text-label-md font-label-md shadow-sm">
+<span class="material-symbols-outlined" data-icon="publish">publish</span>
+<span>انتشار نسخه جدید یا تغییر فوری پیکربندی (Push Config)</span>
+</button>
+</div>
+</div>
+<!-- ======================================================================= -->
+<!-- 3. KPI & SYSTEM HEALTH CARDS (Bento Grid)                               -->
+<!-- ======================================================================= -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+<!-- Card 1: Active Android Version -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 shadow-sm hover:border-primary transition-all">
+<div class="flex items-center justify-between mb-3">
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">آخرین نسخه پایدار اندروید</span>
+<span class="p-2 rounded-xl bg-surface-container text-primary">
+<span class="material-symbols-outlined text-title-lg" data-icon="smartphone">smartphone</span>
+</span>
+</div>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="text-headline-xl font-headline-xl font-black text-on-surface font-mono">v2.4.0</span>
+<span class="text-label-sm font-label-sm text-tertiary-container bg-surface-container-low px-2 py-0.5 rounded-full font-bold">بیلد #140308</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2 mb-2">
+<div class="bg-primary h-2 rounded-full" style="width: 91.4%"></div>
+</div>
+<p class="text-body-sm font-body-sm text-outline flex items-center justify-between">
+<span>پوشش کاربران فعال:</span>
+<span class="font-bold text-on-surface">۹۱.۴٪ ناوگان</span>
+</p>
+</div>
+<!-- Card 2: Force Update Gatekeeper -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 shadow-sm hover:border-secondary transition-all">
+<div class="flex items-center justify-between mb-3">
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">آستانه به‌روزرسانی اجباری</span>
+<span class="p-2 rounded-xl bg-error-container text-secondary">
+<span class="material-symbols-outlined text-title-lg" data-icon="gpp_bad">gpp_bad</span>
+</span>
+</div>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="text-headline-xl font-headline-xl font-black text-secondary font-mono">v2.2.0</span>
+<span class="text-label-sm font-label-sm text-error bg-error-container px-2 py-0.5 rounded-full font-bold">Force Active</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2 mb-2">
+<div class="bg-secondary-container h-2 rounded-full" style="width: 100%"></div>
+</div>
+<p class="text-body-sm font-body-sm text-outline flex items-center justify-between">
+<span>مسدودسازی API v1:</span>
+<span class="font-bold text-secondary">۸.۶٪ کاربران ناسازگار</span>
+</p>
+</div>
+<!-- Card 3: Cloudflare D1 & R2 Storage -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 shadow-sm hover:border-primary transition-all">
+<div class="flex items-center justify-between mb-3">
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">پایگاه D1 و مخزن ابری R2</span>
+<span class="p-2 rounded-xl bg-surface-container text-primary">
+<span class="material-symbols-outlined text-title-lg" data-icon="database">database</span>
+</span>
+</div>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="text-headline-xl font-headline-xl font-black text-on-surface font-mono">۲۸.۴ <span class="text-title-lg font-bold">GB</span></span>
+<span class="text-label-sm font-label-sm text-tertiary-container bg-surface-container-low px-2 py-0.5 rounded-full font-bold">لبه ایران/اروپا</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2 mb-2">
+<div class="bg-tertiary-container h-2 rounded-full" style="width: 28%"></div>
+</div>
+<p class="text-body-sm font-body-sm text-outline flex items-center justify-between">
+<span>میانگین پاسخ D1:</span>
+<span class="font-bold text-tertiary-container font-mono">&lt; 21.8 ms</span>
+</p>
+</div>
+<!-- Card 4: Edge KV Cache Hit-rate -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 shadow-sm hover:border-primary transition-all">
+<div class="flex items-center justify-between mb-3">
+<span class="text-label-md font-label-md text-on-surface-variant font-medium">کش تنظیمات در Cloudflare KV</span>
+<span class="p-2 rounded-xl bg-surface-container text-primary">
+<span class="material-symbols-outlined text-title-lg" data-icon="bolt">bolt</span>
+</span>
+</div>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="text-headline-xl font-headline-xl font-black text-tertiary font-mono">۹۹.۲٪</span>
+<span class="text-label-sm font-label-sm text-tertiary-container bg-surface-container-low px-2 py-0.5 rounded-full font-bold">Global Edge</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2 mb-2">
+<div class="bg-tertiary-fixed-dim h-2 rounded-full" style="width: 99.2%"></div>
+</div>
+<p class="text-body-sm font-body-sm text-outline flex items-center justify-between">
+<span>طول عمر کلید (TTL):</span>
+<span class="font-bold text-on-surface font-mono">۳۰۰ ثانیه (۵ دقیقه)</span>
+</p>
+</div>
+</div>
+<!-- ======================================================================= -->
+<!-- 4. TAB NAVIGATION & DEEP CONFIGURATION FORMS                            -->
+<!-- ======================================================================= -->
+<div class="mt-8 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden">
+<!-- Visual Navigation Tabs for Configuration Areas -->
+<div class="flex border-b border-outline-variant px-6 bg-surface-container-low">
+<button class="py-4 px-5 border-b-2 border-primary text-primary font-bold text-title-md flex items-center gap-2">
+<span class="material-symbols-outlined text-title-lg" data-icon="badge">badge</span>
+<span>۱. برندینگ و هویت سامانه</span>
+</button>
+<button class="py-4 px-5 border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-medium text-title-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-title-lg" data-icon="system_update">system_update</span>
+<span>۲. قوانین فورس‌آپدیت و نسخه‌گذاری</span>
+<span class="px-1.5 py-0.5 text-label-sm rounded-full bg-secondary-fixed text-on-secondary-fixed font-bold">بحرانی</span>
+</button>
+<button class="py-4 px-5 border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-medium text-title-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-title-lg" data-icon="route">route</span>
+<span>۳. موتور مسیریاب و سرفاصله‌ها</span>
+</button>
+<button class="py-4 px-5 border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-medium text-title-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-title-lg" data-icon="lock_clock">lock_clock</span>
+<span>۴. سهمیه‌ها (Rate Limit) و کلیدها</span>
+</button>
+</div>
+<div class="p-8 space-y-10">
+<!-- =================================================================== -->
+<!-- SECTION 1: Brand & Application Identity                             -->
+<!-- =================================================================== -->
+<section class="space-y-6">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-6 bg-primary rounded-full"></span>
+<h2 class="text-headline-md font-headline-md text-on-surface">بخش ۱: اطلاعات هویتی و ارتباطی نرم‌افزار</h2>
+</div>
+<span class="text-label-sm font-label-sm text-outline">ذخیره خودکار در جدول app_metadata لایه D1</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- App Title -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">نام عمومی نرم‌افزار (فارسی)</label>
+<input class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary" type="text" value="درمسیر"/>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">عنوان نمایش داده شده در اعلان‌ها و هدر اپلیکیشن مسافر</p>
+</div>
+<!-- App Slogan -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">شعار رسمی سامانه</label>
+<input class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary" type="text" value="دستیار هوشمند سفر شهری و ناوگان مترو"/>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">استفاده در صفحه اسپلش و متادیتاهای اشتراک‌گذاری</p>
+</div>
+<!-- Privacy Policy Identifier -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">شناسه سند قوانین و حریم خصوصی</label>
+<div class="relative">
+<input class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-md focus:border-primary focus:ring-1 focus:ring-primary" type="text" value="MRT-PRIVACY-403"/>
+<span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-title-md" data-icon="verified_user">verified_user</span>
+</span>
+</div>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">نسخه ثبت شده در سند بالادستی مرکز داده شهرداری</p>
+</div>
+<!-- Support Hotline -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">شماره مرکز تماس و پشتیبانی مسافران</label>
+<input class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary" dir="ltr" type="text" value="۰۲۱-۹۱۰۰۴۸۲۰"/>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">پاسخگویی شبانه‌روزی حوادث و اشیای گمشده ایستگاه‌ها</p>
+</div>
+<!-- Operational Cities Active -->
+<div class="md:col-span-2">
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">شهرهای فعال با نقشه برداری برداری (GeoJSON Vector Tiles)</label>
+<div class="flex flex-wrap gap-2.5">
+<label class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-primary bg-surface-container text-primary font-bold text-label-md cursor-pointer">
+<input checked="" class="rounded text-primary focus:ring-0" type="checkbox"/>
+<span>متروی تهران و حومه</span>
+</label>
+<label class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-primary bg-surface-container text-primary font-bold text-label-md cursor-pointer">
+<input checked="" class="rounded text-primary focus:ring-0" type="checkbox"/>
+<span>قطار شهری مشهد</span>
+</label>
+<label class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-primary bg-surface-container text-primary font-bold text-label-md cursor-pointer">
+<input checked="" class="rounded text-primary focus:ring-0" type="checkbox"/>
+<span>قطار شهری اصفهان</span>
+</label>
+<label class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-outline-variant bg-surface text-on-surface-variant text-label-md cursor-pointer">
+<input checked="" class="rounded text-primary focus:ring-0" type="checkbox"/>
+<span>قطار شهری کرج (خط F)</span>
+</label>
+<label class="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-outline-variant bg-surface text-outline text-label-md cursor-pointer">
+<input class="rounded text-primary focus:ring-0" type="checkbox"/>
+<span>متروی شیراز (آزمایشی)</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!-- SECTION 2: Force Update & Version Governance                       -->
+<!-- =================================================================== -->
+<section class="space-y-6 pt-4 border-t border-outline-variant">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-6 bg-secondary rounded-full"></span>
+<h2 class="text-headline-md font-headline-md text-on-surface">بخش ۲: مدیریت قوانین نسخه‌گذاری و اجبار به به‌روزرسانی (Force Update)</h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-error-container text-secondary font-bold">سیاست Zero-Downtime</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<!-- Latest Version Code -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">نام آخرین نسخه (Latest Version)</label>
+<input class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-md focus:border-primary focus:ring-1 focus:ring-primary" dir="ltr" type="text" value="2.4.0"/>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">ارائه شده در مخزن ابری R2</p>
+</div>
+<!-- Build Code -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">کد ساخت نسخه (Build Code)</label>
+<input class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-md focus:border-primary focus:ring-1 focus:ring-primary" dir="ltr" type="number" value="1403082"/>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">شناسه یکتای اعتبارسنجی در API</p>
+</div>
+<!-- Minimum Supported Version (Force Update Gate) -->
+<div>
+<label class="block text-label-lg font-label-lg text-secondary font-bold mb-2">حداقل نسخه مجاز (Minimum Required)</label>
+<input class="w-full px-4 py-2.5 rounded-xl border-2 border-secondary bg-surface text-secondary font-mono font-bold text-body-md focus:ring-1 focus:ring-secondary" dir="ltr" type="text" value="2.2.0"/>
+<p class="text-label-sm font-label-sm text-error mt-1.5">کاربران با نسخه کمتر با پاپ‌آپ غیرقابل رد شدن مواجه می‌شوند</p>
+</div>
+<!-- Direct Download APK URL -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">پیوند دریافت مستقیم فایل APK (Cloudflare R2)</label>
+<input class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-sm focus:border-primary focus:ring-1 focus:ring-primary" dir="ltr" type="url" value="https://cdn.darmasir.ir/releases/darmasir-v2.4.0.apk"/>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">لینک توزیع شده با SSL در لبه‌های داخلی</p>
+</div>
+</div>
+<!-- Market Distribution Links -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">پیوند پکیج در کافه‌بازار (Bazaar Intent URL)</label>
+<input class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-sm focus:border-primary focus:ring-1 focus:ring-primary" dir="ltr" type="text" value="bazaar://details?id=ir.darmasir.transit"/>
+</div>
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">پیوند پکیج در مایکت (Myket Intent URL)</label>
+<input class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-sm focus:border-primary focus:ring-1 focus:ring-primary" dir="ltr" type="text" value="myket://details?id=ir.darmasir.transit"/>
+</div>
+</div>
+<!-- Force Update Message & Changelog -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">متن هشدار آپدیت اجباری به مسافر (پشتیبانی از متغیرهای پویا)</label>
+<textarea class="w-full p-3 rounded-xl border border-outline-variant bg-surface text-on-surface text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary" rows="4">مسافر گرامی؛ جهت همگام‌سازی با تغییرات خط ۶ و ۷ متروی تهران و بهره‌مندی از دستیار صوتی نسخه جدید، ارتقا به نسخه {latest_version} الزامی است. نسخه فعلی شما ({client_version}) به دلیل تغییرات فنی سرور از کار افتاده است.</textarea>
+<div class="flex gap-2 mt-2">
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded text-primary font-mono">{latest_version}</span>
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded text-primary font-mono">{client_version}</span>
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded text-primary font-mono">{download_size}</span>
+</div>
+</div>
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">تغییرات نسخه (Changelog) - تفکیک شده با خط جدید</label>
+<textarea class="w-full p-3 rounded-xl border border-outline-variant bg-surface text-on-surface text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary" rows="4">• اضافه شدن ایستگاه‌های جدید بهار شیراز و آیت‌الله کاشانی در خط ۶
+• بازطراحی دستیار صوتی آفلاین با هوش مصنوعی سبک درون‌دستگاهی
+• رفع اختلال در محاسبه سرفاصله‌های اعزام قطار در ساعات اوج عصرگاهی
+• کاهش ۳۰ درصدی مصرف باتری در حالت ردیابی زنده درون قطار</textarea>
+</div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!-- SECTION 3: Transit Routing Engines & Weather Modes                  -->
+<!-- =================================================================== -->
+<section class="space-y-6 pt-4 border-t border-outline-variant">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-6 bg-tertiary rounded-full"></span>
+<h2 class="text-headline-md font-headline-md text-on-surface">بخش ۳: موتور مسیریابی شهری و الگوریتم‌های ترافیکی</h2>
+</div>
+<span class="text-label-sm font-label-sm text-outline">OpenTripPlanner v2 Graph Worker Cluster</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Weather Fallback Mode -->
+<div class="p-5 rounded-2xl border border-outline-variant bg-surface-container-low flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2 text-primary font-bold text-title-md">
+<span class="material-symbols-outlined" data-icon="weather_mix">weather_mix</span>
+<span>حالت شرایط جوی نامساعد (باران/برف)</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">با فعال‌سازی این حالت، سرفاصله تاکسی‌های متصل و اتوبوس‌های BRT به طور خودکار ۲۵٪ با تاخیر تخمین زده می‌شوند.</p>
+</div>
+<div class="mt-4 pt-3 border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-outline">ضریب تصحیح تاخیر:</span>
+<span class="font-bold text-primary font-mono">+ 1.25x</span>
+</div>
+</div>
+<!-- Headway Peak-hour Buffer -->
+<div class="p-5 rounded-2xl border border-outline-variant bg-surface-container-low flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2 text-primary font-bold text-title-md">
+<span class="material-symbols-outlined" data-icon="transfer_within_a_station">transfer_within_a_station</span>
+<span>محاسبه زمان پیاده‌روی تبادل خطوط</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">لحاظ کردن زمان تغییر خط در ایستگاه‌های متراکم (مثل تئاتر شهر یا دروازه دولت) بر اساس سرعت گام مسافر.</p>
+</div>
+<div class="mt-4 pt-3 border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-outline">زمان پایه تعویض سکو:</span>
+<span class="font-bold text-primary font-mono">۴ دقیقه و ۳۰ ثانیه</span>
+</div>
+</div>
+<!-- OTP API Endpoint -->
+<div class="p-5 rounded-2xl border border-outline-variant bg-surface-container-low flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 text-primary font-bold text-title-md mb-2">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span>کلاستر داخلی مسیریاب چندوجهی</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">مسیردهی به سرورهای گراف اختصاصی تهران و شهرهای اقماری.</p>
+<input class="w-full mt-3 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-mono text-label-sm" dir="ltr" type="text" value="https://otp-internal.darmasir.ir/v2/plan"/>
+</div>
+<div class="mt-4 pt-3 border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-outline">وضعیت سرویس OTP:</span>
+<span class="font-bold text-tertiary-container flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+                  آنلاین (سالم)
+                </span>
+</div>
+</div>
+</div>
+</section>
+<!-- =================================================================== -->
+<!-- SECTION 4: Rate Limiting & Cloudflare Secrets                      -->
+<!-- =================================================================== -->
+<section class="space-y-6 pt-4 border-t border-outline-variant">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-6 bg-surface-tint rounded-full"></span>
+<h2 class="text-headline-md font-headline-md text-on-surface">بخش ۴: سقف مجاز درخواست‌ها (Rate Limiting) و کلیدهای محرمانه</h2>
+</div>
+<span class="text-label-sm font-label-sm text-outline">محافظت شده با پروتکل Cloudflare Workers WAF</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Voice Query Limit -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">سقف درخواست دستیار صوتی (Voice AI Rate Limit)</label>
+<div class="flex items-center">
+<input class="w-full px-4 py-2.5 rounded-r-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-md focus:border-primary focus:ring-1 focus:ring-primary" dir="ltr" type="number" value="50"/>
+<span class="px-4 py-2.5 bg-surface-container-high border-y border-l border-outline-variant rounded-l-xl text-label-md font-label-md text-on-surface-variant whitespace-nowrap">درخواست / دقیقه</span>
+</div>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">محدودیت اختصاصی بر اساس شناسه سخت‌افزاری کاربر</p>
+</div>
+<!-- Route Planning API Limit -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">سقف درخواست موتور مسیریاب مسافر</label>
+<div class="flex items-center">
+<input class="w-full px-4 py-2.5 rounded-r-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-md focus:border-primary focus:ring-1 focus:ring-primary" dir="ltr" type="number" value="120"/>
+<span class="px-4 py-2.5 bg-surface-container-high border-y border-l border-outline-variant rounded-l-xl text-label-md font-label-md text-on-surface-variant whitespace-nowrap">درخواست / دقیقه</span>
+</div>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">جلوگیری از اسکرپ داده‌های سرفاصله توسط رقبا</p>
+</div>
+<!-- Cloudflare Secret Key Reference -->
+<div>
+<label class="block text-label-lg font-label-lg text-on-surface mb-2">کلید رمزنگاری بارگذاری ابری (CF_SECRET_R2_KEY)</label>
+<div class="relative">
+<input class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface font-mono text-body-md" readonly="" type="password" value="cf_sec_d1_prod_99843743892749283749"/>
+<span class="absolute inset-y-0 left-3 flex items-center text-outline cursor-pointer hover:text-primary">
+<span class="material-symbols-outlined text-title-md" data-icon="visibility">visibility</span>
+</span>
+</div>
+<p class="text-label-sm font-label-sm text-outline mt-1.5">مدیریت مستقیم از پنل متغیرهای محرمانه Cloudflare Workers</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Form Bottom Sticky Actions Bar -->
+<div class="px-8 py-4 bg-surface-container border-t border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-2 text-label-md font-label-md text-outline">
+<span class="material-symbols-outlined text-body-md" data-icon="info">info</span>
+<span>تغییرات پس از تأیید در مدت ۳۰ ثانیه به بیش از ۳۰۰ پاپ لبه ابری تزریق خواهد شد.</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface transition-all text-label-md font-label-md">
+            انصراف و بازنشانی فرم
+          </button>
+<button class="px-6 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all active:scale-[0.98] text-label-md font-label-md font-bold shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-title-md" data-icon="check_circle">check_circle</span>
+<span>ذخیره نهایی و به‌روزرسانی کلیدهای KV</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ======================================================================= -->
+<!-- 5. CONFIGURATION AUDIT TRAIL (لاگ آخرین تغییرات)                         -->
+<!-- ======================================================================= -->
+<div class="mt-8 bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-5">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-xl bg-surface-container text-primary">
+<span class="material-symbols-outlined text-title-lg" data-icon="history">history</span>
+</div>
+<div>
+<h3 class="text-title-lg font-title-lg text-on-surface font-bold">لاگ وقایع و ردگیری آخرین تغییرات پیکربندی (Audit Trail)</h3>
+<p class="text-body-sm font-body-sm text-outline">ثبت رسمی تغییرات متغیرهای عملیاتی در جدول دیتابیس audit_logs</p>
+</div>
+</div>
+<button class="text-label-md font-label-md text-primary hover:underline flex items-center gap-1">
+<span>مشاهده تمامی وقایع امنیتی</span>
+<span class="material-symbols-outlined text-body-sm" data-icon="chevron_left">chevron_left</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="border-b border-outline-variant text-label-md font-label-md text-outline bg-surface-container-low">
+<th class="py-3 px-4 rounded-r-xl">مُهر زمانی (IRDT)</th>
+<th class="py-3 px-4">مدیر اعمال‌کننده</th>
+<th class="py-3 px-4">کلید تغییر یافته (Config Key)</th>
+<th class="py-3 px-4">مقدار پیشین</th>
+<th class="py-3 px-4">مقدار جدید جایگزین شده</th>
+<th class="py-3 px-4 rounded-l-xl text-center">وضعیت لبه شبکه</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant text-body-sm font-body-sm">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3.5 px-4 font-mono text-outline">۱۴۰۳/۰۸/۲۴ - ۱۷:۴۲:۱۰</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-container text-primary font-bold text-label-sm flex items-center justify-center">ع‌س</div>
+<span class="font-bold text-on-surface">علی‌رضا ستوده</span>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-primary font-semibold">FORCE_UPDATE_THRESHOLD</td>
+<td class="py-3.5 px-4 font-mono text-secondary line-through">v2.1.4</td>
+<td class="py-3.5 px-4 font-mono text-tertiary font-bold">v2.2.0</td>
+<td class="py-3.5 px-4 text-center">
+<span class="px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container text-primary font-bold">Synced Edge</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3.5 px-4 font-mono text-outline">۱۴۰۳/۰۸/۲۲ - ۱۰:۱۵:۰۳</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-container text-primary font-bold text-label-sm flex items-center justify-center">م‌ک</div>
+<span class="font-bold text-on-surface">مهرداد کاوه</span>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-primary font-semibold">WEATHER_DELAY_MULTIPLIER</td>
+<td class="py-3.5 px-4 font-mono text-outline line-through">1.00</td>
+<td class="py-3.5 px-4 font-mono text-tertiary font-bold">1.25</td>
+<td class="py-3.5 px-4 text-center">
+<span class="px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container text-primary font-bold">Synced Edge</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3.5 px-4 font-mono text-outline">۱۴۰۳/۰۸/۱۹ - ۰۸:۰۰:۲۱</td>
+<td class="py-3.5 px-4">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-surface-container text-primary font-bold text-label-sm flex items-center justify-center">س‌ر</div>
+<span class="font-bold text-on-surface">سارا رادمنش</span>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-primary font-semibold">VOICE_ASSISTANT_RPM_CAP</td>
+<td class="py-3.5 px-4 font-mono text-outline line-through">30</td>
+<td class="py-3.5 px-4 font-mono text-tertiary font-bold">50</td>
+<td class="py-3.5 px-4 text-center">
+<span class="px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container text-primary font-bold">Synced Edge</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</body></html>

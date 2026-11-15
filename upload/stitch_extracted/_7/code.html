@@ -1,0 +1,694 @@
+<!DOCTYPE html><html class="h-full" dir="rtl" lang="fa"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>درمسیر - پنل مدیریت سامانه ناوبری شهری</title>
+<!-- Persian Typography (Vazirmatn) -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS CDN with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary": "#bc000c",
+            "outline": "#727782",
+            "error": "#ba1a1a",
+            "surface-bright": "#f9f9ff",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed": "#7efbac",
+            "on-primary-fixed-variant": "#004689",
+            "surface-container": "#e7eeff",
+            "primary-fixed-dim": "#a8c8ff",
+            "surface-tint": "#1a5eac",
+            "primary-container": "#0d58a6",
+            "primary-fixed": "#d5e3ff",
+            "secondary-fixed": "#ffdad5",
+            "primary": "#00417f",
+            "surface-container-highest": "#d8e3fb",
+            "surface": "#f9f9ff",
+            "outline-variant": "#c2c6d3",
+            "background": "#f9f9ff",
+            "on-tertiary-fixed-variant": "#00522c",
+            "on-secondary-container": "#fffbff",
+            "on-secondary-fixed": "#410001",
+            "on-error-container": "#93000a",
+            "on-primary-container": "#b6d0ff",
+            "on-primary-fixed": "#001b3c",
+            "on-primary": "#ffffff",
+            "on-secondary": "#ffffff",
+            "on-surface-variant": "#424751",
+            "on-tertiary-fixed": "#00210e",
+            "surface-container-high": "#dee8ff",
+            "on-secondary-fixed-variant": "#930007",
+            "on-error": "#ffffff",
+            "tertiary-container": "#006638",
+            "on-background": "#111c2d",
+            "inverse-primary": "#a8c8ff",
+            "surface-container-low": "#f0f3ff",
+            "error-container": "#ffdad6",
+            "on-surface": "#111c2d",
+            "secondary-fixed-dim": "#ffb4aa",
+            "on-tertiary": "#ffffff",
+            "inverse-on-surface": "#ecf1ff",
+            "surface-dim": "#cfdaf2",
+            "on-tertiary-container": "#6ae79a",
+            "secondary-container": "#e32220",
+            "tertiary-fixed-dim": "#61de92",
+            "inverse-surface": "#263143",
+            "tertiary": "#004c28",
+            "surface-variant": "#d8e3fb"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "2rem",
+            "space-xs": "0.25rem",
+            "margin": "1rem",
+            "space-lg": "1.5rem",
+            "space-sm": "0.5rem",
+            "gutter": "1rem",
+            "space-md": "1rem"
+          },
+          "fontFamily": {
+            "body-md": ["Vazirmatn"],
+            "body-lg": ["Vazirmatn"],
+            "title-md": ["Vazirmatn"],
+            "label-sm": ["Vazirmatn"],
+            "label-md": ["Vazirmatn"],
+            "label-lg": ["Vazirmatn"],
+            "title-lg": ["Vazirmatn"],
+            "headline-lg": ["Vazirmatn"],
+            "headline-xl": ["Vazirmatn"],
+            "body-sm": ["Vazirmatn"],
+            "headline-md": ["Vazirmatn"]
+          },
+          "fontSize": {
+            "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }],
+            "title-md": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "700" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "headline-lg": ["24px", { "lineHeight": "36px", "fontWeight": "700" }],
+            "headline-xl": ["32px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "30px", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f0f3ff;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c2c6d3;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface h-full flex overflow-hidden antialiased selection:bg-primary selection:text-on-primary">
+<!-- ========================================================================= -->
+<!-- 1. RIGHT SIDEBAR (قفل و مطابق مستقیم JSON و مشخصات سند توسعه بند ۹) -->
+<!-- ========================================================================= -->
+<aside class="fixed right-0 top-0 h-full w-72 flex flex-col z-40 bg-surface-container-lowest border-l border-outline-variant shadow-sm select-none">
+<!-- Branding Header -->
+<div class="px-6 py-5 border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-title-lg" data-icon="alt_route">alt_route</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-headline-md font-headline-md font-bold text-primary tracking-tight">درمسیر</span>
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-primary font-bold">نسخه ۲.۴</span>
+</div>
+<p class="text-body-sm font-body-sm text-outline">پنل مدیریت سامانه ناوبری شهری</p>
+</div>
+</div>
+</div>
+<!-- Navigation Tabs (۸ منوی اصلی مطابق با JSON) -->
+<nav class="flex-1 overflow-y-auto px-4 py-4 space-y-1 custom-scrollbar">
+<div class="text-label-sm font-label-sm text-outline px-3 mb-2 font-bold">بخش‌های مدیریتی</div>
+<!-- Tab 1: داشبورد مدیریتی (ACTIVE) -->
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container rounded-xl px-4 py-3 font-title-md text-title-md transition-all shadow-sm" href="#dashboard">
+<span class="material-symbols-outlined" data-icon="dashboard" data-weight="fill" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="flex-1">داشبورد مدیریتی</span>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+</a>
+<!-- Tab 2: کاربران -->
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low transition-colors" href="#users">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="flex-1">کاربران</span>
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded-full text-primary font-bold">۸۶k</span>
+</a>
+<!-- Tab 3: خطوط و ایستگاه‌ها -->
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low transition-colors" href="#lines">
+<span class="material-symbols-outlined" data-icon="alt_route">alt_route</span>
+<span class="flex-1">خطوط و ایستگاه‌ها</span>
+<span class="text-label-sm font-label-sm bg-surface-container-highest px-1.5 py-0.5 rounded text-on-surface-variant">۷ خط</span>
+</a><a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low transition-colors" href="#tickets"><span class="material-symbols-outlined" data-icon="support_agent">support_agent</span><span class="flex-1">تیکت‌ها و پشتیبانی</span><span class="bg-secondary text-on-primary font-label-sm text-label-sm px-2 py-0.5 rounded-full font-bold">۱۸</span></a>
+<!-- Tab 4: تبلیغات و بنرها -->
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low transition-colors" href="#ads">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+<span class="flex-1">تبلیغات و بنرها</span>
+</a>
+<!-- Tab 5: دستیار صوتی و آواشناسی -->
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low transition-colors" href="#voice">
+<span class="material-symbols-outlined" data-icon="record_voice_over">record_voice_over</span>
+<span class="flex-1">دستیار صوتی و آواشناسی</span>
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+</span>
+</a>
+<!-- Tab 6: تنظیمات سامانه -->
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low transition-colors" href="#settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="flex-1">تنظیمات سامانه</span>
+</a>
+<!-- Tab 7: گزارش‌ها و تحلیل داده -->
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low transition-colors" href="#analytics">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="flex-1">گزارش‌ها و تحلیل داده</span>
+</a>
+<!-- Tab 8: امنیت و وقایع‌نگاری -->
+<a class="flex items-center gap-3 text-on-surface-variant rounded-xl px-4 py-3 font-body-md text-body-md hover:bg-surface-container-low transition-colors" href="#security">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="flex-1">امنیت و وقایع‌نگاری</span>
+</a>
+</nav>
+<!-- Sidebar Footer -->
+<div class="p-4 border-t border-outline-variant bg-surface-container-lowest space-y-2">
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-body-sm font-body-sm text-outline hover:text-on-surface hover:bg-surface-container transition-colors" href="#support">
+<span class="material-symbols-outlined text-title-md" data-icon="help">help</span>
+<span>پشتیبانی فنی</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-body-sm font-body-sm text-outline hover:text-on-surface hover:bg-surface-container transition-colors" href="#docs">
+<span class="material-symbols-outlined text-title-md" data-icon="api">api</span>
+<span>مستندات API</span>
+<span class="mr-auto text-label-sm font-label-sm bg-surface-container px-1.5 py-0.2 rounded font-mono">v1.2</span>
+</a>
+</div>
+<div class="pt-2 border-t border-outline-variant">
+<button class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-error bg-error-container/40 hover:bg-error-container text-body-md font-title-md transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-title-md" data-icon="logout">logout</span>
+<span>خروج از حساب</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- ========================================================================= -->
+<!-- 2. MAIN LAYOUT (کانتینر اصلی با جبران عرض سایدبار راست‌چین) -->
+<!-- ========================================================================= -->
+<div class="flex-1 flex flex-col h-full mr-72 overflow-hidden bg-background">
+<!-- TopNavBar (هدر دسکتاپ بر اساس JSON) -->
+<header class="h-16 bg-surface-container-lowest border-b border-outline-variant px-6 flex items-center justify-between z-30 shrink-0">
+<!-- Right: Section Title & Real-time Node Status -->
+<div class="flex items-center gap-4">
+<div>
+<h1 class="text-title-lg font-title-lg text-primary font-bold">داشبورد جامع نظارت و پایش سامانه درمسیر</h1>
+<p class="text-label-sm font-label-sm text-outline">مرکز عملیات شبکه حمل و نقل مترو و اتوبوسرانی کلان‌شهرها</p>
+</div>
+<div class="hidden xl:flex items-center gap-2 bg-tertiary-container/10 border border-tertiary/20 px-3 py-1 rounded-full mr-2">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="text-label-sm font-label-sm text-tertiary font-bold">تمامی سرویس‌ها عملیاتی هستند (Healthy)</span>
+</div>
+</div>
+<!-- Center: Universal Search Bar -->
+<div class="w-80 relative hidden md:block">
+<input class="w-full pl-4 pr-10 py-1.5 text-body-sm font-body-sm bg-surface-container-low border border-outline-variant rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-outline" placeholder="جستجوی سریع ایستگاه، کاربر، تراکنش..." type="text">
+<span class="material-symbols-outlined absolute right-3 top-2 text-outline text-title-md" data-icon="search">search</span>
+<kbd class="absolute left-2.5 top-2 text-label-sm font-label-sm text-outline bg-surface-container px-1.5 py-0.5 rounded border border-outline-variant font-mono">⌘K</kbd>
+</div>
+<!-- Left: Realtime Clocks, Actions & Profile -->
+<div class="flex items-center gap-3">
+<!-- Live System Clock -->
+<div class="hidden lg:flex flex-col items-end pl-3 border-l border-outline-variant">
+<div class="text-label-md font-label-md text-on-surface font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-body-sm text-primary" data-icon="schedule">schedule</span>
+<span id="realtime-clock">۲۲:۴۲:۳۴</span>
+</div>
+<span class="text-label-sm font-label-sm text-outline">همگام با سرور تهران</span>
+</div>
+<!-- Trailing Icon Actions -->
+<div class="flex items-center gap-1">
+<button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="اعلانات سامانه">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-secondary rounded-full ring-2 ring-surface-container-lowest"></span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" title="سرویس DNS و شبکه">
+<span class="material-symbols-outlined" data-icon="dns">dns</span>
+</button>
+</div>
+<!-- Admin Profile Pill -->
+<div class="flex items-center gap-3 pr-2 mr-1">
+<div class="text-left hidden sm:block">
+<div class="text-label-lg font-label-lg font-bold text-on-surface leading-tight">مدیر ارشد سامانه</div>
+<div class="text-label-sm font-label-sm text-outline">دسترسی: مدیر کل سیستم</div>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-fixed border border-primary/20 flex items-center justify-center text-primary font-bold overflow-hidden shadow-sm">
+<span class="material-symbols-outlined text-title-lg" data-icon="person">person</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Dashboard Content Scroll Area -->
+<main class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+<!-- ========================================================================= -->
+<!-- 3. KPI METRIC CARDS (شاخص‌های کلیدی عملکرد) -->
+<!-- ========================================================================= -->
+<section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- KPI 1: کل سفرهای امروز -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow transition-shadow">
+<div class="flex items-center justify-between mb-3">
+<span class="text-body-md font-body-md text-on-surface-variant font-medium">کل سفرهای شهری امروز</span>
+<div class="w-9 h-9 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-title-md" data-icon="commute">commute</span>
+</div>
+</div>
+<div class="flex items-baseline justify-between mb-2">
+<div class="text-headline-lg font-headline-lg font-bold text-on-surface">۱۲۸,۴۵۰</div>
+<span class="text-label-md font-label-md text-tertiary bg-tertiary-container/10 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+<span class="material-symbols-outlined text-body-sm" data-icon="trending_up">trending_up</span>
+              +۱۴٪
+            </span>
+</div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-outline pt-2 border-t border-outline-variant/50">
+<span>مترو: ۶۶.۸k</span>
+<span class="h-3 w-px bg-outline-variant"></span>
+<span>اتوبوس BRT: ۳۶k</span>
+<span class="h-3 w-px bg-outline-variant"></span>
+<span>ترکیبی: ۲۵.۶k</span>
+</div>
+</div>
+<!-- KPI 2: کاربران فعال روزانه -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow transition-shadow">
+<div class="flex items-center justify-between mb-3">
+<span class="text-body-md font-body-md text-on-surface-variant font-medium">کاربران فعال روزانه (DAU)</span>
+<div class="w-9 h-9 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-title-md" data-icon="group">group</span>
+</div>
+</div>
+<div class="flex items-baseline justify-between mb-2">
+<div class="text-headline-lg font-headline-lg font-bold text-on-surface">۸۶,۲۰۰</div>
+<span class="text-label-md font-label-md text-tertiary bg-tertiary-container/10 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+<span class="material-symbols-outlined text-body-sm" data-icon="trending_up">trending_up</span>
+              +۸.۵٪
+            </span>
+</div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-outline pt-2 border-t border-outline-variant/50">
+<span class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+              مسافران آنلاین هم‌زمان: ۱۲,۴۲۰
+            </span>
+<span class="text-primary font-medium">تهران و کرج</span>
+</div>
+</div>
+<!-- KPI 3: میانگین زمان مسیریابی موتور OTP -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow transition-shadow">
+<div class="flex items-center justify-between mb-3">
+<span class="text-body-md font-body-md text-on-surface-variant font-medium">زمان پاسخ موتور OTP</span>
+<div class="w-9 h-9 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-title-md" data-icon="speed">speed</span>
+</div>
+</div>
+<div class="flex items-baseline justify-between mb-2">
+<div class="text-headline-lg font-headline-lg font-bold text-on-surface">۴۲ <span class="text-body-md font-normal text-outline">میلی‌ثانیه</span></div>
+<span class="text-label-md font-label-md text-tertiary bg-tertiary-container/10 px-2 py-0.5 rounded-full font-bold">
+              وضعیت ایده‌آل
+            </span>
+</div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-outline pt-2 border-t border-outline-variant/50">
+<span>مسیریابی چندوسیله‌ای</span>
+<span class="text-on-surface font-mono">P99: 78ms</span>
+</div>
+</div>
+<!-- KPI 4: دقت هوش مصنوعی صوتی -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:shadow transition-shadow">
+<div class="flex items-center justify-between mb-3">
+<span class="text-body-md font-body-md text-on-surface-variant font-medium">دقت دستیار صوتی (Voice AI)</span>
+<div class="w-9 h-9 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-title-md" data-icon="record_voice_over">record_voice_over</span>
+</div>
+</div>
+<div class="flex items-baseline justify-between mb-2">
+<div class="text-headline-lg font-headline-lg font-bold text-on-surface">۹۷.۸٪</div>
+<span class="text-label-md font-label-md text-tertiary bg-tertiary-container/10 px-2 py-0.5 rounded-full">
+              تلفظ فارسی پایدار
+            </span>
+</div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-outline pt-2 border-t border-outline-variant/50">
+<span>کوئری صوتی امروز: ۱۸,۴۰۰</span>
+<span class="text-primary font-bold">STT مدل محلی</span>
+</div>
+</div>
+</section>
+<!-- ========================================================================= -->
+<!-- 4. INFRASTRUCTURE HEALTH & MODAL DISTRIBUTION (بنتو گرید سطح بالا) -->
+<!-- ========================================================================= -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- بخش پایش زیرساخت ابری (Cloudflare Workers & OpenTripPlanner) -->
+<div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm space-y-4">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-title-lg" data-icon="cloud_done">cloud_done</span>
+<h2 class="text-title-md font-title-md text-on-surface font-bold">مانیتورینگ سلامت زیرساخت و سرورها (بند ۸ و ۹ سند)</h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-label-sm font-label-sm text-outline font-mono">Edge Cluster: TEH-01</span>
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Service 1: Cloudflare Workers -->
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/60">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-lg font-label-lg font-bold text-on-surface">Cloudflare Workers</span>
+<span class="text-label-sm font-label-sm bg-tertiary-container/10 text-tertiary px-2 py-0.5 rounded-md font-bold">پایدار ۹۹.۹۸٪</span>
+</div>
+<p class="text-body-sm font-body-sm text-outline mb-3">API Gateway اصلی و هدایت درخواست‌های ناوبری سریع مسافران</p>
+<div class="flex items-center justify-between text-label-sm font-label-sm font-mono text-on-surface-variant">
+<span>میانگین تأخیر (Latency): ۱۸ms</span>
+<span>درخواست/ثانیه: ۳,۲۴۰</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-container h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 98%"></div>
+</div>
+</div>
+<!-- Service 2: Cloudflare D1 Database -->
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/60">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-lg font-label-lg font-bold text-on-surface">Cloudflare D1 Database</span>
+<span class="text-label-sm font-label-sm bg-tertiary-container/10 text-tertiary px-2 py-0.5 rounded-md font-bold">اتصال نرمال</span>
+</div>
+<p class="text-body-sm font-body-sm text-outline mb-3">پایگاه داده لبه (Edge SQL) برای مدیریت نشست‌ها، لاگ‌ها و نشانک‌ها</p>
+<div class="flex items-center justify-between text-label-sm font-label-sm font-mono text-on-surface-variant">
+<span>مصرف حافظه: ۲.۱ گیگابایت</span>
+<span>نرخ Read/Write: پایدار</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 42%"></div>
+</div>
+</div>
+<!-- Service 3: OpenTripPlanner (موتور مسیریابی) -->
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/60">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-lg font-label-lg font-bold text-on-surface">موتور مسیریابی OpenTripPlanner</span>
+<span class="text-label-sm font-label-sm bg-tertiary-container/10 text-tertiary px-2 py-0.5 rounded-md font-bold">فعال و پاسخ‌ده</span>
+</div>
+<p class="text-body-sm font-body-sm text-outline mb-3">محاسبه سریع‌ترین الگوریتم مسیر ترکیبی خطوط مترو و اتوبوسرانی</p>
+<div class="flex items-center justify-between text-label-sm font-label-sm font-mono text-on-surface-variant">
+<span>پوشش گراف: تهران و کرج</span>
+<span>زمان بارگذاری گراف: ۱.۴s</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<!-- Service 4: سرویس صوتی STT/TTS فارسی -->
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/60">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-lg font-label-lg font-bold text-on-surface">پردازش گفتار فارسی (STT / TTS)</span>
+<span class="text-label-sm font-label-sm bg-tertiary-container/10 text-tertiary px-2 py-0.5 rounded-md font-bold">سرویس آنلاین</span>
+</div>
+<p class="text-body-sm font-body-sm text-outline mb-3">شناسایی هوشمند اسامی ایستگاه‌های پیچیده و تلفظ صحیح تقاطع‌ها</p>
+<div class="flex items-center justify-between text-label-sm font-label-sm font-mono text-on-surface-variant">
+<span>خطای Rate Limit: ۰.۰۰٪</span>
+<span>زمان استنتاج: ۱۱۰ms</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 95%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- نمودار توزیع سفرها بر اساس مدهای حمل و نقل شهری -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant mb-4">
+<h2 class="text-title-md font-title-md text-on-surface font-bold">تفکیک سهم مدهای سفر</h2>
+<span class="text-label-sm font-label-sm text-outline">امروز</span>
+</div>
+<!-- Modal Visual Stacked Bar -->
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="flex items-center gap-1.5 font-medium">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                    متروی شهری و حومه‌ای
+                  </span>
+<span class="font-bold text-primary font-mono">۵۲٪ (۶۶,۸۰۰ سفر)</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 52%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="flex items-center gap-1.5 font-medium">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                    سامانه اتوبوس تندرو (BRT)
+                  </span>
+<span class="font-bold text-secondary font-mono">۲۸٪ (۳۶,۰۰۰ سفر)</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 28%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="flex items-center gap-1.5 font-medium">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+                    مسیریابی ترکیبی چندوجهی
+                  </span>
+<span class="font-bold text-tertiary font-mono">۱۵٪ (۱۹,۲۶۰ سفر)</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 15%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="flex items-center gap-1.5 font-medium">
+<span class="w-2.5 h-2.5 rounded-full bg-outline"></span>
+                    تاکسی خطی و پیاده‌روی مستقیم
+                  </span>
+<span class="font-bold text-outline font-mono">۵٪ (۶,۳۹۰ سفر)</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-outline h-full rounded-full" style="width: 5%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Ad Banner Container (طبق راهنمای سیستم و سند بنر تبلیغاتی) -->
+<div class="mt-4 p-3 bg-surface-container-low border border-dashed border-outline-variant rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container-highest text-outline font-bold">آگهی</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">کمپین فعال بلیت الکترونیک بانک شهر</span>
+</div>
+<span class="text-label-sm font-label-sm text-primary font-bold hover:underline cursor-pointer">مشاهده آمار</span>
+</div>
+</div>
+</div>
+<!-- ========================================================================= -->
+<!-- 5. AUDIT LOGS & SENSITIVE EVENTS TABLE (جدول وقایع و امنیت) -->
+<!-- ========================================================================= -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-title-md" data-icon="receipt_long">receipt_long</span>
+</div>
+<div>
+<h2 class="text-title-md font-title-md text-on-surface font-bold">آخرین فعالیت‌ها و لاگ‌های حساس امنیتی و سیستمی (Audit Log)</h2>
+<p class="text-label-sm font-label-sm text-outline">ثبت تمام تراکنش‌ها، تغییرات ساختار ایستگاه‌ها و استقرار نسخه‌ها</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg border border-outline-variant text-body-sm font-body-sm text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-title-md" data-icon="filter_list">filter_list</span>
+<span>فیلتر رویدادها</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-primary text-body-sm font-title-md hover:bg-surface-container-high transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-title-md" data-icon="download">download</span>
+<span>خروجی لاگ (CSV)</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant text-label-md font-label-md border-b border-outline-variant">
+<th class="py-3 px-6">شناسه لاگ</th>
+<th class="py-3 px-6">عنوان رویداد سیستمی</th>
+<th class="py-3 px-6">دسته‌بندی</th>
+<th class="py-3 px-6">اپراتور / عامل</th>
+<th class="py-3 px-6">زمان ثبت</th>
+<th class="py-3 px-6">آدرس IP / گره</th>
+<th class="py-3 px-6">وضعیت</th>
+<th class="py-3 px-4 text-center">جزئیات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/60 text-body-sm font-body-sm">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3.5 px-6 font-mono text-outline font-bold">#LOG-89421</td>
+<td class="py-3.5 px-6">
+<div class="font-bold text-on-surface">به‌روزرسانی هدوی و زمان‌بندی قطارهای خط ۳ مترو</div>
+<div class="text-label-sm font-label-sm text-outline">اعمال کاهش سرفاصله حرکت قطارها به ۳.۵ دقیقه در ساعات اوج</div>
+</td>
+<td class="py-3.5 px-6">
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container text-primary font-bold">خطوط و ایستگاه‌ها</span>
+</td>
+<td class="py-3.5 px-6 text-on-surface font-medium">سهراب امینی (کارشناس ارشد دیسپاچینگ)</td>
+<td class="py-3.5 px-6 font-mono text-outline">۱۴:۴۱:۱۲ - امروز</td>
+<td class="py-3.5 px-6 font-mono text-label-sm text-outline">192.168.10.42 (لوکال مرکز کنترل)</td>
+<td class="py-3.5 px-6">
+<span class="inline-flex items-center gap-1 text-tertiary font-bold text-label-sm font-label-sm bg-tertiary-container/10 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    موفق و اعمال‌شده
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-center">
+<button class="p-1 rounded text-outline hover:text-primary hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-title-md" data-icon="visibility">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3.5 px-6 font-mono text-outline font-bold">#LOG-89420</td>
+<td class="py-3.5 px-6">
+<div class="font-bold text-on-surface">استقرار نسخه جدید ورکر ابری Cloudflare Worker</div>
+<div class="text-label-sm font-label-sm text-outline">نسخه v2.4.1 شامل بهینه‌سازی کش ایستگاه‌های تبادلی مشهد و اصفهان</div>
+</td>
+<td class="py-3.5 px-6">
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-highest text-on-surface-variant font-bold">زیرساخت ابری</span>
+</td>
+<td class="py-3.5 px-6 text-on-surface font-medium">سیستم CI/CD خودکار GitOps</td>
+<td class="py-3.5 px-6 font-mono text-outline">۱۴:۳۲:۰۵ - امروز</td>
+<td class="py-3.5 px-6 font-mono text-label-sm text-outline">Edge Node TEH-01</td>
+<td class="py-3.5 px-6">
+<span class="inline-flex items-center gap-1 text-tertiary font-bold text-label-sm font-label-sm bg-tertiary-container/10 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    موفق
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-center">
+<button class="p-1 rounded text-outline hover:text-primary hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-title-md" data-icon="visibility">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3.5 px-6 font-mono text-outline font-bold">#LOG-89419</td>
+<td class="py-3.5 px-6">
+<div class="font-bold text-on-surface">صدور دسته‌ای بلیت QR کد تک‌سفره مسافران</div>
+<div class="text-label-sm font-label-sm text-outline">تسویه موفقیت‌آمیز درگاه شتاب بانکی و ایجاد هش امنیتی بلیت</div>
+</td>
+<td class="py-3.5 px-6">
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container text-primary font-bold">مالی و بلیت</span>
+</td>
+<td class="py-3.5 px-6 text-on-surface font-medium">درگاه پرداخت بانک ملت</td>
+<td class="py-3.5 px-6 font-mono text-outline">۱۴:۲۸:۴۴ - امروز</td>
+<td class="py-3.5 px-6 font-mono text-label-sm text-outline">185.120.21.14</td>
+<td class="py-3.5 px-6">
+<span class="inline-flex items-center gap-1 text-tertiary font-bold text-label-sm font-label-sm bg-tertiary-container/10 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    تایید تراکنش
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-center">
+<button class="p-1 rounded text-outline hover:text-primary hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-title-md" data-icon="visibility">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3.5 px-6 font-mono text-outline font-bold">#LOG-89418</td>
+<td class="py-3.5 px-6">
+<div class="font-bold text-on-surface">تلاش ناموفق برای ورود به نشست سرپرست ایستگاه میدان آزادی</div>
+<div class="text-label-sm font-label-sm text-secondary font-medium">مسدودسازی خودکار آی‌پی پس از ۴ بار ورود رمز عبور اشتباه</div>
+</td>
+<td class="py-3.5 px-6">
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-secondary-fixed text-on-secondary-fixed font-bold">امنیت و احراز</span>
+</td>
+<td class="py-3.5 px-6 text-on-surface font-medium">ناشناس (شناسه اپراتور Azadi-St-04)</td>
+<td class="py-3.5 px-6 font-mono text-outline">۱۴:۱۵:۰۰ - امروز</td>
+<td class="py-3.5 px-6 font-mono text-label-sm text-outline">91.98.140.220</td>
+<td class="py-3.5 px-6">
+<span class="inline-flex items-center gap-1 text-secondary font-bold text-label-sm font-label-sm bg-secondary-fixed/50 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                    مسدود شد (IP Blocked)
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-center">
+<button class="p-1 rounded text-outline hover:text-primary hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-title-md" data-icon="shield">shield</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer / Pagination -->
+<div class="px-6 py-3 border-t border-outline-variant bg-surface-container-low flex items-center justify-between text-body-sm font-body-sm text-outline">
+<span>نمایش ۴ مورد از ۸,۹۴۲ رویداد ثبت‌شده امروز</span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50">قبلی</button>
+<span class="px-2 font-mono font-bold text-primary">۱</span>
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container transition-colors">بعدی</button>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Inline Script for Realtime Dynamic Clock -->
+<script>
+    function updateClock() {
+      const now = new Date();
+      const options = { timeZone: 'Asia/Tehran', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const timeString = new Intl.DateTimeFormat('fa-IR', options).format(now);
+      const clockElement = document.getElementById('realtime-clock');
+      if (clockElement) {
+        clockElement.textContent = timeString;
+      }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+
+
+</body></html>
