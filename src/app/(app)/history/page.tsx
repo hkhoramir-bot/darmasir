@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AMENITIES, faMoney, getLine, getStation, nextArrivalsBoth, toFa } from "@/lib/metro-data";
+import { AMENITIES, getLine, getStation, nextArrivalsBoth, toFa } from "@/lib/metro-data";
 import { MI, PageHeader } from "@/components/metro/shell";
 import { useToast } from "@/hooks/use-toast";
 
@@ -666,10 +666,6 @@ export default function HistoryPage() {
                             {toFa(t.transfers)} تعویض
                           </>
                         )}
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container text-[11px] font-medium text-on-surface-variant mr-auto">
-                        <MI name="payments" size={13} className="text-primary" />
-                        {faMoney(t.fare)} تومان
                       </span>
                     </div>
                   </article>

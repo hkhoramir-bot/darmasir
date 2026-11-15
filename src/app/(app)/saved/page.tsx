@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   computeRoute,
-  faMoney,
   getLine,
   getStation,
   headwayAt,
@@ -671,7 +670,6 @@ export default function SavedPage() {
               <MI name="history" size={20} className="text-primary" />
               <span>سفرهای پرتردد اخیر</span>
             </h3>
-            <span className="text-label-sm text-outline">محاسبه خودکار کرایه</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {loading ? (
@@ -680,7 +678,7 @@ export default function SavedPage() {
               <div className="bg-surface-container-lowest rounded-xl border-2 border-dashed border-outline-variant/60 p-5 text-center sm:col-span-2">
                 <MI name="history" size={22} className="text-outline mx-auto mb-2" />
                 <p className="text-body-md text-on-surface-variant">
-                  هنوز سفری ثبت نشده است — با اولین ناوبری، سفرها و کرایه‌ها اینجا جمع می‌شوند.
+                  هنوز سفری ثبت نشده است — با اولین ناوبری، سفرها اینجا جمع می‌شوند.
                 </p>
               </div>
             ) : (
@@ -710,7 +708,6 @@ export default function SavedPage() {
                         <MI name="timer" size={16} className="text-outline" />
                         {toFa(t.minutes)} دقیقه{firstLineName ? ` (${firstLineName})` : ""}
                       </span>
-                      <span className="font-semibold text-primary">کرایه: {faMoney(t.fare)} تومان</span>
                     </div>
                   </div>
                 );

@@ -737,7 +737,6 @@ export default function Page() {
                     <span className="text-sm font-bold text-primary mt-0.5">
                       {toFa(plan.totalMinutes)} <span className="text-[10px] font-normal text-on-surface-variant">دقیقه</span>
                     </span>
-                    <span className="text-[10px] text-on-surface-variant mt-0.5">{toFa(plan.fare.toLocaleString("fa-IR"))} تومان</span>
                   </>
                 ) : (
                   <span className="text-[9px] font-bold text-outline mt-1 bg-surface-container px-1.5 py-0.5 rounded-full flex items-center gap-0.5">

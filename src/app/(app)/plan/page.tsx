@@ -6,7 +6,6 @@ import {
   computeRoute,
   crowdingNow,
   exitsFor,
-  faMoney,
   getLine,
   getStation,
   headwayAt,
@@ -1015,15 +1014,11 @@ function PlanInner() {
               </div>
             </section>
 
-            {/* ---------- نوار وضعیت خطوط و کرایه ---------- */}
+            {/* ---------- نوار وضعیت خطوط ---------- */}
             <div className="bg-surface-container-low rounded-xl px-3.5 py-2.5 flex items-center justify-between border border-outline-variant/20 gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${lineOk ? "bg-emerald-600" : "bg-secondary"}`} />
                 <span className="text-label-md font-label-md text-on-surface truncate">{statusText}</span>
-              </div>
-              <div className="flex items-center gap-1 text-primary flex-shrink-0">
-                <MI name="payments" size={14} />
-                <span className="text-label-md font-label-md font-bold">{faMoney(plan.fare)} تومان</span>
               </div>
             </div>
 
