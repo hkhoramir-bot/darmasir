@@ -1,0 +1,15 @@
+{
+  "name": "darmasir-admin",
+  "version": "1.0.0",
+  "description": "پنل مدیریت مستقل «درمسیر» — سرویس مستقل با پورت ۳۰۳۵ (قفل‌شده؛ حذف نکنید)",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1"
+  }
+}

@@ -1,0 +1,624 @@
+     1→/* ============================================================
+     2→   پنل مدیریت درمسیر — سیستم طراحی «مترویار» (Metro Yar)
+     3→   رنگ اصلی: سرمه‌ای حمل‌ونقل #00417f | سطوح آبی روشن | RTL
+     4→   مطابق طراحی مرجع: upload/stitch_extracted/_9/code.html
+     5→   توجه: تعریف @font-face در index.html انجام می‌شود تا پارامتر
+     6→   دروازه (XTransformPort) به مسیر فونت‌ها اضافه گردد.
+     7→   ============================================================ */
+     8→
+     9→:root {
+    10→  /* — توکن‌های رنگ مترویار — */
+    11→  --primary: #00417f;
+    12→  --primary-hover: rgba(0, 65, 127, 0.9);
+    13→  --on-primary: #ffffff;
+    14→  --primary-container: #0d58a6;
+    15→  --on-primary-container: #b6d0ff;
+    16→  --primary-fixed: #d5e3ff;
+    17→  --primary-fixed-dim: #a8c8ff;
+    18→  --on-primary-fixed: #001b3c;
+    19→  --secondary: #bc000c;
+    20→  --secondary-fixed: #ffdad5;
+    21→  --tertiary: #004c28;
+    22→  --tertiary-container: #006638;
+    23→  --tertiary-fixed: #7efbac;
+    24→  --error: #ba1a1a;
+    25→  --error-container: #ffdad6;
+    26→  --on-error-container: #93000a;
+    27→  --bg: #f9f9ff;
+    28→  --surface: #ffffff;
+    29→  --surface-low: #f0f3ff;
+    30→  --surface-container: #e7eeff;
+    31→  --surface-high: #dee8ff;
+    32→  --surface-highest: #d8e3fb;
+    33→  --ink: #111c2d;
+    34→  --ink-2: #424751;
+    35→  --ink-3: #727782;
+    36→  --line: #c2c6d3;
+    37→  --inverse-surface: #263143;
+    38→  --inverse-on-surface: #ecf1ff;
+    39→  --inverse-primary: #a8c8ff;
+    40→  /* — سازگاری نام‌های قدیمی — */
+    41→  --accent: var(--primary);
+    42→  --accent-soft: var(--primary-fixed);
+    43→  --accent-ink: var(--on-primary);
+    44→  --accent-line: var(--primary-fixed-dim);
+    45→  --danger: var(--error);
+    46→  --danger-soft: var(--error-container);
+    47→  --warn: #93000a;
+    48→  --warn-soft: var(--secondary-fixed);
+    49→  --radius: 12px;
+    50→  --shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    51→  --shadow-lift: 0 4px 14px rgba(15, 23, 42, 0.08);
+    52→}
+    53→
+    54→* { box-sizing: border-box; }
+    55→html, body { height: 100%; }
+    56→body {
+    57→  margin: 0;
+    58→  font-family: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+    59→  background: var(--bg);
+    60→  color: var(--ink);
+    61→  font-size: 14px;
+    62→  line-height: 1.7;
+    63→  -webkit-font-smoothing: antialiased;
+    64→  text-rendering: optimizeLegibility;
+    65→}
+    66→::selection { background: var(--primary-fixed); color: var(--primary); }
+    67→button, input, select, textarea { font-family: inherit; font-size: inherit; }
+    68→a { color: inherit; text-decoration: none; }
+    69→
+    70→/* ---------- آیکون‌های Material ---------- */
+    71→.material {
+    72→  font-family: "Material Symbols Outlined";
+    73→  font-weight: normal;
+    74→  font-style: normal;
+    75→  display: inline-block;
+    76→  line-height: 1;
+    77→  letter-spacing: normal;
+    78→  text-transform: none;
+    79→  white-space: nowrap;
+    80→  word-wrap: normal;
+    81→  direction: ltr;
+    82→  font-feature-settings: "liga";
+    83→  -webkit-font-smoothing: antialiased;
+    84→  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    85→  user-select: none;
+    86→  vertical-align: middle;
+    87→}
+    88→.material.fill { font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24; }
+    89→
+    90→/* ---------- دکمه‌ها ---------- */
+    91→.btn {
+    92→  display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    93→  border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+    94→  padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 14px;
+    95→  transition: all .15s ease; min-height: 42px; box-shadow: var(--shadow);
+    96→}
+    97→.btn:hover { background: var(--surface-container); color: var(--ink); }
+    98→.btn .material { font-size: 18px; }
+    99→.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); box-shadow: 0 4px 10px rgba(0, 65, 127, 0.28); }
+   100→.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: var(--on-primary); }
+   101→.btn-danger { color: var(--error); border-color: rgba(186, 26, 26, 0.4); background: var(--surface); }
+   102→.btn-danger:hover { background: var(--error-container); color: var(--on-error-container); }
+   103→.btn-sm { padding: 4px 10px; min-height: 30px; font-size: 12px; border-radius: 10px; }
+   104→.btn:disabled { opacity: .55; cursor: not-allowed; }
+   105→
+   106→.icon-btn {
+   107→  display: inline-flex; align-items: center; justify-content: center;
+   108→  width: 32px; height: 32px; border: none; background: none; border-radius: 10px;
+   109→  color: var(--ink-2); cursor: pointer; transition: background .15s, color .15s;
+   110→}
+   111→.icon-btn .material { font-size: 18px; }
+   112→.icon-btn:hover { background: var(--surface-container); color: var(--primary); }
+   113→.icon-btn.danger:hover { background: var(--error-container); color: var(--error); }
+   114→.acts { display: flex; gap: 4px; justify-content: flex-end; align-items: center; }
+   115→
+   116→/* ---------- سربرگ صفحه (Page Head) ---------- */
+   117→.page-head {
+   118→  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between;
+   119→  padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(194, 198, 211, 0.6);
+   120→}
+   121→.page-head h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.3px; color: var(--ink); line-height: 1.4; }
+   122→.page-head-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+   123→.page-head p { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); max-width: 56rem; }
+   124→.page-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+   125→.chip-live {
+   126→  display: inline-flex; align-items: center; gap: 6px;
+   127→  background: rgba(0, 76, 40, 0.08); color: var(--tertiary);
+   128→  padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap;
+   129→}
+   130→.dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--tertiary-container); animation: pulseDot 1.8s infinite; flex-shrink: 0; }
+   131→@keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+   132→
+   133→/* ---------- فرم ---------- */
+   134→.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+   135→.field label { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+   136→.field input, .field select, .field textarea {
+   137→  border: 1px solid rgba(194, 198, 211, 0.7); border-radius: 10px; padding: 9px 12px;
+   138→  background: var(--surface); color: var(--ink); outline: none;
+   139→  transition: border-color .15s, box-shadow .15s; min-height: 42px; width: 100%;
+   140→}
+   141→.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+   142→.field .hint { font-size: 11px; color: var(--ink-3); }
+   143→
+   144→/* ---------- ورود ---------- */
+   145→.login-wrap {
+   146→  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+   147→  background:
+   148→    radial-gradient(1000px 500px at 85% -10%, var(--primary-fixed), transparent 60%),
+   149→    radial-gradient(800px 400px at 10% 110%, rgba(168, 200, 255, 0.5), transparent 55%),
+   150→    var(--bg);
+   151→  padding: 16px;
+   152→}
+   153→.login-card {
+   154→  width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--line);
+   155→  border-radius: 20px; box-shadow: 0 8px 32px rgba(17, 28, 45, 0.12); padding: 32px 28px;
+   156→}
+   157→.login-logo {
+   158→  width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 18px;
+   159→  background: var(--primary); display: flex; align-items: center; justify-content: center;
+   160→  color: #fff; box-shadow: 0 6px 16px rgba(0, 65, 127, 0.3);
+   161→}
+   162→.login-logo .material { font-size: 32px; }
+   163→.login-card h1 { font-size: 20px; font-weight: 800; margin: 0 0 4px; text-align: center; color: var(--ink); }
+   164→.login-card .sub { color: var(--ink-2); font-size: 13px; text-align: center; margin-bottom: 24px; }
+   165→.login-err {
+   166→  background: var(--error-container); border: 1px solid rgba(147, 0, 10, 0.2); color: var(--on-error-container);
+   167→  border-radius: 10px; padding: 9px 12px; font-size: 12.5px; margin-bottom: 14px; display: none;
+   168→}
+   169→
+   170→/* ---------- چیدمان پنل ---------- */
+   171→.layout { min-height: 100vh; }
+   172→.sidebar {
+   173→  position: fixed; top: 0; right: 0; bottom: 0; width: 288px;
+   174→  background: var(--surface); border-left: 1px solid var(--line);
+   175→  display: flex; flex-direction: column; justify-content: space-between; z-index: 40;
+   176→}
+   177→.side-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+   178→.brand { padding: 24px; border-bottom: 1px solid rgba(194, 198, 211, 0.5); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+   179→.brand-logo {
+   180→  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+   181→  background: var(--primary); color: var(--on-primary);
+   182→  display: flex; align-items: center; justify-content: center;
+   183→  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+   184→}
+   185→.brand-logo .material { font-size: 28px; }
+   186→.brand-txt { min-width: 0; }
+   187→.brand-title-row { display: flex; align-items: center; gap: 8px; }
+   188→.brand-title-row b { font-size: 20px; font-weight: 700; color: var(--primary); letter-spacing: -0.2px; line-height: 1.3; }
+   189→.ver-chip { background: var(--primary-fixed); color: var(--primary); padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+   190→.brand-sub { display: block; font-size: 12px; color: var(--ink-2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+   191→
+   192→.nav { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+   193→.nav a {
+   194→  display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
+   195→  color: var(--ink-2); font-size: 14px; transition: background .15s, color .15s;
+   196→}
+   197→.nav a .material { font-size: 22px; flex-shrink: 0; }
+   198→.nav a:hover { background: var(--surface-low); color: var(--ink); }
+   199→.nav a.active {
+   200→  background: var(--primary-container); color: var(--on-primary-container);
+   201→  font-weight: 600; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+   202→}
+   203→.nav-lbl { flex: 1; min-width: 0; }
+   204→.nav-live { width: 8px; height: 8px; border-radius: 50%; background: var(--tertiary-fixed); box-shadow: 0 0 0 2px var(--tertiary-container); flex-shrink: 0; }
+   205→
+   206→.side-foot {
+   207→  padding: 16px; border-top: 1px solid rgba(194, 198, 211, 0.6);
+   208→  background: rgba(240, 243, 255, 0.4); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+   209→}
+   210→.side-user {
+   211→  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+   212→  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+   213→  box-shadow: var(--shadow); margin-bottom: 4px; min-width: 0;
+   214→}
+   215→.side-user .who { min-width: 0; text-align: right; }
+   216→.side-user .who b { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+   217→.side-user .who span { display: block; font-size: 10px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+   218→.side-user .avatar { width: 34px; height: 34px; font-size: 13px; }
+   219→.side-meta { font-size: 11px; color: var(--ink-2); padding: 0 4px 2px; display: flex; align-items: center; gap: 6px; }
+   220→.side-meta .material { font-size: 14px; color: var(--ink-3); }
+   221→.logout-btn {
+   222→  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+   223→  background: var(--surface); border: 1px solid var(--line); color: var(--secondary);
+   224→  padding: 10px 16px; border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer;
+   225→  transition: background .15s, color .15s; box-shadow: var(--shadow); font-family: inherit;
+   226→}
+   227→.logout-btn:hover { background: var(--error-container); color: var(--on-error-container); }
+   228→.logout-btn .material { font-size: 18px; }
+   229→
+   230→.main { flex: 1; min-width: 0; margin-right: 288px; display: flex; flex-direction: column; min-height: 100vh; }
+   231→.topbar {
+   232→  display: flex; align-items: center; gap: 12px; height: 64px; padding: 0 24px;
+   233→  background: var(--surface); border-bottom: 1px solid var(--line);
+   234→  position: sticky; top: 0; z-index: 30;
+   235→}
+   236→.topbar .spacer { flex: 1; }
+   237→.top-search { position: relative; flex: 1; max-width: 36rem; }
+   238→.top-search > .material {
+   239→  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+   240→  font-size: 20px; color: var(--ink-2); pointer-events: none;
+   241→}
+   242→.top-search input {
+   243→  width: 100%; padding: 8px 40px 8px 16px; background: var(--surface-low);
+   244→  border: 1px solid rgba(194, 198, 211, 0.7); border-radius: 12px; font-size: 12px;
+   245→  outline: none; color: var(--ink); transition: border-color .15s, box-shadow .15s; min-height: 40px;
+   246→}
+   247→.top-search input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); background: var(--surface); }
+   248→.top-search input::placeholder { color: var(--ink-2); }
+   249→.db-chip {
+   250→  display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 10px;
+   251→  background: var(--surface-container); border: 1px solid rgba(194, 198, 211, 0.5);
+   252→  font-size: 10px; font-weight: 700; color: var(--ink-2); white-space: nowrap; flex-shrink: 0;
+   253→}
+   254→.pulse { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--tertiary-container); flex-shrink: 0; }
+   255→.pulse::after {
+   256→  content: ""; position: absolute; inset: 0; border-radius: 50%;
+   257→  background: var(--tertiary-container); animation: ping 1.8s cubic-bezier(0, 0, .2, 1) infinite;
+   258→}
+   259→@keyframes ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+   260→.top-divider { width: 1px; height: 24px; background: var(--line); margin: 0 4px; flex-shrink: 0; }
+   261→.avatar {
+   262→  width: 36px; height: 36px; border-radius: 50%; background: var(--primary-fixed);
+   263→  color: var(--primary); font-weight: 700; font-size: 14px;
+   264→  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+   265→  box-shadow: 0 0 0 2px rgba(0, 65, 127, 0.2);
+   266→}
+   267→.burger {
+   268→  display: none; background: none; border: 1px solid var(--line); border-radius: 10px;
+   269→  padding: 7px 9px; cursor: pointer; color: var(--ink-2); flex-shrink: 0;
+   270→}
+   271→.burger .material { font-size: 20px; display: block; }
+   272→.content { padding: 32px; flex: 1; max-width: 1600px; width: 100%; }
+   273→
+   274→/* ---------- کارت‌ها و شبکه ---------- */
+   275→.grid { display: grid; gap: 16px; }
+   276→.cols-2 { grid-template-columns: repeat(2, 1fr); }
+   277→.cols-3 { grid-template-columns: repeat(3, 1fr); }
+   278→.cols-4 { grid-template-columns: repeat(4, 1fr); }
+   279→.card { background: var(--surface); border: 1px solid rgba(194, 198, 211, 0.6); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; transition: box-shadow .15s; }
+   280→.card:hover { box-shadow: var(--shadow-lift); }
+   281→.card h3 { margin: 0 0 12px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+   282→.card .card-sub { color: var(--ink-2); font-size: 12px; margin-top: 10px; }
+   283→
+   284→/* ---------- کارت‌های شاخص (KPI) ---------- */
+   285→.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+   286→.kpi-grid-3 { grid-template-columns: repeat(3, 1fr); margin-bottom: 24px; }
+   287→.kpi-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+   288→.kpi-lbl { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+   289→.kpi-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+   290→.kpi-icon .material { font-size: 22px; }
+   291→.t-primary { background: var(--primary-fixed); color: var(--primary); }
+   292→.t-surface { background: var(--surface-high); color: var(--primary); }
+   293→.t-tertiary { background: rgba(126, 251, 172, 0.4); color: var(--tertiary); }
+   294→.t-dim { background: rgba(168, 200, 255, 0.4); color: var(--primary); }
+   295→.kpi-num { font-size: 30px; font-weight: 800; color: var(--ink); line-height: 1.2; }
+   296→.kpi-sub { margin-top: 10px; font-size: 12px; font-weight: 500; color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
+   297→.kpi-sub .material { font-size: 16px; color: var(--primary); }
+   298→
+   299→/* ---------- جدول ---------- */
+   300→.tbl-wrap {
+   301→  overflow: auto; border: 1px solid rgba(194, 198, 211, 0.6); border-radius: 12px;
+   302→  background: var(--surface); max-height: 70vh; box-shadow: var(--shadow);
+   303→}
+   304→table.tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+   305→.tbl th {
+   306→  text-align: right; padding: 14px 16px; background: rgba(240, 243, 255, 0.75); color: var(--ink-2);
+   307→  font-size: 12px; font-weight: 500; border-bottom: 1px solid rgba(194, 198, 211, 0.6);
+   308→  position: sticky; top: 0; z-index: 2; white-space: nowrap; backdrop-filter: blur(4px);
+   309→}
+   310→.tbl td { padding: 14px 16px; border-bottom: 1px solid rgba(194, 198, 211, 0.4); vertical-align: middle; color: var(--ink); }
+   311→.tbl tr:last-child td { border-bottom: none; }
+   312→.tbl tbody tr { transition: background .12s; }
+   313→.tbl tbody tr:hover td { background: rgba(240, 243, 255, 0.35); }
+   314→.tbl b { font-weight: 700; }
+   315→
+   316→/* کارت جدول با تب‌ها (تبلیغات) */
+   317→.tbl-card { background: var(--surface); border: 1px solid rgba(194, 198, 211, 0.7); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+   318→.tabbar { display: flex; align-items: center; gap: 4px; padding: 20px 20px 0; overflow-x: auto; scrollbar-width: none; }
+   319→.tabbar::-webkit-scrollbar { display: none; }
+   320→.tab {
+   321→  border: none; background: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 500;
+   322→  color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: background .15s; font-family: inherit; min-height: 36px;
+   323→}
+   324→.tab:hover { background: var(--surface-container); }
+   325→.tab.active { background: var(--primary); color: var(--on-primary); font-weight: 700; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1); }
+   326→.tbl-card .tbl-wrap { border: none; border-radius: 0; max-height: 62vh; box-shadow: none; }
+   327→.tbl-foot {
+   328→  padding: 14px 20px; background: rgba(240, 243, 255, 0.4);
+   329→  border-top: 1px solid rgba(194, 198, 211, 0.5); font-size: 12px; font-weight: 500; color: var(--ink-2);
+   330→}
+   331→.tbl-toolbar { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid rgba(194, 198, 211, 0.5); flex-wrap: wrap; }
+   332→
+   333→/* ---------- سلول‌های ویژه جدول ---------- */
+   334→.cell-media { display: flex; align-items: center; gap: 12px; min-width: 210px; }
+   335→.cell-media b { display: block; font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.5; }
+   336→.cell-sub { display: block; font-size: 10px; color: var(--ink-2); margin-top: 2px; direction: ltr; text-align: right; }
+   337→.thumb { width: 56px; height: 36px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(194, 198, 211, 0.5); flex-shrink: 0; background: var(--surface-container); object-fit: cover; display: block; }
+   338→.thumb-empty { display: flex; align-items: center; justify-content: center; color: var(--ink-2); }
+   339→.thumb-empty .material { font-size: 18px; }
+   340→.cell-center { text-align: center; }
+   341→.cell-range { font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+   342→.cell-range .m-live { color: var(--tertiary); font-weight: 700; }
+   343→.cell-range .m-warn { color: var(--secondary); font-weight: 700; }
+   344→.placement-chip {
+   345→  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 8px;
+   346→  background: var(--primary-fixed); color: var(--primary); font-size: 10px; font-weight: 700; white-space: nowrap;
+   347→}
+   348→.placement-chip .material { font-size: 14px; }
+   349→.placement-chip.alt { background: var(--surface-container); color: var(--ink); }
+   350→.placement-chip.warn2 { background: rgba(255, 218, 213, 0.5); color: var(--secondary); }
+   351→.cell-meter { min-width: 118px; }
+   352→.meter-row { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+   353→.meter-row .m-imp { color: var(--ink); }
+   354→.meter-row .m-ctr { color: var(--primary); }
+   355→.meter { width: 118px; height: 6px; border-radius: 999px; background: var(--surface-high); overflow: hidden; }
+   356→.meter-fill { height: 100%; background: var(--primary); border-radius: 999px; transition: width .3s; }
+   357→.meter-fill.good { background: var(--tertiary-container); }
+   358→.meter-fill.low { background: var(--ink-3); }
+   359→
+   360→/* ---------- کلید تغییر وضعیت (Toggle) ---------- */
+   361→.switch { position: relative; display: inline-flex; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0; vertical-align: middle; }
+   362→.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+   363→.switch .knob { position: absolute; inset: 0; background: var(--surface-highest); border-radius: 999px; transition: background .18s; }
+   364→.switch .knob::after {
+   365→  content: ""; position: absolute; top: 2px; right: 2px; width: 20px; height: 20px;
+   366→  border-radius: 50%; background: #fff; border: 1px solid var(--line);
+   367→  transition: transform .18s; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+   368→}
+   369→.switch input:checked + .knob { background: var(--tertiary-container); }
+   370→.switch input:checked + .knob::after { transform: translateX(-20px); border-color: var(--tertiary-container); }
+   371→.switch input:focus-visible + .knob { outline: 2px solid var(--primary); outline-offset: 2px; }
+   372→
+   373→/* ---------- نشان‌ها ---------- */
+   374→.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+   375→.badge.ok { background: rgba(0, 76, 40, 0.08); color: var(--tertiary); }
+   376→.badge.off { background: var(--surface-container); color: var(--ink-2); border: 1px solid rgba(194, 198, 211, 0.5); }
+   377→.badge.warn { background: rgba(255, 218, 213, 0.5); color: var(--secondary); border: 1px solid rgba(188, 0, 12, 0.15); }
+   378→.badge.bad { background: var(--error-container); color: var(--on-error-container); }
+   379→.badge.info { background: var(--primary-fixed); color: var(--primary); }
+   380→.dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; flex-shrink: 0; border: 1px solid rgba(0, 0, 0, 0.12); }
+   381→
+   382→/* ---------- نوار ابزار ---------- */
+   383→.toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+   384→.toolbar .spacer { flex: 1; }
+   385→.toolbar input, .toolbar select {
+   386→  border: 1px solid rgba(194, 198, 211, 0.7); border-radius: 10px; padding: 8px 12px;
+   387→  background: var(--surface); min-height: 40px; outline: none; color: var(--ink);
+   388→  transition: border-color .15s, box-shadow .15s;
+   389→}
+   390→.toolbar input:focus, .toolbar select:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+   391→.toolbar input::placeholder { color: var(--ink-3); }
+   392→
+   393→/* ---------- نمودار میله‌ای ---------- */
+   394→.bars { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 8px; }
+   395→.bars .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+   396→.bars .bar { width: 70%; max-width: 42px; background: var(--primary); border-radius: 6px 6px 2px 2px; min-height: 3px; opacity: .9; transition: height .3s; }
+   397→.bars .bar-day { font-size: 10px; color: var(--ink-3); font-weight: 500; }
+   398→.bars .bar-val { font-size: 11px; font-weight: 700; color: var(--ink-2); }
+   399→
+   400→/* ---------- لیست فعالیت ---------- */
+   401→.feed { display: flex; flex-direction: column; gap: 0; max-height: 320px; overflow-y: auto; }
+   402→.feed-item { display: flex; gap: 10px; padding: 10px 2px; border-bottom: 1px solid rgba(194, 198, 211, 0.35); align-items: flex-start; }
+   403→.feed-item:last-child { border-bottom: none; }
+   404→.feed-item .fi-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); margin-top: 9px; flex-shrink: 0; }
+   405→.feed-item .fi-body { flex: 1; min-width: 0; }
+   406→.feed-item .fi-body b { font-size: 12.5px; }
+   407→.feed-item .fi-body p { margin: 0; font-size: 12px; color: var(--ink-2); }
+   408→.feed-item .fi-time { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+   409→
+   410→/* ---------- حالت‌های خالی ---------- */
+   411→.empty { text-align: center; padding: 40px 16px; color: var(--ink-3); }
+   412→.empty .material { font-size: 40px; display: block; margin-bottom: 8px; opacity: .35; }
+   413→
+   414→/* ---------- مودال ---------- */
+   415→.modal-back {
+   416→  position: fixed; inset: 0; background: rgba(17, 28, 45, 0.45); z-index: 60;
+   417→  display: flex; align-items: center; justify-content: center; padding: 16px;
+   418→  animation: fadeIn .15s ease;
+   419→}
+   420→.modal {
+   421→  background: var(--surface); border-radius: 16px; width: 100%; max-width: 480px;
+   422→  max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(17, 28, 45, 0.28);
+   423→  animation: popIn .18s ease;
+   424→}
+   425→.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(194, 198, 211, 0.6); }
+   426→.modal-head h3 { margin: 0; font-size: 15px; font-weight: 700; }
+   427→.modal-x { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--ink-3); padding: 4px 8px; border-radius: 8px; }
+   428→.modal-x:hover { background: var(--surface-container); color: var(--ink); }
+   429→.modal-body { padding: 20px; }
+   430→.modal-foot { display: flex; gap: 8px; justify-content: flex-start; padding: 14px 20px; border-top: 1px solid rgba(194, 198, 211, 0.6); }
+   431→@keyframes fadeIn { from { opacity: 0; } }
+   432→@keyframes popIn { from { opacity: 0; transform: scale(.96) translateY(6px); } }
+   433→
+   434→/* ---------- توست ---------- */
+   435→#toast-host { position: fixed; bottom: 20px; right: 50%; transform: translateX(50%); z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+   436→.toast {
+   437→  background: var(--inverse-surface); color: var(--inverse-on-surface);
+   438→  padding: 10px 18px; border-radius: 12px; font-size: 13px;
+   439→  box-shadow: 0 8px 24px rgba(17, 28, 45, 0.3); animation: toastIn .2s ease; max-width: 90vw;
+   440→}
+   441→.toast.err { background: var(--error); color: #fff; }
+   442→.toast.ok2 { background: var(--tertiary-container); color: #fff; }
+   443→@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } }
+   444→
+   445→/* ---------- اسکرول‌بار ---------- */
+   446→.tbl-wrap::-webkit-scrollbar, .feed::-webkit-scrollbar, .nav::-webkit-scrollbar, .modal::-webkit-scrollbar, .side-scroll::-webkit-scrollbar, .tabbar::-webkit-scrollbar { width: 8px; height: 8px; }
+   447→.tbl-wrap::-webkit-scrollbar-thumb, .feed::-webkit-scrollbar-thumb, .nav::-webkit-scrollbar-thumb, .modal::-webkit-scrollbar-thumb, .side-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+   448→.tbl-wrap::-webkit-scrollbar-thumb:hover, .feed::-webkit-scrollbar-thumb:hover, .side-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+   449→
+   450→/* ---------- ریسپانسیو ---------- */
+   451→@media (max-width: 1280px) {
+   452→  .db-chip { display: none; }
+   453→}
+   454→@media (max-width: 1024px) {
+   455→  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+   456→  .kpi-grid-3 { grid-template-columns: repeat(2, 1fr); }
+   457→  .cols-4 { grid-template-columns: repeat(2, 1fr); }
+   458→  .cols-3 { grid-template-columns: repeat(2, 1fr); }
+   459→}
+   460→@media (max-width: 768px) {
+   461→  .burger { display: inline-flex; }
+   462→  .main { margin-right: 0; }
+   463→  .sidebar {
+   464→    transform: translateX(100%); transition: transform .2s ease;
+   465→    width: 288px; box-shadow: -8px 0 32px rgba(17, 28, 45, 0.18);
+   466→  }
+   467→  .sidebar.open { transform: translateX(0); }
+   468→  .sidebar-back { position: fixed; inset: 0; background: rgba(17, 28, 45, 0.4); z-index: 39; }
+   469→  .content { padding: 16px; }
+   470→  .topbar { padding: 0 14px; gap: 8px; }
+   471→  .top-divider { display: none; }
+   472→  .kpi-grid, .kpi-grid-3 { grid-template-columns: 1fr; }
+   473→  .cols-2, .cols-3, .cols-4 { grid-template-columns: 1fr; }
+   474→  .page-head { padding-bottom: 16px; margin-bottom: 16px; }
+   475→  .page-head h1 { font-size: 20px; }
+   476→}
+   477→@media (min-width: 769px) {
+   478→  .burger { display: none !important; }
+   479→}
+   480→
+   481→/* ============================================================
+   482→   افزوده‌های نسخه ۲.۵ — امکانات کامل (هم‌خوان با سیستم مترویار)
+   483→   ============================================================ */
+   484→
+   485→/* شبکه ۵ ستونه برای KPIهای آماری */
+   486→.kpi-grid-5 { grid-template-columns: repeat(5, 1fr); margin-bottom: 24px; }
+   487→@media (max-width: 1200px) { .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); } }
+   488→@media (max-width: 768px) { .kpi-grid-5 { grid-template-columns: repeat(2, 1fr); } }
+   489→
+   490→/* چیپ ترتیب / اولویت */
+   491→.order-chip {
+   492→  display: inline-flex; align-items: center; justify-content: center;
+   493→  min-width: 34px; padding: 2px 8px; border-radius: 8px;
+   494→  background: var(--surface-high); color: var(--primary); font-size: 11px; font-weight: 800;
+   495→}
+   496→
+   497→/* یادداشت نوار ابزار */
+   498→.toolbar-note { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+   499→.toolbar .spacer { flex: 1; }
+   500→
+   501→/* چک‌باکس جدول */
+   502→.tbl input[type="checkbox"] {
+   503→  width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;
+   504→}
+   505→
+   506→/* نوار عملیات گروهی */
+   507→.bulkbar {
+   508→  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+   509→  padding: 10px 20px; background: var(--primary-fixed);
+   510→  border-top: 1px solid var(--primary-fixed-dim); border-bottom: 1px solid var(--primary-fixed-dim);
+   511→  animation: fadeIn .15s ease;
+   512→}
+   513→.bulkbar-count { font-size: 12px; font-weight: 800; color: var(--primary); margin-inline-end: 6px; }
+   514→
+   515→/* میان‌برهای زمان‌بندی */
+   516→.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+   517→
+   518→/* پیش‌نمایش زنده بنر */
+   519→.preview-banner {
+   520→  display: flex; align-items: center; gap: 12px;
+   521→  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+   522→  color: #fff; border-radius: 12px; padding: 14px 16px; min-height: 92px;
+   523→  box-shadow: 0 4px 14px rgba(0, 65, 127, 0.25); overflow: hidden;
+   524→}
+   525→.preview-banner img { width: 84px; height: 60px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid rgba(255,255,255,.25); }
+   526→.preview-banner .pb-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+   527→.preview-banner .pb-row { display: flex; align-items: center; gap: 8px; }
+   528→.preview-banner .pb-badge {
+   529→  background: rgba(255, 255, 255, 0.92); color: var(--primary);
+   530→  font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+   531→}
+   532→.preview-banner .pb-place {
+   533→  display: inline-flex; align-items: center; gap: 4px;
+   534→  background: rgba(255, 255, 255, 0.18); color: #fff;
+   535→  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+   536→}
+   537→.preview-banner .pb-place .material { font-size: 13px; }
+   538→.preview-banner .pb-title { font-size: 14px; font-weight: 800; line-height: 1.5; }
+   539→.preview-banner .pb-sub { font-size: 11px; opacity: .85; line-height: 1.6; }
+   540→.preview-banner .pb-cta {
+   541→  align-self: flex-start; display: inline-flex; align-items: center; gap: 2px;
+   542→  margin-top: 4px; background: #fff; color: var(--primary);
+   543→  font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 8px; cursor: default;
+   544→}
+   545→.preview-banner .pb-cta .material { font-size: 14px; }
+   546→
+   547→/* پروفایل کاربر */
+   548→.detail-grid { display: flex; flex-direction: column; }
+   549→.detail-row {
+   550→  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+   551→  padding: 9px 0; border-bottom: 1px solid rgba(194, 198, 211, 0.35); font-size: 13px;
+   552→}
+   553→.detail-row:last-child { border-bottom: none; }
+   554→.detail-row > span:first-child { color: var(--ink-2); font-size: 12px; }
+   555→.trips-adjust { display: flex; flex-wrap: wrap; gap: 6px; }
+   556→
+   557→/* آزمایش نگاشت صوتی */
+   558→.lex-test { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+   559→.lex-test input {
+   560→  flex: 1; border: 1px solid rgba(194, 198, 211, 0.7); border-radius: 10px;
+   561→  padding: 9px 12px; background: var(--surface); outline: none; min-height: 40px;
+   562→}
+   563→.lex-test input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+   564→.lex-result {
+   565→  display: flex; flex-direction: column; gap: 4px;
+   566→  background: var(--surface-low); border: 1px solid rgba(194, 198, 211, 0.5);
+   567→  border-radius: 10px; padding: 10px 12px; font-size: 12.5px;
+   568→}
+   569→.lex-result .material { font-size: 18px; color: var(--tertiary-container); }
+   570→.lex-toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
+   571→.lex-toolbar input {
+   572→  flex: 1; border: 1px solid rgba(194, 198, 211, 0.7); border-radius: 10px;
+   573→  padding: 8px 12px; background: var(--surface); outline: none; min-height: 38px;
+   574→}
+   575→.lex-toolbar input:focus { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+   576→
+   577→/* نمودار دوگانه نمایش/کلیک */
+   578→.legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-2); margin-bottom: 4px; font-weight: 600; }
+   579→.lg { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+   580→.lg-imp { background: var(--primary); }
+   581→.lg-clk { background: var(--tertiary-container); }
+   582→.bars-dual { height: 140px; }
+   583→.bars .bar-pair { display: flex; align-items: flex-end; gap: 3px; height: 100%; }
+   584→.bars .bar.imp { background: var(--primary); width: 12px; max-width: 16px; }
+   585→.bars .bar.clk { background: var(--tertiary-container); width: 8px; max-width: 12px; border-radius: 4px 4px 2px 2px; }
+   586→
+   587→/* ترکیب وضعیت کاربران */
+   588→.user-status-row { display: flex; gap: 10px; flex-wrap: wrap; }
+   589→.us-box {
+   590→  flex: 1; min-width: 90px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+   591→  background: var(--surface-low); border: 1px solid rgba(194, 198, 211, 0.5);
+   592→  border-radius: 12px; padding: 12px 8px; font-size: 11px; color: var(--ink-2);
+   593→}
+   594→.us-box b { font-size: 20px; color: var(--ink); }
+   595→
+   596→/* ابر ایستگاه‌ها */
+   597→.station-cloud { display: flex; flex-wrap: wrap; gap: 8px; max-height: 140px; overflow-y: auto; }
+   598→.station-chip {
+   599→  display: inline-flex; align-items: center; gap: 6px;
+   600→  background: var(--surface-low); border: 1px solid rgba(194, 198, 211, 0.5);
+   601→  border-radius: 999px; padding: 4px 12px; font-size: 11.5px; font-weight: 600; color: var(--ink);
+   602→}
+   603→.station-chip small { color: var(--ink-3); font-weight: 500; }
+   604→
+   605→/* ============================================================
+   606→   افزوده‌های نسخه ۲.۶ — پوشش شهرها و قابلیت فیلتر شهر
+   607→   ============================================================ */
+   608→.city-coverage { display: flex; flex-direction: column; gap: 14px; }
+   609→.cc-row { display: flex; flex-direction: column; gap: 7px; }
+   610→.cc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+   611→.cc-city {
+   612→  display: inline-flex; align-items: center; gap: 7px;
+   613→  font-size: 13px; font-weight: 700; color: var(--ink);
+   614→}
+   615→.cc-city .material { font-size: 17px; color: var(--primary); }
+   616→.cc-nums { display: inline-flex; align-items: center; gap: 6px; }
+   617→.cc-row .meter { height: 8px; border-radius: 999px; }
+   618→.city-thumb .material { font-size: 20px; color: var(--primary); }
+   619→
+   620→@media (max-width: 768px) {
+   621→  .bulkbar { padding: 10px 14px; }
+   622→  .preview-banner img { width: 64px; height: 48px; }
+   623→}
+   624→

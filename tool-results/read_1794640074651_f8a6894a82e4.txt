@@ -1,0 +1,562 @@
+   421→        <option value="disabled">غیرفعال</option>
+   422→      </select>
+   423→    </div>
+   424→    <div id="u-table"></div>`;
+   425→  let lastRows = [];
+   426→  const load = async () => {
+   427→    const q = document.getElementById("u-q").value.trim();
+   428→    const st = document.getElementById("u-status").value;
+   429→    const rows = await api(`users?q=${encodeURIComponent(q)}&status=${st}`);
+   430→    lastRows = rows;
+   431→    document.getElementById("u-table").innerHTML = rows.length ? `
+   432→      <div class="tbl-wrap"><table class="tbl">
+   433→        <thead><tr><th>نام</th><th>شماره</th><th>وضعیت</th><th>سفرها</th><th>عضویت</th><th>آخرین بازدید</th><th>عملیات</th></tr></thead>
+   434→        <tbody>
+   435→          ${rows.map((u) => {
+   436→            const [lbl, cls] = STATUS_LABEL[u.status] || [u.status, "off"];
+   437→            return `<tr>
+   438→              <td><b>${esc(u.display_name)}</b></td>
+   439→              <td>${esc(u.phone || "—")}</td>
+   440→              <td><span class="badge ${cls}">${lbl}</span></td>
+   441→              <td>${faNum(u.trips_count)}</td>
+   442→              <td>${faTime(u.created_at)}</td>
+   443→              <td>${faTime(u.last_seen)}</td>
+   444→              <td><div class="acts">
+   445→                <button class="icon-btn" data-detail="${u.id}" title="پروفایل و تنظیم سفرها"><span class="material">person</span></button>
+   446→                ${writable ? `<button class="icon-btn" data-edit="${u.id}" title="ویرایش کاربر"><span class="material">edit</span></button>
+   447→                <button class="icon-btn danger" data-del="${u.id}" data-name="${esc(u.display_name)}" title="حذف کاربر"><span class="material">delete</span></button>` : ""}
+   448→              </div></td>
+   449→            </tr>`;
+   450→          }).join("")}
+   451→        </tbody>
+   452→      </table></div>` : `<div class="card"><div class="empty"><span class="material">group_off</span>کاربری یافت نشد</div></div>`;
+   453→    document.querySelectorAll("[data-detail]").forEach((b) => (b.onclick = () => openUserDetail(lastRows.find((x) => x.id === Number(b.dataset.detail)))));
+   454→    if (writable) {
+   455→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openUserForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+   456→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   457→        confirmDialog(`کاربر «${b.dataset.name}» حذف شود؟`, async () => {
+   458→          await api(`users/${b.dataset.del}`, { method: "DELETE" });
+   459→          toast("کاربر حذف شد", "ok2"); load();
+   460→        })));
+   461→    }
+   462→  };
+   463→  document.getElementById("u-q").oninput = load;
+   464→  document.getElementById("u-status").onchange = load;
+   465→  document.getElementById("u-csv").onclick = () => {
+   466→    csvExport("darmasir-users.csv", ["نام", "شماره", "وضعیت", "سفرها", "عضویت", "آخرین بازدید"],
+   467→      lastRows.map((u) => [u.display_name, u.phone || "", STATUS_LABEL[u.status]?.[0] || u.status, u.trips_count, faTime(u.created_at), faTime(u.last_seen)]));
+   468→  };
+   469→  const addBtn = document.getElementById("u-add");
+   470→  if (addBtn) addBtn.onclick = () => openUserForm(null, load);
+   471→  await load();
+   472→}
+   473→
+   474→/* پروفایل کاربر + تنظیم سفرها */
+   475→function openUserDetail(user) {
+   476→  if (!user) return;
+   477→  const writable = can("operator");
+   478→  const close = modal(`پروفایل — ${user.display_name}`, `
+   479→    <div class="detail-grid">
+   480→      <div class="detail-row"><span>شماره تماس</span><b style="direction:ltr">${esc(user.phone || "—")}</b></div>
+   481→      <div class="detail-row"><span>وضعیت</span><span class="badge ${(STATUS_LABEL[user.status] || ["", "off"])[1]}">${(STATUS_LABEL[user.status] || [user.status])[0]}</span></div>
+   482→      <div class="detail-row"><span>تاریخ عضویت</span><b>${faTime(user.created_at)}</b></div>
+   483→      <div class="detail-row"><span>آخرین بازدید</span><b>${faTime(user.last_seen)}</b></div>
+   484→      <div class="detail-row"><span>سفرهای ثبت‌شده</span><b id="ud-trips">${faNum(user.trips_count)}</b></div>
+   485→    </div>
+   486→    ${writable ? `
+   487→    <div class="field" style="margin-top:14px"><label>تنظیم دستی تعداد سفرها</label>
+   488→      <div class="trips-adjust">
+   489→        <button class="btn btn-sm" data-delta="-10">−۱۰</button>
+   490→        <button class="btn btn-sm" data-delta="-5">−۵</button>
+   491→        <button class="btn btn-sm" data-delta="-1">−۱</button>
+   492→        <button class="btn btn-sm" data-delta="1">+۱</button>
+   493→        <button class="btn btn-sm" data-delta="5">+۵</button>
+   494→        <button class="btn btn-sm" data-delta="10">+۱۰</button>
+   495→      </div>
+   496→      <span class="hint">برای همگام‌سازی با سامانه پرداخت یا اصلاح خطای شمارش استفاده می‌شود.</span>
+   497→    </div>` : ""}`,
+   498→    `<button class="btn" id="f-cancel">بستن</button>`);
+   499→  document.getElementById("f-cancel").onclick = close;
+   500→  if (writable) {
+   501→    document.querySelectorAll("[data-delta]").forEach((b) => (b.onclick = async () => {
+   502→      try {
+   503→        const r = await api(`users/trips/${user.id}`, { method: "POST", body: { delta: Number(b.dataset.delta) } });
+   504→        user.trips_count = r.trips_count;
+   505→        document.getElementById("ud-trips").textContent = faNum(r.trips_count);
+   506→        toast("سفرها بروزرسانی شد", "ok2");
+   507→        renderPage("users");
+   508→      } catch (ex) { toast(ex.message, "err"); }
+   509→    }));
+   510→  }
+   511→}
+   512→
+   513→function openUserForm(user, after) {
+   514→  const isEdit = !!user;
+   515→  const close = modal(isEdit ? "ویرایش کاربر" : "کاربر جدید", `
+   516→    <div class="field"><label>نام نمایشی</label><input id="f-name" value="${esc(user?.display_name || "")}" placeholder="مثلاً کاربر نمونه" /></div>
+   517→    <div class="field"><label>شماره تماس</label><input id="f-phone" value="${esc(user?.phone || "")}" placeholder="۰۹…" /></div>
+   518→    <div class="field"><label>وضعیت</label>
+   519→      <select id="f-status">
+   520→        <option value="active" ${user?.status === "active" ? "selected" : ""}>فعال</option>
+   521→        <option value="limited" ${user?.status === "limited" ? "selected" : ""}>محدود</option>
+   522→        <option value="disabled" ${user?.status === "disabled" ? "selected" : ""}>غیرفعال</option>
+   523→      </select></div>`,
+   524→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   525→  document.getElementById("f-cancel").onclick = close;
+   526→  document.getElementById("f-save").onclick = async () => {
+   527→    const body = {
+   528→      display_name: document.getElementById("f-name").value.trim(),
+   529→      phone: document.getElementById("f-phone").value.trim(),
+   530→      status: document.getElementById("f-status").value,
+   531→    };
+   532→    if (!body.display_name) { toast("نام الزامی است", "err"); return; }
+   533→    try {
+   534→      await api(isEdit ? `users/${user.id}` : "users", { method: isEdit ? "PUT" : "POST", body });
+   535→      toast(isEdit ? "کاربر بروزرسانی شد" : "کاربر اضافه شد", "ok2");
+   536→      close(); after ? after() : renderPage("users");
+   537→    } catch (ex) { toast(ex.message, "err"); }
+   538→  };
+   539→}
+   540→
+   541→/* ---------- شهرها ---------- */
+   542→
+   543→async function pageCities(host) {
+   544→  const writable = can("operator");
+   545→  let lastRows = [];
+   546→  host.innerHTML = `
+   547→    ${pageHead("شهرها", "تعریف شهرهای تحت پوشش؛ هر خط و ایستگاه به یک شهر متصل می‌شود و در کل پنل بر اساس شهر فیلتر می‌گردد.",
+   548→      writable ? `<button class="btn btn-primary" id="c-add"><span class="material">add</span><span>شهر جدید</span></button>` : "")}
+   549→    <div class="toolbar">
+   550→      <input id="c-q" placeholder="جست‌وجوی نام شهر…" style="min-width:220px" />
+   551→      <span class="toolbar-note" id="c-count"></span>
+   552→    </div>
+   553→    <div id="c-table"></div>`;
+   554→  const load = async () => {
+   555→    const rows = await api("cities");
+   556→    lastRows = rows;
+   557→    const q = document.getElementById("c-q").value.trim();
+   558→    const shown = q ? rows.filter((c) => c.name.includes(q)) : rows;
+   559→    document.getElementById("c-count").textContent = `${faNum(rows.length)} شهر ثبت‌شده`;
+   560→    document.getElementById("c-table").innerHTML = shown.length ? `
+   561→      <div class="tbl-wrap"><table class="tbl">
+   562→        <thead><tr><th>نام شهر</th><th class="cell-center">خطوط متصل</th><th class="cell-center">ایستگاه‌ها</th><th>تاریخ ثبت</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+   563→        <tbody>
+   564→          ${shown.map((c) => `
+   565→            <tr>
+   566→              <td><div class="cell-media"><div class="thumb thumb-empty city-thumb"><span class="material">location_city</span></div><b>${esc(c.name)}</b></div></td>
+   567→              <td class="cell-center"><span class="badge info">${faNum(c.lines_count)}</span></td>
+   568→              <td class="cell-center"><span class="badge ok">${faNum(c.stations_count)}</span></td>
+   569→              <td>${faTime(c.created_at)}</td>
+   570→              <td><span class="badge ${c.is_active ? "ok" : "off"}">${c.is_active ? "فعال" : "غیرفعال"}</span></td>
+   571→              ${writable ? `<td><div class="acts">
+   572→                <button class="icon-btn" data-edit="${c.id}" title="ویرایش شهر"><span class="material">edit</span></button>
+   573→                <button class="icon-btn danger" data-del="${c.id}" data-name="${esc(c.name)}" title="حذف شهر"><span class="material">delete</span></button>
+   574→              </div></td>` : ""}
+   575→            </tr>`).join("")}
+   576→        </tbody>
+   577→      </table></div>` : `<div class="card"><div class="empty"><span class="material">location_city</span>شهری یافت نشد</div></div>`;
+   578→    if (writable) {
+   579→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openCityForm(rows.find((x) => x.id === Number(b.dataset.edit)), load)));
+   580→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   581→        confirmDialog(`شهر «${b.dataset.name}» حذف شود؟ (فقط اگر خط یا ایستگاهی به آن متصل نباشد)`, async () => {
+   582→          try {
+   583→            await api(`cities/${b.dataset.del}`, { method: "DELETE" });
+   584→            toast("شهر حذف شد", "ok2"); load();
+   585→          } catch (ex) { toast(ex.message, "err"); }
+   586→        })));
+   587→    }
+   588→  };
+   589→  document.getElementById("c-q").oninput = load;
+   590→  const addBtn = document.getElementById("c-add");
+   591→  if (addBtn) addBtn.onclick = () => openCityForm(null, load);
+   592→  await load();
+   593→}
+   594→
+   595→function openCityForm(city, after) {
+   596→  const isEdit = !!city;
+   597→  const close = modal(isEdit ? "ویرایش شهر" : "شهر جدید", `
+   598→    <div class="field"><label>نام شهر</label><input id="f-cityname" value="${esc(city?.name || "")}" placeholder="مثلاً شیراز" /></div>
+   599→    <div class="field"><label>وضعیت</label>
+   600→      <select id="f-cityactive"><option value="1" ${!city || city.is_active ? "selected" : ""}>فعال</option><option value="0" ${city && !city.is_active ? "selected" : ""}>غیرفعال</option></select></div>
+   601→    ${isEdit ? '<span class="hint">با تغییر نام شهر، اتصال خطوط و ایستگاه‌های این شهر حفظ می‌شود.</span>' : '<span class="hint">پس از ثبت، شهر در فرم خطوط، ایستگاه‌ها و فیلترها قابل انتخاب است.</span>'}`,
+   602→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   603→  document.getElementById("f-cancel").onclick = close;
+   604→  document.getElementById("f-save").onclick = async () => {
+   605→    const name = document.getElementById("f-cityname").value.trim();
+   606→    if (!name) { toast("نام شهر الزامی است", "err"); return; }
+   607→    try {
+   608→      await api(isEdit ? `cities/${city.id}` : "cities", {
+   609→        method: isEdit ? "PUT" : "POST",
+   610→        body: { name, is_active: Number(document.getElementById("f-cityactive").value) },
+   611→      });
+   612→      toast(isEdit ? "شهر بروزرسانی شد" : "شهر اضافه شد", "ok2");
+   613→      close(); after ? after() : renderPage("cities");
+   614→    } catch (ex) { toast(ex.message, "err"); }
+   615→  };
+   616→}
+   617→
+   618→/* ---------- خطوط ---------- */
+   619→
+   620→async function pageLines(host) {
+   621→  const writable = can("operator");
+   622→  let mode = "metro";
+   623→  let cityId = "";
+   624→  const cities = await api("cities");
+   625→  host.innerHTML = `
+   626→    ${pageHead("خطوط", "مدیریت خطوط مترو، اتوبوس و اتوبوس تندرو؛ هر خط به یک شهر متصل است و می‌توانید بر اساس شهر فیلتر کنید.",
+   627→      writable ? `<button class="btn btn-primary" id="l-add"><span class="material">add</span><span>خط جدید</span></button>` : "")}
+   628→    <div class="toolbar">
+   629→      <select id="l-city" aria-label="فیلتر شهر">
+   630→        <option value="">همه شهرها</option>
+   631→        ${cities.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}
+   632→      </select>
+   633→      <select id="l-mode">
+   634→        <option value="metro">مترو</option>
+   635→        <option value="bus">اتوبوس</option>
+   636→        <option value="brt">اتوبوس تندرو</option>
+   637→      </select>
+   638→      <span class="toolbar-note" id="l-count"></span>
+   639→    </div>
+   640→    <div id="l-table"></div>`;
+   641→  const load = async () => {
+   642→    const rows = await api(`lines?mode=${mode}&city_id=${cityId}`);
+   643→    document.getElementById("l-count").textContent = `${faNum(rows.length)} خط${cityId ? " در " + esc((cities.find((c) => String(c.id) === String(cityId)) || {}).name || "") : ""}`;
+   644→    document.getElementById("l-table").innerHTML = rows.length ? `
+   645→      <div class="tbl-wrap"><table class="tbl">
+   646→        <thead><tr><th></th><th>نام خط</th><th>شهر</th><th>شماره</th><th>سرخط‌ها</th><th>جهت</th><th>ایستگاه‌ها</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+   647→        <tbody>
+   648→          ${rows.map((l) => `
+   649→            <tr>
+   650→              <td><span class="dot" style="background:${esc(l.color)}"></span></td>
+   651→              <td><b>${esc(l.name)}</b></td>
+   652→              <td>${l.city_name ? `<span class="placement-chip"><span class="material">location_city</span>${esc(l.city_name)}</span>` : '<span class="badge off">بدون شهر</span>'}</td>
+   653→              <td>${l.number ?? "—"}</td>
+   654→              <td>${esc((l.terminals || "").split("|").filter(Boolean).join(" ← ")) || "—"}</td>
+   655→              <td>${esc(l.direction || "—")}</td>
+   656→              <td><span class="badge info">${faNum(l.station_count ?? 0)} ایستگاه</span></td>
+   657→              <td><span class="badge ${l.is_active ? "ok" : "off"}">${l.is_active ? "فعال" : "غیرفعال"}</span></td>
+   658→              ${writable ? `<td><div class="acts">
+   659→                <button class="icon-btn" data-up="${l.id}" title="انتقال به بالا"><span class="material">arrow_upward</span></button>
+   660→                <button class="icon-btn" data-down="${l.id}" title="انتقال به پایین"><span class="material">arrow_downward</span></button>
+   661→                <button class="icon-btn" data-dup="${l.id}" data-name="${esc(l.name)}" title="تکثیر خط"><span class="material">content_copy</span></button>
+   662→                <button class="icon-btn" data-edit="${l.id}" title="ویرایش خط"><span class="material">edit</span></button>
+   663→                <button class="icon-btn danger" data-del="${l.id}" data-name="${esc(l.name)}" title="حذف خط"><span class="material">delete</span></button>
+   664→              </div></td>` : ""}
+   665→            </tr>`).join("")}
+   666→        </tbody>
+   667→      </table></div>` : `<div class="card"><div class="empty"><span class="material">alt_route</span>خطی در این دسته ثبت نشده است</div></div>`;
+   668→    if (writable) {
+   669→      document.querySelectorAll("[data-up]").forEach((b) => (b.onclick = () => reorderLine(Number(b.dataset.up), "up")));
+   670→      document.querySelectorAll("[data-down]").forEach((b) => (b.onclick = () => reorderLine(Number(b.dataset.down), "down")));
+   671→      document.querySelectorAll("[data-dup]").forEach((b) => (b.onclick = async () => {
+   672→        await api("lines/duplicate", { method: "POST", body: { id: Number(b.dataset.dup) } });
+   673→        toast(`خط «${b.dataset.name}» تکثیر شد (غیرفعال)`, "ok2"); load();
+   674→      }));
+   675→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openLineForm(rows.find((x) => x.id === Number(b.dataset.edit)), load, cities)));
+   676→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   677→        confirmDialog(`خط «${b.dataset.name}» و ایستگاه‌هایش حذف شوند؟`, async () => {
+   678→          await api(`lines/${b.dataset.del}`, { method: "DELETE" });
+   679→          toast("خط حذف شد", "ok2"); load();
+   680→        })));
+   681→    }
+   682→  };
+   683→  const reorderLine = async (id, dir) => {
+   684→    const r = await api("lines/reorder", { method: "POST", body: { id, dir } });
+   685→    if (!r.moved) { toast("جابه‌جایی ممکن نیست — به انتهای فهرست است", "err"); return; }
+   686→    load();
+   687→  };
+   688→  document.getElementById("l-mode").onchange = (e) => { mode = e.target.value; load(); };
+   689→  document.getElementById("l-city").onchange = (e) => { cityId = e.target.value; load(); };
+   690→  const addBtn = document.getElementById("l-add");
+   691→  if (addBtn) addBtn.onclick = () => openLineForm(null, load, cities);
+   692→  await load();
+   693→}
+   694→
+   695→function openLineForm(line, after, cities = []) {
+   696→  const isEdit = !!line;
+   697→  const close = modal(isEdit ? "ویرایش خط" : "خط جدید", `
+   698→    <div class="field"><label>نام خط</label><input id="f-name" value="${esc(line?.name || "")}" placeholder="مثلاً خط ۱" /></div>
+   699→    <div class="field"><label>شهر</label>
+   700→      <select id="f-city">
+   701→        <option value="">— انتخاب شهر —</option>
+   702→        ${cities.map((c) => `<option value="${c.id}" ${String(line?.city_id ?? "") === String(c.id) ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+   703→      </select>
+   704→      <span class="hint">خط به شهر متصل می‌شود و در اپلیکیشن و فیلترهای پنل بر اساس آن دسته‌بندی می‌گردد.</span></div>
+   705→    <div class="field"><label>دسته</label>
+   706→      <select id="f-mode">
+   707→        <option value="metro" ${line?.mode === "metro" ? "selected" : ""}>مترو</option>
+   708→        <option value="bus" ${line?.mode === "bus" ? "selected" : ""}>اتوبوس</option>
+   709→        <option value="brt" ${line?.mode === "brt" ? "selected" : ""}>اتوبوس تندرو</option>
+   710→      </select></div>
+   711→    <div class="grid cols-2">
+   712→      <div class="field"><label>شماره</label><input id="f-number" type="number" value="${line?.number ?? ""}" /></div>
+   713→      <div class="field"><label>رنگ (hex)</label><input id="f-color" value="${esc(line?.color || "#009640")}" placeholder="#009640" /></div>
+   714→    </div>
+   715→    <div class="field"><label>سرخط‌ها</label><input id="f-terminals" value="${esc(line?.terminals || "")}" placeholder="مبدأ|مقصد" /><span class="hint">دو سرخط را با «|» جدا کنید</span></div>
+   716→    <div class="field"><label>جهت</label><input id="f-direction" value="${esc(line?.direction || "")}" placeholder="مثلاً شمال - جنوب" /></div>
+   717→    <div class="field"><label>وضعیت</label>
+   718→      <select id="f-active"><option value="1" ${!line || line.is_active ? "selected" : ""}>فعال</option><option value="0" ${line && !line.is_active ? "selected" : ""}>غیرفعال</option></select></div>`,
+   719→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   720→  document.getElementById("f-cancel").onclick = close;
+   721→  document.getElementById("f-save").onclick = async () => {
+   722→    const body = {
+   723→      name: document.getElementById("f-name").value.trim(),
+   724→      city_id: document.getElementById("f-city").value,
+   725→      mode: document.getElementById("f-mode").value,
+   726→      number: document.getElementById("f-number").value,
+   727→      color: document.getElementById("f-color").value.trim(),
+   728→      terminals: document.getElementById("f-terminals").value.trim(),
+   729→      direction: document.getElementById("f-direction").value.trim(),
+   730→      is_active: Number(document.getElementById("f-active").value),
+   731→    };
+   732→    if (!body.name) { toast("نام خط الزامی است", "err"); return; }
+   733→    if (!body.city_id) { toast("تعیین شهر خط الزامی است", "err"); return; }
+   734→    try {
+   735→      await api(isEdit ? `lines/${line.id}` : "lines", { method: isEdit ? "PUT" : "POST", body });
+   736→      toast(isEdit ? "خط بروزرسانی شد" : "خط اضافه شد", "ok2");
+   737→      close(); after ? after() : renderPage("lines");
+   738→    } catch (ex) { toast(ex.message, "err"); }
+   739→  };
+   740→}
+   741→
+   742→/* ---------- ایستگاه‌ها ---------- */
+   743→
+   744→async function pageStations(host) {
+   745→  const writable = can("operator");
+   746→  const [lines, cities] = await Promise.all([api("lines"), api("cities")]);
+   747→  if (!lines.length) { host.innerHTML = `${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط و مختصات جغرافیایی.")}<div class="card"><div class="empty"><span class="material">location_off</span>ابتدا یک خط ثبت کنید</div></div>`; return; }
+   748→  host.innerHTML = `
+   749→    ${pageHead("ایستگاه‌ها", "مدیریت ایستگاه‌های هر خط، ترتیب قرارگیری و مختصات جغرافیایی؛ ایستگاه‌ها به شهر خط خود متصل می‌شوند.",
+   750→      `${writable ? `<button class="btn" id="s-bulk"><span class="material">playlist_add</span><span>افزودن گروهی</span></button>
+   751→      <button class="btn btn-primary" id="s-add"><span class="material">add</span><span>ایستگاه جدید</span></button>` : ""}`)}
+   752→    <div class="toolbar">
+   753→      <select id="s-city" aria-label="فیلتر شهر">
+   754→        <option value="">همه شهرها</option>
+   755→        ${cities.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}
+   756→      </select>
+   757→      <select id="s-line" aria-label="فیلتر خط"></select>
+   758→      <span class="toolbar-note" id="s-count"></span>
+   759→    </div>
+   760→    <div id="s-table"></div>`;
+   761→
+   762→  const fillLineOptions = () => {
+   763→    const cityId = document.getElementById("s-city").value;
+   764→    const shown = cityId ? lines.filter((l) => String(l.city_id) === cityId) : lines;
+   765→    const prev = document.getElementById("s-line").value;
+   766→    document.getElementById("s-line").innerHTML =
+   767→      `<option value="">همه خط‌ها${cityId ? " این شهر" : ""}</option>` +
+   768→      shown.map((l) => `<option value="${l.id}">${esc(l.name)}${l.city_name ? " — " + esc(l.city_name) : ""}</option>`).join("");
+   769→    // اگر خط قبلی در شهر جدید نیست، به «همه خط‌ها» برگرد
+   770→    if (prev && !shown.some((l) => String(l.id) === prev)) document.getElementById("s-line").value = "";
+   771→    else document.getElementById("s-line").value = prev;
+   772→  };
+   773→  fillLineOptions();
+   774→
+   775→  const load = async () => {
+   776→    const cityId = document.getElementById("s-city").value;
+   777→    const lineId = document.getElementById("s-line").value;
+   778→    const rows = lineId ? await api(`stations?line_id=${lineId}`) : cityId ? await api(`stations?city_id=${cityId}`) : await api("stations");
+   779→    const showLineCol = !lineId;
+   780→    const showCityCol = !cityId;
+   781→    document.getElementById("s-count").textContent = lineId
+   782→      ? `${faNum(rows.length)} ایستگاه در این خط`
+   783→      : cityId
+   784→        ? `${faNum(rows.length)} ایستگاه در شهر ${esc((cities.find((c) => c.id === Number(cityId)) || {}).name || "")}`
+   785→        : `${faNum(rows.length)} ایستگاه در همه شهرها`;
+   786→    document.getElementById("s-table").innerHTML = rows.length ? `
+   787→      <div class="tbl-wrap"><table class="tbl">
+   788→        <thead><tr><th>ترتیب</th><th>نام ایستگاه</th>${showLineCol ? "<th>خط</th>" : ""}${showCityCol ? "<th>شهر</th>" : ""}<th>عرض جغرافیایی</th><th>طول جغرافیایی</th><th>وضعیت</th>${writable ? "<th>عملیات</th>" : ""}</tr></thead>
+   789→        <tbody>
+   790→          ${rows.map((s) => `
+   791→            <tr>
+   792→              <td><span class="order-chip">${faNum(s.order_index)}</span></td>
+   793→              <td><b>${esc(s.name)}</b></td>
+   794→              ${showLineCol ? `<td><span class="dot" style="background:${esc(s.line_color || "#009640")}"></span> ${esc(s.line_name || "—")}</td>` : ""}
+   795→              ${showCityCol ? `<td>${s.city_name ? `<span class="placement-chip"><span class="material">location_city</span>${esc(s.city_name)}</span>` : '<span class="badge off">بدون شهر</span>'}</td>` : ""}
+   796→              <td>${s.lat ?? "—"}</td>
+   797→              <td>${s.lng ?? "—"}</td>
+   798→              <td><span class="badge ${s.is_active ? "ok" : "off"}">${s.is_active ? "فعال" : "غیرفعال"}</span></td>
+   799→              ${writable ? `<td><div class="acts">
+   800→                <button class="icon-btn" data-up="${s.id}" title="انتقال به بالا"><span class="material">arrow_upward</span></button>
+   801→                <button class="icon-btn" data-down="${s.id}" title="انتقال به پایین"><span class="material">arrow_downward</span></button>
+   802→                <button class="icon-btn" data-edit="${s.id}" title="ویرایش / انتقال به خط دیگر"><span class="material">edit</span></button>
+   803→                <button class="icon-btn danger" data-del="${s.id}" data-name="${esc(s.name)}" title="حذف ایستگاه"><span class="material">delete</span></button>
+   804→              </div></td>` : ""}
+   805→            </tr>`).join("")}
+   806→        </tbody>
+   807→      </table></div>` : `<div class="card"><div class="empty"><span class="material">location_off</span>ایستگاهی در این محدوده ثبت نشده است</div></div>`;
+   808→    if (writable) {
+   809→      document.querySelectorAll("[data-up]").forEach((b) => (b.onclick = async () => {
+   810→        const r = await api("stations/reorder", { method: "POST", body: { id: Number(b.dataset.up), dir: "up" } });
+   811→        if (!r.moved) { toast("به بالای فهرست رسیده است", "err"); return; }
+   812→        load();
+   813→      }));
+   814→      document.querySelectorAll("[data-down]").forEach((b) => (b.onclick = async () => {
+   815→        const r = await api("stations/reorder", { method: "POST", body: { id: Number(b.dataset.down), dir: "down" } });
+   816→        if (!r.moved) { toast("به پایین فهرست رسیده است", "err"); return; }
+   817→        load();
+   818→      }));
+   819→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openStationForm(rows.find((x) => x.id === Number(b.dataset.edit)), load, lines, cities)));
+   820→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   821→        confirmDialog(`ایستگاه «${b.dataset.name}» حذف شود؟`, async () => {
+   822→          await api(`stations/${b.dataset.del}`, { method: "DELETE" });
+   823→          toast("ایستگاه حذف شد", "ok2"); load();
+   824→        })));
+   825→    }
+   826→  };
+   827→  document.getElementById("s-line").onchange = load;
+   828→  document.getElementById("s-city").onchange = () => { fillLineOptions(); load(); };
+   829→  if (writable) {
+   830→    document.getElementById("s-add").onclick = () => openStationForm(null, load, lines, cities);
+   831→    document.getElementById("s-bulk").onclick = () => openStationBulk(load, lines, cities);
+   832→  }
+   833→  await load();
+   834→}
+   835→
+   836→/* افزودن گروهی ایستگاه — هر خط یک نام */
+   837→function openStationBulk(after, lines, cities = []) {
+   838→  const cityId = document.getElementById("s-city")?.value || "";
+   839→  const lineId = document.getElementById("s-line")?.value || "";
+   840→  const shownLines = cityId ? lines.filter((l) => String(l.city_id) === cityId) : lines;
+   841→  const close = modal("افزودن گروهی ایستگاه", `
+   842→    <div class="field"><label>شهر مقصد</label>
+   843→      <select id="b-city" disabled>
+   844→        ${cities.map((c) => `<option value="${c.id}" ${String(c.id) === String(cityId) ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+   845→      </select>
+   846→      <span class="hint">شهر ایستگاه‌های جدید به‌طور خودکار از شهر خط مقصد گرفته می‌شود.</span></div>
+   847→    <div class="field"><label>خط مقصد</label>
+   848→      <select id="b-line">${shownLines.map((l) => `<option value="${l.id}" ${String(l.id) === String(lineId) ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></div>
+   849→    <div class="field"><label>نام ایستگاه‌ها (هر خط یک نام — به ترتیب مسیر)</label>
+   850→      <textarea id="b-names" rows="8" placeholder="مثلاً:
+   851→کهریزک
+   852→حرم مطهر
+   853→شهید بهشتی"></textarea>
+   854→      <span class="hint">نام‌های تکراری در همان خط به‌صورت خودکار رد می‌شوند. ترتیب به‌طور خودکار ادامه پیدا می‌کند.</span></div>`,
+   855→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">افزودن همه</button>`);
+   856→  document.getElementById("f-cancel").onclick = close;
+   857→  document.getElementById("f-save").onclick = async () => {
+   858→    const names = document.getElementById("b-names").value.trim();
+   859→    if (!names) { toast("حداقل یک نام وارد کنید", "err"); return; }
+   860→    try {
+   861→      const r = await api("stations/bulk", { method: "POST", body: { line_id: Number(document.getElementById("b-line").value), names } });
+   862→      toast(`${faNum(r.added)} ایستگاه افزوده شد${r.skipped ? ` — ${faNum(r.skipped)} تکراری رد شد` : ""}`, "ok2");
+   863→      close(); after();
+   864→    } catch (ex) { toast(ex.message, "err"); }
+   865→  };
+   866→}
+   867→
+   868→function openStationForm(station, after, lines, cities = []) {
+   869→  const isEdit = !!station;
+   870→  const curLine = isEdit ? station.line_id : Number(document.getElementById("s-line")?.value) || (lines[0] ? lines[0].id : null);
+   871→  const cityOfLine = (lineId) => (lines.find((l) => l.id === Number(lineId)) || {}).city_id ?? "";
+   872→  let curCity = isEdit ? (station.city_id ?? cityOfLine(curLine)) : cityOfLine(curLine);
+   873→  const close = modal(isEdit ? "ویرایش ایستگاه" : "ایستگاه جدید", `
+   874→    <div class="field"><label>شهر</label>
+   875→      <select id="f-city">
+   876→        <option value="">— هماهنگ با شهر خط —</option>
+   877→        ${cities.map((c) => `<option value="${c.id}" ${String(curCity ?? "") === String(c.id) ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+   878→      </select>
+   879→      <span class="hint">به‌طور پیش‌فرض شهر ایستگاه از شهر خط مقصد گرفته می‌شود؛ در صورت نیاز شهر دیگر را انتخاب کنید.</span></div>
+   880→    <div class="field"><label>خط</label>
+   881→      <select id="f-line">${lines.map((l) => `<option value="${l.id}" ${l.id === curLine ? "selected" : ""}>${esc(l.name)}${l.city_name ? " — " + esc(l.city_name) : ""}</option>`).join("")}</select>
+   882→      ${isEdit ? '<span class="hint">با تغییر خط، ایستگاه به خط مقصد منتقل می‌شود.</span>' : ""}</div>
+   883→    <div class="field"><label>نام ایستگاه</label><input id="f-name" value="${esc(station?.name || "")}" placeholder="مثلاً تجریش" /></div>
+   884→    <div class="grid cols-2">
+   885→      <div class="field"><label>عرض جغرافیایی (اختیاری)</label><input id="f-lat" value="${station?.lat ?? ""}" style="direction:ltr" placeholder="35.7999" /></div>
+   886→      <div class="field"><label>طول جغرافیایی (اختیاری)</label><input id="f-lng" value="${station?.lng ?? ""}" style="direction:ltr" placeholder="51.4343" /></div>
+   887→    </div>
+   888→    <div class="field"><label>ترتیب</label><input id="f-order" type="number" value="${station?.order_index ?? 0}" /></div>
+   889→    <div class="field"><label>وضعیت</label>
+   890→      <select id="f-active"><option value="1" ${!station || station.is_active ? "selected" : ""}>فعال</option><option value="0" ${station && !station.is_active ? "selected" : ""}>غیرفعال</option></select></div>`,
+   891→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   892→  // هماهنگی خودکار شهر با خط انتخاب‌شده (تا وقتی مدیر شهر را دستی عوض نکرده)
+   893→  document.getElementById("f-line").onchange = (e) => {
+   894→    const cid = cityOfLine(e.target.value);
+   895→    if (cid) document.getElementById("f-city").value = String(cid);
+   896→  };
+   897→  document.getElementById("f-cancel").onclick = close;
+   898→  document.getElementById("f-save").onclick = async () => {
+   899→    const body = {
+   900→      city_id: document.getElementById("f-city").value,
+   901→      line_id: Number(document.getElementById("f-line").value),
+   902→      name: document.getElementById("f-name").value.trim(),
+   903→      lat: document.getElementById("f-lat").value,
+   904→      lng: document.getElementById("f-lng").value,
+   905→      order_index: document.getElementById("f-order").value,
+   906→      is_active: Number(document.getElementById("f-active").value),
+   907→    };
+   908→    if (!body.name) { toast("نام ایستگاه الزامی است", "err"); return; }
+   909→    try {
+   910→      await api(isEdit ? `stations/${station.id}` : "stations", { method: isEdit ? "PUT" : "POST", body });
+   911→      toast(isEdit ? "ایستگاه بروزرسانی شد" : "ایستگاه اضافه شد", "ok2");
+   912→      close(); after();
+   913→    } catch (ex) { toast(ex.message, "err"); }
+   914→  };
+   915→}
+   916→
+   917→/* ---------- تبلیغات ---------- */
+   918→
+   919→const AD_PLACE_META = {
+   920→  home: { icon: "view_carousel", cls: "" },
+   921→  map: { icon: "map", cls: "alt" },
+   922→  plan: { icon: "alt_route", cls: "warn2" },
+   923→  station: { icon: "location_on", cls: "alt" },
+   924→  line: { icon: "route", cls: "" },
+   925→  splash: { icon: "launch", cls: "warn2" },
+   926→  drawer: { icon: "menu", cls: "alt" },
+   927→};
+   928→
+   929→async function pageAds(host) {
+   930→  const writable = can("operator");
+   931→  const [rows, stats] = await Promise.all([api("ads"), api("ads/stats?days=14")]);
+   932→  const isLive = (a) => a.is_active && (!a.ends_at || new Date(a.ends_at) > Date.now()) && (!a.starts_at || new Date(a.starts_at) <= Date.now());
+   933→  const isScheduled = (a) => a.is_active && a.starts_at && new Date(a.starts_at) > Date.now();
+   934→  const isExpired = (a) => !isLive(a) && !isScheduled(a);
+   935→  const TABS = [
+   936→    ["all", "همه کمپین‌ها", () => true],
+   937→    ["live", "در حال نمایش", isLive],
+   938→    ["scheduled", "زمان‌بندی‌شده", isScheduled],
+   939→    ["expired", "منقضی / بایگانی", isExpired],
+   940→  ];
+   941→  let tab = "all";
+   942→  let placeFilter = "";
+   943→  let searchQ = "";
+   944→  const selected = new Set();
+   945→
+   946→  const totalImp = rows.reduce((s, a) => s + (a.impressions || 0), 0);
+   947→  const totalClk = rows.reduce((s, a) => s + (a.clicks || 0), 0);
+   948→  const avgCtr = totalImp ? ((totalClk / totalImp) * 100) : 0;
+   949→  const liveCount = rows.filter(isLive).length;
+   950→
+   951→  host.innerHTML = `
+   952→    ${pageHead("تبلیغات و بنرها", "پیکربندی کمپین‌های درون‌برنامه‌ای، اولویت‌بندی نمایش، زمان‌بندی و تحلیل عملکرد؛ خاموش‌کردن تبلیغ بدون انتشار نسخه جدید اپلیکیشن.",
+   953→      writable ? `<button class="btn btn-primary" id="a-add"><span class="material">add</span><span>ایجاد کمپین / بنر جدید</span></button>` : "")}
+   954→    <div class="kpi-grid kpi-grid-5">
+   955→      ${kpi("کل کمپین‌ها", "campaign", rows.length, "کمپین ثبت‌شده در پایگاه داده", "t-primary")}
+   956→      ${kpi("در حال نمایش", "play_circle", liveCount, "کمپین فعال در اپ", "t-tertiary")}
+   957→      ${kpi("نمایش‌ها", "visibility", totalImp, "مجموع نمایش در همه کمپین‌ها", "t-surface")}
+   958→      ${kpi("کلیک‌ها", "ads_click", totalClk, "مجموع کلیک ثبت‌شده", "t-dim")}
+   959→      ${kpi("میانگین CTR", "query_stats", avgCtr.toLocaleString("fa-IR", { maximumFractionDigits: 1 }) + "٪", "نسبت کلیک به نمایش", "t-primary")}
+   960→    </div>
+   961→    <div class="tbl-card">
+   962→      <div class="tabbar" id="a-tabs">
+   963→        ${TABS.map(([id, lbl, fn]) => `<button class="tab ${id === tab ? "active" : ""}" data-tab="${id}">${lbl} (${faNum(rows.filter(fn).length)})</button>`).join("")}
+   964→      </div>
+   965→      <div class="tbl-toolbar">
+   966→        <input id="a-q" placeholder="جست‌وجوی عنوان یا تبلیغ‌دهنده…" style="min-width:200px" />
+   967→        <select id="a-place">
+   968→          <option value="">همه جایگاه‌ها</option>
+   969→          ${Object.keys(AD_PLACE_META).map((p) => `<option value="${p}">${PLACE_LABEL[p]}</option>`).join("")}
+   970→        </select>
+   971→        <span class="spacer"></span>
+   972→        <button class="btn btn-sm" id="a-csv"><span class="material">download</span><span>خروجی CSV</span></button>
+   973→      </div>
+   974→      <div class="bulkbar" id="a-bulkbar" hidden>
+   975→        <span class="bulkbar-count" id="a-selcount">۰ انتخاب شده</span>
+   976→        ${writable ? `
+   977→        <button class="btn btn-sm" id="b-activate"><span class="material">play_circle</span><span>فعال‌سازی</span></button>
+   978→        <button class="btn btn-sm" id="b-deactivate"><span class="material">pause_circle</span><span>غیرفعال‌سازی</span></button>
+   979→        <button class="btn btn-sm btn-danger" id="b-delete"><span class="material">delete</span><span>حذف</span></button>` : ""}
+   980→        <button class="btn btn-sm" id="b-clear">لغو انتخاب</button>
+
+[showing lines 421-980 of 1686; use offset=981 with limit to continue reading]

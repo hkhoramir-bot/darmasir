@@ -1,0 +1,384 @@
+   130→   667→   667→            <td><span class="placement-chip ${PLACE_CLASS[a.placement] || ""}"><span class="material">${PLACE_ICON[a.placement] || "info"}</span>${PLACE_LABEL[a.placement] || a.placement}</span></td>
+   131→   668→   668→            <td class="cell-range">
+   132→   669→   669→              <span>${a.starts_at ? faTime(a.starts_at) : "بدون شروع"}</span>
+   133→   670→   670→              <span class="m-live" style="display:block">تا ${a.ends_at ? faTime(a.ends_at) : "پایان نامحدود"}</span>
+   134→   671→   671→            </td>
+   135→   672→   672→            <td class="cell-center">
+   136→   673→   673→              ${writable ? `<label class="switch"><input type="checkbox" data-toggle="${a.id}" ${a.is_active ? "checked" : ""} aria-label="وضعیت ${esc(a.title)}" /><span class="knob"></span></label>` : `<span class="badge ${live ? "ok" : "off"}">${live ? "در حال نمایش" : "خاموش"}</span>`}
+   137→   674→   674→            </td>
+   138→   675→   675→            <td>
+   139→   676→   676→              <div class="cell-meter">
+   140→   677→   677→                <div class="meter-row"><span class="m-imp">${Number(a.impressions || 0).toLocaleString("fa-IR")} نمایش</span><span class="m-ctr">${Number(a.clicks || 0).toLocaleString("fa-IR")} کلیک (${ctr.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪)</span></div>
+   141→   678→   678→                <div class="meter"><div class="meter-fill ${ctr >= 4 ? "good" : ctr < 1 ? "low" : ""}" style="width:${fill}%"></div></div>
+   142→   679→   679→              </div>
+   143→   680→   680→            </td>
+   144→   681→   681→            ${writable ? `<td class="cell-center"><div class="acts" style="justify-content:center">
+   145→   682→   682→              <button class="icon-btn" data-imp="${a.id}" title="ثبت نمایش آزمایشی"><span class="material">visibility</span></button>
+   146→   683→   683→              <button class="icon-btn" data-clk="${a.id}" title="ثبت کلیک آزمایشی"><span class="material">ads_click</span></button>
+   147→   684→   684→              <button class="icon-btn" data-edit="${a.id}" title="ویرایش بنر"><span class="material">edit</span></button>
+   148→   685→   685→              <button class="icon-btn danger" data-del="${a.id}" data-name="${esc(a.title)}" title="حذف بنر"><span class="material">delete</span></button>
+   149→   686→   686→            </div></td>` : ""}
+   150→   687→   687→          </tr>`;
+   151→   688→   688→        }).join("")}
+   152→   689→   689→      </tbody>
+   153→   690→   690→    </table></div>` : `<div class="empty"><span class="material">campaign</span>در این دسته کمپینی ثبت نشده است</div>`;
+   154→   691→   691→    document.getElementById("a-foot").textContent = `نمایش ${filtered.length.toLocaleString("fa-IR")} از مجموع ${rows.length.toLocaleString("fa-IR")} کمپین ثبت‌شده در پایگاه داده`;
+   155→   692→   692→    if (writable) {
+   156→   693→   693→      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openAdForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+   157→   694→   694→      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   158→   695→   695→        confirmDialog(`تبلیغ «${b.dataset.name}» حذف شود؟`, async () => {
+   159→   696→   696→          await api(`ads/${b.dataset.del}`, { method: "DELETE" });
+   160→   697→   697→          toast("تبلیغ حذف شد", "ok2"); renderPage("ads");
+   161→   698→   698→        })));
+   162→   699→   699→      document.querySelectorAll("[data-imp]").forEach((b) => (b.onclick = async () => {
+   163→   700→   700→        await api(`ads/${b.dataset.imp}/track`, { method: "POST", body: { type: "impression" } });
+   164→   701→   701→        toast("نمایش ثبت شد", "ok2"); renderPage("ads");
+   165→   702→   702→      }));
+   166→   703→   703→      document.querySelectorAll("[data-clk]").forEach((b) => (b.onclick = async () => {
+   167→   704→   704→        await api(`ads/${b.dataset.clk}/track`, { method: "POST", body: { type: "click" } });
+   168→   705→   705→        toast("کلیک ثبت شد", "ok2"); renderPage("ads");
+   169→   706→   706→      }));
+   170→   707→   707→      document.querySelectorAll("[data-toggle]").forEach((el) => (el.onchange = async () => {
+   171→   708→   708→        const ad = rows.find((x) => x.id === Number(el.dataset.toggle));
+   172→   709→   709→        try {
+   173→   710→   710→          await api(`ads/${el.dataset.toggle}`, { method: "PUT", body: { is_active: el.checked ? 1 : 0 } });
+   174→   711→   711→          toast(el.checked ? "تبلیغ فعال شد" : "تبلیغ خاموش شد", "ok2");
+   175→   712→   712→        } catch (ex) {
+   176→   713→   713→          toast(ex.message, "err");
+   177→   714→   714→        }
+   178→   715→   715→        if (ad) ad.is_active = el.checked ? 1 : 0;
+   179→   716→   716→        renderTable();
+   180→   717→   717→      }));
+   181→   718→   718→    }
+   182→   719→   719→  };
+   183→   720→   720→  document.getElementById("a-tabs").querySelectorAll(".tab").forEach((b) => (b.onclick = () => {
+   184→   721→   721→    tab = b.dataset.tab;
+   185→   722→   722→    document.querySelectorAll("#a-tabs .tab").forEach((x) => x.classList.toggle("active", x === b));
+   186→   723→   723→    renderTable();
+   187→   724→   724→  }));
+   188→   725→   725→  if (writable) document.getElementById("a-add").onclick = () => openAdForm(null);
+   189→   726→   726→  renderTable();
+   190→   727→   727→}
+   191→   728→   728→
+   192→   729→   729→function openAdForm(ad) {
+   193→   730→   730→  const isEdit = !!ad;
+   194→   731→   731→  const dt = (v) => v ? new Date(v).toISOString().slice(0, 16) : "";
+   195→   732→   732→  const close = modal(isEdit ? "ویرایش تبلیغ" : "تبلیغ جدید", `
+   196→   733→   733→    <div class="field"><label>عنوان</label><input id="f-title" value="${esc(ad?.title || "")}" placeholder="مثلاً بنر فروشگاه X" /></div>
+   197→   734→   734→    <div class="field"><label>آدرس تصویر</label><input id="f-img" value="${esc(ad?.image_url || "")}" placeholder="https://…" style="direction:ltr" /></div>
+   198→   735→   735→    <div class="field"><label>لینک مقصد</label><input id="f-link" value="${esc(ad?.link_url || "")}" placeholder="https://…" style="direction:ltr" /></div>
+   199→   736→   736→    <div class="field"><label>محل نمایش</label>
+   200→   737→   737→      <select id="f-place">
+   201→   738→   738→        <option value="home" ${ad?.placement === "home" || !ad ? "selected" : ""}>خانه</option>
+   202→   739→   739→        <option value="map" ${ad?.placement === "map" ? "selected" : ""}>نقشه</option>
+   203→   740→   740→        <option value="plan" ${ad?.placement === "plan" ? "selected" : ""}>مسیریابی</option>
+   204→   741→   741→      </select></div>
+   205→   742→   742→    <div class="grid cols-2">
+   206→   743→   743→      <div class="field"><label>شروع نمایش</label><input id="f-start" type="datetime-local" value="${dt(ad?.starts_at)}" /></div>
+   207→   744→   744→      <div class="field"><label>پایان نمایش</label><input id="f-end" type="datetime-local" value="${dt(ad?.ends_at)}" /></div>
+   208→   745→   745→    </div>
+   209→   746→   746→    <div class="field"><label>وضعیت</label>
+   210→   747→   747→      <select id="f-active"><option value="1" ${ad?.is_active ? "selected" : ""}>فعال</option><option value="0" ${!ad || !ad.is_active ? "selected" : ""}>خاموش</option></select></div>`,
+   211→   748→   748→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   212→   749→   749→  document.getElementById("f-cancel").onclick = close;
+   213→   750→   750→  document.getElementById("f-save").onclick = async () => {
+   214→   751→   751→    const body = {
+   215→   752→   752→      title: document.getElementById("f-title").value.trim(),
+   216→   753→   753→      image_url: document.getElementById("f-img").value.trim(),
+   217→   754→   754→      link_url: document.getElementById("f-link").value.trim(),
+   218→   755→   755→      placement: document.getElementById("f-place").value,
+   219→   756→   756→      starts_at: document.getElementById("f-start").value ? new Date(document.getElementById("f-start").value).toISOString() : null,
+   220→   757→   757→      ends_at: document.getElementById("f-end").value ? new Date(document.getElementById("f-end").value).toISOString() : null,
+   221→   758→   758→      is_active: Number(document.getElementById("f-active").value),
+   222→   759→   759→    };
+   223→   760→   760→    if (!body.title) { toast("عنوان الزامی است", "err"); return; }
+   224→   761→   761→    try {
+   225→   762→   762→      await api(isEdit ? `ads/${ad.id}` : "ads", { method: isEdit ? "PUT" : "POST", body });
+   226→   763→   763→      toast(isEdit ? "تبلیغ بروزرسانی شد" : "تبلیغ اضافه شد", "ok2");
+   227→   764→   764→      close(); renderPage("ads");
+   228→   765→   765→    } catch (ex) { toast(ex.message, "err"); }
+   229→   766→   766→  };
+   230→   767→   767→}
+   231→   768→   768→
+   232→   769→   769→/* ---------- دستیار صوتی ---------- */
+   233→   770→   770→
+   234→   771→   771→async function pageVoice(host) {
+   235→   772→   772→  const writable = can("operator");
+   236→   773→   773→  const [lex, settings] = await Promise.all([api("voice-lexicon"), api("settings")]);
+   237→   774→   774→  host.innerHTML = `
+   238→   775→   775→    ${pageHead("دستیار صوتی", "تنظیم متن‌های ثابت، فرهنگ تلفظ و تنظیمات مجاز سرویس صوتی.")}
+   239→   776→   776→    <div class="grid cols-2">
+   240→   777→   777→      <div class="card">
+   241→   778→   778→        <h3><span class="material" style="color:var(--primary)">record_voice_over</span>تنظیمات سرویس صوتی</h3>
+   242→   779→   779→        <div class="field"><label>سرویس پردازش صوت</label>
+   243→   780→   780→          <select id="v-service" ${me.role !== "super" ? "disabled" : ""}>
+   244→   781→   781→            <option value="cloudflare-worker" ${settings.voice_service?.value === "cloudflare-worker" ? "selected" : ""}>Cloudflare Worker (فعلی)</option>
+   245→   782→   782→            <option value="native" ${settings.voice_service?.value === "native" ? "selected" : ""}>موتور نیتیو دستگاه</option>
+   246→   783→   783→            <option value="off" ${settings.voice_service?.value === "off" ? "selected" : ""}>غیرفعال</option>
+   247→   784→   784→          </select></div>
+   248→   785→   785→        <div class="field"><label>وضعیت دستیار صوتی</label>
+   249→   786→   786→          <select id="v-enabled" ${me.role !== "super" ? "disabled" : ""}>
+   250→   787→   787→            <option value="on" ${settings.voice_enabled?.value === "on" ? "selected" : ""}>فعال</option>
+   251→   788→   788→            <option value="off" ${settings.voice_enabled?.value === "off" ? "selected" : ""}>غیرفعال</option>
+   252→   789→   789→          </select></div>
+   253→   790→   790→        ${me.role === "super" ? `<button class="btn btn-primary" id="v-save">ذخیره تنظیمات صوتی</button>` : `<p class="card-sub">تغییر تنظیمات صوتی فقط برای مدیر کل مجاز است.</p>`}
+   254→   791→   791→        <p class="card-sub">فرمان‌های ثابت («شروع سفر»، «توقف»، «تکرار») بدون فراخوانی مدل زبانی پردازش می‌شوند.</p>
+   255→   792→   792→      </div>
+   256→   793→   793→      <div class="card">
+   257→   794→   794→        <h3><span class="material" style="color:var(--primary)">translate</span>فرهنگ تلفظ</h3>
+   258→   795→   795→        <p class="card-sub" style="margin-top:0">نگاشت گفتار به نوشتار — برای تشخیص صحیح نام ایستگاه‌ها و مکان‌ها</p>
+   259→   796→   796→        <div id="v-lex"></div>
+   260→   797→   797→      </div>
+   261→   798→   798→    </div>`;
+   262→   799→   799→  const renderLex = (rows) => {
+   263→   800→   800→    document.getElementById("v-lex").innerHTML = rows.length ? `
+   264→   801→   801→      <div class="tbl-wrap" style="max-height:280px"><table class="tbl">
+   265→   802→   802→        <thead><tr><th>گفتاری</th><th>نوشتاری</th><th>اولویت</th>${writable ? "<th></th>" : ""}</tr></thead>
+   266→   803→   803→        <tbody>${rows.map((l) => `
+   267→   804→   804→          <tr><td>${esc(l.spoken)}</td><td>${esc(l.written)}</td><td>${l.priority}</td>
+   268→   805→   805→          ${writable ? `<td><div class="acts">
+   269→   806→   806→            <button class="icon-btn" data-edit="${l.id}" title="ویرایش مدخل"><span class="material">edit</span></button>
+   270→   807→   807→            <button class="icon-btn danger" data-del="${l.id}" title="حذف مدخل"><span class="material">delete</span></button>
+   271→   808→   808→          </div></td>` : ""}</tr>`).join("")}</tbody>
+   272→   809→   809→      </table></div>` : `<div class="empty"><span class="material">record_voice_over</span>مدخلی ثبت نشده است</div>`;
+   273→   810→   810→    if (writable) {
+   274→   811→   811→      document.querySelectorAll("#v-lex [data-edit]").forEach((b) => (b.onclick = () => openLexForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+   275→   812→   812→      document.querySelectorAll("#v-lex [data-del]").forEach((b) => (b.onclick = () =>
+   276→   813→   813→        confirmDialog("این مدخل تلفظ حذف شود؟", async () => {
+   277→   814→   814→          await api(`voice-lexicon/${b.dataset.del}`, { method: "DELETE" });
+   278→   815→   815→          toast("مدخل حذف شد", "ok2"); renderPage("voice");
+   279→   816→   816→        })));
+   280→   817→   817→    }
+   281→   818→   818→  };
+   282→   819→   819→  renderLex(lex);
+   283→   820→   820→  document.getElementById("v-save")?.addEventListener("click", async () => {
+   284→   821→   821→    try {
+   285→   822→   822→      await api("settings", { method: "PUT", body: { voice_service: document.getElementById("v-service").value, voice_enabled: document.getElementById("v-enabled").value } });
+   286→   823→   823→      toast("تنظیمات صوتی ذخیره شد", "ok2");
+   287→   824→   824→    } catch (ex) { toast(ex.message, "err"); }
+   288→   825→   825→  });
+   289→   826→   826→  const addBtn = document.createElement("button");
+   290→   827→   827→  addBtn.className = "btn btn-sm btn-primary";
+   291→   828→   828→  addBtn.textContent = "+ مدخل جدید";
+   292→   829→   829→  addBtn.onclick = () => openLexForm(null);
+   293→   830→   830→  document.querySelector("#v-lex").parentElement.querySelector("h3").appendChild(addBtn);
+   294→   831→   831→  function openLexForm(l) {
+   295→   832→   832→    const isEdit = !!l;
+   296→   833→   833→    const closeM = modal(isEdit ? "ویرایش مدخل" : "مدخل جدید", `
+   297→   834→   834→      <div class="field"><label>متن گفتاری (طوری که کاربر می‌گوید)</label><input id="f-spoken" value="${esc(l?.spoken || "")}" placeholder="مثلاً تجریش" /></div>
+   298→   835→   835→      <div class="field"><label>متن نوشتاری (نام رسمی)</label><input id="f-written" value="${esc(l?.written || "")}" placeholder="مثلاً تجریش" /></div>
+   299→   836→   836→      <div class="field"><label>اولویت</label><input id="f-prio" type="number" value="${l?.priority ?? 0}" /></div>`,
+   300→   837→   837→      `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+   301→   838→   838→    document.getElementById("f-cancel").onclick = closeM;
+   302→   839→   839→    document.getElementById("f-save").onclick = async () => {
+   303→   840→   840→      const body = {
+   304→   841→   841→        spoken: document.getElementById("f-spoken").value.trim(),
+   305→   842→   842→        written: document.getElementById("f-written").value.trim(),
+   306→   843→   843→        priority: document.getElementById("f-prio").value,
+   307→   844→   844→      };
+   308→   845→   845→      if (!body.spoken || !body.written) { toast("هر دو مقدار الزامی است", "err"); return; }
+   309→   846→   846→      try {
+   310→   847→   847→        await api(isEdit ? `voice-lexicon/${l.id}` : "voice-lexicon", { method: isEdit ? "PUT" : "POST", body });
+   311→   848→   848→        toast("ذخیره شد", "ok2"); closeM(); renderPage("voice");
+   312→   849→   849→      } catch (ex) { toast(ex.message, "err"); }
+   313→   850→   850→    };
+   314→   851→   851→  }
+   315→   852→   852→}
+   316→   853→   853→
+   317→   854→   854→/* ---------- تنظیمات عمومی ---------- */
+   318→   855→   855→
+   319→   856→   856→async function pageSettings(host) {
+   320→   857→   857→  const s = await api("settings");
+   321→   858→   858→  const readOnly = me.role !== "super";
+   322→   859→   859→  const F = (key, label, type = "text") => `
+   323→   860→   860→    <div class="field"><label>${label}</label>
+   324→   861→   861→      <input id="st-${key}" value="${esc(s[key]?.value || "")}" ${readOnly ? "disabled" : ""} ${type === "number" ? 'type="number"' : ""} /></div>`;
+   325→   862→   862→  host.innerHTML = `
+   326→   863→   863→    ${pageHead("تنظیمات سامانه", "نام، لوگو، پیام‌ها، نسخه و تنظیمات عمومی برنامه — فقط برای مدیر کل.")}
+   327→   864→   864→    <div class="grid cols-2">
+   328→   865→   865→      <div class="card">
+   329→   866→   866→        <h3><span class="material" style="color:var(--primary)">app_shortcut</span>هویت برنامه</h3>
+   330→   867→   867→        ${F("app_name", "نام برنامه")}
+   331→   868→   868→        ${F("app_version", "نسخه فعلی")}
+   332→   869→   869→        ${F("welcome_message", "پیام خوش‌آمد")}
+   333→   870→   870→        ${F("support_message", "پیام پشتیبانی")}
+   334→   871→   871→      </div>
+   335→   872→   872→      <div class="card">
+   336→   873→   873→        <h3><span class="material" style="color:var(--primary)">engineering</span>وضعیت عملیاتی</h3>
+   337→   874→   874→        <div class="field"><label>حالت نگهداری</label>
+   338→   875→   875→          <select id="st-maintenance_mode" ${readOnly ? "disabled" : ""}>
+   339→   876→   876→            <option value="off" ${s.maintenance_mode?.value !== "on" ? "selected" : ""}>خاموش (عادی)</option>
+   340→   877→   877→            <option value="on" ${s.maintenance_mode?.value === "on" ? "selected" : ""}>روشن (کاربران پیام نگهداری می‌بینند)</option>
+   341→   878→   878→          </select></div>
+   342→   879→   879→        <p class="card-sub">در حالت نگهداری، پیام خوش‌آمد جایگزین بخش‌های حساس برنامه می‌شود. تنظیمات از مسیر نسخه‌دار /api/v1/ اعمال می‌شوند.</p>
+   343→   880→   880→        ${!readOnly ? `<button class="btn btn-primary" id="st-save">ذخیره تنظیمات</button>` : `<p class="card-sub">ذخیره تنظیمات فقط برای مدیر کل مجاز است.</p>`}
+   344→   881→   881→      </div>
+   345→   882→   882→    </div>`;
+   346→   883→   883→  document.getElementById("st-save")?.addEventListener("click", async () => {
+   347→   884→   884→    const body = {
+   348→   885→   885→      app_name: document.getElementById("st-app_name").value.trim(),
+   349→   886→   886→      app_version: document.getElementById("st-app_version").value.trim(),
+   350→   887→   887→      welcome_message: document.getElementById("st-welcome_message").value.trim(),
+   351→   888→   888→      support_message: document.getElementById("st-support_message").value.trim(),
+   352→   889→   889→      maintenance_mode: document.getElementById("st-maintenance_mode").value,
+   353→   890→   890→    };
+   354→   891→   891→    try {
+   355→   892→   892→      await api("settings", { method: "PUT", body });
+   356→   893→   893→      toast("تنظیمات ذخیره شد", "ok2");
+   357→   894→   894→    } catch (ex) { toast(ex.message, "err"); }
+   358→   895→   895→  });
+   359→   896→   896→}
+   360→   897→   897→
+   361→   898→   898→/* ---------- گزارش‌ها ---------- */
+   362→   899→   899→
+   363→   900→   900→async function pageReports(host) {
+   364→   901→   901→  const r = await api("reports");
+   365→   902→   902→  const maxApi = Math.max(...r.api_stats.map((x) => x.count), 1);
+   366→   903→   903→  const statsAsc = [...r.api_stats].reverse();
+   367→   904→   904→  host.innerHTML = `
+   368→   905→   905→    ${pageHead("گزارش‌ها و تحلیل داده", "آمار استفاده، عملکرد API، عملکرد تبلیغات و تاریخچه تغییرات داده.")}
+   369→   906→   906→    <div class="kpi-grid kpi-grid-3">
+   370→   907→   907→      ${kpi("نشست فعال مدیران", "how_to_reg", r.active_sessions, "نشست جاری پنل", "t-primary")}
+   371→   908→   908→      ${kpi("درخواست API — ۱۴ روز", "api", r.api_stats.reduce((s, x) => s + x.count, 0), "مجموع فراخوانی نسخه‌دار", "t-surface")}
+   372→   909→   909→      ${kpi("آخرین تغییرات داده", "edit_note", r.changes.length, "رویداد ثبت‌شده در وقایع‌نگاری", "t-tertiary")}
+   373→   910→   910→    </div>
+   374→   911→   911→    <div class="grid cols-2">
+   375→   912→   912→      <div class="card">
+   376→   913→   913→        <h3><span class="material" style="color:var(--primary)">monitoring</span>درخواست‌های API — ۱۴ روز اخیر</h3>
+   377→   914→   914→        <div class="bars">
+   378→   915→   915→          ${statsAsc.map((x) => `
+   379→   916→   916→            <div class="bar-col">
+   380→   917→   917→              <span class="bar-val">${x.count || ""}</span>
+   381→   918→   918→              <div class="bar" style="height:${Math.round((x.count / maxApi) * 100)}%"></div>
+   382→   919→   919→              <span class="bar-day">${x.day.slice(5).replace("-", "/")}</span>
+   383→   920→   920→            </div>`).join("")}
+   384→   921→   921→        </div>
+   385→   922→   922→      </div>
+   386→   923→   923→      <div class="card">
+   387→   924→   924→        <h3><span class="material" style="color:var(--primary)">ads_click</span>عملکرد تبلیغات</h3>
+   388→   925→   925→        ${r.ads.length ? `<div class="tbl-wrap" style="max-height:200px"><table class="tbl">
+   389→   926→   926→          <thead><tr><th>عنوان</th><th>نمایش</th><th>کلیک</th><th>وضعیت</th></tr></thead>
+   390→   927→   927→          <tbody>${r.ads.map((a) => `<tr>
+   391→   928→   928→            <td>${esc(a.title)}</td>
+   392→   929→   929→            <td>${Number(a.impressions).toLocaleString("fa-IR")}</td>
+   393→   930→   930→            <td>${Number(a.clicks).toLocaleString("fa-IR")}</td>
+   394→   931→   931→            <td><span class="badge ${a.is_active ? "ok" : "off"}">${a.is_active ? "فعال" : "خاموش"}</span></td>
+   395→   932→   932→          </tr>`).join("")}</tbody></table></div>` : `<div class="empty"><span class="material">campaign</span>تبلیغی ثبت نشده است</div>`}
+   396→   933→   933→      </div>
+   397→   934→   934→    </div>
+   398→   935→   935→    <div class="card" style="margin-top:16px">
+   399→   936→   936→      <h3><span class="material" style="color:var(--primary)">history</span>تاریخچه تغییرات داده</h3>
+   400→   937→   937→      <div class="feed">
+   401→   938→   938→        ${r.changes.length ? r.changes.map((c) => `
+   402→   939→   939→          <div class="feed-item">
+   403→   940→   940→            <span class="fi-dot" style="background:${c.action === "delete" ? "var(--error)" : c.action === "create" ? "var(--tertiary-container)" : "var(--primary-fixed-dim)"}"></span>
+   404→   941→   941→            <div class="fi-body"><b>${entityLabel(c.entity)} — ${c.action === "create" ? "ایجاد" : c.action === "update" ? "ویرایش" : "حذف"}</b><p>${esc(c.admin_name)}${c.details ? " — " + esc(c.details) : ""}</p></div>
+   405→   942→   942→            <span class="fi-time">${faTime(c.created_at)}</span>
+   406→   943→   943→          </div>`).join("") : `<div class="empty"><span class="material">inbox</span>تغییری ثبت نشده است</div>`}
+   407→   944→   944→      </div>
+   408→   945→   945→    </div>`;
+   409→   946→   946→}
+   410→   947→   947→
+   411→   948→   948→function entityLabel(e) {
+   412→   949→   949→  return { app_user: "کاربر", line: "خط", station: "ایستگاه", ad: "تبلیغ", voice_lexicon: "فرهنگ تلفظ" }[e] || e;
+   413→   950→   950→}
+   414→   951→   951→
+   415→   952→   952→/* ---------- امنیت ---------- */
+   416→   953→   953→
+   417→   954→   954→async function pageSecurity(host) {
+   418→   955→   955→  const s = await api("security");
+   419→   956→   956→  host.innerHTML = `
+   420→   957→   957→    ${pageHead("امنیت و وقایع‌نگاری", "مدیران پنل، نقش‌ها، نشست‌های فعال و گزارش رویدادهای امنیتی.")}
+   421→   958→   958→    <div class="grid cols-2">
+   422→   959→   959→      <div class="card">
+   423→   960→   960→        <h3><span class="material" style="color:var(--primary)">admin_panel_settings</span>مدیران پنل</h3>
+   424→   961→   961→        <div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" id="adm-add">+ مدیر جدید</button></div>
+   425→   962→   962→        <div class="tbl-wrap" style="max-height:300px"><table class="tbl">
+   426→   963→   963→          <thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>وضعیت</th><th>آخرین ورود</th><th></th></tr></thead>
+   427→   964→   964→          <tbody>${s.admins.map((a) => `
+   428→   965→   965→            <tr>
+   429→   966→   966→              <td><b>${esc(a.display_name)}</b></td>
+   430→   967→   967→              <td style="direction:ltr;text-align:right">${esc(a.username)}</td>
+   431→   968→   968→              <td><span class="badge ${a.role === "super" ? "ok" : a.role === "operator" ? "warn" : "off"}">${ROLE_LABEL[a.role]}</span></td>
+   432→   969→   969→              <td><span class="badge ${a.is_active ? "ok" : "bad"}">${a.is_active ? "فعال" : "غیرفعال"}</span></td>
+   433→   970→   970→              <td>${faTime(a.last_login)}</td>
+   434→   971→   971→              <td><div class="acts">
+   435→   972→   972→                <button class="icon-btn" data-edit="${a.id}" title="ویرایش مدیر"><span class="material">edit</span></button>
+   436→   973→   973→                ${a.id !== me.id ? `<button class="icon-btn danger" data-del="${a.id}" data-name="${esc(a.username)}" title="حذف مدیر"><span class="material">delete</span></button>` : ""}
+   437→   974→   974→              </div></td>
+   438→   975→   975→            </tr>`).join("")}</tbody>
+   439→   976→   976→        </table></div>
+   440→   977→   977→      </div>
+   441→   978→   978→      <div class="card">
+   442→   979→   979→        <h3><span class="material" style="color:var(--primary)">wifi_tethering</span>نشست‌های فعال</h3>
+   443→   980→   980→        <div class="tbl-wrap" style="max-height:150px"><table class="tbl">
+   444→   981→   981→          <thead><tr><th>مدیر</th><th>IP</th><th>ایجاد</th><th>انقضا</th></tr></thead>
+   445→   982→   982→          <tbody>${s.sessions.length ? s.sessions.map((x) => `
+   446→   983→   983→            <tr><td>${esc(x.display_name)}</td><td style="direction:ltr;text-align:right">${esc(x.ip || "—")}</td>
+   447→   984→   984→            <td>${faTime(x.created_at)}</td><td>${faTime(x.expires_at)}</td></tr>`).join("") : `<tr><td colspan="4" class="empty">نشستی فعال نیست</td></tr>`}</tbody>
+   448→   985→   985→        </table></div>
+   449→   986→   986→        <h3 style="margin-top:16px"><span class="material" style="color:var(--primary)">security</span>گزارش رویدادهای امنیتی (۱۰۰ مورد اخیر)</h3>
+   450→   987→   987→        <div class="feed" style="max-height:260px">
+   451→   988→   988→          ${s.audit.length ? s.audit.map((a) => `
+   452→   989→   989→            <div class="feed-item">
+   453→   990→   990→              <span class="fi-dot" style="background:${a.action === "login_failed" ? "var(--error)" : "var(--tertiary-container)"}"></span>
+   454→   991→   991→              <div class="fi-body"><b>${esc(actionLabel(a.action))}</b><p>${esc(a.admin_name)}${a.details ? " — " + esc(a.details) : ""} ${a.ip ? `(IP: ${esc(a.ip)})` : ""}</p></div>
+   455→   992→   992→              <span class="fi-time">${faTime(a.created_at)}</span>
+   456→   993→   993→            </div>`).join("") : `<div class="empty"><span class="material">shield</span>رویدادی ثبت نشده است</div>`}
+   457→   994→   994→        </div>
+   458→   995→   995→      </div>
+   459→   996→   996→    </div>`;
+   460→   997→   997→  document.getElementById("adm-add").onclick = () => openAdminForm(null);
+   461→   998→   998→  document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openAdminForm(s.admins.find((x) => x.id === Number(b.dataset.edit)))));
+   462→   999→   999→  document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+   463→  1000→  1000→    confirmDialog(`مدیر «${b.dataset.name}» حذف شود؟`, async () => {
+   464→  1001→  1001→      await api(`admins/${b.dataset.del}`, { method: "DELETE" });
+   465→  1002→  1002→      toast("مدیر حذف شد", "ok2"); renderPage("security");
+   466→  1003→  1003→    })));
+   467→  1004→  1004→}
+   468→  1005→  1005→
+   469→  1006→  1006→function openAdminForm(admin) {
+   470→  1007→  1007→  const isEdit = !!admin;
+   471→  1008→  1008→  const close = modal(isEdit ? `ویرایش مدیر — ${admin.username}` : "مدیر جدید", `
+   472→  1009→  1009→    ${!isEdit ? `
+   473→  1010→  1010→      <div class="field"><label>نام کاربری</label><input id="f-username" placeholder="username" style="direction:ltr" /></div>
+   474→  1011→  1011→      <div class="field"><label>گذرواژه (حداقل ۸ کاراکتر)</label><input id="f-pass" type="password" /></div>` : `
+   475→  1012→  1012→      <div class="field"><label>گذرواژه جدید (خالی = بدون تغییر)</label><input id="f-pass" type="password" placeholder="••••••••" /></div>`}
+   476→  1013→  1013→    <div class="field"><label>نام نمایشی</label><input id="f-display" value="${esc(admin?.display_name || "")}" /></div>
+   477→  1014→  1014→    <div class="field"><label>نقش</label>
+   478→  1015→  1015→      <select id="f-role">
+   479→  1016→  1016→        <option value="super" ${admin?.role === "super" ? "selected" : ""}>مدیر کل — دسترسی کامل</option>
+   480→  1017→  1017→        <option value="operator" ${admin?.role === "operator" ? "selected" : ""}>اپراتور — مدیریت داده‌ها و تبلیغات</option>
+   481→  1018→  1018→        <option value="viewer" ${admin?.role === "viewer" ? "selected" : ""}>ناظر — فقط مشاهده</option>
+   482→  1019→  1019→      </select></div>
+   483→  1020→  1020→    ${isEdit ? `<div class="field"><label>وضعیت</label>
+   484→  1021→  1021→      <select id="f-active"><option value="1" ${admin.is_active ? "selected" : ""}>فعال</option><option value="0" ${!admin.is_active ? "selected" : ""}>غیرفعال (غیرقابل ورود)</option></select></div>` : ""}`,
+   485→  1022→  1022→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "ایجاد"}</button>`);
+   486→  1023→  1023→  document.getElementById("f-cancel").onclick = close;
+   487→  1024→  1024→  document.getElementById("f-save").onclick = async () => {
+   488→  1025→  1025→    const body = {
+   489→  1026→  1026→      display_name: document.getElementById("f-display").value.trim(),
+   490→  1027→  1027→      role: document.getElementById("f-role").value,
+   491→  1028→  1028→    };
+   492→  1029→  1029→    const pass = document.getElementById("f-pass").value;
+   493→  1030→  1030→    if (pass) body.password = pass;
+   494→  1031→  1031→    if (isEdit) body.is_active = Number(document.getElementById("f-active").value);
+   495→  1032→  1032→    else {
+   496→  1033→  1033→      body.username = document.getElementById("f-username").value.trim();
+   497→  1034→  1034→      if (!body.username) { toast("نام کاربری الزامی است", "err"); return; }
+   498→  1035→  1035→      if (pass.length < 8) { toast("گذرواژه باید حداقل ۸ کاراکتر باشد", "err"); return; }
+   499→  1036→  1036→    }
+   500→  1037→  1037→    if (!body.display_name) { toast("نام نمایشی الزامی است", "err"); return; }
+   501→  1038→  1038→    try {
+   502→  1039→  1039→      await api(isEdit ? `admins/${admin.id}` : "admins", { method: isEdit ? "PUT" : "POST", body });
+   503→  1040→  1040→      toast("ذخیره شد", "ok2"); close(); renderPage("security");
+   504→  1041→  1041→    } catch (ex) { toast(ex.message, "err"); }
+   505→  1042→  1042→  };
+   506→  1043→  1043→}
+   507→  1044→  1044→
+   508→  1045→  1045→/* ---------------- شروع ---------------- */
+   509→  1046→  1046→
+   510→  1047→  1047→window.addEventListener("hashchange", render);
+   511→  1048→  1048→window.addEventListener("DOMContentLoaded", render);
+   512→  1049→  1049→if (document.readyState !== "loading") render();
+   513→  1050→  1050→

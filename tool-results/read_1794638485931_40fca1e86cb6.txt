@@ -1,0 +1,480 @@
+  1042→
+  1043→  document.querySelectorAll("[data-preset]").forEach((b) => (b.onclick = () => {
+  1044→    const now = new Date();
+  1045→    const start = document.getElementById("f-start");
+  1046→    const end = document.getElementById("f-end");
+  1047→    const set = (el, d) => { el.value = d ? new Date(d).toISOString().slice(0, 16) : ""; };
+  1048→    const fmtLocal = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  1049→    switch (b.dataset.preset) {
+  1050→      case "now": start.value = fmtLocal(now); break;
+  1051→      case "7d": { if (!start.value) start.value = fmtLocal(now); const e2 = new Date(now.getTime() + 7 * 86400000); end.value = fmtLocal(e2); break; }
+  1052→      case "30d": { if (!start.value) start.value = fmtLocal(now); const e2 = new Date(now.getTime() + 30 * 86400000); end.value = fmtLocal(e2); break; }
+  1053→      case "today": { if (!start.value) start.value = fmtLocal(now); const e2 = new Date(now); e2.setHours(23, 59, 0, 0); end.value = fmtLocal(e2); break; }
+  1054→      case "clear": start.value = ""; end.value = ""; break;
+  1055→    }
+  1056→  }));
+  1057→
+  1058→  document.getElementById("f-cancel").onclick = close;
+  1059→  document.getElementById("f-save").onclick = async () => {
+  1060→    const body = readForm();
+  1061→    body.priority = document.getElementById("f-priority").value;
+  1062→    body.starts_at = document.getElementById("f-start").value ? new Date(document.getElementById("f-start").value).toISOString() : null;
+  1063→    body.ends_at = document.getElementById("f-end").value ? new Date(document.getElementById("f-end").value).toISOString() : null;
+  1064→    if (!body.title) { toast("عنوان الزامی است", "err"); return; }
+  1065→    if (body.starts_at && body.ends_at && new Date(body.starts_at) > new Date(body.ends_at)) {
+  1066→      toast("تاریخ پایان نمی‌تواند قبل از شروع باشد", "err"); return;
+  1067→    }
+  1068→    try {
+  1069→      await api(isEdit ? `ads/${ad.id}` : "ads", { method: isEdit ? "PUT" : "POST", body });
+  1070→      toast(isEdit ? "تبلیغ بروزرسانی شد" : "تبلیغ اضافه شد", "ok2");
+  1071→      close(); renderPage("ads");
+  1072→    } catch (ex) { toast(ex.message, "err"); }
+  1073→  };
+  1074→}
+  1075→
+  1076→/* ---------- دستیار صوتی ---------- */
+  1077→
+  1078→async function pageVoice(host) {
+  1079→  const writable = can("operator");
+  1080→  const [lex, settings] = await Promise.all([api("voice-lexicon"), api("settings")]);
+  1081→  let lexRows = lex;
+  1082→  host.innerHTML = `
+  1083→    ${pageHead("دستیار صوتی", "تنظیم متن‌های ثابت، فرهنگ تلفظ و تنظیمات مجاز سرویس صوتی.")}
+  1084→    <div class="grid cols-2">
+  1085→      <div>
+  1086→        <div class="card" style="margin-bottom:16px">
+  1087→          <h3><span class="material" style="color:var(--primary)">translate</span>آزمایش نگاشت گفتار به نوشتار</h3>
+  1088→          <p class="card-sub" style="margin-top:0">متنی که کاربر به دستیار می‌گوید را وارد کنید و نتیجه نگاشت را ببینید.</p>
+  1089→          <div class="lex-test">
+  1090→            <input id="v-test-input" placeholder="مثلاً میلاد یا تجریش…" />
+  1091→            <button class="btn btn-primary btn-sm" id="v-test-btn"><span class="material">play_arrow</span><span>آزمایش</span></button>
+  1092→          </div>
+  1093→          <div id="v-test-result"></div>
+  1094→        </div>
+  1095→        <div class="card">
+  1096→          <h3><span class="material" style="color:var(--primary)">record_voice_over</span>تنظیمات سرویس صوتی</h3>
+  1097→          <div class="field"><label>سرویس پردازش صوت</label>
+  1098→            <select id="v-service" ${me.role !== "super" ? "disabled" : ""}>
+  1099→              <option value="cloudflare-worker" ${settings.voice_service?.value === "cloudflare-worker" ? "selected" : ""}>Cloudflare Worker (فعلی)</option>
+  1100→              <option value="native" ${settings.voice_service?.value === "native" ? "selected" : ""}>موتور نیتیو دستگاه</option>
+  1101→              <option value="off" ${settings.voice_service?.value === "off" ? "selected" : ""}>غیرفعال</option>
+  1102→            </select></div>
+  1103→          <div class="field"><label>وضعیت دستیار صوتی</label>
+  1104→            <select id="v-enabled" ${me.role !== "super" ? "disabled" : ""}>
+  1105→              <option value="on" ${settings.voice_enabled?.value === "on" ? "selected" : ""}>فعال</option>
+  1106→              <option value="off" ${settings.voice_enabled?.value === "off" ? "selected" : ""}>غیرفعال</option>
+  1107→            </select></div>
+  1108→          ${me.role === "super" ? `<button class="btn btn-primary" id="v-save">ذخیره تنظیمات صوتی</button>` : `<p class="card-sub">تغییر تنظیمات صوتی فقط برای مدیر کل مجاز است.</p>`}
+  1109→          <p class="card-sub">فرمان‌های ثابت («شروع سفر»، «توقف»، «تکرار») بدون فراخوانی مدل زبانی پردازش می‌شوند.</p>
+  1110→        </div>
+  1111→      </div>
+  1112→      <div class="card">
+  1113→        <h3><span class="material" style="color:var(--primary)">translate</span>فرهنگ تلفظ (${faNum(lexRows.length)} مدخل)</h3>
+  1114→        <p class="card-sub" style="margin-top:0">نگاشت گفتار به نوشتار — برای تشخیص صحیح نام ایستگاه‌ها و مکان‌ها</p>
+  1115→        <div class="lex-toolbar">
+  1116→          <input id="v-q" placeholder="جست‌وجو در فرهنگ…" />
+  1117→          ${writable ? `<button class="btn btn-sm" id="v-import"><span class="material">playlist_add</span><span>درون‌ریزی نام ایستگاه‌ها</span></button>` : ""}
+  1118→        </div>
+  1119→        <div id="v-lex"></div>
+  1120→      </div>
+  1121→    </div>`;
+  1122→  const renderLex = (rows) => {
+  1123→    document.getElementById("v-lex").innerHTML = rows.length ? `
+  1124→      <div class="tbl-wrap" style="max-height:340px"><table class="tbl">
+  1125→        <thead><tr><th>گفتاری</th><th>نوشتاری</th><th>اولویت</th>${writable ? "<th></th>" : ""}</tr></thead>
+  1126→        <tbody>${rows.map((l) => `
+  1127→          <tr><td>${esc(l.spoken)}</td><td>${esc(l.written)}</td><td>${l.priority}</td>
+  1128→          ${writable ? `<td><div class="acts">
+  1129→            <button class="icon-btn" data-edit="${l.id}" title="ویرایش مدخل"><span class="material">edit</span></button>
+  1130→            <button class="icon-btn danger" data-del="${l.id}" title="حذف مدخل"><span class="material">delete</span></button>
+  1131→          </div></td>` : ""}</tr>`).join("")}</tbody>
+  1132→      </table></div>` : `<div class="empty"><span class="material">record_voice_over</span>مدخلی یافت نشد</div>`;
+  1133→    if (writable) {
+  1134→      document.querySelectorAll("#v-lex [data-edit]").forEach((b) => (b.onclick = () => openLexForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
+  1135→      document.querySelectorAll("#v-lex [data-del]").forEach((b) => (b.onclick = () =>
+  1136→        confirmDialog("این مدخل تلفظ حذف شود؟", async () => {
+  1137→          await api(`voice-lexicon/${b.dataset.del}`, { method: "DELETE" });
+  1138→          toast("مدخل حذف شد", "ok2"); renderPage("voice");
+  1139→        })));
+  1140→    }
+  1141→  };
+  1142→  renderLex(lexRows);
+  1143→  document.getElementById("v-q").oninput = async (e) => {
+  1144→    const q = e.target.value.trim();
+  1145→    lexRows = await api(`voice-lexicon${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+  1146→    renderLex(lexRows);
+  1147→    document.querySelector("#v-lex").parentElement.querySelector("h3").innerHTML =
+  1148→      `<span class="material" style="color:var(--primary)">translate</span>فرهنگ تلفظ (${faNum(lexRows.length)} مدخل)`;
+  1149→  };
+  1150→  const testBtn = document.getElementById("v-test-btn");
+  1151→  const runTest = () => {
+  1152→    const text = document.getElementById("v-test-input").value.trim();
+  1153→    const out = document.getElementById("v-test-result");
+  1154→    if (!text) { out.innerHTML = ""; return; }
+  1155→    const hit = lex.find((l) => text.includes(l.spoken));
+  1156→    out.innerHTML = `
+  1157→      <div class="lex-result">
+  1158→        <span class="material">${hit ? "check_circle" : "info"}</span>
+  1159→        <div><b>ورودی:</b> ${esc(text)}</div>
+  1160→        <div>${hit ? `<b>خروجی نگاشت:</b> ${esc(hit.written)} <span class="badge ok">یافت شد — اولویت ${hit.priority}</span>` : '<span class="badge off">نگاشتی یافت نشد — به مدل زبانی ارسال می‌شود</span>'}</div>
+  1161→      </div>`;
+  1162→  };
+  1163→  testBtn.onclick = runTest;
+  1164→  document.getElementById("v-test-input").addEventListener("keydown", (e) => { if (e.key === "Enter") runTest(); });
+  1165→  document.getElementById("v-import")?.addEventListener("click", () =>
+  1166→    confirmDialog("نام همه ایستگاه‌های فعال به‌عنوان مدخل تلفظ (اولویت ۵) وارد فرهنگ شود؟ مدخل‌های موجود رد می‌شوند.", async () => {
+  1167→      try {
+  1168→        const r = await api("voice-lexicon/import-stations", { method: "POST" });
+  1169→        toast(`${faNum(r.added)} ایستگاه به فرهنگ تلفظ اضافه شد`, "ok2");
+  1170→        renderPage("voice");
+  1171→      } catch (ex) { toast(ex.message, "err"); }
+  1172→    }));
+  1173→  document.getElementById("v-save")?.addEventListener("click", async () => {
+  1174→    try {
+  1175→      await api("settings", { method: "PUT", body: { voice_service: document.getElementById("v-service").value, voice_enabled: document.getElementById("v-enabled").value } });
+  1176→      toast("تنظیمات صوتی ذخیره شد", "ok2");
+  1177→    } catch (ex) { toast(ex.message, "err"); }
+  1178→  });
+  1179→  function openLexForm(l) {
+  1180→    const isEdit = !!l;
+  1181→    const closeM = modal(isEdit ? "ویرایش مدخل" : "مدخل جدید", `
+  1182→      <div class="field"><label>متن گفتاری (طوری که کاربر می‌گوید)</label><input id="f-spoken" value="${esc(l?.spoken || "")}" placeholder="مثلاً تجریش" /></div>
+  1183→      <div class="field"><label>متن نوشتاری (نام رسمی)</label><input id="f-written" value="${esc(l?.written || "")}" placeholder="مثلاً تجریش" /></div>
+  1184→      <div class="field"><label>اولویت</label><input id="f-prio" type="number" value="${l?.priority ?? 0}" /></div>`,
+  1185→      `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+  1186→    document.getElementById("f-cancel").onclick = closeM;
+  1187→    document.getElementById("f-save").onclick = async () => {
+  1188→      const body = {
+  1189→        spoken: document.getElementById("f-spoken").value.trim(),
+  1190→        written: document.getElementById("f-written").value.trim(),
+  1191→        priority: document.getElementById("f-prio").value,
+  1192→      };
+  1193→      if (!body.spoken || !body.written) { toast("هر دو مقدار الزامی است", "err"); return; }
+  1194→      try {
+  1195→        await api(isEdit ? `voice-lexicon/${l.id}` : "voice-lexicon", { method: isEdit ? "PUT" : "POST", body });
+  1196→        toast("ذخیره شد", "ok2"); closeM(); renderPage("voice");
+  1197→      } catch (ex) { toast(ex.message, "err"); }
+  1198→    };
+  1199→  }
+  1200→  const addBtn = document.createElement("button");
+  1201→  addBtn.className = "btn btn-sm btn-primary";
+  1202→  addBtn.textContent = "+ مدخل جدید";
+  1203→  addBtn.onclick = () => openLexForm(null);
+  1204→  document.querySelector("#v-lex").parentElement.querySelector("h3").appendChild(addBtn);
+  1205→}
+  1206→
+  1207→/* ---------- تنظیمات عمومی ---------- */
+  1208→
+  1209→async function pageSettings(host) {
+  1210→  const s = await api("settings");
+  1211→  const readOnly = me.role !== "super";
+  1212→  const F = (key, label, type = "text", hint = "") => `
+  1213→    <div class="field"><label>${label}</label>
+  1214→      <input id="st-${key}" value="${esc(s[key]?.value || "")}" ${readOnly ? "disabled" : ""} ${type === "number" ? 'type="number"' : ""} />
+  1215→      ${hint ? `<span class="hint">${hint}</span>` : ""}</div>`;
+  1216→  host.innerHTML = `
+  1217→    ${pageHead("تنظیمات سامانه", "نام، پیام‌ها، نسخه، تنظیمات تبلیغات و پارامترهای عمومی برنامه — فقط برای مدیر کل.")}
+  1218→    <div class="grid cols-2">
+  1219→      <div class="card">
+  1220→        <h3><span class="material" style="color:var(--primary)">app_shortcut</span>هویت برنامه</h3>
+  1221→        ${F("app_name", "نام برنامه")}
+  1222→        ${F("app_version", "نسخه فعلی")}
+  1223→        ${F("welcome_message", "پیام خوش‌آمد")}
+  1224→        ${F("support_message", "پیام پشتیبانی")}
+  1225→        ${F("support_phone", "تلفن پشتیبانی")}
+  1226→        ${F("default_city", "شهر پیش‌فرض")}
+  1227→      </div>
+  1228→      <div>
+  1229→        <div class="card" style="margin-bottom:16px">
+  1230→          <h3><span class="material" style="color:var(--primary)">engineering</span>وضعیت عملیاتی</h3>
+  1231→          <div class="field"><label>حالت نگهداری</label>
+  1232→            <select id="st-maintenance_mode" ${readOnly ? "disabled" : ""}>
+  1233→              <option value="off" ${s.maintenance_mode?.value !== "on" ? "selected" : ""}>خاموش (عادی)</option>
+  1234→              <option value="on" ${s.maintenance_mode?.value === "on" ? "selected" : ""}>روشن (کاربران پیام نگهداری می‌بینند)</option>
+  1235→            </select></div>
+  1236→          ${F("force_update_version", "اجبار بروزرسانی تا نسخه (خالی = بدون اجبار)", "text", "اگر نسخه اپ کاربر از این عدد کمتر باشد، اپ بروزرسانی را اجباری می‌کند.")}
+  1237→          ${F("store_link", "لینک فروشگاه (کافه‌بازار / مایکت)", "text", "برای دکمه «دریافت بروزرسانی» در اپ.")}
+  1238→        </div>
+  1239→        <div class="card">
+  1240→          <h3><span class="material" style="color:var(--primary)">campaign</span>پارامترهای تبلیغات</h3>
+  1241→          ${F("ads_rotation_seconds", "فاصله چرخش بنرها (ثانیه)", "number", "هر چند ثانیه بنر بعدی در یک جایگاه نمایش داده می‌شود.")}
+  1242→          ${F("max_ads_per_placement", "حداکثر بنر در هر جایگاه", "number", "سقف کمپین‌های هم‌زمان فعال در یک جایگاه نمایش.")}
+  1243→        </div>
+  1244→        ${!readOnly ? `<button class="btn btn-primary" id="st-save" style="margin-top:16px">ذخیره همه تنظیمات</button>` : `<p class="card-sub">ذخیره تنظیمات فقط برای مدیر کل مجاز است.</p>`}
+  1245→      </div>
+  1246→    </div>`;
+  1247→  document.getElementById("st-save")?.addEventListener("click", async () => {
+  1248→    const g = (k) => document.getElementById(`st-${k}`).value.trim();
+  1249→    const body = {
+  1250→      app_name: g("app_name"),
+  1251→      app_version: g("app_version"),
+  1252→      welcome_message: g("welcome_message"),
+  1253→      support_message: g("support_message"),
+  1254→      support_phone: g("support_phone"),
+  1255→      default_city: g("default_city"),
+  1256→      maintenance_mode: document.getElementById("st-maintenance_mode").value,
+  1257→      force_update_version: g("force_update_version"),
+  1258→      store_link: g("store_link"),
+  1259→      ads_rotation_seconds: g("ads_rotation_seconds"),
+  1260→      max_ads_per_placement: g("max_ads_per_placement"),
+  1261→    };
+  1262→    try {
+  1263→      await api("settings", { method: "PUT", body });
+  1264→      toast("تنظیمات ذخیره شد", "ok2");
+  1265→    } catch (ex) { toast(ex.message, "err"); }
+  1266→  });
+  1267→}
+  1268→
+  1269→/* ---------- گزارش‌ها ---------- */
+  1270→
+  1271→async function pageReports(host) {
+  1272→  const urlDays = new URLSearchParams(location.hash.split("?")[1] || "").get("days");
+  1273→  const days = Math.min(Math.max(Number(urlDays) || 14, 7), 90);
+  1274→  const r = await api(`reports?days=${days}`);
+  1275→  const maxApi = Math.max(...r.api_stats.map((x) => x.count), 1);
+  1276→  const statsAsc = [...r.api_stats].reverse();
+  1277→  const maxImp = Math.max(...r.ads_daily.map((x) => x.impressions), 1);
+  1278→  const adsDailyAsc = [...r.ads_daily].reverse();
+  1279→  const totalApi = r.api_stats.reduce((s, x) => s + x.count, 0);
+  1280→  const totalImp = r.ads_daily.reduce((s, x) => s + x.impressions, 0);
+  1281→  const totalClk = r.ads_daily.reduce((s, x) => s + x.clicks, 0);
+  1282→  const ctr = totalImp ? ((totalClk / totalImp) * 100).toLocaleString("fa-IR", { maximumFractionDigits: 1 }) : "۰";
+  1283→  host.innerHTML = `
+  1284→    ${pageHead("گزارش‌ها و تحلیل داده", "آمار استفاده، عملکرد API، رتبه‌بندی کمپین‌ها و تاریخچه تغییرات داده.")}
+  1285→    <div class="toolbar">
+  1286→      <span style="font-size:12px; color:var(--ink-2)">بازه گزارش:</span>
+  1287→      ${[7, 14, 30].map((d2) => `<button class="tab ${days === d2 ? "active" : ""}" data-days="${d2}">${faNum(d2)} روز</button>`).join("")}
+  1288→      <span class="spacer"></span>
+  1289→      <button class="btn btn-sm" id="r-csv-api"><span class="material">download</span><span>CSV درخواست‌ها</span></button>
+  1290→      <button class="btn btn-sm" id="r-csv-ads"><span class="material">download</span><span>CSV عملکرد تبلیغات</span></button>
+  1291→    </div>
+  1292→    <div class="kpi-grid kpi-grid-5">
+  1293→      ${kpi("نشست فعال مدیران", "how_to_reg", r.active_sessions, "نشست جاری پنل", "t-primary")}
+  1294→      ${kpi("درخواست API", "api", totalApi, `مجموع در ${faNum(days)} روز اخیر`, "t-surface")}
+  1295→      ${kpi("نمایش تبلیغ", "visibility", r.ads_totals.impressions || totalImp, `مجموع در بازه انتخابی`, "t-dim")}
+  1296→      ${kpi("کلیک تبلیغ", "ads_click", r.ads_totals.clicks || totalClk, "مجموع کلیک‌های بازه", "t-surface")}
+  1297→      ${kpi("میانگین CTR", "query_stats", ctr + "٪", "نسبت کلیک به نمایش بازه", "t-tertiary")}
+  1298→    </div>
+  1299→    <div class="grid cols-2">
+  1300→      <div class="card">
+  1301→        <h3><span class="material" style="color:var(--primary)">monitoring</span>درخواست‌های API — ${faNum(days)} روز اخیر</h3>
+  1302→        <div class="bars">
+  1303→          ${statsAsc.map((x) => `
+  1304→            <div class="bar-col">
+  1305→              <span class="bar-val">${x.count || ""}</span>
+  1306→              <div class="bar" style="height:${Math.round((x.count / maxApi) * 100)}%"></div>
+  1307→              <span class="bar-day">${x.day.slice(5).replace("-", "/")}</span>
+  1308→            </div>`).join("")}
+  1309→        </div>
+  1310→      </div>
+  1311→      <div class="card">
+  1312→        <h3><span class="material" style="color:var(--primary)">insights</span>نمایش و کلیک تبلیغات — روزانه</h3>
+  1313→        <div class="legend"><span class="lg lg-imp"></span>نمایش <span class="lg lg-clk"></span>کلیک</div>
+  1314→        <div class="bars bars-dual">
+  1315→          ${adsDailyAsc.length ? adsDailyAsc.map((x) => `
+  1316→            <div class="bar-col">
+  1317→              <span class="bar-val">${x.impressions || ""}</span>
+  1318→              <div class="bar-pair">
+  1319→                <div class="bar imp" style="height:${Math.round((x.impressions / maxImp) * 100)}%" title="نمایش: ${faNum(x.impressions)}"></div>
+  1320→                <div class="bar clk" style="height:${Math.round((x.clicks / maxImp) * 100)}%; min-height:${x.clicks ? "3px" : "0"}" title="کلیک: ${faNum(x.clicks)}"></div>
+  1321→              </div>
+  1322→              <span class="bar-day">${x.day.slice(5).replace("-", "/")}</span>
+  1323→            </div>`).join("") : `<div class="empty"><span class="material">insights</span>آمار روزانه‌ای در این بازه ثبت نشده است</div>`}
+  1324→        </div>
+  1325→      </div>
+  1326→    </div>
+  1327→    <div class="grid cols-2" style="margin-top:16px">
+  1328→      <div class="card">
+  1329→        <h3><span class="material" style="color:var(--primary)">leaderboard</span>رتبه‌بندی عملکرد کمپین‌ها (بر اساس CTR)</h3>
+  1330→        ${r.ads_ranking.length ? `<div class="tbl-wrap" style="max-height:260px"><table class="tbl">
+  1331→          <thead><tr><th>#</th><th>عنوان</th><th>جایگاه</th><th>نمایش</th><th>کلیک</th><th>CTR</th></tr></thead>
+  1332→          <tbody>${r.ads_ranking.map((a, i) => {
+  1333→            const fill = Math.min(Math.max(a.ctr * 20, 4), 100);
+  1334→            return `<tr>
+  1335→              <td><span class="order-chip">${faNum(i + 1)}</span></td>
+  1336→              <td><b>${esc(a.title)}</b></td>
+  1337→              <td><span class="placement-chip ${AD_PLACE_META[a.placement]?.cls || ""}">${PLACE_LABEL[a.placement] || a.placement}</span></td>
+  1338→              <td>${faNum(a.impressions)}</td>
+  1339→              <td>${faNum(a.clicks)}</td>
+  1340→              <td><div class="cell-meter"><div class="meter-row"><span class="m-ctr">${a.ctr.toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪</span></div><div class="meter"><div class="meter-fill ${a.ctr >= 4 ? "good" : a.ctr < 1 ? "low" : ""}" style="width:${fill}%"></div></div></div></td>
+  1341→            </tr>`;
+  1342→          }).join("")}</tbody></table></div>` : `<div class="empty"><span class="material">leaderboard</span>کمپینی ثبت نشده است</div>`}
+  1343→      </div>
+  1344→      <div>
+  1345→        <div class="card" style="margin-bottom:16px">
+  1346→          <h3><span class="material" style="color:var(--primary)">group</span>ترکیب وضعیت کاربران</h3>
+  1347→          <div class="user-status-row">
+  1348→            ${r.users_by_status.length ? r.users_by_status.map((u) => {
+  1349→              const [lbl, cls] = STATUS_LABEL[u.status] || [u.status, "off"];
+  1350→              return `<div class="us-box"><span class="badge ${cls}">${lbl}</span><b>${faNum(u.count)}</b><span>کاربر</span></div>`;
+  1351→            }).join("") : `<div class="empty"><span class="material">group_off</span>کاربری ثبت نشده است</div>`}
+  1352→          </div>
+  1353→        </div>
+  1354→        <div class="card">
+  1355→          <h3><span class="material" style="color:var(--primary)">location_on</span>نمونه ایستگاه‌های فعال</h3>
+  1356→          <div class="station-cloud">
+  1357→            ${r.top_stations.length ? r.top_stations.map((s) => `<span class="station-chip"><span class="dot" style="background:${esc(s.color)}"></span>${esc(s.name)} <small>— ${esc(s.line_name)}</small></span>`).join("") : `<div class="empty"><span class="material">location_off</span>ایستگاهی ثبت نشده است</div>`}
+  1358→          </div>
+  1359→        </div>
+  1360→      </div>
+  1361→    </div>
+  1362→    <div class="card" style="margin-top:16px">
+  1363→      <h3><span class="material" style="color:var(--primary)">history</span>تاریخچه تغییرات داده</h3>
+  1364→      <div class="feed">
+  1365→        ${r.changes.length ? r.changes.map((c) => `
+  1366→          <div class="feed-item">
+  1367→            <span class="fi-dot" style="background:${c.action === "delete" || c.action === "bulk_delete" ? "var(--error)" : c.action === "create" || c.action === "bulk_create" ? "var(--tertiary-container)" : "var(--primary-fixed-dim)"}"></span>
+  1368→            <div class="fi-body"><b>${entityLabel(c.entity)} — ${c.action === "create" || c.action === "bulk_create" ? "ایجاد" : c.action === "delete" || c.action === "bulk_delete" ? "حذف" : "ویرایش"}</b><p>${esc(c.admin_name)}${c.details ? " — " + esc(c.details) : ""}</p></div>
+  1369→            <span class="fi-time">${faTime(c.created_at)}</span>
+  1370→          </div>`).join("") : `<div class="empty"><span class="material">inbox</span>تغییری ثبت نشده است</div>`}
+  1371→      </div>
+  1372→    </div>`;
+  1373→  document.querySelectorAll("[data-days]").forEach((b) => (b.onclick = () => {
+  1374→    location.hash = `#/reports?days=${b.dataset.days}`;
+  1375→    render();
+  1376→  }));
+  1377→  document.getElementById("r-csv-api").onclick = () => {
+  1378→    csvExport(`darmasir-api-${days}d.csv`, ["تاریخ", "تعداد درخواست"], statsAsc.map((x) => [x.day, x.count]));
+  1379→  };
+  1380→  document.getElementById("r-csv-ads").onclick = () => {
+  1381→    csvExport("darmasir-ads-performance.csv", ["عنوان", "جایگاه", "نمایش", "کلیک", "CTR٪", "فعال"],
+  1382→      r.ads_ranking.map((a) => [a.title, PLACE_LABEL[a.placement] || a.placement, a.impressions, a.clicks, a.ctr, a.is_active ? "بله" : "خیر"]));
+  1383→  };
+  1384→}
+  1385→
+  1386→function entityLabel(e) {
+  1387→  return { app_user: "کاربر", line: "خط", station: "ایستگاه", ad: "تبلیغ", voice_lexicon: "فرهنگ تلفظ" }[e] || e;
+  1388→}
+  1389→
+  1390→/* ---------- امنیت ---------- */
+  1391→
+  1392→async function pageSecurity(host) {
+  1393→  const s = await api("security");
+  1394→  host.innerHTML = `
+  1395→    ${pageHead("امنیت و وقایع‌نگاری", "مدیران پنل، نقش‌ها، نشست‌های فعال، تغییر گذرواژه و گزارش رویدادهای امنیتی.")}
+  1396→    <div class="grid cols-2">
+  1397→      <div>
+  1398→        <div class="card" style="margin-bottom:16px">
+  1399→          <h3><span class="material" style="color:var(--primary)">password</span>تغییر گذرواژه من</h3>
+  1400→          <div class="field"><label>گذرواژه فعلی</label><input id="pw-cur" type="password" autocomplete="current-password" /></div>
+  1401→          <div class="field"><label>گذرواژه جدید (حداقل ۸ کاراکتر)</label><input id="pw-new" type="password" autocomplete="new-password" /></div>
+  1402→          <div class="field"><label>تکرار گذرواژه جدید</label><input id="pw-new2" type="password" autocomplete="new-password" /></div>
+  1403→          <button class="btn btn-primary" id="pw-save"><span class="material">lock_reset</span><span>تغییر گذرواژه</span></button>
+  1404→        </div>
+  1405→        <div class="card">
+  1406→          <h3><span class="material" style="color:var(--primary)">admin_panel_settings</span>مدیران پنل</h3>
+  1407→          <div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" id="adm-add">+ مدیر جدید</button></div>
+  1408→          <div class="tbl-wrap" style="max-height:300px"><table class="tbl">
+  1409→            <thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>وضعیت</th><th>آخرین ورود</th><th></th></tr></thead>
+  1410→            <tbody>${s.admins.map((a) => `
+  1411→              <tr>
+  1412→                <td><b>${esc(a.display_name)}</b></td>
+  1413→                <td style="direction:ltr;text-align:right">${esc(a.username)}</td>
+  1414→                <td><span class="badge ${a.role === "super" ? "ok" : a.role === "operator" ? "warn" : "off"}">${ROLE_LABEL[a.role]}</span></td>
+  1415→                <td><span class="badge ${a.is_active ? "ok" : "bad"}">${a.is_active ? "فعال" : "غیرفعال"}</span></td>
+  1416→                <td>${faTime(a.last_login)}</td>
+  1417→                <td><div class="acts">
+  1418→                  <button class="icon-btn" data-edit="${a.id}" title="ویرایش مدیر"><span class="material">edit</span></button>
+  1419→                  ${a.id !== me.id ? `<button class="icon-btn danger" data-del="${a.id}" data-name="${esc(a.username)}" title="حذف مدیر"><span class="material">delete</span></button>` : ""}
+  1420→                </div></td>
+  1421→              </tr>`).join("")}</tbody>
+  1422→          </table></div>
+  1423→        </div>
+  1424→      </div>
+  1425→      <div class="card">
+  1426→        <h3><span class="material" style="color:var(--primary)">wifi_tethering</span>نشست‌های فعال (${faNum(s.sessions.length)})</h3>
+  1427→        <div class="tbl-wrap" style="max-height:190px"><table class="tbl">
+  1428→          <thead><tr><th>مدیر</th><th>IP</th><th>ایجاد</th><th>انقضا</th><th></th></tr></thead>
+  1429→          <tbody>${s.sessions.length ? s.sessions.map((x) => `
+  1430→            <tr><td><b>${esc(x.display_name)}</b><span class="cell-sub" title="${esc(x.user_agent || "")}">${esc(x.username)}</span></td>
+  1431→            <td style="direction:ltr;text-align:right">${esc(x.ip || "—")}</td>
+  1432→            <td>${faTime(x.created_at)}</td><td>${faTime(x.expires_at)}</td>
+  1433→            <td>${x.username !== me.username ? `<button class="icon-btn danger" data-revoke="${esc(x.token)}" data-name="${esc(x.username)}" title="ابطال نشست"><span class="material">block</span></button>` : '<span class="badge info">نشست شما</span>'}</td></tr>`).join("") : `<tr><td colspan="5" class="empty">نشستی فعال نیست</td></tr>`}</tbody>
+  1434→        </table></div>
+  1435→        <h3 style="margin-top:16px"><span class="material" style="color:var(--primary)">security</span>گزارش رویدادهای امنیتی (۱۰۰ مورد اخیر)</h3>
+  1436→        <div class="feed" style="max-height:260px">
+  1437→          ${s.audit.length ? s.audit.map((a) => `
+  1438→            <div class="feed-item">
+  1439→              <span class="fi-dot" style="background:${a.action === "login_failed" ? "var(--error)" : "var(--tertiary-container)"}"></span>
+  1440→              <div class="fi-body"><b>${esc(actionLabel(a.action))}</b><p>${esc(a.admin_name)}${a.details ? " — " + esc(a.details) : ""} ${a.ip ? `(IP: ${esc(a.ip)})` : ""}</p></div>
+  1441→              <span class="fi-time">${faTime(a.created_at)}</span>
+  1442→            </div>`).join("") : `<div class="empty"><span class="material">shield</span>رویدادی ثبت نشده است</div>`}
+  1443→        </div>
+  1444→      </div>
+  1445→    </div>`;
+  1446→  document.getElementById("pw-save").onclick = async () => {
+  1447→    const cur = document.getElementById("pw-cur").value;
+  1448→    const nw = document.getElementById("pw-new").value;
+  1449→    const nw2 = document.getElementById("pw-new2").value;
+  1450→    if (!cur || !nw) { toast("هر دو مقدار الزامی است", "err"); return; }
+  1451→    if (nw.length < 8) { toast("گذرواژه جدید باید حداقل ۸ کاراکتر باشد", "err"); return; }
+  1452→    if (nw !== nw2) { toast("تکرار گذرواژه مطابقت ندارد", "err"); return; }
+  1453→    try {
+  1454→      await api("auth/change-password", { method: "POST", body: { current_password: cur, new_password: nw } });
+  1455→      toast("گذرواژه با موفقیت تغییر کرد", "ok2");
+  1456→      ["pw-cur", "pw-new", "pw-new2"].forEach((id) => (document.getElementById(id).value = ""));
+  1457→      renderPage("security");
+  1458→    } catch (ex) { toast(ex.message, "err"); }
+  1459→  };
+  1460→  document.getElementById("adm-add").onclick = () => openAdminForm(null);
+  1461→  document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openAdminForm(s.admins.find((x) => x.id === Number(b.dataset.edit)))));
+  1462→  document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
+  1463→    confirmDialog(`مدیر «${b.dataset.name}» حذف شود؟`, async () => {
+  1464→      await api(`admins/${b.dataset.del}`, { method: "DELETE" });
+  1465→      toast("مدیر حذف شد", "ok2"); renderPage("security");
+  1466→    })));
+  1467→  document.querySelectorAll("[data-revoke]").forEach((b) => (b.onclick = () =>
+  1468→    confirmDialog(`نشست مدیر «${b.dataset.name}» ابطال شود؟ او باید دوباره وارد شود.`, async () => {
+  1469→      try {
+  1470→        await api(`sessions/${encodeURIComponent(b.dataset.revoke)}`, { method: "DELETE" });
+  1471→        toast("نشست ابطال شد", "ok2");
+  1472→        renderPage("security");
+  1473→      } catch (ex) { toast(ex.message, "err"); }
+  1474→    })));
+  1475→}
+  1476→
+  1477→function openAdminForm(admin) {
+  1478→  const isEdit = !!admin;
+  1479→  const close = modal(isEdit ? `ویرایش مدیر — ${admin.username}` : "مدیر جدید", `
+  1480→    ${!isEdit ? `
+  1481→      <div class="field"><label>نام کاربری</label><input id="f-username" placeholder="username" style="direction:ltr" /></div>
+  1482→      <div class="field"><label>گذرواژه (حداقل ۸ کاراکتر)</label><input id="f-pass" type="password" /></div>` : `
+  1483→      <div class="field"><label>گذرواژه جدید (خالی = بدون تغییر)</label><input id="f-pass" type="password" placeholder="••••••••" /></div>`}
+  1484→    <div class="field"><label>نام نمایشی</label><input id="f-display" value="${esc(admin?.display_name || "")}" /></div>
+  1485→    <div class="field"><label>نقش</label>
+  1486→      <select id="f-role">
+  1487→        <option value="super" ${admin?.role === "super" ? "selected" : ""}>مدیر کل — دسترسی کامل</option>
+  1488→        <option value="operator" ${admin?.role === "operator" ? "selected" : ""}>اپراتور — مدیریت داده‌ها و تبلیغات</option>
+  1489→        <option value="viewer" ${admin?.role === "viewer" ? "selected" : ""}>ناظر — فقط مشاهده</option>
+  1490→      </select></div>
+  1491→    ${isEdit ? `<div class="field"><label>وضعیت</label>
+  1492→      <select id="f-active"><option value="1" ${admin.is_active ? "selected" : ""}>فعال</option><option value="0" ${!admin.is_active ? "selected" : ""}>غیرفعال (غیرقابل ورود)</option></select></div>` : ""}`,
+  1493→    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "ایجاد"}</button>`);
+  1494→  document.getElementById("f-cancel").onclick = close;
+  1495→  document.getElementById("f-save").onclick = async () => {
+  1496→    const body = {
+  1497→      display_name: document.getElementById("f-display").value.trim(),
+  1498→      role: document.getElementById("f-role").value,
+  1499→    };
+  1500→    const pass = document.getElementById("f-pass").value;
+  1501→    if (pass) body.password = pass;
+  1502→    if (isEdit) body.is_active = Number(document.getElementById("f-active").value);
+  1503→    else {
+  1504→      body.username = document.getElementById("f-username").value.trim();
+  1505→      if (!body.username) { toast("نام کاربری الزامی است", "err"); return; }
+  1506→      if (pass.length < 8) { toast("گذرواژه باید حداقل ۸ کاراکتر باشد", "err"); return; }
+  1507→    }
+  1508→    if (!body.display_name) { toast("نام نمایشی الزامی است", "err"); return; }
+  1509→    try {
+  1510→      await api(isEdit ? `admins/${admin.id}` : "admins", { method: isEdit ? "PUT" : "POST", body });
+  1511→      toast("ذخیره شد", "ok2"); close(); renderPage("security");
+  1512→    } catch (ex) { toast(ex.message, "err"); }
+  1513→  };
+  1514→}
+  1515→
+  1516→/* ---------------- شروع ---------------- */
+  1517→
+  1518→window.addEventListener("hashchange", render);
+  1519→window.addEventListener("DOMContentLoaded", render);
+  1520→if (document.readyState !== "loading") render();
+  1521→

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>پنل مدیریت درمسیر</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <script>
+    /* سازگاری با دو حالت دسترسی:
+       ۱) مسیر تمیز /admin/ (دروازه)
+       ۲) مستقیم با پارامتر ?XTransformPort=3035
+       نکته: مسیر فونت‌ها باید پارامتر دروازه را همراه داشته باشند */
+    (function () {
+      var qp = new URLSearchParams(location.search).get("XTransformPort");
+      var suffix = qp ? "?XTransformPort=" + encodeURIComponent(qp) : "";
+      window.__ASSET_Q = suffix;
+      document.write('<link rel="stylesheet" href="style.css' + suffix + '" />');
+      document.write(
+        '<style>' +
+        '@font-face{font-family:"Vazirmatn";src:url("fonts/vazirmatn-arabic.woff2' + suffix + '") format("woff2");font-weight:400 800;font-display:swap;unicode-range:U+0600-06FF,U+200C-200E,U+2010-2011,U+FB50-FDFF;}' +
+        '@font-face{font-family:"Vazirmatn";src:url("fonts/vazirmatn-latin.woff2' + suffix + '") format("woff2");font-weight:400 800;font-display:swap;}' +
+        '@font-face{font-family:"Material Symbols Outlined";font-style:normal;font-weight:100 700;font-display:block;src:url("fonts/material-symbols.woff2' + suffix + '") format("woff2");}' +
+        '<\/style>'
+      );
+    })();
+  </script>
+  <meta name="theme-color" content="#00417f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300417f'/%3E%3Ctext x='16' y='21' font-size='14' text-anchor='middle' fill='white' font-family='sans-serif'%3Eد%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div id="app"></div>
+  <div id="toast-host" aria-live="polite"></div>
+  <div id="modal-host"></div>
+  <script>
+    (function () {
+      var s = document.createElement("script");
+      s.src = "app.js" + (window.__ASSET_Q || "");
+      document.body.appendChild(s);
+    })();
+  </script>
+</body>
+</html>
