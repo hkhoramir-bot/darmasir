@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   MAP_LINES,
   MAP_STATIONS,
@@ -78,7 +78,7 @@ const TILT_3D_DEG = 42;
    هر لحظه به دوبعدی برگردد؛ انتخاب در حافظه دستگاه ذخیره می‌شود. */
 const MAP_VIEW3D_KEY = "mq-map-view3d";
 
-function readView3d(): boolean {
+function readView3dRaw(): boolean {
   try {
     return localStorage.getItem(MAP_VIEW3D_KEY) !== "0";
   } catch {
@@ -86,12 +86,35 @@ function readView3d(): boolean {
   }
 }
 
-function writeView3d(v: boolean) {
+function writeView3dRaw(v: boolean) {
   try {
     localStorage.setItem(MAP_VIEW3D_KEY, v ? "1" : "0");
   } catch {
     /* حافظه در دسترس نیست */
   }
+}
+
+/* فروشگاه خارجی نمای 3D — SSR-safe با useSyncExternalStore (بدون رندر آبشاری) */
+let view3dSnapshot: boolean | null = null;
+const view3dListeners = new Set<() => void>();
+
+function readView3d(): boolean {
+  if (view3dSnapshot !== null) return view3dSnapshot;
+  view3dSnapshot = readView3dRaw();
+  return view3dSnapshot;
+}
+
+function writeView3d(v: boolean) {
+  writeView3dRaw(v);
+  view3dSnapshot = v;
+  view3dListeners.forEach((cb) => cb());
+}
+
+function subscribeView3d(cb: () => void) {
+  view3dListeners.add(cb);
+  return () => {
+    view3dListeners.delete(cb);
+  };
 }
 
 /* ---------- خطوط نمایان، ایستگاه‌های تبادلی و رنگ هر ایستگاه ----------
@@ -261,21 +284,17 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [fontsTick, setFontsTick] = useState(0);
 
-  /* ---------- نمای دوبعدی/سه‌بعدی + چرخش قطب‌نما ---------- */
-  const [tilt3d, setTilt3dState] = useState(false);
-
-  /* بازیابی انتخاب ذخیره‌شده نمای 3D بعد از mount (بدون اختلاف SSR) */
-  useEffect(() => {
-    setTilt3dState(readView3d());
-  }, []);
-
-  const setTilt3d = useCallback((valueOrFn: boolean | ((v: boolean) => boolean)) => {
-    setTilt3dState((prev) => {
-      const next = typeof valueOrFn === "function" ? valueOrFn(prev) : valueOrFn;
+  /* ---------- نمای دوبعدی/سه‌بعدی + چرخش قطب‌نما ----------
+     پیش‌فرض: نمای سه‌بعدی (طبق دستور بازطراحی)؛ انتخاب کاربر در
+     حافظه دستگاه ذخیره می‌شود. SSR-safe بدون setState در effect. */
+  const tilt3d = useSyncExternalStore(subscribeView3d, readView3d, () => false);
+  const setTilt3d = useCallback(
+    (valueOrFn: boolean | ((v: boolean) => boolean)) => {
+      const next = typeof valueOrFn === "function" ? valueOrFn(readView3d()) : valueOrFn;
       writeView3d(next);
-      return next;
-    });
-  }, []);
+    },
+    []
+  );
   const [rotationDeg, setRotationDeg] = useState(0);
   const view3dRef = useRef({ tilt: 0, rotation: 0 });
 
