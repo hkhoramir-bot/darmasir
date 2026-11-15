@@ -41,3 +41,15 @@ model TripHistory {
   pref          String   @default("fastest")
   createdAt     DateTime @default(now())
 }
+
+// تیکت‌های پشتیبانی (ثبت تیکت در بخش تماس با ما)
+model SupportTicket {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String // ایمیل یا شماره تماس کاربر
+  category  String   @default("general") // general | bug | idea | ad
+  subject   String
+  message   String
+  status    String   @default("open") // open | in_progress | closed
+  createdAt DateTime @default(now())
+}

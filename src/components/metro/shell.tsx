@@ -179,16 +179,19 @@ const DRAWER_LINKS: { label: string; icon: string; href: string; hint?: string }
   { label: "مسیریابی چندمرحله‌ای", icon: "alt_route", href: "/plan" },
   { label: "ذخیره‌ها و مقاصد برگزیده", icon: "bookmark", href: "/saved" },
   { label: "حساب من", icon: "person", href: "/settings" },
-  { label: "خطوط مترو", icon: "route", href: "/lines" },
-  { label: "ایستگاه‌ها", icon: "directions_subway", href: "/stations" },
-  { label: "وضعیت خطوط و اطلاعیه‌ها", icon: "campaign", href: "/status" },
+  { label: "مترو", icon: "directions_subway", href: "/metro" },
   { label: "تاریخچه سفر", icon: "history", href: "/history" },
+  { label: "تنظیمات", icon: "settings", href: "/app-settings" },
+  { label: "تماس با ما", icon: "support_agent", href: "/contact" },
+  { label: "درباره ما", icon: "info", href: "/about" },
 ];
 
 /** تطبیق مسیر فعال — با اسلش انتهایی و زیرصفحه‌ها هم کار می‌کند */
 export function isNavActive(pathname: string | undefined, href: string): boolean {
   const p = (pathname ?? "").replace(/\/+$/, "") || "/";
   if (href === "/") return p === "/";
+  // هاب «مترو» — صفحات خطوط/ایستگاه‌ها/وضعیت هم آن را فعال می‌کنند
+  if (href === "/metro" && ["/lines", "/stations", "/status"].includes(p)) return true;
   return p === href || p.startsWith(`${href}/`);
 }
 
