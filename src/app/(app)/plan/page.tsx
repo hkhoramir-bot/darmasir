@@ -940,10 +940,6 @@ function PlanInner() {
     }
   };
 
-  const focusPrefs = () => {
-    document.getElementById("plan-prefs")?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-
   const sameStation =
     (fromStation && toStation && fromStation.id === toStation.id) ||
     (fromSel && toSel && fromSel.id === toSel.id);
@@ -963,14 +959,6 @@ function PlanInner() {
               className="w-10 h-10 flex items-center justify-center rounded-xl text-on-surface hover:bg-surface-container active:scale-95 transition-all duration-150"
             >
               <MI name="share" size={20} />
-            </button>
-            <button
-              type="button"
-              aria-label="تنظیمات مسیر"
-              onClick={focusPrefs}
-              className="w-10 h-10 flex items-center justify-center rounded-xl text-on-surface hover:bg-surface-container active:scale-95 transition-all duration-150"
-            >
-              <MI name="tune" size={20} />
             </button>
           </>
         }
