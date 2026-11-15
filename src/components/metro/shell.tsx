@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toFa } from "@/lib/metro-data";
 import { isInIframe, openStandaloneTab } from "@/components/metro/voice";
@@ -179,12 +179,26 @@ const DRAWER_LINKS: { label: string; icon: string; href: string; hint?: string }
   { label: "مسیریابی چندمرحله‌ای", icon: "alt_route", href: "/plan" },
   { label: "ذخیره‌ها و مقاصد برگزیده", icon: "bookmark", href: "/saved" },
   { label: "حساب من", icon: "person", href: "/settings" },
-  { label: "مترو", icon: "directions_subway", href: "/metro" },
   { label: "تاریخچه سفر", icon: "history", href: "/history" },
   { label: "تنظیمات", icon: "settings", href: "/app-settings" },
   { label: "تماس با ما", icon: "support_agent", href: "/contact" },
   { label: "درباره ما", icon: "info", href: "/about" },
 ];
+
+/* گروه «مترو» — سه بخش خطوط/ایستگاه‌ها/وضعیت داخل زیرمنوی بازشو */
+const METRO_GROUP: {
+  label: string;
+  icon: string;
+  children: { label: string; icon: string; href: string }[];
+} = {
+  label: "مترو",
+  icon: "directions_subway",
+  children: [
+    { label: "خطوط مترو", icon: "route", href: "/lines" },
+    { label: "ایستگاه‌ها", icon: "directions_subway", href: "/stations" },
+    { label: "وضعیت خطوط و اطلاعیه‌ها", icon: "campaign", href: "/status" },
+  ],
+};
 
 /** تطبیق مسیر فعال — با اسلش انتهایی و زیرصفحه‌ها هم کار می‌کند */
 export function isNavActive(pathname: string | undefined, href: string): boolean {
@@ -253,6 +267,11 @@ export function MenuDrawer() {
   const micState = useMicStatus(open);
   const iframed = isInIframe();
 
+  /* زیرمنوی مترو — پیش‌فرض با مسیر فعال هماهنگ است؛ لمس کاربر اولویت دارد */
+  const metroActive = isNavActive(pathname, "/metro");
+  const [metroToggle, setMetroToggle] = useState<boolean | null>(null);
+  const metroOpen = metroToggle ?? metroActive;
+
   return (
     <div
       className={`fixed inset-0 z-[70] transition-all duration-300 ${open ? "" : "pointer-events-none"}`}
@@ -295,27 +314,86 @@ export function MenuDrawer() {
 
           {/* لینک‌های ناوبری */}
           <nav className="pt-2 space-y-1">
-            {DRAWER_LINKS.map((l) => {
-              const active = isNavActive(pathname, l.href);
-              return (
+            {DRAWER_LINKS.map((l) => (
+              <Fragment key={l.href}>
+                {/* گروه مترو — بعد از «حساب من»، با زیرمنوی بازشو */}
+                {l.href === "/history" && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setMetroToggle(!metroOpen)}
+                      aria-expanded={metroOpen}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all active:scale-[0.98] ${
+                        metroActive
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "text-on-surface-variant hover:bg-surface-container font-medium"
+                      }`}
+                    >
+                      <MI
+                        name={METRO_GROUP.icon}
+                        size={20}
+                        className={metroActive ? "text-primary" : "text-outline"}
+                      />
+                      {METRO_GROUP.label}
+                      <MI
+                        name="expand_more"
+                        size={18}
+                        className={`mr-auto text-outline-variant transition-transform duration-200 ${
+                          metroOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {metroOpen && (
+                      <div className="mt-1 mb-1.5 mr-6 pr-3 border-r-2 border-outline-variant/30 space-y-0.5">
+                        {METRO_GROUP.children.map((c) => {
+                          const childActive = isNavActive(pathname, c.href);
+                          return (
+                            <button
+                              key={c.href}
+                              onClick={() => {
+                                setDrawer(false);
+                                router.push(c.href);
+                              }}
+                              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-all active:scale-[0.98] ${
+                                childActive
+                                  ? "bg-primary/10 text-primary font-bold"
+                                  : "text-on-surface-variant hover:bg-surface-container font-medium"
+                              }`}
+                            >
+                              <MI
+                                name={c.icon}
+                                size={17}
+                                className={childActive ? "text-primary" : "text-outline"}
+                              />
+                              {c.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <button
-                  key={l.href}
                   onClick={() => {
                     setDrawer(false);
                     router.push(l.href);
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all active:scale-[0.98] ${
-                    active
+                    isNavActive(pathname, l.href)
                       ? "bg-primary/10 text-primary font-bold"
                       : "text-on-surface-variant hover:bg-surface-container font-medium"
                   }`}
                 >
-                  <MI name={l.icon} size={20} className={active ? "text-primary" : "text-outline"} />
+                  <MI
+                    name={l.icon}
+                    size={20}
+                    className={isNavActive(pathname, l.href) ? "text-primary" : "text-outline"}
+                  />
                   {l.label}
                   <MI name="chevron_left" size={16} className="mr-auto text-outline-variant" />
                 </button>
-              );
-            })}
+              </Fragment>
+            ))}
           </nav>
 
           <div className="pt-4 border-t border-outline-variant/30 space-y-2">
