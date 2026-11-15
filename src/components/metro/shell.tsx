@@ -178,7 +178,6 @@ const DRAWER_LINKS: { label: string; icon: string; href: string; hint?: string }
   { label: "نقشه تعاملی حمل‌ونقل", icon: "map", href: "/map" },
   { label: "مسیریابی چندمرحله‌ای", icon: "alt_route", href: "/plan" },
   { label: "ذخیره‌ها و مقاصد برگزیده", icon: "bookmark", href: "/saved" },
-  { label: "حساب من", icon: "person", href: "/settings" },
   { label: "تاریخچه سفر", icon: "history", href: "/history" },
   { label: "تنظیمات", icon: "settings", href: "/app-settings" },
   { label: "تماس با ما", icon: "support_agent", href: "/contact" },
