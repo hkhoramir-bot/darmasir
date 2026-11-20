@@ -417,7 +417,7 @@ async function seed(): Promise<void> {
     const t = now();
     const rows: [string, string][] = [
       ["app_name", "درمسیر"],
-      ["app_version", "4.8.20"],
+      ["app_version", "4.8.21"],
       ["welcome_message", "سفر خود را با درمسیر آغاز کنید"],
       ["maintenance_mode", "off"],
       ["voice_enabled", "on"],

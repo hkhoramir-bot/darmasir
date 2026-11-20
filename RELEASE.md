@@ -10,7 +10,8 @@
 | APK منتشرشده | `public/metrojo-4.8.21.apk` — تأییدشده با aapt: versionCode=501, versionName=4.8.21 |
 | دانلود مستقیم | `/metrojo-4.8.21.apk` (سایت) |
 | ورکر کلادفلر | `cloudflare-worker/src/index.ts` — دامنه `dataid.hurremmed.ir` |
-| دیتابیس ابری | Turso (`darmasir/darmasir`) — مهاجرت کامل انجام شد، توکن در `.env` |
+| دیتابیس پنل | SQLite محلی (`mini-services/darmasir-admin/data/admin.db`) — پس از بازسازی سندباکس؛ اعتبارنامه Turso در `.env` محو شده و در صورت نیاز باید دوباره تنظیم شود |
+| همگام‌سازی محتوا | پنل → ورکر (`POST /api/v1/public/content/sync` با X-Sync-Key) — اپ از ورکر می‌خواند |
 | اسکریپت‌های مهاجرت | `scripts/migrate-to-turso.ts`، `scripts/turso-schema.ts`، `scripts/turso-count.ts`، `mini-services/darmasir-admin/scripts/turso-migrate-once.ts` |
 | پنل مدیریت | `mini-services/darmasir-admin` (پورت 3035) — `src/api.ts` متصل به Turso |
 
