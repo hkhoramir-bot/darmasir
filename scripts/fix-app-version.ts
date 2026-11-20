@@ -8,7 +8,7 @@
 import { Database } from "bun:sqlite";
 
 const DB_PATH = "mini-services/darmasir-admin/data/admin.db";
-const TARGET_VERSION = "4.8.21";
+const TARGET_VERSION = process.argv[2] || "4.8.21";
 
 const db = new Database(DB_PATH); // read-write — WAL اجازه نوشتن هم‌زمان با پنل را می‌دهد
 

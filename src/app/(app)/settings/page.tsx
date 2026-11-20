@@ -12,7 +12,7 @@ import { AuthUser, useAuth } from "@/lib/auth-client";
    (تنظیمات به صفحه جدا /app-settings منتقل شد)
    ============================================================ */
 
-const APK_HREF = "/metrojo-4.8.21.apk";
+const APK_HREF = "/metrojo-4.8.22.apk";
 
 /* حروف اول نام برای آواتار */
 function initialOf(name: string): string {
@@ -197,7 +197,7 @@ export default function AccountPage() {
               </div>
               <a
                 href={APK_HREF}
-                download="metrojo-4.8.21.apk"
+                download="metrojo-4.8.22.apk"
                 className="bg-primary text-white px-3 py-2 rounded-lg text-label-md font-bold flex items-center gap-1 active:scale-95 transition-all shrink-0"
               >
                 <MI name="download_for_offline" size={15} />

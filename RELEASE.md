@@ -2,13 +2,13 @@
 
 > این فایل به‌عنوان نشانگر نسخه در گیت نگه داشته می‌شود تا ریست روزانه از origin/main هیچ تغییری را از دست ندهد.
 
-## نسخه فعلی: 4.8.21 (versionCode 501)
+## نسخه فعلی: 4.8.22 (versionCode 502)
 
 | مورد | وضعیت |
 |---|---|
-| نسخه اندروید | 4.8.21 / versionCode 501 (`android/app/build.gradle`) |
-| APK منتشرشده | `public/metrojo-4.8.21.apk` — تأییدشده با aapt: versionCode=501, versionName=4.8.21 |
-| دانلود مستقیم | `/metrojo-4.8.21.apk` (سایت) |
+| نسخه اندروید | 4.8.22 / versionCode 502 (`android/app/build.gradle`) |
+| APK منتشرشده | `public/metrojo-4.8.22.apk` — تأییدشده با aapt: versionCode=502, versionName=4.8.22 |
+| دانلود مستقیم | `/metrojo-4.8.22.apk` (سایت) — نسخه‌های سازگار 4.8.21/4.8.20/4.8.17/4.9.0 با همان محتوا |
 | ورکر کلادفلر | `cloudflare-worker/src/index.ts` — دامنه `dataid.hurremmed.ir` |
 | دیتابیس پنل | SQLite محلی (`mini-services/darmasir-admin/data/admin.db`) — پس از بازسازی سندباکس؛ اعتبارنامه Turso در `.env` محو شده و در صورت نیاز باید دوباره تنظیم شود |
 | همگام‌سازی محتوا | پنل → ورکر (`POST /api/v1/public/content/sync` با X-Sync-Key) — اپ از ورکر می‌خواند |
@@ -59,3 +59,14 @@ cron روزانه ریپو را از `origin/main` ریست می‌کند. هر 
 (force-push). تمام فایل‌ها سالم ماندند (نسخه 4.8.21 + قابلیت صوتی + فیکس لاگین) و در همین
 تاریخ روی زنجیره جدید دوباره commit شد. نسخه مرجع: **4.8.21 / versionCode 501**.
 APKهای منتشرشده: `metrojo-4.8.21.apk` + نسخه‌های سازگار (4.8.20، 4.8.17، 4.9.0) با همان محتوا.
+
+## فیکس 4.8.22 — آیکون‌های لو رفته (ARROW_DROP_DOWN / TRAVEL__)
+
+- علت: subset فونت Material Symbols (نسخه ۱۷) بعد از افزودن آیکون‌های جدید بازسازی نشده بود —
+  «arrow_drop_down» و «travel_explore» و چند آیکون دیگر داخل subset نبودند و نام‌شان
+  به‌جای شکل نمایش داده می‌شد
+- فونت بازسازی شد: ۱۹۶ آیکون — همه با HarfBuzz تأیید شدند (scripts/build-icon-subset.py)
+- اسکریپت: مقادیر مقایسه‌ای داخل عبارت‌های شرطی (مثل severity === "high") دیگر FATAL نمی‌دهند
+- cache-buster فونت: ?v=17 → ?v=18
+- نسخه پنل/ورکر: app_version هم‌تراز با 4.8.22 (scripts/fix-app-version.ts — پارامتری)
+- JDK/SDK بازسازی شد: Temurin 21.0.13.1 در /home/z/jdks + SDK اندروید در /home/z/android-sdk
