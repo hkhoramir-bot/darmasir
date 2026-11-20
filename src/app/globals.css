@@ -46,11 +46,11 @@ html {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  /* نسخه ۱۸ — زیرمجموعه با ۱۹۶ آیکون استفاده‌شده در اپ
+  /* نسخه ۱۷ — زیرمجموعه با ۱۶۲ آیکون استفاده‌شده در اپ
      (نسخه ۱۵ آیکون‌های جدید ورود/ثبت‌نام/اثر انگشت را نداشت:
      fingerprint/sms/login/person_add/badge/smartphone/mail/
      send_to_mobile/password/verified/timer/science/key/lock_open/logout ...) */
-  src: url("/fonts/material-symbols-subset.woff2?v=18") format("woff2");
+  src: url("/fonts/material-symbols-subset.woff2?v=17") format("woff2");
 }
 
 /* ============================================================

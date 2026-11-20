@@ -2,13 +2,28 @@
 
 > این فایل به‌عنوان نشانگر نسخه در گیت نگه داشته می‌شود تا ریست روزانه از origin/main هیچ تغییری را از دست ندهد.
 
-## نسخه فعلی: 4.8.22 (versionCode 502)
+## نسخه فعلی: 4.8.21 (versionCode 501) — بازگشت به نسخه صحیح تأییدشده کاربر
+
+> **مهم (2026-11-20):** نسخه 4.8.22/502 به‌اشتباه UI بازطراحی‌شده را منتشر و فایل‌های دانلود
+> `metrojo-4.8.21.apk` و نسخه‌های سازگار را با محتوای 4.8.22 بازنویسی کرده بود؛ نسخه صحیح از
+> دید کاربر همان APK 4.8.21/versionCode 501 است. کل زنجیره به 4.8.21/501 بازگردانده شد:
+>
+> - `src/app/page.tsx` (روت `/` که `MetrojoApp`/خانه جدید SPA را رندر می‌کرد) حذف شد —
+>   `/` دوباره از `(app)/page.tsx` (خانه اصلیِ تأییدشده: مسیریابی، مقایسه مدهای سفر، بخش تبلیغ) سرو می‌شود
+> - رشته‌های نسخه در `settings/page.tsx`، `settings-screen.tsx`، `panel-banners.tsx` (FALLBACK_APP_VERSION)،
+>   `apk-download.tsx` (لینک دانلود)، `globals.css` (cache-buster فونت v17) → همه 4.8.21
+> - `public/fonts/material-symbols-subset.woff2` → subset فونتِ همان نسخه صحیح
+> - `android/app/build.gradle` → versionName 4.8.21 / versionCode 501
+> - فایل‌های دانلود: `public/metrojo-4.8.21.apk` و نسخه‌های سازگار 4.8.20/4.8.17/4.9.0 →
+>   محتوای APK صحیح کاربر (md5 32d8efa4…, versionCode=501) — `metrojo-4.8.22.apk` حذف شد
+> - خروجی استاتیک بازسازی شد و **مجموعه chunk ها بایت‌به‌بایت با APK صحیح کاربر یکسان است**
+> - پنل + ورکر ابری (`dataid.hurremmed.ir`) → app_version=4.8.21 (sync با `scripts/sync-panel-to-cloud.ts`)
 
 | مورد | وضعیت |
 |---|---|
-| نسخه اندروید | 4.8.22 / versionCode 502 (`android/app/build.gradle`) |
-| APK منتشرشده | `public/metrojo-4.8.22.apk` — تأییدشده با aapt: versionCode=502, versionName=4.8.22 |
-| دانلود مستقیم | `/metrojo-4.8.22.apk` (سایت) — نسخه‌های سازگار 4.8.21/4.8.20/4.8.17/4.9.0 با همان محتوا |
+| نسخه اندروید | 4.8.21 / versionCode 501 (`android/app/build.gradle`) |
+| APK منتشرشده | `public/metrojo-4.8.21.apk` — versionCode=501, versionName=4.8.21 (aapt) |
+| دانلود مستقیم | `/metrojo-4.8.21.apk` (سایت) — نسخه‌های سازگار 4.8.20/4.8.17/4.9.0 با همان محتوا |
 | ورکر کلادفلر | `cloudflare-worker/src/index.ts` — دامنه `dataid.hurremmed.ir` |
 | دیتابیس پنل | SQLite محلی (`mini-services/darmasir-admin/data/admin.db`) — پس از بازسازی سندباکس؛ اعتبارنامه Turso در `.env` محو شده و در صورت نیاز باید دوباره تنظیم شود |
 | همگام‌سازی محتوا | پنل → ورکر (`POST /api/v1/public/content/sync` با X-Sync-Key) — اپ از ورکر می‌خواند |
