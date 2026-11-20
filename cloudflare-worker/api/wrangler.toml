@@ -1,0 +1,12 @@
+name = "darmasir-api"
+main = "src/index.ts"
+compatibility_date = "2025-10-01"
+
+# ============================================================
+# API عمومی اپ درمسیر — ورکر جدا از metrojo-voice (ورکر صوتی)
+# فایل‌های ورکر صوتی شما در همین پوشه دست‌نخورده باقی مانده‌اند.
+#
+# راز‌ها (بعد از deploy یک‌بار تنظیم شود):
+#   bunx wrangler secret put TURSO_DATABASE_URL
+#   bunx wrangler secret put TURSO_AUTH_TOKEN
+# ============================================================

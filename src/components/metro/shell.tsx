@@ -1,10 +1,12 @@
 "use client";
 
 import { create } from "zustand";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toFa } from "@/lib/metro-data";
+import { ensureLexiconLoaded } from "@/lib/voice-lexicon";
 import { isInIframe, openStandaloneTab } from "@/components/metro/voice";
+import { usePanelCities, useAppVersion, useAppSubtitle } from "@/components/metro/panel-banners";
 
 /* ============================================================
    کروم اپ درمسیر — بر اساس طراحی جدید ui.zip
@@ -13,7 +15,7 @@ import { isInIframe, openStandaloneTab } from "@/components/metro/voice";
    ============================================================ */
 
 /* ------------------------- استور پوسته ------------------------- */
-export type ShellCity = "tehran" | "mashhad" | "isfahan";
+export type ShellCity = "tehran" | "karaj" | "mashhad" | "isfahan";
 
 interface ShellState {
   drawerOpen: boolean;
@@ -39,10 +41,13 @@ export function useInitCity() {
   useEffect(() => {
     try {
       const c = localStorage.getItem("metrojo-city");
-      if (c === "mashhad" || c === "isfahan" || c === "tehran") {
+      if (c === "mashhad" || c === "isfahan" || c === "tehran" || c === "karaj") {
         if (useShell.getState().city !== c) useShell.setState({ city: c });
       }
     } catch {}
+    // پیش‌بارگذاری فرهنگ تلفظ پنل — از اولین اعلام صوتی، تلفظ درست
+    // پنل (مثل شوش → شوُش) بدون تأخیر اعمال می‌شود
+    void ensureLexiconLoaded().catch(() => {});
   }, []);
 }
 
@@ -70,12 +75,35 @@ export function MI({
 }
 
 /* --------------- هدر اصلی (بر اساس طراحی جدید درمسیر) --------------- */
-const CITY_OPTIONS: { id: ShellCity | "shiraz" | "tabriz"; name: string; soon?: boolean }[] = [
-  { id: "tehran", name: "تهران" },
-  { id: "mashhad", name: "مشهد" },
-  { id: "shiraz", name: "شیراز", soon: true },
-  { id: "isfahan", name: "اصفهان" },
-  { id: "tabriz", name: "تبریز", soon: true },
+
+/* نگاشت نام شهر پنل به شناسه اپ — شهرهای با داده واقعی موتور مسیریابی */
+const PANEL_CITY_TO_SHELL: Record<string, ShellCity> = {
+  "تهران": "tehran",
+  "کرج": "karaj",
+  "مشهد": "mashhad",
+  "اصفهان": "isfahan",
+};
+
+const CITY_NAME_FA: Record<ShellCity, string> = {
+  tehran: "تهران",
+  karaj: "کرج",
+  mashhad: "مشهد",
+  isfahan: "اصفهان",
+};
+
+interface CityOption {
+  id: ShellCity | null;
+  name: string;
+  soon: boolean;
+}
+
+/* پیش‌فرض در نبود پنل — همان رفتار قبلی */
+const FALLBACK_CITY_OPTIONS: CityOption[] = [
+  { id: "tehran", name: "تهران", soon: false },
+  { id: "mashhad", name: "مشهد", soon: false },
+  { id: null, name: "شیراز", soon: true },
+  { id: "isfahan", name: "اصفهان", soon: false },
+  { id: null, name: "تبریز", soon: true },
 ];
 
 export function AppBar() {
@@ -86,7 +114,31 @@ export function AppBar() {
   const dropRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const cityName = city === "tehran" ? "تهران" : city === "mashhad" ? "مشهد" : "اصفهان";
+  /* شهرها از پنل مدیریت — فعال/غیرفعال و افزودن شهر بلافاصله اینجا می‌افتد؛
+     شهر فعالِ دارای داده واقعی اپ قابل انتخاب است؛ شهر غیرفعال یا بدون داده با برچسب «بزودی» */
+  const panelCities = usePanelCities();
+  /* زیرنویس زیر لوگو — از تنظیمات پنل (app_subtitle)، پیش‌فرض «دستیار هوشمند سفر شهری» */
+  const appSubtitle = useAppSubtitle();
+  const cityOptions: CityOption[] = useMemo(() => {
+    if (!panelCities || panelCities.length === 0) return FALLBACK_CITY_OPTIONS;
+    return panelCities.map((c) => {
+      const id = PANEL_CITY_TO_SHELL[c.name] ?? null;
+      return { id, name: c.name, soon: !c.isActive || !id };
+    });
+  }, [panelCities]);
+
+  const cityName = CITY_NAME_FA[city];
+
+  /* شهر ذخیره‌شده که دیگر قابل انتخاب نیست (غیرفعال شدن از پنل) — رفتن به اولین شهر فعال */
+  useEffect(() => {
+    if (!panelCities || panelCities.length === 0) return;
+    const currentName = CITY_NAME_FA[city];
+    const stillThere = cityOptions.some((o) => o.name === currentName && !o.soon);
+    if (!stillThere) {
+      const first = cityOptions.find((o) => !o.soon && o.id);
+      if (first?.id) setCity(first.id);
+    }
+  }, [panelCities, cityOptions, city, setCity]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -109,16 +161,13 @@ export function AppBar() {
         </button>
         <div className="flex items-center gap-2">
           <img
-            src="/metrojo-symbol.png"
+            src="/metrojo-logo.svg"
             alt="لوگوی درمسیر"
-            className="w-8 h-8 rounded-full object-contain shrink-0 shadow-sm"
+            className="w-8 h-8 object-contain shrink-0"
           />
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-base font-extrabold text-primary tracking-tight leading-tight">درمسیر</h1>
-              <span className="text-[9px] bg-primary-fixed text-primary px-1.5 py-0.5 rounded font-bold leading-none">بتا</span>
-            </div>
-            <span className="text-[11px] text-on-surface-variant leading-tight">دستیار هوشمند سفر شهری</span>
+            <h1 className="text-base font-extrabold text-primary tracking-tight leading-tight">درمسیر</h1>
+            <span className="text-[11px] text-on-surface-variant leading-tight">{appSubtitle}</span>
           </div>
         </div>
       </div>
@@ -141,28 +190,28 @@ export function AppBar() {
         >
           <MI name="location_on" size={16} className="text-primary" />
           <span>{cityName}</span>
-          <MI name="expand_more" size={15} className="text-outline" />
+          <MI name="expand_more" size={15} className="text-on-surface-variant" />
         </button>
         {cityOpen && (
           <div
             id="cityDropdown"
             className="absolute top-10 left-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1.5 w-32 z-50 text-xs text-on-surface font-medium"
           >
-            {CITY_OPTIONS.map((o) => (
+            {cityOptions.map((o, i) => (
               <button
-                key={o.id}
+                key={`${o.name}-${i}`}
                 disabled={o.soon}
                 onClick={() => {
-                  if (o.soon) return;
-                  if (o.id !== "shiraz" && o.id !== "tabriz") setCity(o.id as ShellCity);
+                  if (o.soon || !o.id) return;
+                  setCity(o.id);
                   setCityOpen(false);
                 }}
                 className={`w-full text-right px-3 py-1.5 flex items-center justify-between ${
-                  o.soon ? "text-outline/60 cursor-not-allowed" : "hover:bg-surface-container"
+                  o.soon ? "text-on-surface-variant/60 cursor-not-allowed" : "hover:bg-surface-container"
                 } ${!o.soon && o.id === city ? "text-primary font-bold" : ""}`}
               >
                 <span>{o.name}</span>
-                {o.soon && <span className="text-[9px] text-outline bg-surface-container px-1 rounded">به‌زودی</span>}
+                {o.soon && <span className="text-[9px] text-on-surface-variant bg-surface-container px-1 rounded">به‌زودی</span>}
               </button>
             ))}
           </div>
@@ -265,6 +314,7 @@ export function MenuDrawer() {
   const pathname = usePathname();
   const micState = useMicStatus(open);
   const iframed = isInIframe();
+  const appVersion = useAppVersion();
 
   /* زیرمنوی مترو — پیش‌فرض با مسیر فعال هماهنگ است؛ لمس کاربر اولویت دارد */
   const metroActive = isNavActive(pathname, "/metro");
@@ -292,20 +342,22 @@ export function MenuDrawer() {
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white shadow-sm">
-                <MI name="subway" size={20} />
-              </div>
+              <img
+                src="/metrojo-logo.svg"
+                alt="لوگوی درمسیر هوشمند"
+                className="w-9 h-9 object-contain shrink-0"
+              />
               <div>
                 <h2 className="font-bold text-sm text-primary">درمسیر هوشمند</h2>
                 <span className="text-[10px] text-tertiary font-bold bg-tertiary-fixed/40 px-1.5 py-0.5 rounded">
-                  نسخه {toFa("4.9.0")} — دستیار سفر شهری
+                  نسخه {toFa(appVersion)} — دستیار سفر شهری
                 </span>
               </div>
             </div>
             <button
               aria-label="بستن منو"
               onClick={() => setDrawer(false)}
-              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-outline"
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant"
             >
               <MI name="close" size={20} />
             </button>
@@ -331,13 +383,13 @@ export function MenuDrawer() {
                       <MI
                         name={METRO_GROUP.icon}
                         size={20}
-                        className={metroActive ? "text-primary" : "text-outline"}
+                        className={metroActive ? "text-primary" : "text-on-surface-variant"}
                       />
                       {METRO_GROUP.label}
                       <MI
                         name="expand_more"
                         size={18}
-                        className={`mr-auto text-outline-variant transition-transform duration-200 ${
+                        className={`mr-auto text-on-surface-variant transition-transform duration-200 ${
                           metroOpen ? "rotate-180" : ""
                         }`}
                       />
@@ -362,7 +414,7 @@ export function MenuDrawer() {
                               <MI
                                 name={c.icon}
                                 size={17}
-                                className={childActive ? "text-primary" : "text-outline"}
+                                className={childActive ? "text-primary" : "text-on-surface-variant"}
                               />
                               {c.label}
                             </button>
@@ -386,17 +438,17 @@ export function MenuDrawer() {
                   <MI
                     name={l.icon}
                     size={20}
-                    className={isNavActive(pathname, l.href) ? "text-primary" : "text-outline"}
+                    className={isNavActive(pathname, l.href) ? "text-primary" : "text-on-surface-variant"}
                   />
                   {l.label}
-                  <MI name="chevron_left" size={16} className="mr-auto text-outline-variant" />
+                  <MI name="chevron_left" size={16} className="mr-auto text-on-surface-variant" />
                 </button>
               </Fragment>
             ))}
           </nav>
 
           <div className="pt-4 border-t border-outline-variant/30 space-y-2">
-            <p className="text-[11px] font-bold text-outline">دسترسی سریع صوتی</p>
+            <p className="text-[11px] font-bold text-on-surface-variant">دسترسی سریع صوتی</p>
             {micState === "ok" || micState === "checking" ? (
               <div className="bg-surface-container-low p-2.5 rounded-xl text-xs text-on-surface-variant flex items-center gap-2">
                 <MI name="graphic_eq" size={18} className="text-secondary" />
@@ -416,7 +468,7 @@ export function MenuDrawer() {
                 <div className="flex items-center gap-2">
                   <MI name="mic_off" size={18} className="shrink-0" />
                   <span>
-                    میکروفن فقط روی آدرس‌های https فعال می‌شود — اگر آدرس با http شروع می‌شود، نسخه اندروید متروجو را نصب کنید یا سایت را با لینک https باز کنید.
+                    میکروفن فقط روی آدرس‌های https فعال می‌شود — اگر آدرس با http شروع می‌شود، نسخه اندروید درمسیر را نصب کنید یا سایت را با لینک https باز کنید.
                   </span>
                 </div>
               </div>
@@ -426,7 +478,7 @@ export function MenuDrawer() {
                   <MI name="mic_off" size={18} className="shrink-0" />
                   <span>
                     {iframed
-                      ? "میکروفن در این پنجره (پیش‌نمایش) مسدود است — متروجو را در تب جدید باز کنید."
+                      ? "میکروفن در این پنجره (پیش‌نمایش) مسدود است — درمسیر را در تب جدید باز کنید."
                       : "میکروفن در این مرورگر در دسترس نیست — از کروم یا نسخه اندروید استفاده کنید."}
                   </span>
                 </div>
@@ -434,7 +486,7 @@ export function MenuDrawer() {
                   <button
                     type="button"
                     onClick={openStandaloneTab}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0d58a6] text-white text-[11px] font-bold active:scale-95 transition-all"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0fa37c] text-white text-[11px] font-bold active:scale-95 transition-all"
                   >
                     <MI name="open_in_new" size={14} />
                     باز کردن در تب جدید
@@ -444,7 +496,7 @@ export function MenuDrawer() {
             )}
           </div>
         </div>
-        <div className="text-[11px] text-outline text-center border-t border-outline-variant/30 pt-3">
+        <div className="text-[11px] text-on-surface-variant text-center border-t border-outline-variant/30 pt-3">
           طراحی شده برای ناوبری صوتی و سریع مسافران
         </div>
       </aside>
@@ -476,7 +528,7 @@ export function PageHeader({
         <h1 className="text-base font-bold text-primary tracking-tight truncate w-full text-center leading-tight">
           {title}
         </h1>
-        {subtitle && <span className="text-[11px] text-outline truncate w-full text-center">{subtitle}</span>}
+        {subtitle && <span className="text-[11px] text-on-surface-variant truncate w-full text-center">{subtitle}</span>}
       </div>
       <div className="flex items-center gap-1 min-w-10 justify-end px-1">{actions}</div>
     </header>

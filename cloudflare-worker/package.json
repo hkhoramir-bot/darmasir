@@ -1,0 +1,11 @@
+{
+  "name": "darmasir-api-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --port 8788",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute darmasir-db --remote --file=schema.sql",
+    "db:init:local": "wrangler d1 execute darmasir-db --local --file=schema.sql"
+  }
+}

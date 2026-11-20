@@ -38,7 +38,7 @@ export default function GlobalError({
           }}
         >
           <h1 style={{ fontSize: "0.9rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>
-            خطای غیرمنتظره در متروجو
+            خطای غیرمنتظره در درمسیر
           </h1>
           <p style={{ fontSize: "0.72rem", color: "#64748b", lineHeight: 1.8, margin: 0 }}>
             متأسفیم — مشکلی در نمایش برنامه پیش آمد. لطفاً دوباره تلاش کنید.
@@ -49,7 +49,7 @@ export default function GlobalError({
             style={{
               height: "2.5rem",
               borderRadius: "0.75rem",
-              background: "#0d58a6",
+              background: "#07805f",
               color: "#fff",
               fontSize: "0.75rem",
               fontWeight: 700,

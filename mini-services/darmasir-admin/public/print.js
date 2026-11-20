@@ -96,8 +96,8 @@ function docHead(title, subtitleLines, stampHtml = "") {
   return `
   <div class="doc-head">
     <div class="brand">
-      <div class="brand-logo">د</div>
-      <div><b>درمسیر</b><span>سامانه ناوبری شهری متروجو — ir.metrojo.app</span></div>
+      <div class="brand-logo"><img src="metrojo-logo.svg${API_Q}" alt="" /></div>
+      <div><b>درمسیر</b><span>سامانه ناوبری شهری درمسیر — ir.metrojo.app</span></div>
     </div>
     <div class="doc-title">
       <h1>${esc(title)}</h1>

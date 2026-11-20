@@ -1,0 +1,187 @@
+// ============================================================
+// پنل مدیریت «درمسیر» — اسکیمای دیتابیس
+// SQLite در محیط توسعه/سندباکس؛ معادل SQL همین مدل‌ها برای
+// Cloudflare D1 در cloudflare/darmasir-api/schema.sql نگهداری می‌شود.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------- مدیران و نشست‌ها -------------------------
+// نکته: SQLite enum ندارد؛ نقش‌ها رشته‌اند (SUPERADMIN | OPERATOR | VIEWER)
+// و اعتبارسنجی در src/lib/roles.ts انجام می‌شود.
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  name         String
+  role         String    @default("VIEWER") // SUPERADMIN | OPERATOR | VIEWER
+  passwordHash String
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique // sha256 توکن خام — توکن خام هرگز ذخیره نمی‌شود
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([adminId])
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  adminId   String?
+  adminName String?
+  action    String // LOGIN | LOGOUT | CREATE_LINE | UPDATE_AD | ...
+  entity    String? // Line | Station | Ad | ...
+  entityId  String?
+  detail    String?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+// ------------------------- داده شبکه حمل‌ونقل -------------------------
+
+model Line {
+  id             String   @id // مثل l1 — همان شناسه اپلیکیشن
+  cityId         String // tehran | karaj | mashhad | isfahan
+  number         Int
+  name           String // خط ۱ حرم تا قدس
+  color          String // #d81a3d
+  textOnColor    String  @default("#ffffff")
+  terminals      String // JSON: ["ترمینال جنوب", "تجریش"]
+  direction      String // شمال - جنوب
+  headway        Int      @default(10) // فاصله حرکت پیش‌فرض (دقیقه)
+  headwayPeak    Int?
+  headwayOff     Int?
+  firstTrain     String   @default("04:30")
+  lastTrain      String   @default("22:30")
+  segmentMinutes Float    @default(2.5)
+  badges         String? // JSON: ["فرودگاه"]
+  status         String   @default("normal") // normal | crowded | delay | closed
+  statusNote     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Station {
+  id        String   @id // مثل tajrish — همان شناسه اپلیکیشن
+  name      String
+  cityId    String
+  lines     String // JSON: [{ lineId, order }]
+  amenities String  @default("[]") // JSON: ["elevator", "wc", ...]
+  featured  Boolean  @default(false)
+  lat       Float?
+  lng       Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cityId])
+  @@index([name])
+}
+
+// ------------------------- کاربران اپلیکیشن -------------------------
+
+model AppUser {
+  id         String    @id @default(cuid())
+  deviceId   String    @unique
+  name       String?
+  platform   String? // android | web
+  appVersion String?
+  city       String?
+  active     Boolean   @default(true)
+  banned     Boolean   @default(false)
+  banReason  String?
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  tickets    Ticket[]
+}
+
+// ------------------------- تبلیغات -------------------------
+
+model Ad {
+  id        String    @id @default(cuid())
+  title     String
+  body      String?
+  imageUrl  String?
+  linkUrl   String?
+  placement String    @default("HOME_BANNER") // HOME_BANNER | LINES | MAP | STATION_DETAIL
+  active    Boolean   @default(false)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  views     Int       @default(0)
+  clicks    Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([active])
+  @@index([placement])
+}
+
+// ------------------------- پشتیبانی -------------------------
+
+model Ticket {
+  id        String          @id @default(cuid())
+  userId    String?
+  user      AppUser?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  deviceId  String?
+  subject   String
+  category  String? // BUG | SUGGESTION | BILLING | OTHER
+  status    String          @default("OPEN") // OPEN | PENDING | CLOSED
+  priority  String          @default("NORMAL") // LOW | NORMAL | HIGH
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  messages  TicketMessage[]
+
+  @@index([status])
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author    String // USER | ADMIN
+  authorName String?
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// ------------------------- تنظیمات و نسخه‌ها -------------------------
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AppVersion {
+  id          String   @id @default(cuid())
+  versionName String // 4.8.17
+  versionCode Int // 497
+  apkUrl      String?
+  notes       String?
+  mandatory   Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([versionCode])
+}

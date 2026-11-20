@@ -27,9 +27,9 @@ ROOT = Path(__file__).resolve().parent.parent
 FULL = ROOT / "public/fonts/material-symbols-outlined.woff2"
 OUT = ROOT / "public/fonts/material-symbols-subset.woff2"
 
-STATIC_RX = re.compile(r'(?:MI\s+name|name)\s*=\s*"([a-z_0-9]+)"')
-# نام‌های شرطی داخل expression: name={cond ? "x" : "y"}
-EXPR_RX = re.compile(r'\bname\s*=\s*\{([^}]*)\}')
+STATIC_RX = re.compile(r'(?:MI\s+name|\bname|\bicon)\s*=\s*"([a-z_0-9]+)"')
+# نام‌های شرطی داخل expression: name={cond ? "x" : "y"} یا icon={cond ? "x" : "y"}
+EXPR_RX = re.compile(r'\b(?:name|icon)\s*=\s*\{([^}]*)\}')
 STR_RX = re.compile(r'"([a-z_0-9]+)"')
 DATA_RX = re.compile(r'\bicon:\s*"([a-z_0-9]+)"')
 

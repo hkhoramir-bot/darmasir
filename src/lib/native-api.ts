@@ -12,6 +12,7 @@ import {
   nextArrivalsBoth,
   toFa,
 } from "@/lib/metro-data";
+import { CLOUD_CONTENT_BASES, CLOUD_CONTENT_TIMEOUT_MS } from "@/lib/cloud-config";
 
 type Json = Record<string, unknown>;
 
@@ -19,6 +20,14 @@ const LS = {
   trips: "metrojo-native-trips",
   daily: "metrojo-native-daily",
   favs: "metrojo-native-favs",
+  users: "metrojo-native-users", // حساب‌های آفلاین روی دستگاه
+  sessions: "metrojo-native-sessions", // توکن → userId
+  otps: "metrojo-native-otps", // کد پیامکی شبیه‌سازی‌شده
+  syncQueue: "metrojo-native-sync-queue", // تغییرات ثبت‌نشده در ابر (آفلاین) — همیشه ارسال می‌شود
+  userSyncPending: "metrojo-native-user-sync-pending", // حساب‌هایی که ثبت ابری‌شان موقتاً شکست خورده — با اولین اتصال دوباره ارسال می‌شوند
+  appServerUrl: "metrojo-app-server-url", // نشانی سرور اپ (تنظیم پنل: app_server_url) — مقصد دوم همگام‌سازی
+  deviceId: "metrojo-native-device-id", // شناسه دستگاه برای کاربر بدون حساب
+  tickets: "metrojo-native-tickets", // تیکت‌های ثبت‌شده روی دستگاه (پشتیبان آفلاین)
 };
 
 function lsGet<T>(key: string, fallback: T): T {
@@ -54,6 +63,371 @@ function json(data: unknown, status = 200): Response {
 }
 
 /* ---------------------------- handlers ---------------------------- */
+
+/* ------------------- حساب کاربری (حالت آفلاین اندروید) ------------------- */
+
+type NativeUser = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  passwordHash: string | null; // salt:sha256
+  createdAt: string;
+  lastLoginAt: string | null;
+  synced?: boolean; // در دیتابیس ابری ثبت شده (پنل مدیریت می‌بیند و می‌تواند مسدود/حذف کند)
+};
+
+function normalizePhoneLocal(raw: string): string | null {
+  if (!raw) return null;
+  const fa = "۰۱۲۳۴۵۶۷۸۹";
+  const ar = "٠١٢٣٤٥٦٧٨٩";
+  let s = String(raw).trim();
+  s = s.replace(/[۰-۹]/g, (d) => String(fa.indexOf(d)));
+  s = s.replace(/[٠-٩]/g, (d) => String(ar.indexOf(d)));
+  s = s.replace(/[^\d+]/g, "");
+  if (s.startsWith("+")) s = s.slice(1);
+  if (s.startsWith("98") && s.length >= 12) s = "0" + s.slice(2);
+  if (/^9\d{9}$/.test(s)) s = "0" + s;
+  if (/^09\d{9}$/.test(s)) return s;
+  return null;
+}
+
+function normalizeEmailLocal(raw: string): string | null {
+  if (!raw) return null;
+  const fa = "۰۱۲۳۴۵۶۷۸۹";
+  const ar = "٠١٢٣٤٥٦٧٨٩";
+  let s = String(raw).trim().toLowerCase();
+  s = s.replace(/[۰-۹]/g, (d) => String(fa.indexOf(d)));
+  s = s.replace(/[٠-٩]/g, (d) => String(ar.indexOf(d)));
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s)) return null;
+  return s;
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  try {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  } catch {
+    // WebView بسیار قدیمی — هش ساده جایگزین
+    let h = 0;
+    for (let i = 0; i < text.length; i++) h = (Math.imul(31, h) + text.charCodeAt(i)) | 0;
+    return `weak${(h >>> 0).toString(16)}`;
+  }
+}
+
+async function hashPasswordLocal(password: string): Promise<string> {
+  const salt = uid().replace(/-/g, "").slice(0, 16);
+  return `${salt}:${await sha256Hex(salt + password)}`;
+}
+
+async function verifyPasswordLocal(password: string, stored: string | null): Promise<boolean> {
+  if (!stored) return false;
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  return (await sha256Hex(salt + password)) === hash;
+}
+
+function publicUserLocal(u: NativeUser) {
+  return {
+    id: u.id,
+    name: u.name,
+    phone: u.phone,
+    email: u.email,
+    createdAt: u.createdAt,
+    lastLoginAt: u.lastLoginAt,
+  };
+}
+
+function bearerToken(headers: Headers): string {
+  const auth = headers.get("authorization") ?? "";
+  return auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+}
+
+function authRegister(body: Json): Promise<Response> {
+  return (async () => {
+    const name = String(body?.name ?? "").trim();
+    const password = String(body?.password ?? "");
+    const phone = body?.phone ? normalizePhoneLocal(String(body.phone)) : null;
+    const email = body?.email ? normalizeEmailLocal(String(body.email)) : null;
+    if (name.length < 2) return json({ error: "نام و نام خانوادگی را کامل وارد کنید" }, 400);
+    if (password.length < 6) return json({ error: "رمز عبور باید حداقل ۶ کاراکتر باشد" }, 400);
+    if (!phone && !email) return json({ error: "شماره موبایل یا ایمیل را وارد کنید" }, 400);
+
+    const users = lsGet<NativeUser[]>(LS.users, []);
+    if (users.some((u) => (phone && u.phone === phone) || (email && u.email === email))) {
+      return json({ error: "این شماره یا ایمیل قبلاً ثبت شده است — وارد شوید" }, 409);
+    }
+    /* دستگاه جدید — اگر همین شماره/ایمیل قبلاً روی سرور ثبت شده باشد، با رمز واردشده
+       ورود ابری امتحان می‌شود تا همان حساب اصلی بازیابی شود (نه ساختن حساب موازی);
+       فقط وقتی که اینترنت به‌تازگی در دسترس بوده — آفلاین بدون تأخیر ثبت‌نام می‌کند */
+    const ident0 = phone || email || "";
+    if (ident0 && Date.now() - cloudLastSeen < 10 * 60 * 1000) {
+      const cloud = await cloudLogin(ident0, password);
+      if (cloud.ok && cloud.token) {
+        const nowIso0 = new Date().toISOString();
+        const restored: NativeUser = {
+          id: uid(),
+          name,
+          phone,
+          email,
+          passwordHash: await hashPasswordLocal(password),
+          createdAt: String(cloud.user?.createdAt ?? "") || nowIso0,
+          lastLoginAt: nowIso0,
+          synced: true,
+        };
+        users.push(restored);
+        lsSet(LS.users, users);
+        const token = uid() + uid();
+        const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+        sessions[token] = restored.id;
+        lsSet(LS.sessions, sessions);
+        markSynced(ident0);
+        void syncNow();
+        return json({ token, user: publicUserLocal(restored), reclaimed: true });
+      }
+      if (cloud.reachable && cloud.code && cloud.code !== "NOT_FOUND" && cloud.code !== "DB_ERROR") {
+        return json(
+          {
+            error:
+              cloud.code === "BAD_PASSWORD"
+                ? "این شماره/ایمیل قبلاً روی سرور درمسیر ثبت شده است — با رمز خود وارد شوید یا از کد پیامکی استفاده کنید"
+                : cloud.code === "FORBIDDEN"
+                  ? "حساب شما مسدود شده است — با پشتیبانی درمسیر تماس بگیرید"
+                  : "ورود با رمز برای این حساب فعال نیست — از ورود با کد پیامکی استفاده کنید",
+          },
+          409
+        );
+      }
+      /* NOT_FOUND / DB_ERROR / آفلاین → ثبت‌نام تازه مثل قبل ادامه می‌یابد */
+    }
+    const nowIso = new Date().toISOString();
+    const user: NativeUser = {
+      id: uid(),
+      name,
+      phone,
+      email,
+      passwordHash: await hashPasswordLocal(password),
+      createdAt: nowIso,
+      lastLoginAt: nowIso,
+    };
+    users.push(user);
+    lsSet(LS.users, users);
+    const token = uid() + uid();
+    const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+    sessions[token] = user.id;
+    lsSet(LS.sessions, sessions);
+    /* ثبت در دیتابیس ابری — تا ثبت‌نام موبایل در پنل مدیریت دیده شود + ادغام فعالیت‌های ابری */
+    cloudSyncUser(phone || email || "", name);
+    void syncNow();
+    return json({ token, user: publicUserLocal(user) });
+  })();
+}
+
+function authLogin(body: Json): Promise<Response> {
+  return (async () => {
+    const identifier = String(body?.identifier ?? "").trim();
+    const password = String(body?.password ?? "");
+    if (!identifier || !password) return json({ error: "اطلاعات ورود را کامل وارد کنید" }, 400);
+
+    let phone: string | null = null;
+    let email: string | null = null;
+    if (identifier.includes("@")) {
+      email = normalizeEmailLocal(identifier);
+      if (!email) return json({ error: "ایمیل معتبر نیست" }, 400);
+    } else {
+      phone = normalizePhoneLocal(identifier);
+      if (!phone) return json({ error: "شماره موبایل معتبر نیست" }, 400);
+    }
+
+    const users = lsGet<NativeUser[]>(LS.users, []);
+    const user = users.find((u) => (phone && u.phone === phone) || (email && u.email === email));
+    if (!user) {
+      /* حساب روی این دستگاه نیست (دستگاه جدید/کش پاک‌شده) — ورود مستقیم ابری:
+         رمز مستقیم با سرور (Turso) بررسی می‌شود و در موفقیت، همان حساب
+         همراه با سفرها/نشان‌ها/مسیرهای ابری روی همین دستگاه بازیابی می‌شود */
+      const ident = phone || email || "";
+      const cloud = await cloudLogin(ident, password);
+      if (cloud.ok && cloud.token) {
+        const nowIso = new Date().toISOString();
+        const restored: NativeUser = {
+          id: uid(),
+          name: String(cloud.user?.name ?? "").trim() || "کاربر درمسیر",
+          phone,
+          email,
+          passwordHash: await hashPasswordLocal(password), /* ورود بعدی حتی آفلاین روی همین دستگاه کار می‌کند */
+          createdAt: String(cloud.user?.createdAt ?? "") || nowIso,
+          lastLoginAt: nowIso,
+          synced: true,
+        };
+        users.push(restored);
+        lsSet(LS.users, users);
+        const token = uid() + uid();
+        const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+        sessions[token] = restored.id;
+        lsSet(LS.sessions, sessions);
+        markSynced(ident);
+        void syncNow(); /* ادغام سفرها/نشان‌ها/مسیرهای ابری روی دستگاه جدید */
+        return json({ token, user: publicUserLocal(restored), viaCloud: true });
+      }
+      if (cloud.reachable) {
+        /* سرور پاسخ داد اما ورود ابری انجام نشد — پیام دقیق بر اساس کد خطای سرور */
+        if (cloud.code === "BAD_PASSWORD") return json({ error: "رمز عبور اشتباه است" }, 401);
+        if (cloud.code === "FORBIDDEN")
+          return json({ error: "حساب شما مسدود شده است — با پشتیبانی درمسیر تماس بگیرید" }, 403);
+        if (cloud.code === "USE_APP_OR_OTP")
+          return json({ error: "ورود با رمز برای این حساب فعال نیست — از ورود با کد پیامکی استفاده کنید" }, 400);
+        if (cloud.code === "NOT_FOUND")
+          return json({ error: "حسابی با این مشخصات پیدا نشد — ابتدا ثبت‌نام کنید" }, 404);
+        return json({ error: cloud.error || "خطا در ورود — دوباره تلاش کنید" }, 502);
+      }
+      return json(
+        {
+          error:
+            "حسابی روی این دستگاه پیدا نشد و اینترنت هم در دسترس نیست — با اتصال اینترنت دوباره تلاش کنید یا ثبت‌نام کنید",
+        },
+        404
+      );
+    }
+    if (!user.passwordHash) return json({ error: "برای این حساب رمز عبور تنظیم نشده — از کد پیامکی استفاده کنید" }, 400);
+    if (!(await verifyPasswordLocal(password, user.passwordHash))) {
+      return json({ error: "رمز عبور اشتباه است" }, 401);
+    }
+    /* بررسی وضعیت واقعی در دیتابیس ابری — مسدود/حذف‌شده نمی‌تواند وارد شود */
+    const ident = phone || email || "";
+    const st = await cloudUserStatus(ident);
+    if (st.reachable && st.status === "blocked") {
+      revokeUserSessions(user.id);
+      return json({ error: "حساب شما مسدود شده است — با پشتیبانی درمسیر تماس بگیرید" }, 403);
+    }
+    if (st.reachable && user.synced && !st.exists) {
+      return json({ error: "این حساب توسط پشتیبانی حذف شده است" }, 403);
+    }
+    user.lastLoginAt = new Date().toISOString();
+    lsSet(LS.users, users);
+    const token = uid() + uid();
+    const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+    sessions[token] = user.id;
+    lsSet(LS.sessions, sessions);
+    if (st.reachable) cloudSyncUser(ident, user.name);
+    void syncNow();
+    return json({ token, user: publicUserLocal(user) });
+  })();
+}
+
+function authOtpRequest(body: Json): Promise<Response> {
+  return (async () => {
+    const phone = normalizePhoneLocal(String(body?.phone ?? ""));
+    if (!phone) return json({ error: "شماره موبایل معتبر نیست" }, 400);
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const otps = lsGet<Record<string, { code: string; expires: number }>>(LS.otps, {});
+    otps[phone] = { code, expires: Date.now() + 3 * 60 * 1000 };
+    lsSet(LS.otps, otps);
+    console.log(`[SMS-DEVICE] کد ورود ${phone}: ${code}`);
+    // روی دستگاه سرویس پیامک واقعی وجود ندارد — کد در پاسخ برگردانده می‌شود
+    return json({ ok: true, delivered: false, expiresInSeconds: 180, devCode: code });
+  })();
+}
+
+function authOtpVerify(body: Json): Promise<Response> {
+  return (async () => {
+    const phone = normalizePhoneLocal(String(body?.phone ?? ""));
+    const code = String(body?.code ?? "").replace(/\D/g, "");
+    if (!phone) return json({ error: "شماره موبایل معتبر نیست" }, 400);
+    if (code.length !== 6) return json({ error: "کد ۶ رقمی را کامل وارد کنید" }, 400);
+
+    const otps = lsGet<Record<string, { code: string; expires: number }>>(LS.otps, {});
+    const otp = otps[phone];
+    if (!otp) return json({ error: "کدی برای این شماره یافت نشد — دوباره درخواست کنید" }, 400);
+    if (otp.expires < Date.now()) {
+      delete otps[phone];
+      lsSet(LS.otps, otps);
+      return json({ error: "کد منقضی شده است — کد جدید بگیرید" }, 400);
+    }
+    if (otp.code !== code) return json({ error: "کد اشتباه است" }, 400);
+    delete otps[phone];
+    lsSet(LS.otps, otps);
+
+    const users = lsGet<NativeUser[]>(LS.users, []);
+    let user = users.find((u) => u.phone === phone);
+    const isNew = !user;
+    let cloudKnown = false; // حساب از قبل روی ابر هست — نام واقعی ابر نباید بازنویسی شود
+    const nowIso = new Date().toISOString();
+    if (!user) {
+      user = {
+        id: uid(),
+        name: `کاربر ${phone.slice(-4)}`,
+        phone,
+        email: null,
+        passwordHash: null,
+        createdAt: nowIso,
+        lastLoginAt: nowIso,
+      };
+      users.push(user);
+      lsSet(LS.users, users);
+      /* دستگاه جدید — اگر حساب از قبل روی سرور باشد، نام پیش‌فرض محلی به Turso
+         فرستاده نمی‌شود تا نام واقعی کاربر در پنل مدیریت حفظ شود */
+      if (Date.now() - cloudLastSeen < 10 * 60 * 1000) {
+        const cst = await cloudUserStatus(phone);
+        cloudKnown = cst.reachable && cst.exists;
+        if (cloudKnown) markSynced(phone);
+      }
+    } else {
+      /* بررسی وضعیت واقعی در دیتابیس ابری — مسدود/حذف‌شده رد می‌شود */
+      const st = await cloudUserStatus(phone);
+      if (st.reachable && st.status === "blocked") {
+        revokeUserSessions(user.id);
+        return json({ error: "حساب شما مسدود شده است — با پشتیبانی درمسیر تماس بگیرید" }, 403);
+      }
+      if (st.reachable && user.synced && !st.exists) {
+        return json({ error: "این حساب توسط پشتیبانی حذف شده است" }, 403);
+      }
+      user.lastLoginAt = nowIso;
+      lsSet(LS.users, users);
+    }
+    const token = uid() + uid();
+    const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+    sessions[token] = user.id;
+    lsSet(LS.sessions, sessions);
+    /* ثبت/بروزرسانی در دیتابیس ابری — پنل مدیریت ثبت‌نام موبایل را می‌بیند
+       (حساب ابری موجود روی دستگاه جدید: نام واقعی ابر حفظ می‌شود) */
+    if (!cloudKnown) cloudSyncUser(phone, user.name);
+    void syncNow();
+    return json({ token, user: publicUserLocal(user), isNew });
+  })();
+}
+
+function authMe(headers: Headers): Response {
+  const token = bearerToken(headers);
+  if (!token) return json({ error: "نشست نامعتبر است" }, 401);
+  const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+  const userId = sessions[token];
+  if (!userId) return json({ error: "نشست نامعتبر یا منقضی است" }, 401);
+  const users = lsGet<NativeUser[]>(LS.users, []);
+  const user = users.find((u) => u.id === userId);
+  if (!user) return json({ error: "کاربر یافت نشد" }, 401);
+  /* بررسی پس‌زمینه وضعیت ابری — کاربر مسدودشده از پنل، خودکار خارج می‌شود */
+  const identifier = user.phone || user.email;
+  if (identifier) {
+    cloudUserStatus(identifier)
+      .then((st) => {
+        if (st.reachable && st.status === "blocked") revokeUserSessions(user.id);
+      })
+      .catch(() => {});
+  }
+  return json({ user: publicUserLocal(user) });
+}
+
+function authLogout(headers: Headers): Response {
+  const token = bearerToken(headers);
+  if (token) {
+    const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+    delete sessions[token];
+    lsSet(LS.sessions, sessions);
+  }
+  return json({ ok: true });
+}
 
 function getHistory(): Response {
   const trips = lsGet<Json[]>(LS.trips, []);
@@ -91,12 +465,15 @@ function postHistory(body: Json): Response {
   const trips = lsGet<Json[]>(LS.trips, []);
   trips.unshift(trip);
   lsSet(LS.trips, trips.slice(0, 40));
+  /* ثبت واقعی سفر در دیتابیس ابری — مدیر در پنل می‌بیند (آفلاین: در صف ارسال) */
+  queueActivity("trip_add", trip);
   return json({ trip });
 }
 
 function deleteHistory(id: string | null, all: boolean): Response {
   if (all) {
     lsSet(LS.trips, []);
+    queueActivity("trip_del_all", {});
     return json({ ok: true });
   }
   if (!id) return json({ error: "شناسه لازم است" }, 400);
@@ -104,6 +481,7 @@ function deleteHistory(id: string | null, all: boolean): Response {
     LS.trips,
     lsGet<Json[]>(LS.trips, []).filter((t) => t.id !== id)
   );
+  queueActivity("trip_del", { id });
   return json({ ok: true });
 }
 
@@ -138,6 +516,8 @@ function postDailyRoute(body: Json): Response {
   const routes = lsGet<Json[]>(LS.daily, []);
   routes.push(route);
   lsSet(LS.daily, routes);
+  /* ثبت واقعی مسیر روزمره در دیتابیس ابری (آفلاین: در صف ارسال) */
+  queueActivity("daily_add", route);
   return json({ route });
 }
 
@@ -147,6 +527,7 @@ function deleteDailyRoute(id: string | null): Response {
     LS.daily,
     lsGet<Json[]>(LS.daily, []).filter((r) => r.id !== id)
   );
+  queueActivity("daily_del", { id });
   return json({ ok: true });
 }
 
@@ -180,7 +561,8 @@ function getFavorites(): Response {
 
 function postFavorite(body: Json): Response {
   const stationId = String(body?.stationId ?? "");
-  if (!stationId || !getStation(stationId)) {
+  const station = getStation(stationId);
+  if (!stationId || !station) {
     return json({ error: "ایستگاه نامعتبر است" }, 400);
   }
   const favs = lsGet<string[]>(LS.favs, []);
@@ -188,6 +570,8 @@ function postFavorite(body: Json): Response {
     favs.unshift(stationId);
     lsSet(LS.favs, favs);
   }
+  /* ثبت واقعی علاقه‌مندی در دیتابیس ابری (آفلاین: در صف ارسال) */
+  queueActivity("fav_add", { stationId, stationName: station.name });
   return json({ ok: true });
 }
 
@@ -197,7 +581,94 @@ function deleteFavorite(stationId: string | null): Response {
     LS.favs,
     lsGet<string[]>(LS.favs, []).filter((s) => s !== stationId)
   );
+  queueActivity("fav_del", { stationId });
   return json({ ok: true });
+}
+
+/* ---------------- تیکت پشتیبانی در اپ اندروید — ثبت واقعی در سرور ---------------- */
+
+type NativeTicket = {
+  id: string;
+  name: string;
+  contact: string;
+  category: string;
+  subject: string;
+  message: string;
+  status: string; // open | answered | closed
+  reply: string | null;
+  repliedAt: string | null;
+  createdAt: string;
+};
+
+/** POST /api/tickets — تیکت کاربر: همزمان محلی + دیتابیس ابری (D1) */
+function postTicket(body: Json): Response {
+  const name = String(body?.name ?? "").trim();
+  const contact = String(body?.contact ?? "").trim();
+  const category = ["general", "bug", "idea", "ad"].includes(String(body?.category))
+    ? String(body.category)
+    : "general";
+  const subject = String(body?.subject ?? "").trim();
+  const message = String(body?.message ?? "").trim();
+  if (name.length < 2) return json({ error: "نام و نام خانوادگی را وارد کنید" }, 400);
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+  const isPhone = /^0?\d{9,11}$/.test(contact.replace(/[\s-]/g, ""));
+  if (!isEmail && !isPhone) return json({ error: "ایمیل یا شماره تماس معتبر وارد کنید" }, 400);
+  if (subject.length < 3) return json({ error: "موضوع تیکت باید حداقل ۳ نویسه باشد" }, 400);
+  if (message.length < 10) return json({ error: "متن پیام باید حداقل ۱۰ نویسه باشد" }, 400);
+
+  const ticket: NativeTicket = {
+    id: uid(),
+    name,
+    contact,
+    category,
+    subject,
+    message,
+    status: "open",
+    reply: null,
+    repliedAt: null,
+    createdAt: new Date().toISOString(),
+  };
+  const tickets = lsGet<NativeTicket[]>(LS.tickets, []);
+  tickets.unshift(ticket);
+  lsSet(LS.tickets, tickets.slice(0, 20));
+  /* ثبت واقعی در دیتابیس ابری — پاسخ مدیر در پنل، در «تیکت‌های من» دیده می‌شود (آفلاین: صف) */
+  queueActivity("ticket", { ...ticket });
+  return json({ ok: true, id: ticket.id, forwarded: true });
+}
+
+/** GET /api/tickets/replies?contact=... — تیکت‌ها و پاسخ‌های مدیر؛ ابر اول، حافظه دستگاه فالبک */
+async function getTicketReplies(contact: string): Promise<Response> {
+  const c = String(contact ?? "").trim();
+  if (!c) return json({ error: "راه تماس الزامی است" }, 400);
+  for (const base of cloudBases()) {
+    try {
+      const res = await (deviceFetch ?? fetch)(
+        `${base}/api/v1/public/tickets/lookup?contact=${encodeURIComponent(c)}`,
+        { headers: { "X-Sync-Key": CLOUD_SYNC_KEY }, signal: AbortSignal.timeout(6000) }
+      );
+      if (!res.ok) continue;
+      const j = (await res.json().catch(() => null)) as { ok?: boolean; data?: { tickets?: unknown[] } } | null;
+      if (!j?.ok || !j.data) continue;
+      return json({ ok: true, source: "cloud", tickets: j.data.tickets ?? [] });
+    } catch {
+      /* سرور بعدی امتحان می‌شود */
+    }
+  }
+  const tickets = lsGet<NativeTicket[]>(LS.tickets, []).filter((t) => t.contact === c);
+  return json({
+    ok: true,
+    source: "device",
+    tickets: tickets.map((t) => ({
+      id: t.id,
+      subject: t.subject,
+      category: t.category,
+      message: t.message,
+      status: t.status,
+      reply: t.reply,
+      repliedAt: t.repliedAt,
+      createdAt: t.createdAt,
+    })),
+  });
 }
 
 function getArrivals(stationId: string | null): Response {
@@ -229,10 +700,413 @@ function getArrivals(stationId: string | null): Response {
   return json({ station: { id: station.id, name: station.name }, arrivals, ts: now });
 }
 
+/* ------------------- محتوای زنده پنل (/api/content در اندروید) ------------------- */
+
+/** fetch اصلی دستگاه — پیش از نصب پل ذخیره می‌شود تا واکشی ابری به دام افتاد پل نیفتد */
+let deviceFetch: typeof fetch | null = null;
+
+/**
+ * واکشی محتوای زنده پنل از سرور ابری برای اپ اندروید
+ * (شهر/خط/ایستگاه/تبلیغ/تنظیمات/واژگان تلفظ — مثل شوش → شوُش)
+ * خروجی با شکل /api/content نسخه وب یکسان است.
+ */
+async function fetchLiveContent(): Promise<Response> {
+  const bases = cloudBases();
+  for (const base of bases) {
+    try {
+      const res = await (deviceFetch ?? fetch)(`${base}/api/v1/public/content`, {
+        signal: AbortSignal.timeout(CLOUD_CONTENT_TIMEOUT_MS),
+      });
+      if (!res.ok) continue;
+      const j = (await res.json()) as {
+        ok?: boolean;
+        data?: { settings?: Record<string, string> };
+      } | null;
+      if (!j?.ok || !j.data) continue;
+      /* نشانی سرور اپ (تنظیم پنل) — مقصد دوم همگام‌سازی کاربر/فعالیت */
+      const srv = String(j.data.settings?.app_server_url ?? "").trim();
+      try {
+        if (srv && /^https?:\/\//.test(srv)) localStorage.setItem(LS.appServerUrl, srv);
+        else if (!srv) localStorage.removeItem(LS.appServerUrl);
+      } catch {
+        /* حافظه در دسترس نیست */
+      }
+      /* ابر در دسترس است — صف تغییرات آفلاین ارسال و فعالیت‌های ابری ادغام می‌شود */
+      cloudLastSeen = Date.now();
+      void syncNow();
+      return json({ ok: true, connected: true, source: "cloud", content: j.data });
+    } catch {
+      /* سرور بعدی امتحان می‌شود */
+    }
+  }
+  return json({ ok: true, connected: false, source: "local-fallback", content: null });
+}
+
+/* ---------------- اتصال به دیتابیس ابری (D1) — واقعی‌شدن کاربران موبایل ---------------- */
+
+const CLOUD_SYNC_KEY = "darmasir-sync-1404";
+
+/** آخرین زمانی که سرور ابری پاسخ داد — جلوگیری از درخواست‌های بی‌فایده در آفلاین */
+let cloudLastSeen = 0;
+
+/** ابطال همه نشست‌های فعال یک کاربر روی دستگاه (مسدودسازی از پنل) */
+function revokeUserSessions(userId: string): void {
+  const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+  let changed = false;
+  for (const [tok, uid2] of Object.entries(sessions)) {
+    if (uid2 === userId) {
+      delete sessions[tok];
+      changed = true;
+    }
+  }
+  if (changed) lsSet(LS.sessions, sessions);
+}
+
+/** شناسه فعلی کاربر روی دستگاه — شماره/ایمیل حساب ورودکرده؛
+    در نبود حساب: شناسه پایدار دستگاه تا تغییرات کاربر گم نشوند */
+function currentIdentifier(): string {
+  const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+  const token = Object.keys(sessions).pop();
+  if (token) {
+    const users = lsGet<NativeUser[]>(LS.users, []);
+    const u = users.find((x) => x.id === sessions[token]);
+    if (u) return u.phone || u.email || "";
+  }
+  let dev = "";
+  try {
+    dev = localStorage.getItem(LS.deviceId) || "";
+    if (!dev) {
+      dev = `device:${uid()}`;
+      localStorage.setItem(LS.deviceId, dev);
+    }
+  } catch {
+    dev = "device:unknown";
+  }
+  return dev;
+}
+
+/* ---------------- صف همگام‌سازی فعالیت کاربر (سفر/نشان/مسیر/تیکت) ----------------
+   هر تغییری که کاربر در اپ می‌دهد ابتدا محلی ذخیره می‌شود و بلافاصله
+   به دیتابیس ابری (D1) فرستاده می‌شود؛ اگر شبکه در دسترس نبود در همین
+   صف می‌ماند و با اولین اتصال (واکشی محتوا/ورود) خودکار ارسال می‌شود.
+   نتیجه: هر کاری کاربر بکند واقعاً به سرور می‌رسد و مدیر در پنل می‌بیند. */
+
+type SyncItem = { identifier: string; kind: string; data: Json; at: number };
+let syncInFlight = false;
+
+function queueActivity(kind: string, data: Json): void {
+  const q = lsGet<SyncItem[]>(LS.syncQueue, []);
+  q.push({ identifier: currentIdentifier(), kind, data, at: Date.now() });
+  /* صف حداکثر ۳۰۰ مورد — قدیمی‌ترها حذف می‌شوند */
+  lsSet(LS.syncQueue, q.slice(-300));
+  void flushSyncQueue();
+}
+
+function cloudBases(): string[] {
+  /* مقصدهای همگام‌سازی: ورکر ابری (اصلی) + سرور اپ (تنظیم پنل: app_server_url —
+     وقتی مدیر نشانی عمومی سرور اپ را در پنل ثبت کند، ثبت‌نام‌ها و فعالیت‌ها
+     مستقیم هم به Turso می‌رسند و پنل همان لحظه می‌بیند) */
+  const bases = CLOUD_CONTENT_BASES.map((b) => b.trim().replace(/\/+$/, "")).filter(Boolean);
+  try {
+    const app = (localStorage.getItem(LS.appServerUrl) || "").trim().replace(/\/+$/, "");
+    if (app && /^https?:\/\//.test(app) && !bases.includes(app)) bases.push(app);
+  } catch {
+    /* حافظه در دسترس نیست */
+  }
+  return bases;
+}
+
+/** ارسال یک مورد فعالیت به دیتابیس ابری — true یعنی واقعاً ثبت شد */
+async function cloudActivityPost(item: SyncItem): Promise<boolean> {
+  for (const base of cloudBases()) {
+    try {
+      const res = await (deviceFetch ?? fetch)(`${base}/api/v1/public/users/activity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Sync-Key": CLOUD_SYNC_KEY },
+        body: JSON.stringify({ identifier: item.identifier, kind: item.kind, data: item.data }),
+        signal: AbortSignal.timeout(7000),
+      });
+      if (!res.ok) continue;
+      const j = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      if (j?.ok) return true;
+    } catch {
+      /* سرور بعدی امتحان می‌شود */
+    }
+  }
+  return false;
+}
+
+const syncItemKey = (x: SyncItem) => `${x.at}|${x.kind}|${JSON.stringify(x.data)}`;
+
+/** تلاش دوباره ثبت ابری حساب‌هایی که موقتاً شکست خورده بود (آفلاین/خطا) */
+async function flushPendingUserSyncs(): Promise<void> {
+  const pend = lsGet<Record<string, string>>(LS.userSyncPending, {});
+  const entries = Object.entries(pend);
+  if (!entries.length) return;
+  for (const [identifier, name] of entries.slice(0, 20)) {
+    const trips = lsGet<Json[]>(LS.trips, []).length;
+    for (const base of cloudBases()) {
+      try {
+        const res = await (deviceFetch ?? fetch)(`${base}/api/v1/public/users/sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Sync-Key": CLOUD_SYNC_KEY },
+          body: JSON.stringify({ user: { phone: identifier, name, trips } }),
+          signal: AbortSignal.timeout(6000),
+        });
+        if (res.ok) {
+          markSynced(identifier);
+          break;
+        }
+      } catch {
+        /* مقصد بعدی / دفعه بعد */
+      }
+    }
+  }
+}
+
+/** خالی‌کردن صف فعالیت‌ها به دیتابیس ابری — با اولین اتصال موفق؛
+    موردهای ناموفق در صف می‌مانند و موارد جدیدِ حین ارسال حفظ می‌شوند */
+async function flushSyncQueue(): Promise<void> {
+  if (syncInFlight) return;
+  syncInFlight = true;
+  try {
+    void flushPendingUserSyncs();
+    const q = lsGet<SyncItem[]>(LS.syncQueue, []);
+    if (!q.length) return;
+    const keep: SyncItem[] = [];
+    let sentCount = 0;
+    for (const item of q) {
+      /* موردهای خیلی قدیمی (بیش از ۷ روز) کنار گذاشته می‌شوند */
+      if (Date.now() - item.at > 7 * 864e5) {
+        sentCount++;
+        continue;
+      }
+      const okSent = await cloudActivityPost(item);
+      if (okSent) sentCount++;
+      else keep.push(item);
+    }
+    if (sentCount > 0) {
+      /* فقط موردهای پردازش‌شده حذف می‌شوند — موارد تازه حین ارسال دست‌نخورده می‌مانند */
+      const nowQ = lsGet<SyncItem[]>(LS.syncQueue, []);
+      const origKeys = new Set(q.map(syncItemKey));
+      const fresh = nowQ.filter((x) => !origKeys.has(syncItemKey(x)));
+      lsSet(LS.syncQueue, [...keep, ...fresh]);
+    }
+  } finally {
+    syncInFlight = false;
+  }
+}
+
+/** خواندن فعالیت کاربر از ابر و ادغام در حافظه دستگاه — همگام‌سازی چنددستگاهه */
+async function pullActivity(): Promise<void> {
+  const identifier = currentIdentifier();
+  if (!identifier || identifier.startsWith("device:")) return;
+  for (const base of cloudBases()) {
+    try {
+      const res = await (deviceFetch ?? fetch)(
+        `${base}/api/v1/public/users/activity?identifier=${encodeURIComponent(identifier)}`,
+        { headers: { "X-Sync-Key": CLOUD_SYNC_KEY }, signal: AbortSignal.timeout(7000) }
+      );
+      if (!res.ok) continue;
+      const j = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        data?: { trips?: Json[]; favorites?: { stationId?: string }[]; daily?: Json[] };
+      } | null;
+      if (!j?.ok || !j.data) continue;
+      /* سفرها — اتحاد بر اساس شناسه */
+      const trips = lsGet<Json[]>(LS.trips, []);
+      const tripIds = new Set(trips.map((t) => String(t.id)));
+      let tripsChanged = false;
+      for (const t of j.data.trips ?? []) {
+        if (!t?.id || tripIds.has(String(t.id))) continue;
+        trips.push({ ...t, syncedAt: new Date().toISOString() });
+        tripsChanged = true;
+      }
+      if (tripsChanged) lsSet(LS.trips, trips.slice(0, 40));
+      /* علاقه‌مندی‌ها */
+      const favs = lsGet<string[]>(LS.favs, []);
+      let favsChanged = false;
+      for (const f of j.data.favorites ?? []) {
+        const sid = String(f?.stationId ?? "");
+        if (!sid || favs.includes(sid)) continue;
+        favs.push(sid);
+        favsChanged = true;
+      }
+      if (favsChanged) lsSet(LS.favs, favs);
+      /* مسیرهای روزمره */
+      const daily = lsGet<Json[]>(LS.daily, []);
+      const dailyIds = new Set(daily.map((d) => String(d.id)));
+      let dailyChanged = false;
+      for (const d of j.data.daily ?? []) {
+        if (!d?.id || dailyIds.has(String(d.id))) continue;
+        daily.push({ ...d });
+        dailyChanged = true;
+      }
+      if (dailyChanged) lsSet(LS.daily, daily.slice(0, 50));
+      return;
+    } catch {
+      /* سرور بعدی امتحان می‌شود */
+    }
+  }
+}
+
+/** علامت‌گذاری «ثبت‌شده در ابر» روی حساب محلی */
+function markSynced(identifier: string): void {
+  if (!identifier) return;
+  const users = lsGet<NativeUser[]>(LS.users, []);
+  const u = users.find((x) => x.phone === identifier || x.email === identifier);
+  if (u && !u.synced) {
+    u.synced = true;
+    lsSet(LS.users, users);
+  }
+  /* از صف «در انتظار ثبت ابری» حذف می‌شود */
+  const pend = lsGet<Record<string, string>>(LS.userSyncPending, {});
+  if (pend[identifier] !== undefined) {
+    delete pend[identifier];
+    lsSet(LS.userSyncPending, pend);
+  }
+}
+
+/** حساب‌هایی که ثبت ابری‌شان موقتاً شکست خورده (آفلاین/خطا) — با اولین اتصال دوباره ارسال می‌شوند */
+function enqueueUserSync(identifier: string, name: string): void {
+  if (!identifier) return;
+  const pend = lsGet<Record<string, string>>(LS.userSyncPending, {});
+  if (pend[identifier] === name) return;
+  pend[identifier] = name;
+  lsSet(LS.userSyncPending, pend);
+}
+
+/** ثبت/بروزرسانی کاربر موبایل در دیتابیس ابری (fire-and-forget) —
+    ثبت‌نام‌های اپ اندروید در پنل مدیریت دیده می‌شوند و مسدودسازی/حذف واقعاً اعمال می‌شود.
+    شکست (آفلاین/خطا) در صف «در انتظار ثبت» می‌ماند و با اولین اتصال دوباره ارسال می‌شود. */
+function cloudSyncUser(identifier: string, name: string): void {
+  if (!identifier) return;
+  const trips = lsGet<Json[]>(LS.trips, []).length;
+  const payload = { user: { phone: identifier, name, trips } };
+  const bases = cloudBases();
+  if (!bases.length) {
+    enqueueUserSync(identifier, name);
+    return;
+  }
+  let settled = 0;
+  for (const base of bases) {
+    (deviceFetch ?? fetch)(`${base}/api/v1/public/users/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Key": CLOUD_SYNC_KEY },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(6000),
+    })
+      .then((res) => {
+        if (res?.ok) {
+          settled++;
+          markSynced(identifier);
+        } else if (settled === 0 && settled + 1 >= bases.length) {
+          enqueueUserSync(identifier, name);
+        }
+      })
+      .catch(() => {
+        /* آفلاین/خطا — در صف می‌ماند تا دوباره تلاش شود */
+        enqueueUserSync(identifier, name);
+      });
+  }
+}
+
+type CloudUserState = { reachable: boolean; exists: boolean; status: string | null };
+
+/** بررسی وضعیت واقعی کاربر در دیتابیس ابری (مسدود/حذف‌شده) — آفلاین: reachable=false */
+async function cloudUserStatus(identifier: string): Promise<CloudUserState> {
+  if (!identifier) return { reachable: false, exists: false, status: null };
+  const bases = CLOUD_CONTENT_BASES.map((b) => b.trim().replace(/\/+$/, "")).filter(Boolean);
+  for (const base of bases) {
+    try {
+      const res = await (deviceFetch ?? fetch)(
+        `${base}/api/v1/public/users/status?identifier=${encodeURIComponent(identifier)}`,
+        { headers: { "X-Sync-Key": CLOUD_SYNC_KEY }, signal: AbortSignal.timeout(4000) }
+      );
+      if (!res.ok) continue;
+      const j = (await res.json()) as { ok?: boolean; data?: { exists?: boolean; status?: string | null } };
+      if (!j?.ok || !j.data) continue;
+      cloudLastSeen = Date.now();
+      return { reachable: true, exists: !!j.data.exists, status: j.data.status ?? null };
+    } catch {
+      /* سرور بعدی امتحان می‌شود */
+    }
+  }
+  return { reachable: false, exists: false, status: null };
+}
+
+type CloudLoginResult = {
+  reachable: boolean; // حداقل یک سرور ابری پاسخ داد
+  ok: boolean; // ورود ابری با رمز موفق بود
+  code?: string;
+  error?: string;
+  token?: string;
+  user?: { id?: string; name?: string; phone?: string | null; email?: string | null; createdAt?: string | null };
+};
+
+/** ورود مستقیم با سرور ابری (Turso) — برای دستگاه جدید/کش پاک‌شده:
+    رمز مستقیم روی سرور بررسی می‌شود؛ در موفقیت، پروفایل ابری برمی‌گردد و
+    سفرها/نشان‌ها/مسیرها با syncNow روی همین دستگاه بازیابی می‌شوند.
+    هر دو سرور به‌صورت موازی صدا زده می‌شوند — سریع‌ترین پاسخ معتبر ملاک است؛
+    آفلاین: حداکثر یک بازه timeout (نه به‌ازای هر سرور). */
+async function cloudLogin(identifier: string, password: string): Promise<CloudLoginResult> {
+  const bases = CLOUD_CONTENT_BASES.map((b) => b.trim().replace(/\/+$/, "")).filter(Boolean);
+  if (!bases.length) return { reachable: false, ok: false };
+  const attempt = async (base: string): Promise<CloudLoginResult> => {
+    try {
+      const res = await (deviceFetch ?? fetch)(`${base}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password, device: "android" }),
+        signal: AbortSignal.timeout(6000),
+      });
+      const j = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        data?: { token?: string; user?: CloudLoginResult["user"] };
+        error?: { code?: string; message?: string };
+      } | null;
+      if (!j) return { reachable: false, ok: false };
+      cloudLastSeen = Date.now();
+      if (j.ok && j.data?.token) {
+        return { reachable: true, ok: true, token: j.data.token, user: j.data.user };
+      }
+      const code = String(j.error?.code ?? "");
+      /* خطای دیتابیس سروری — نتیجه قطعی نیست، سرور بعدی/فالبک ملاک می‌شود */
+      if (code === "DB_ERROR") return { reachable: true, ok: false, code };
+      return { reachable: true, ok: false, code, error: String(j.error?.message ?? "") };
+    } catch {
+      /* آفلاین/timeout — این سرور پاسخ نداد */
+      return { reachable: false, ok: false };
+    }
+  };
+  const results = (
+    await Promise.allSettled(bases.map(attempt))
+  ).map((r) => (r.status === "fulfilled" ? r.value : ({ reachable: false, ok: false } as CloudLoginResult)));
+  const okHit = results.find((r) => r.ok);
+  if (okHit) return okHit;
+  /* خطای قطعی (رمز اشتباه/مسدود/نبودن حساب) مقدم بر خطای سروری است */
+  const definitive = results.find((r) => r.reachable && r.code && r.code !== "DB_ERROR");
+  if (definitive) return definitive;
+  if (results.some((r) => r.reachable)) {
+    return { reachable: true, ok: false, code: "DB_ERROR", error: "خطا در ورود — دوباره تلاش کنید" };
+  }
+  return { reachable: false, ok: false };
+}
+
 /* ---------------------------- dispatcher ---------------------------- */
 
-async function handle(pathname: string, search: URLSearchParams, method: string, body: Json | null): Promise<Response | null> {
+async function handle(
+  pathname: string,
+  search: URLSearchParams,
+  method: string,
+  body: Json | null,
+  headers: Headers
+): Promise<Response | null> {
   switch (pathname) {
+    case "/api/content": {
+      if (method === "GET") return await fetchLiveContent();
+      return null;
+    }
     case "/api/history": {
       if (method === "GET") return getHistory();
       if (method === "POST") return postHistory(body ?? {});
@@ -256,9 +1130,50 @@ async function handle(pathname: string, search: URLSearchParams, method: string,
       if (method === "GET") return getArrivals(search.get("station"));
       return null;
     }
+    case "/api/tickets": {
+      if (method === "POST") return postTicket(body ?? {});
+      return null;
+    }
+    case "/api/tickets/replies": {
+      if (method === "GET") return await getTicketReplies(search.get("contact") ?? "");
+      return null;
+    }
+    case "/api/auth/register": {
+      if (method === "POST") return await authRegister(body ?? {});
+      return null;
+    }
+    case "/api/auth/login": {
+      if (method === "POST") return await authLogin(body ?? {});
+      return null;
+    }
+    case "/api/auth/otp/request": {
+      if (method === "POST") return await authOtpRequest(body ?? {});
+      return null;
+    }
+    case "/api/auth/otp/verify": {
+      if (method === "POST") return await authOtpVerify(body ?? {});
+      return null;
+    }
+    case "/api/auth/me": {
+      if (method === "GET") return authMe(headers);
+      return null;
+    }
+    case "/api/auth/logout": {
+      if (method === "POST") return authLogout(headers);
+      return null;
+    }
     default:
       return null;
   }
+}
+
+/** همگام‌سازی کامل با سرور — در هر بار باز شدن اپ، بازگشت آنلاین و ورود/ثبت‌نام:
+    ۱) صف فعالیت‌های آفلاین (سفر/نشان/مسیر/تیکت) به سرور ارسال می‌شود
+    ۲) حساب‌های در انتظار ثبت ابری دوباره تلاش می‌شوند
+    ۳) فعالیت‌های ثبت‌شده در سرور (دستگاه دیگر) به دستگاه ادغام می‌شود */
+async function syncNow(): Promise<void> {
+  await flushSyncQueue();
+  await pullActivity();
 }
 
 /** نصب پل — فقط داخل اپ اندروید (WebView) */
@@ -273,13 +1188,16 @@ export function installNativeApiBridge(): void {
   win.__metrojoApiBridge = true;
 
   const originalFetch = win.fetch.bind(window);
+  deviceFetch = originalFetch;
   win.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     try {
       const url = new URL(
         typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
         window.location.origin
       );
-      if (url.pathname.startsWith("/api/")) {
+      // فقط درخواست‌های «همین اپ» رهگیری می‌شوند؛ آدرس‌های مطلق
+      // سرورهای ابری (صدا/محتوا) مستقیم به مقصد می‌روند
+      if (url.origin === window.location.origin && url.pathname.startsWith("/api/")) {
         const method = (init?.method ?? "GET").toUpperCase();
         let body: Json | null = null;
         if (init?.body && typeof init.body === "string") {
@@ -289,7 +1207,7 @@ export function installNativeApiBridge(): void {
             body = null;
           }
         }
-        const res = await handle(url.pathname, url.searchParams, method, body);
+        const res = await handle(url.pathname, url.searchParams, method, body, new Headers(init?.headers ?? undefined));
         if (res) return res;
         // مسیرهای صوتی و سایر مسیرها → پاسخ خطای کنترل‌شده
         return json({ message: "در حالت آفلاین در دسترس نیست" }, 503);
@@ -299,4 +1217,12 @@ export function installNativeApiBridge(): void {
     }
     return originalFetch(input, init);
   };
+
+  /* ---------- همگام‌سازی خودکار با سرور ----------
+     هر بار باز شدن اپ + لحظه بازگشت اینترنت + بازگشت به اپ از پس‌زمینه */
+  setTimeout(() => void syncNow(), 1500);
+  window.addEventListener("online", () => void syncNow());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") void syncNow();
+  });
 }

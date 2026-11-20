@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { MI, PageHeader, useInitCity, useShell } from "@/components/metro/shell";
+import { PanelAdSlot } from "@/components/metro/panel-banners";
 import {
   CROWD_COLOR,
   CROWD_LABEL,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/metro-data";
 
 /* ============================================================
-   اطلاعیه‌ها و وضعیت خطوط — متروجو
+   اطلاعیه‌ها و وضعیت خطوط — درمسیر
    طرح‌های مرجع: _18 (اصلی) + _26 و _3 (بخش تراکم لحظه‌ای)
    ============================================================ */
 
@@ -34,6 +35,7 @@ const hmOf = (mins: number) => `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`
 
 const CITY_NAME: Record<string, string> = {
   tehran: "تهران",
+  karaj: "کرج",
   mashhad: "مشهد",
   isfahan: "اصفهان",
 };
@@ -492,7 +494,7 @@ export default function StatusPage() {
 
           {alertLines.length > 0 && visibleAlerts.length === 0 && (
             <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/40 p-4 flex items-center gap-2 text-on-surface-variant shadow-sm">
-              <MI name="info" size={18} className="text-outline shrink-0" />
+              <MI name="info" size={18} className="text-on-surface-variant shrink-0" />
               <span className="text-body-sm">موردی در این دسته در ۲۴ ساعت گذشته ثبت نشده است.</span>
             </div>
           )}
@@ -629,7 +631,7 @@ export default function StatusPage() {
             </div>
 
             <div className="bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/30">
-              <div className="flex items-center justify-between text-label-sm text-outline mb-1.5">
+              <div className="flex items-center justify-between text-label-sm text-on-surface-variant mb-1.5">
                 <span className="flex items-center gap-1 font-medium">
                   <MI name="arrow_forward" size={14} /> لوکوموتیو
                 </span>
@@ -677,7 +679,7 @@ export default function StatusPage() {
                 <MI name="timelapse" size={15} className="text-primary shrink-0" />
                 سرفاصله فعلی: <strong className="text-on-surface">{toFa(selectedHeadway)} دقیقه</strong>
               </span>
-              <span className="truncate text-outline">
+              <span className="truncate text-on-surface-variant">
                 {selectedLine.terminals[0]} ↔ {selectedLine.terminals[1]}
               </span>
             </div>
@@ -925,7 +927,7 @@ export default function StatusPage() {
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/40 divide-y divide-outline-variant/20 shadow-sm">
             {events.length === 0 && (
               <div className="p-3 flex items-center gap-2 text-on-surface-variant">
-                <MI name="info" size={16} className="text-outline shrink-0" />
+                <MI name="info" size={16} className="text-on-surface-variant shrink-0" />
                 <span className="text-body-sm">در ۲۴ ساعت گذشته خبر مهمی نبوده است</span>
               </div>
             )}
@@ -946,18 +948,8 @@ export default function StatusPage() {
           </div>
         </section>
 
-        {/* ---------------- ۹. بنر آگهی ---------------- */}
-        <section className="bg-surface-container rounded-xl p-3 border border-dashed border-outline-variant/60 flex items-center justify-between gap-2 text-on-surface-variant my-1">
-          <div className="flex items-center gap-2 min-w-0">
-            <MI name="campaign" size={20} className="text-primary shrink-0" />
-            <span className="text-body-sm font-medium">
-              نصب اپلیکیشن «شهرزاد» برای شارژ فوری بلیت اعتباری بدون صف
-            </span>
-          </div>
-          <span className="text-label-sm px-2 py-0.5 bg-surface-container-lowest rounded border border-outline-variant/40 shrink-0">
-            آگهی
-          </span>
-        </section>
+        {/* ---------------- ۹. جایگاه آگهی — محتوای واقعی از پنل مدیریت (placement = status) ---------------- */}
+        <PanelAdSlot placement="status" />
       </main>
 
       {/* فلش اعلان کوتاه صفحه */}

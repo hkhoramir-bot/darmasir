@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useRouter } from "next/navigation";
 import { LINES, toFa, getStation, headwayAt, searchStations, type StationDef } from "@/lib/metro-data";
 import { remainingMinutesOf, remainingStationsOf, useJourney } from "@/lib/journey";
-import { PageHeader, MI } from "@/components/metro/shell";
+import { PageHeader, MI, useShell, useInitCity } from "@/components/metro/shell";
+import TehranTileMap, { type TehranMapMode } from "@/components/metro/tehran-tile-map";
+import { BRT_LINES } from "@/lib/brt-data";
 import MetroMap, { type MetroMapHandle } from "@/components/metro/metro-map";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,7 +17,8 @@ import { useToast } from "@/hooks/use-toast";
    - دکمه «فیلتر نقشه» + Bottom Sheet با کلید هر لایه
    - فیلترها واقعاً به لایه‌های نقشه وصل‌اند (نه فقط ظاهری)
    - جستجوی ایستگاه، موقعیت‌یاب، «مسیریابی از اینجا»
-   - لایه‌های بدون داده واقعی = «قابلیت آماده‌نشده» — بدون داده ساختگی
+   - فقط بخش‌های فعال نمایش داده می‌شوند — بدون جای‌نگهداشت «آماده‌نشده»
+   - «نقشه شهری» و «تندرو BRT» فقط برای شهر تهران (نقشه واقعی Leaflet + OSM)
    ============================================================ */
 
 const GESTURE_TIPS: { icon: string; text: string }[] = [
@@ -62,9 +65,8 @@ function subscribeHiddenLines(cb: () => void) {
 }
 
 /* ---------- فروشگاه خارجی لایه‌های حمل‌ونقل ----------
-   فقط «مترو» داده واقعی دارد؛ بقیه لایه‌ها به‌صورت دائمی
-   «قابلیت آماده‌نشده» هستند و روشن نمی‌شوند تا داده ساختگی
-   روی نقشه ظاهر شود. ساختار ذخیره برای لایه‌های آینده باز است. */
+   فقط «مترو» لایه نقشه شماتیک است؛ «نقشه شهری» و «تندرو BRT» حالت‌های
+   مستقل با داده واقعی تهران‌اند (TehranTileMap). ساختار ذخیره باز است. */
 const LAYERS_KEY = "mq-map-layers";
 
 interface MapLayers {
@@ -114,20 +116,28 @@ function subscribeLayers(cb: () => void) {
   };
 }
 
-/* لایه‌های حمل‌ونقل بدون داده مکانی واقعی — برچسب صادقانه «قابلیت آماده‌نشده» */
-const NOT_READY_LAYERS: { id: keyof MapLayers; label: string; icon: string }[] = [
-  { id: "bus", label: "اتوبوس", icon: "directions_bus" },
-  { id: "brt", label: "تندرو BRT", icon: "directions_bus" },
-  { id: "taxi", label: "تاکسی", icon: "local_taxi" },
-  { id: "traffic", label: "ترافیک زنده", icon: "traffic" },
-];
+/* حالت نقشه: مترو (شماتیک تعاملی) یا نقشه‌های واقعی تهران (شهری / تندرو BRT) —
+   طبق دستور مدیر، نقشه شهری و BRT فقط برای شهر تهران فعال‌اند */
+type MapMode = "metro" | TehranMapMode;
 
 export default function MapPage() {
   const router = useRouter();
   const { toast } = useToast();
+
+  /* همگام‌سازی شهر انتخابی از حافظه دستگاه — برای قفل «نقشه شهری / BRT» روی تهران */
+  useInitCity();
+
   const mapRef = useRef<MetroMapHandle>(null);
   const [selected, setSelected] = useState<StationDef | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [mapModeRaw, setMapMode] = useState<MapMode>("metro");
+
+  /* شهر انتخابی پوسته — نقشه شهری و BRT فقط برای تهران */
+  const shellCity = useShell((s) => s.city);
+  const isTehranCity = shellCity === "tehran";
+
+  /* اگر شهر غیر تهران باشد، حالت‌های مخصوص تهران در همان رندر به مترو برمی‌گردند */
+  const mapMode: MapMode = isTehranCity ? mapModeRaw : "metro";
   const [searchQ, setSearchQ] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
   const journey = useJourney((s) => s.journey);
@@ -232,7 +242,7 @@ export default function MapPage() {
 
   return (
     <>
-      <PageHeader title="نقشه تعاملی حمل‌ونقل" subtitle="لایه‌ها، جستجو، موقعیت‌یاب و نمای 2D/3D" />
+      <PageHeader title="نقشه تعاملی حمل‌ونقل" subtitle="نقشه مترو، نقشه شهری و تندرو BRT تهران + جستجو و نمای 2D/3D" />
 
       <main className="flex-1 w-full pb-28 pt-3">
         {/* ================= نوار سفر فعال ================= */}
@@ -253,7 +263,7 @@ export default function MapPage() {
                   ? `ایستگاه فعلی: ${journey.currentStationName}${jNext ? ` • بعدی: ${jNext}` : " • رسیدید"}`
                   : `${journey.fromName} ← ${journey.toName}`}
               </p>
-              <p className="text-[9px] text-outline">
+              <p className="text-[9px] text-on-surface-variant">
                 {journey.currentIndex < 0
                   ? "در انتظار موقعیت GPS — یا از صفحه اصلی دستی تنظیم کنید"
                   : `${toFa(remainingStationsOf(journey))} ایستگاه مانده • حدود ${toFa(remainingMinutesOf(journey))} دقیقه`}
@@ -274,68 +284,84 @@ export default function MapPage() {
           </div>
         )}
 
-        {/* ================= نوار فیلتر لایه‌ها — مستقل از نمای 2D/3D ================= */}
-        <div className="mx-4 mb-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5" role="toolbar" aria-label="فیلتر لایه‌های نقشه">
+        {/* ================= نوار حالت و لایه‌ها — فقط بخش‌های فعال ================= */}
+        <div className="mx-4 mb-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5" role="toolbar" aria-label="حالت و لایه‌های نقشه">
+          {mapMode === "metro" && (
+            <button
+              type="button"
+              onClick={showAll}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm active:scale-95 transition-all shrink-0 ${
+                allShown ? "bg-primary text-on-primary" : "bg-surface-container-lowest border border-outline-variant/40 text-on-surface"
+              }`}
+            >
+              <MI name="layers" size={15} className={allShown ? "text-on-primary" : "text-primary"} />
+              همه لایه‌ها
+            </button>
+          )}
           <button
             type="button"
-            onClick={showAll}
+            onClick={() => setMapMode("metro")}
+            aria-pressed={mapMode === "metro"}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm active:scale-95 transition-all shrink-0 ${
-              allShown ? "bg-primary text-on-primary" : "bg-surface-container-lowest border border-outline-variant/40 text-on-surface"
-            }`}
-          >
-            <MI name="layers" size={15} className={allShown ? "text-on-primary" : "text-primary"} />
-            همه لایه‌ها
-          </button>
-          <button
-            type="button"
-            onClick={() => setMetroLayer(!layers.metro)}
-            aria-pressed={layers.metro}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm active:scale-95 transition-all shrink-0 ${
-              layers.metro
+              mapMode === "metro"
                 ? "bg-primary text-on-primary"
                 : "bg-surface-container-lowest border border-outline-variant/40 text-on-surface opacity-70"
             }`}
           >
-            <MI name="directions_subway" size={15} className={layers.metro ? "text-on-primary" : "text-primary"} />
+            <MI name="directions_subway" size={15} className={mapMode === "metro" ? "text-on-primary" : "text-primary"} />
             مترو
           </button>
-          {NOT_READY_LAYERS.map((ly) => (
+          {isTehranCity && (
+            <>
+              <button
+                type="button"
+                onClick={() => setMapMode("city")}
+                aria-pressed={mapMode === "city"}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm active:scale-95 transition-all shrink-0 ${
+                  mapMode === "city"
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-container-lowest border border-outline-variant/40 text-on-surface opacity-70"
+                }`}
+              >
+                <MI name="map" size={15} className={mapMode === "city" ? "text-on-primary" : "text-primary"} />
+                نقشه شهری
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapMode("brt")}
+                aria-pressed={mapMode === "brt"}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm active:scale-95 transition-all shrink-0 ${
+                  mapMode === "brt"
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-container-lowest border border-outline-variant/40 text-on-surface opacity-70"
+                }`}
+              >
+                <MI name="directions_bus" size={15} className={mapMode === "brt" ? "text-on-primary" : "text-primary"} />
+                تندرو BRT
+              </button>
+            </>
+          )}
+          {mapMode === "metro" && (
             <button
-              key={ly.id}
               type="button"
-              onClick={() =>
-                toast({
-                  title: `${ly.label}: قابلیت آماده‌نشده`,
-                  description: "داده مکانی واقعی این لایه هنوز در دسترس نیست و روی نقشه داده ساختگی نمایش داده نمی‌شود",
-                })
-              }
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm active:scale-95 transition-all shrink-0 bg-surface-container-lowest border border-outline-variant/40 text-outline"
+              onClick={() => setFilterOpen(true)}
+              aria-label="فیلتر نقشه"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm active:scale-95 transition-all shrink-0 bg-primary-container text-white"
             >
-              <MI name={ly.icon} size={15} className="text-outline-variant" />
-              {ly.label}
-              <span className="text-[8px] font-bold bg-surface-container px-1 py-0.5 rounded-full flex items-center gap-0.5 text-outline-variant">
-                <MI name="hourglass_empty" size={9} />
-                آماده‌نشده
-              </span>
+              <MI name="tune" size={15} />
+              فیلتر نقشه
             </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => setFilterOpen(true)}
-            aria-label="فیلتر نقشه"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm active:scale-95 transition-all shrink-0 bg-primary-container text-white"
-          >
-            <MI name="tune" size={15} />
-            فیلتر نقشه
-          </button>
+          )}
         </div>
 
         {/* ================= بوم نقشه + جستجوی شناور ================= */}
         <div className="relative mx-4">
+          {mapMode === "metro" && (
+            <>
           {/* جستجوی ایستگاه — شناور بالای نقشه */}
           <div className="absolute top-2.5 inset-x-2.5 z-20">
             <div className="bg-surface-container-lowest/95 backdrop-blur rounded-xl shadow-md border border-outline-variant/40 flex items-center px-2.5 h-10 gap-2">
-              <MI name="search" size={17} className="text-outline shrink-0" />
+              <MI name="search" size={17} className="text-on-surface-variant shrink-0" />
               <input
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
@@ -343,14 +369,14 @@ export default function MapPage() {
                 onBlur={() => setTimeout(() => setSearchFocus(false), 150)}
                 placeholder="جستجوی ایستگاه..."
                 aria-label="جستجوی ایستگاه روی نقشه"
-                className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xs font-medium text-on-surface placeholder:text-outline"
+                className="flex-1 min-w-0 bg-transparent border-0 outline-none text-xs font-medium text-on-surface placeholder:text-on-surface-variant"
               />
               {searchQ && (
                 <button
                   type="button"
                   onClick={() => setSearchQ("")}
                   aria-label="پاک‌کردن جستجو"
-                  className="text-outline shrink-0 active:scale-90 transition-transform"
+                  className="text-on-surface-variant shrink-0 active:scale-90 transition-transform"
                 >
                   <MI name="close" size={15} />
                 </button>
@@ -388,7 +414,7 @@ export default function MapPage() {
                     </button>
                   ))
                 ) : (
-                  <p className="px-3 py-3 text-[11px] text-outline text-center">ایستگاهی با این نام یافت نشد</p>
+                  <p className="px-3 py-3 text-[11px] text-on-surface-variant text-center">ایستگاهی با این نام یافت نشد</p>
                 )}
               </div>
             )}
@@ -407,9 +433,19 @@ export default function MapPage() {
               }}
             />
           </div>
+            </>
+          )}
+
+          {mapMode !== "metro" && (
+            <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-sm overflow-hidden">
+              <TehranTileMap mode={mapMode} className="h-[620px] w-full" />
+            </div>
+          )}
         </div>
 
         <div className="mx-4 mt-3 space-y-3">
+          {mapMode === "metro" && (
+            <>
           {/* ================= راهنمای خطوط لایه مترو (با کلید چشم) ================= */}
           <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-2.5">
             <div className="flex items-center justify-between">
@@ -451,14 +487,14 @@ export default function MapPage() {
                         style={{ backgroundColor: line.color }}
                       />
                       <span
-                        className={`text-[11px] font-bold text-on-surface shrink-0 ${isHidden ? "line-through text-outline" : ""}`}
+                        className={`text-[11px] font-bold text-on-surface shrink-0 ${isHidden ? "line-through text-on-surface-variant" : ""}`}
                       >
                         {line.name}
                       </span>
-                      <span className="text-[10px] text-outline truncate">
+                      <span className="text-[10px] text-on-surface-variant truncate">
                         {line.terminals[0]} ↔ {line.terminals[1]}
                       </span>
-                      <MI name="chevron_left" size={14} className="text-outline-variant shrink-0 mr-auto" />
+                      <MI name="chevron_left" size={14} className="text-on-surface-variant shrink-0 mr-auto" />
                     </button>
                     <button
                       type="button"
@@ -469,7 +505,7 @@ export default function MapPage() {
                       title={isHidden ? "نمایش روی نقشه" : "پنهان از نقشه"}
                       className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 active:scale-90 transition-all ${
                         isHidden
-                          ? "text-outline-variant bg-surface-container/60"
+                          ? "text-on-surface-variant bg-surface-container/60"
                           : "text-primary hover:bg-surface-container-low"
                       } ${!layers.metro ? "opacity-40" : ""}`}
                     >
@@ -479,31 +515,8 @@ export default function MapPage() {
                 );
               })}
             </div>
-            <p className="text-[10px] text-outline-variant">
+            <p className="text-[10px] text-on-surface-variant">
               با لمس چشم، هر خط را از لایه مترو پنهان یا نمایش دهید؛ انتخاب شما ذخیره می‌شود.
-            </p>
-          </section>
-
-          {/* ================= وضعیت سایر لایه‌ها — صادقانه ================= */}
-          <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-2">
-            <div className="flex items-center gap-2">
-              <MI name="info" size={20} className="text-primary" />
-              <h3 className="font-bold text-xs text-on-surface">سایر لایه‌های حمل‌ونقل</h3>
-            </div>
-            <div className="space-y-1.5">
-              {NOT_READY_LAYERS.map((ly) => (
-                <div key={ly.id} className="flex items-center gap-2 text-xs text-outline">
-                  <MI name={ly.icon} size={15} className="text-outline-variant shrink-0" />
-                  <span className="flex-1">{ly.label}</span>
-                  <span className="text-[9px] font-bold text-outline-variant bg-surface-container px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                    <MI name="hourglass_empty" size={10} />
-                    قابلیت آماده‌نشده
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-outline-variant pt-1 leading-relaxed">
-              این لایه‌ها پس از دریافت داده مکانی رسمی فعال می‌شوند؛ تا آن زمان هیچ داده ساختگی روی نقشه نمایش داده نمی‌شود.
             </p>
           </section>
 
@@ -515,16 +528,64 @@ export default function MapPage() {
             </div>
             <div className="space-y-1.5">
               {GESTURE_TIPS.map((tip) => (
-                <div key={tip.icon} className="flex items-center gap-2 text-xs text-outline">
+                <div key={tip.icon} className="flex items-center gap-2 text-xs text-on-surface-variant">
                   <MI name={tip.icon} size={15} className="text-on-surface-variant shrink-0" />
                   <span>{tip.text}</span>
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-outline-variant pt-1">
+            <p className="text-[10px] text-on-surface-variant pt-1">
               با لمس هر ایستگاه روی نقشه، کارد جزئیات و «مسیریابی از اینجا» باز می‌شود.
             </p>
           </section>
+            </>
+          )}
+
+          {mapMode === "city" && (
+            <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-2">
+              <div className="flex items-center gap-2">
+                <MI name="map" size={20} className="text-primary" />
+                <h3 className="font-bold text-xs text-on-surface">نقشه شهری تهران</h3>
+              </div>
+              <p className="text-[11px] text-on-surface-variant leading-relaxed">
+                نقشه واقعی شهر تهران بر پایه کاشی‌های OpenStreetMap؛ خطوط و ایستگاه‌های مترو با مختصات جغرافیایی واقعی روی نقشه نمایش داده می‌شوند. با انگشت جابجا و بزرگ‌نمایی کنید و برای جزئیات روی هر ایستگاه ضربه بزنید.
+              </p>
+            </section>
+          )}
+
+          {mapMode === "brt" && (
+            <section className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/40 shadow-sm space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MI name="directions_bus" size={20} className="text-primary" />
+                  <h3 className="font-bold text-xs text-on-surface">خطوط اتوبوس تندرو (BRT) تهران</h3>
+                </div>
+                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  {toFa(BRT_LINES.length)} خط فعال
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-1">
+                {BRT_LINES.map((line) => (
+                  <div key={line.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl">
+                    <span
+                      className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm ring-1 ring-black/5"
+                      style={{ backgroundColor: line.color }}
+                    />
+                    <span className="text-[11px] font-bold text-on-surface shrink-0">{line.name}</span>
+                    <span className="text-[10px] text-on-surface-variant truncate flex-1 min-w-0">
+                      {line.from} ↔ {line.to}
+                    </span>
+                    <span className="text-[9px] text-on-surface-variant shrink-0 font-bold bg-surface-container px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                      {line.lengthKm} کیلومتر
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-on-surface-variant pt-1 leading-relaxed">
+                سامانه اتوبوس تندرو تهران: ۱۰ خط فعال، ۱۷۸٫۵ کیلومتر خط‌کشی ویژه و ۲۳۷ ایستگاه — محور رسمی هر خط روی نقشه نمایش داده می‌شود (دقت حدود ±۲۰۰ متر). برای اطلاعات هر خط، آن را روی نقشه لمس کنید.
+              </p>
+            </section>
+          )}
         </div>
       </main>
 
@@ -548,7 +609,7 @@ export default function MapPage() {
                 type="button"
                 aria-label="بستن"
                 onClick={() => setFilterOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-outline shrink-0"
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant shrink-0"
               >
                 <MI name="close" size={18} />
               </button>
@@ -563,7 +624,7 @@ export default function MapPage() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-on-surface">مترو</p>
-                    <p className="text-[10px] text-outline">۷ خط تهران — داده واقعی</p>
+                    <p className="text-[10px] text-on-surface-variant">۷ خط تهران — داده واقعی</p>
                   </div>
                 </div>
                 {/* کلید روشن/خاموش لایه */}
@@ -592,7 +653,7 @@ export default function MapPage() {
                         aria-pressed={!isHidden}
                         className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition-all active:scale-95 ${
                           isHidden
-                            ? "border-outline-variant/40 text-outline line-through"
+                            ? "border-outline-variant/40 text-on-surface-variant line-through"
                             : "border-transparent text-white shadow-sm"
                         }`}
                         style={isHidden ? undefined : { backgroundColor: line.color, color: line.textOnColor }}
@@ -605,25 +666,6 @@ export default function MapPage() {
                 </div>
               )}
             </div>
-
-            {/* لایه‌های بدون داده واقعی */}
-            {NOT_READY_LAYERS.map((ly) => (
-              <div key={ly.id} className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-surface-container text-outline-variant flex items-center justify-center shrink-0">
-                    <MI name={ly.icon} size={19} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-on-surface-variant">{ly.label}</p>
-                    <p className="text-[10px] text-outline truncate">داده مکانی واقعی هنوز موجود نیست</p>
-                  </div>
-                </div>
-                <span className="text-[9px] font-bold text-outline-variant bg-surface-container px-2 py-1 rounded-full flex items-center gap-1 shrink-0">
-                  <MI name="hourglass_empty" size={10} />
-                  آماده‌نشده
-                </span>
-              </div>
-            ))}
 
             <button
               type="button"
@@ -657,7 +699,7 @@ export default function MapPage() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-sm text-on-surface truncate">{selected.name}</h3>
-                  <p className="text-[10px] text-outline">
+                  <p className="text-[10px] text-on-surface-variant">
                     {selLineLabel}
                     {selHeadway ? ` • فاصله حرکت حدود ${toFa(selHeadway)} دقیقه` : ""}
                   </p>
@@ -667,7 +709,7 @@ export default function MapPage() {
                 type="button"
                 aria-label="بستن"
                 onClick={() => setSelected(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-outline shrink-0"
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant shrink-0"
               >
                 <MI name="close" size={18} />
               </button>

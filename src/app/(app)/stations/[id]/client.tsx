@@ -20,7 +20,7 @@ import {
   type TimetableRow,
 } from "@/lib/metro-data";
 import { nearestStationTo } from "@/lib/station-geo";
-import { getCurrentGeo } from "@/lib/geo";
+import { getCurrentGeoBest } from "@/lib/geo";
 import { MI, PageHeader } from "@/components/metro/shell";
 import { useAnnouncer } from "@/components/metro/voice";
 import { useToast } from "@/hooks/use-toast";
@@ -92,7 +92,7 @@ function NotFound() {
             <MI name="search_off" size={28} />
           </div>
           <h2 className="font-bold text-sm text-on-surface">ایستگاه یافت نشد</h2>
-          <p className="text-xs text-outline leading-6">
+          <p className="text-xs text-on-surface-variant leading-6">
             ایستگاه مورد نظر در شبکه مترو وجود ندارد یا آدرس وارد شده اشتباه است.
           </p>
           <button
@@ -239,11 +239,11 @@ function StationDetail({ station }: { station: StationDef }) {
 
   /* ---------- اشتراک‌گذاری ---------- */
   const share = async () => {
-    const text = `ایستگاه مترو ${station.name} — متروجو`;
+    const text = `ایستگاه مترو ${station.name} — درمسیر`;
     const url = typeof window !== "undefined" ? window.location.href : "";
     try {
       if (navigator.share) {
-        await navigator.share({ title: "متروجو", text, url });
+        await navigator.share({ title: "درمسیر", text, url });
         return;
       }
       await navigator.clipboard.writeText(`${text} ${url}`);
@@ -297,7 +297,8 @@ function StationDetail({ station }: { station: StationDef }) {
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const fix = await getCurrentGeo(8000);
+      /* بهترین موقعیت (همگرا با GPS دقیق) — فیکس‌های خام شبکه «مکان اشتباه» نمی‌دهند */
+      const fix = await getCurrentGeoBest(2, 8000, 450, 15000);
       if (!alive || !fix) return;
       const r = nearestStationTo(fix.lat, fix.lng);
       if (r && r.id === station.id && r.distanceM < 1000) {
@@ -410,7 +411,7 @@ function StationDetail({ station }: { station: StationDef }) {
               className={`flex items-center gap-1 rounded-full font-bold text-[11px] transition-all active:scale-95 ${
                 isFav
                   ? "bg-primary text-white px-3 py-1.5 shadow-sm"
-                  : "w-9 h-9 justify-center border border-outline-variant/50 text-outline bg-surface-container-lowest"
+                  : "w-9 h-9 justify-center border border-outline-variant/50 text-on-surface-variant bg-surface-container-lowest"
               }`}
             >
               <MI name={isFav ? "star" : "star_border"} size={isFav ? 16 : 20} fill={isFav} />
@@ -522,7 +523,7 @@ function StationDetail({ station }: { station: StationDef }) {
                         </div>
                       </div>
                       {oos ? (
-                        <span className="text-[10px] font-bold text-outline bg-surface-container px-2 py-1 rounded-lg shrink-0">
+                        <span className="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-1 rounded-lg shrink-0">
                           خارج از ساعات سرویس
                         </span>
                       ) : (
@@ -530,7 +531,7 @@ function StationDetail({ station }: { station: StationDef }) {
                           <div className="text-base font-bold text-primary leading-none">
                             {toFa(d.minutes[0])} <span className="text-[10px] font-medium">دقیقه</span>
                           </div>
-                          <div className="text-[9px] text-outline flex items-center justify-end gap-1" dir="ltr">
+                          <div className="text-[9px] text-on-surface-variant flex items-center justify-end gap-1" dir="ltr">
                             <MI name="schedule" size={10} />
                             {toFa(d.at[0] ?? "")}
                           </div>
@@ -550,7 +551,7 @@ function StationDetail({ station }: { station: StationDef }) {
                       </div>
                     )}
                     {oos && (
-                      <p className="mt-2 text-[10px] text-outline">
+                      <p className="mt-2 text-[10px] text-on-surface-variant">
                         سرویس امروز پایان یافته — اولین قطار فردا ساعت {toFa(selectedLine.firstTrain)}
                       </p>
                     )}
@@ -563,15 +564,15 @@ function StationDetail({ station }: { station: StationDef }) {
           {/* نوار ساعات سرویس — الهام از هیرو _15 */}
           <div className="grid grid-cols-3 gap-2 text-center text-[10px] pt-2 border-t border-outline-variant/20">
             <div className="bg-surface-container-low rounded-lg py-1.5 flex flex-col items-center gap-0.5">
-              <span className="text-outline">اولین قطار</span>
+              <span className="text-on-surface-variant">اولین قطار</span>
               <span className="font-bold text-on-surface">{toFa(selectedLine.firstTrain)}</span>
             </div>
             <div className="bg-surface-container-low rounded-lg py-1.5 flex flex-col items-center gap-0.5">
-              <span className="text-outline">آخرین قطار</span>
+              <span className="text-on-surface-variant">آخرین قطار</span>
               <span className="font-bold text-on-surface">{toFa(selectedLine.lastTrain)}</span>
             </div>
             <div className="bg-surface-container-low rounded-lg py-1.5 flex flex-col items-center gap-0.5">
-              <span className="text-outline">سرفاصله</span>
+              <span className="text-on-surface-variant">سرفاصله</span>
               <span className="font-bold text-primary">{toFa(headwayNow)} دقیقه</span>
             </div>
           </div>
@@ -591,7 +592,7 @@ function StationDetail({ station }: { station: StationDef }) {
             )}
           </div>
           {amenities.length === 0 ? (
-            <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-4 text-center text-[11px] text-outline">
+            <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-4 text-center text-[11px] text-on-surface-variant">
               امکاناتی ثبت نشده
             </div>
           ) : (
@@ -654,7 +655,7 @@ function StationDetail({ station }: { station: StationDef }) {
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: c, backgroundColor: `${c}14` }}>
                         {EQUIP_BADGE[st]}
                       </span>
-                      <span className="text-[8px] text-outline">بازدید {lastCheckText(id, eq.type)}</span>
+                      <span className="text-[8px] text-on-surface-variant">بازدید {lastCheckText(id, eq.type)}</span>
                     </div>
                   </div>
                 );
@@ -674,7 +675,7 @@ function StationDetail({ station }: { station: StationDef }) {
                   راهنمای طبقات ایستگاه
                 </h2>
               </div>
-              <span className="text-[10px] text-outline">برش مقطعی لایه‌ها</span>
+              <span className="text-[10px] text-on-surface-variant">برش مقطعی لایه‌ها</span>
             </div>
             <div>
               {levels.map((lv, i) => (
@@ -704,12 +705,12 @@ function StationDetail({ station }: { station: StationDef }) {
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-bold text-on-surface truncate">{lv.name}</div>
-                        <div className="text-[10px] text-outline truncate mt-0.5">{lv.info}</div>
+                        <div className="text-[10px] text-on-surface-variant truncate mt-0.5">{lv.info}</div>
                       </div>
                       <MI
                         name="expand_more"
                         size={16}
-                        className={`text-outline shrink-0 transition-transform ${levelOpen === i ? "rotate-180" : ""}`}
+                        className={`text-on-surface-variant shrink-0 transition-transform ${levelOpen === i ? "rotate-180" : ""}`}
                       />
                     </button>
                     {levelOpen === i && (
@@ -761,7 +762,7 @@ function StationDetail({ station }: { station: StationDef }) {
                         <div className="text-xs font-bold text-on-surface truncate">
                           از {A.name} به {B.name}
                         </div>
-                        <div className="text-[10px] text-outline mt-0.5 truncate">
+                        <div className="text-[10px] text-on-surface-variant mt-0.5 truncate">
                           مسیر را به سمت {B.terminals[1]} یا {B.terminals[0]} دنبال کنید
                         </div>
                       </div>
@@ -787,7 +788,7 @@ function StationDetail({ station }: { station: StationDef }) {
                         </span>
                         <div className="min-w-0">
                           <div className="text-[11px] font-bold text-on-surface truncate">{L.name}</div>
-                          <div className="text-[9px] text-outline truncate">{ix === 0 ? "خط فعلی" : "خط مقصد"}</div>
+                          <div className="text-[9px] text-on-surface-variant truncate">{ix === 0 ? "خط فعلی" : "خط مقصد"}</div>
                         </div>
                       </div>
                     ))}
@@ -808,7 +809,7 @@ function StationDetail({ station }: { station: StationDef }) {
                           {step.n}
                         </span>
                         <span className="text-[10px] font-bold text-on-surface leading-tight">{step.t}</span>
-                        <span className="text-[9px] text-outline">{step.s}</span>
+                        <span className="text-[9px] text-on-surface-variant">{step.s}</span>
                       </div>
                     ))}
                   </div>
@@ -870,7 +871,7 @@ function StationDetail({ station }: { station: StationDef }) {
                     </span>
                   </div>
                 </div>
-                <MI name="chevron_left" size={16} className="text-outline/70 shrink-0 mt-1" aria-hidden />
+                <MI name="chevron_left" size={16} className="text-on-surface-variant/70 shrink-0 mt-1" aria-hidden />
               </div>
               {ex.landmarks.length > 0 && (
                 <div className="mt-3 pt-2.5 border-t border-outline-variant/20 flex flex-wrap gap-1.5">
@@ -881,7 +882,7 @@ function StationDetail({ station }: { station: StationDef }) {
                         li === 0 ? "text-primary font-bold" : "text-on-surface-variant"
                       }`}
                     >
-                      <MI name="place" size={11} className={li === 0 ? "text-primary" : "text-outline"} />
+                      <MI name="place" size={11} className={li === 0 ? "text-primary" : "text-on-surface-variant"} />
                       {lm}
                     </span>
                   ))}
@@ -964,7 +965,7 @@ function StationDetail({ station }: { station: StationDef }) {
               </span>
               <div className="min-w-0">
                 <h2 className="text-xs font-bold text-on-surface truncate">جدول اعزام قطارها</h2>
-                <p className="text-[9px] text-outline mt-0.5 truncate">
+                <p className="text-[9px] text-on-surface-variant mt-0.5 truncate">
                   ساعات کار و اعزام {selectedLine.name} • جدول رسمی ۱۴۰۴
                 </p>
               </div>
@@ -995,7 +996,7 @@ function StationDetail({ station }: { station: StationDef }) {
                       <td className="py-2 px-1 text-center text-on-surface-variant">{r.last}</td>
                       <td className="py-2 px-2 text-left whitespace-nowrap">
                         <span className="text-primary font-bold">{r.headwayPeak}</span>
-                        <span className="text-outline font-medium"> / </span>
+                        <span className="text-on-surface-variant font-medium"> / </span>
                         <span className="text-on-surface-variant font-medium">{r.headwayOff}</span>
                       </td>
                     </tr>
@@ -1005,7 +1006,7 @@ function StationDetail({ station }: { station: StationDef }) {
             </div>
           )}
 
-          <div className="flex items-center justify-between text-[9px] text-outline px-0.5">
+          <div className="flex items-center justify-between text-[9px] text-on-surface-variant px-0.5">
             <span className="flex items-center gap-1">
               <MI name="wb_twilight" size={12} />
               ساعات سرویس: {toFa(selectedLine.firstTrain)} تا {toFa(selectedLine.lastTrain)}
@@ -1045,7 +1046,7 @@ function StationDetail({ station }: { station: StationDef }) {
                       <MI name="directions" size={11} />
                       دسترسی پیاده
                     </span>
-                    <span className="text-outline">از خروجی اصلی</span>
+                    <span className="text-on-surface-variant">از خروجی اصلی</span>
                   </div>
                 </div>
               ))}

@@ -1,11 +1,13 @@
 "use client";
 
 /* ============================================================
-   موقعیت‌یاب یکپارچه متروجو
-   روی اندروید (WebView/Capacitor): پلاگین نیتیو Geolocation —
-   درخواست مجوز لحظه‌ای به‌درستی نمایش داده می‌شود و GPS دقیق
-   دستگاه برگردانده می‌شود (رفع «GPS روشن می‌شود ولی مکان
-   اشتباه نمایش داده می‌شود» در نسخه اندروید).
+   موقعیت‌یاب یکپارچه درمسیر
+   روی اندروید (WebView/Capacitor):
+     ۱) موتور دقیق گوگل — FusedLocationProviderClient (پلاگین نیتیو
+        FusedLocation — همان موتور Google Maps: ترکیب GPS + وای‌فای +
+        آنتن‌دهی + سنسورها با سرویس‌های گوگل پلی) — رفع «GPS روشن
+        می‌شود ولی مکان اشتباه/ناعدد نمایش داده می‌شود»
+     ۲) فالبک: پلاگین Geolocation کاپاسیترور
    در مرورگر: navigator.geolocation استاندارد.
    ============================================================ */
 
@@ -18,6 +20,7 @@ export interface GeoFix {
 export interface GeoWatchId {
   native?: string;
   web?: number;
+  fusedTimer?: ReturnType<typeof setInterval>; // رصد با موتور گوگل (پینگ دوره‌ای)
 }
 
 /** آیا اپ داخل WebView اندروید (Capacitor) اجرا می‌شود؟ */
@@ -43,22 +46,75 @@ export async function requestGeoPermission(): Promise<GeoPerm> {
   }
 }
 
-/** یک‌بار گرفتن موقعیت — با GPS دقیق؛ maxAgeMs>0 اجازه استفاده از
-    آخرین موقعیت کش‌شده دستگاه را می‌دهد (اولین تشخیص «سریع») */
+/* ---------------- موتور موقعیت دقیق گوگل (پلاگین نیتیو FusedLocation) ---------------- */
+
+type FusedPlugin = { getCurrentPosition: (opts: { enableHighAccuracy: boolean; timeout: number }) => Promise<{ lat: number; lng: number; accuracy: number }> };
+let fusedPlugin: FusedPlugin | null | undefined; // undefined = هنوز امتحان نشده، null = موجود نیست
+
+async function getFusedPlugin(): Promise<FusedPlugin | null> {
+  if (fusedPlugin !== undefined) return fusedPlugin;
+  try {
+    const { registerPlugin } = await import("@capacitor/core");
+    fusedPlugin = registerPlugin<FusedPlugin>("FusedLocation");
+  } catch {
+    fusedPlugin = null;
+  }
+  return fusedPlugin;
+}
+
+/** یک‌بار گرفتن موقعیت با موتور Fused گوگل — اگر پلاگین نبود/خطا داد null */
+async function fusedGetCurrent(timeoutMs = 12000, highAccuracy = true): Promise<GeoFix | null> {
+  if (!isNative()) return null;
+  const plugin = await getFusedPlugin();
+  if (!plugin) return null;
+  try {
+    const res = await plugin.getCurrentPosition({ enableHighAccuracy: highAccuracy, timeout: timeoutMs });
+    const lat = Number(res?.lat);
+    const lng = Number(res?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return null;
+    const acc = Number(res?.accuracy);
+    return { lat, lng, accuracy: Number.isFinite(acc) && acc >= 0 ? acc : null };
+  } catch {
+    return null;
+  }
+}
+
+/** یک‌بار گرفتن موقعیت — اول موتور دقیق گوگل، بعد مسیرهای قبلی؛
+    maxAgeMs>0 اجازه استفاده از آخرین موقعیت کش‌شده دستگاه را می‌دهد */
 export async function getCurrentGeo(timeoutMs = 15000, maxAgeMs = 0): Promise<GeoFix | null> {
   if (isNative()) {
+    /* مسیر اصلی: موتور موقعیت دقیق گوگل (FusedLocationProviderClient — همان Google Maps) */
+    const fused = await fusedGetCurrent(timeoutMs, true);
+    if (fused) return fused;
+
+    /* فالبک: پلاگین Geolocation کاپاسیترور */
     try {
       const { Geolocation } = await import("@capacitor/geolocation");
-      const pos = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: timeoutMs,
-        maximumAge: maxAgeMs,
-      });
-      return {
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        accuracy: pos.coords.accuracy ?? null,
-      };
+      try {
+        const pos = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: timeoutMs,
+          maximumAge: maxAgeMs,
+        });
+        return {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy ?? null,
+        };
+      } catch {
+        /* GPS نتوانست fix بدهد (داخل ساختمان/دستگاه بدون GPS) — موقعیت شبکه
+           (وای‌فای/آنتن‌دهی با سرویس موقعیت گوگل) به‌عنوان فالبک امتحان می‌شود */
+        const pos = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: false,
+          timeout: Math.min(timeoutMs, 8000),
+          maximumAge: Math.max(maxAgeMs, 10000),
+        });
+        return {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy ?? null,
+        };
+      }
     } catch {
       return null;
     }
@@ -81,7 +137,9 @@ const sleepMs = (ms: number): Promise<void> => new Promise((resolve) => setTimeo
     fixهای اولیه GPS قبل از همگرایی، خطای واقعی ۱ تا ۲ کیلومتری دارند
     حتی وقتی «دقت» ادعایی متوسط است).
     راه‌حل: watch پیوسته — fixهای اولیه به‌مرور با fixهای دقیق‌تر
-    جایگزین می‌شوند و به‌محض رسیدن به دقت خوب برمی‌گردیم. */
+    جایگزین می‌شوند و به‌محض رسیدن به دقت خوب برمی‌گردیم.
+    اگر موتور گوگل همگرا نشد، بهترین fix (شبکه) برگردانده می‌شود تا اپ
+    هیچ‌وقت «بدون موقعیت» نماند؛ caller با accuracy تصمیم می‌گیرد. */
 export async function getCurrentGeoBest(
   attempts = 3,
   timeoutMs = 8000,
@@ -107,26 +165,56 @@ export async function getCurrentGeoBest(
     if (best && isGood()) return best;
   }
 
-  /* ---------- مسیر پشتیبان: چند تلاش مجزا ---------- */
+  /* ---------- مسیر پشتیبان: چند تلاش مجزا ----------
+     maximumAge همیشه صفر است — موقعیت‌های کش‌شده قدیمی دستگاه
+     («مکان اشتباه») هرگز استفاده نمی‌شوند */
   for (let i = 0; i < attempts && Date.now() < deadline; i++) {
-    const fix = await getCurrentGeo(timeoutMs, i === 0 ? 10000 : 0);
+    const fix = await getCurrentGeo(timeoutMs, 0);
     if (fix && (!best || (fix.accuracy ?? Infinity) < (best.accuracy ?? Infinity))) best = fix;
     if (isGood()) break;
+  }
+  if (isGood()) return best;
+
+  /* ---------- فالبک نهایی: موقعیت شبکه (سرویس موقعیت گوگل — بدون GPS) ----------
+     حتی وقتی GPS همگرا نشده، موقعیت تقریبی بهتر از هیچ است؛
+     accuracy بزرگ‌تر به‌صورت شفاف در UI اعلام می‌شود */
+  if (!best) {
+    best = await getCurrentGeo(8000, 0);
   }
   return best;
 }
 
-/** رصد زنده موقعیت — برای اعلام سریع رسیدن قطار به ایستگاه */
+/** رصد زنده موقعیت — برای اعلام سریع رسیدن قطار به ایستگاه.
+    روی اندروید با موتور دقیق گوگل (پینگ دوره‌ای FusedLocation)؛
+    اگر پلاگین نیتیو نبود، پلاگین Geolocation کاپاسیترور. */
 export async function watchGeo(
   onFix: (fix: GeoFix) => void,
   onError: (kind: "denied" | "error") => void
 ): Promise<GeoWatchId | null> {
   if (isNative()) {
     const perm = await requestGeoPermission();
-    if (perm !== "granted") {
+    if (perm === "denied" || perm === "unavailable") {
       onError("denied");
       return null;
     }
+
+    /* مسیر اصلی: موتور موقعیت دقیق گوگل — پینگ هر ۲.۵ ثانیه */
+    const fusedAvailable = (await getFusedPlugin()) != null;
+    if (fusedAvailable) {
+      let firstOk = false;
+      const tick = async () => {
+        const fix = await fusedGetCurrent(6000, true);
+        if (fix) {
+          firstOk = true;
+          onFix(fix);
+        }
+      };
+      void tick();
+      const fusedTimer = setInterval(() => void tick(), 2500);
+      return { fusedTimer, native: "fused" };
+    }
+
+    /* فالبک: پلاگین Geolocation کاپاسیترور */
     try {
       const { Geolocation } = await import("@capacitor/geolocation");
       const id = await Geolocation.watchPosition(
@@ -165,7 +253,11 @@ export async function watchGeo(
 /** توقف رصد */
 export function clearGeoWatch(id: GeoWatchId | null): void {
   if (!id) return;
-  if (id.native) {
+  if (id.fusedTimer !== undefined) {
+    clearInterval(id.fusedTimer);
+    id.fusedTimer = undefined;
+  }
+  if (id.native && id.native !== "fused") {
     void (async () => {
       try {
         const { Geolocation } = await import("@capacitor/geolocation");

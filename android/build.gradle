@@ -28,6 +28,17 @@ allprojects {
     }
 }
 
+/* میرور برای buildscript زیرپروژه‌ها (پلاگین‌های capacitor) — اولویت قبل از mavenCentral
+   (محدودیت نرخ Maven Central در سندباکس — 429) */
+subprojects {
+    buildscript {
+        repositories {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/public' }
+        }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
