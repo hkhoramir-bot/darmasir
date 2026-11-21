@@ -527,6 +527,45 @@ export function useAppSubtitle(): string {
   return subtitle;
 }
 
+/* ---------------- اطلاعیه مدیریت (تنظیم «app.notice» پنل) ----------------
+   فقط نوتیف واقعی — از کش مشترک محتوای پنل خوانده می‌شود (بدون polling مستقل؛
+   اگر کش مشترک گرم باشد صفر فچ، وگرنه همان یک فچ مشترک با بقیه بخش‌ها) */
+
+let noticeCacheText: string | null = null;
+
+/** اطلاعیه مدیریتی در اپ — متن تنظیم «اطلاعیه در اپ» پنل مدیریت؛ خالی یعنی اطلاعیه‌ای ثبت نشده */
+export function usePanelNotice(): { notice: string; loaded: boolean } {
+  const [notice, setNotice] = useState<string>(() => noticeCacheText ?? "");
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(async () => {
+    const content = await fetchPanelContent(false);
+    const v = String(content?.settings?.["app.notice"] ?? "").trim();
+    noticeCacheText = v;
+    setNotice(v);
+    setLoaded(true);
+  }, []);
+
+  useIsoLayoutEffect(() => {
+    load();
+  }, [load]);
+
+  /* بازگشت به تب/فوکوس — اطلاعیه جدید مدیر بدون رفرش دیده می‌شود */
+  useEffect(() => {
+    const onAwake = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    window.addEventListener("focus", onAwake);
+    document.addEventListener("visibilitychange", onAwake);
+    return () => {
+      window.removeEventListener("focus", onAwake);
+      document.removeEventListener("visibilitychange", onAwake);
+    };
+  }, [load]);
+
+  return { notice, loaded };
+}
+
 /* ---------------- صفحه «درباره ما» — همه متن‌ها از پنل مدیریت ---------------- */
 
 export interface AboutPageRow {

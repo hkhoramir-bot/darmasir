@@ -302,6 +302,7 @@ async function route(
       "max_ads_per_placement", "default_city", "force_update_version", "ads_enabled",
       "travel_modes", "travel_modes_columns", "about_page", "contact_page",
       "app_server_url", // نشانی عمومی سرور اپ — مقصد دوم همگام‌سازی کاربر/فعالیت در اپ اندروید
+      "app.notice", // اطلاعیه مدیریتی در اپ — بخش اطلاعیه‌ها فقط نوتیف واقعی نشان می‌دهد
     ]);
     const settingRows = (await q("SELECT key, value FROM settings", [])) as any[];
     const settings = Object.fromEntries(

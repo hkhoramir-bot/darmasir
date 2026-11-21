@@ -6,7 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { toFa } from "@/lib/metro-data";
 import { ensureLexiconLoaded } from "@/lib/voice-lexicon";
 import { isInIframe, openStandaloneTab } from "@/components/metro/voice";
-import { usePanelCities, useAppVersion, useAppSubtitle } from "@/components/metro/panel-banners";
+import { usePanelCities, useAppVersion, useAppSubtitle, usePanelNotice } from "@/components/metro/panel-banners";
+import { hasAnyUnseenNotifs, NOTIF_SEEN_EVENT } from "@/lib/notifs";
 
 /* ============================================================
    کروم اپ درمسیر — بر اساس طراحی جدید ui.zip
@@ -114,6 +115,23 @@ export function AppBar() {
   const dropRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  /* نشان واقعی اطلاعیه‌های دیده‌نشده — پاسخ پشتیبانی + اطلاعیه جدید مدیریت؛
+     نشان ساختگی نیست: فقط وقتی اطلاعیه واقعیِ دیده‌نشده باشد روشن می‌شود */
+  const { notice } = usePanelNotice();
+  const [notifDot, setNotifDot] = useState(false);
+  useEffect(() => {
+    const compute = () => setNotifDot(hasAnyUnseenNotifs(notice));
+    compute();
+    window.addEventListener(NOTIF_SEEN_EVENT, compute);
+    window.addEventListener("focus", compute);
+    document.addEventListener("visibilitychange", compute);
+    return () => {
+      window.removeEventListener(NOTIF_SEEN_EVENT, compute);
+      window.removeEventListener("focus", compute);
+      document.removeEventListener("visibilitychange", compute);
+    };
+  }, [notice]);
+
   /* شهرها از پنل مدیریت — شهر غیرفعال اصلاً نمایش داده نمی‌شود (نه با برچسب «بزودی»)؛
      فقط شهر فعالِ دارای داده واقعی اپ در لیست می‌آید؛
      شهر فعال ولی بدون داده اپ با برچسب «به‌زودی» می‌آید */
@@ -186,7 +204,9 @@ export function AppBar() {
           className="relative w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all"
         >
           <MI name="notifications" size={22} />
-          <span className="absolute top-2.5 left-2.5 w-2 h-2 bg-secondary rounded-full" aria-hidden />
+          {notifDot && (
+            <span className="absolute top-2.5 left-2.5 w-2 h-2 bg-secondary rounded-full" aria-hidden />
+          )}
         </button>
         <button
           id="cityToggleBtn"
