@@ -156,8 +156,88 @@ function authRegister(body: Json): Promise<Response> {
     if (!phone && !email) return json({ error: "شماره موبایل یا ایمیل را وارد کنید" }, 400);
 
     const users = lsGet<NativeUser[]>(LS.users, []);
-    if (users.some((u) => (phone && u.phone === phone) || (email && u.email === email))) {
-      return json({ error: "این شماره یا ایمیل قبلاً ثبت شده است — وارد شوید" }, 409);
+    const dupIdx = users.findIndex((u) => (phone && u.phone === phone) || (email && u.email === email));
+    /* حسابی با همین شماره/ایمیل روی دستگاه هست:
+       ثبت‌نام = ادعای همان حساب (بازیابی) و تنظیم رمز — نه خطای تکراری؛
+       بن‌بست کامل «ثبت‌نام کنید ← قبلاً ثبت شده ← رمز ندارم ← از پیامکی استفاده کنید»
+       کامل رفع می‌شود. تنها وقتی خطای تکراری داده می‌شود که ابر با قطعیت بگوید
+       رمز دیگری برای این حساب تنظیم شده است */
+    if (dupIdx >= 0) {
+      const ex = users[dupIdx];
+      const nowIso0 = new Date().toISOString();
+      const openSessionFor = (u: NativeUser, extra: Json = {}): Response => {
+        const token = uid() + uid();
+        const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+        sessions[token] = u.id;
+        lsSet(LS.sessions, sessions);
+        return json({ token, user: publicUserLocal(u), ...extra });
+      };
+      /* ۱) رمز واردشده با رمز همین حساب محلی یکی است → ورود مستقیم (بروزرسانی نام) */
+      if (ex.passwordHash && (await verifyPasswordLocal(password, ex.passwordHash))) {
+        if (name.length >= 2 && ex.name !== name) ex.name = name;
+        ex.lastLoginAt = nowIso0;
+        lsSet(LS.users, users);
+        void syncNow();
+        return openSessionFor(ex);
+      }
+      const ident0 = phone || email || "";
+      const cloudOnline = ident0 !== "" && Date.now() - cloudLastSeen < 10 * 60 * 1000;
+      if (cloudOnline) {
+        const cloud = await cloudLogin(ident0, password);
+        if (cloud.ok && cloud.token) {
+          /* رمز ابری درست است → همین حساب محلی با مشخصات ابری بازیابی می‌شود */
+          ex.passwordHash = await hashPasswordLocal(password);
+          ex.name = String(cloud.user?.name ?? "").trim() || ex.name;
+          ex.synced = true;
+          ex.lastLoginAt = nowIso0;
+          lsSet(LS.users, users);
+          markSynced(ident0);
+          void syncNow();
+          return openSessionFor(ex, { reclaimed: true });
+        }
+        if (cloud.reachable && cloud.code === "BAD_PASSWORD") {
+          /* ابر با قطعیت می‌گوید رمز دیگری دارد — ادعای حساب مجاز نیست */
+          return json(
+            { error: "این شماره/ایمیل قبلاً روی سرور درمسیر ثبت شده است — با رمز خود وارد شوید یا از کد پیامکی استفاده کنید" },
+            409
+          );
+        }
+        if (cloud.reachable && cloud.code === "FORBIDDEN") {
+          return json({ error: "حساب شما مسدود شده است — با پشتیبانی درمسیر تماس بگیرید" }, 403);
+        }
+        /* حساب روی ابر بدون رمز است؟ (حساب ساخته‌شده با کد پیامکی)
+           نسخه قدیم سرور برای حساب‌های بدون رمز NOT_FOUND می‌دهد — با بررسی مستقل وضعیت جدا می‌شود */
+        let noPasswordAccount =
+          cloud.reachable && (cloud.code === "NO_PASSWORD" || cloud.code === "USE_APP_OR_OTP");
+        if (!noPasswordAccount && cloud.reachable && cloud.code === "NOT_FOUND") {
+          const st0 = await cloudUserStatus(ident0);
+          noPasswordAccount = st0.reachable && st0.exists;
+        }
+        if (noPasswordAccount) {
+          /* بازیابی همان حساب اصلی و تنظیم رمز روی سرور — نه حساب موازی */
+          const claimed = await cloudRegister(name, phone, email, password);
+          if (claimed.ok && claimed.token) {
+            ex.passwordHash = await hashPasswordLocal(password);
+            ex.name = String(claimed.user?.name ?? name).trim() || name;
+            ex.synced = true;
+            ex.lastLoginAt = nowIso0;
+            lsSet(LS.users, users);
+            markSynced(ident0);
+            void syncNow();
+            return openSessionFor(ex, { reclaimed: true });
+          }
+        }
+        /* خطای موقت ابری (DB_ERROR) یا ناموفق بودن ادعا → ادعای محلی ادامه می‌یابد */
+      }
+      /* ۲) ادعای محلی همین حساب — رمز جدید روی حساب محلی تنظیم می‌شود؛
+            اگر حساب در ابر نبود یا همگام نشده بود، با اولین اتصال ثبت/ترمیم می‌شود */
+      ex.passwordHash = await hashPasswordLocal(password);
+      if (name.length >= 2) ex.name = name;
+      ex.lastLoginAt = nowIso0;
+      lsSet(LS.users, users);
+      if (ident0 && !ex.synced) enqueueUserSync(ident0, ex.name);
+      void syncNow();
+      return openSessionFor(ex, { reclaimed: true });
     }
     /* دستگاه جدید — اگر همین شماره/ایمیل قبلاً روی سرور ثبت شده باشد، با رمز واردشده
        ورود ابری امتحان می‌شود تا همان حساب اصلی بازیابی شود (نه ساختن حساب موازی);
@@ -342,7 +422,9 @@ function authLogin(body: Json): Promise<Response> {
     if (!(await verifyPasswordLocal(password, user.passwordHash))) {
       return json({ error: "رمز عبور اشتباه است" }, 401);
     }
-    /* بررسی وضعیت واقعی در دیتابیس ابری — مسدود/حذف‌شده نمی‌تواند وارد شود */
+    /* بررسی وضعیت واقعی در دیتابیس ابری — فقط مسدود بودن قطعی رد می‌شود.
+       نبودن رکورد در ابر (!exists) نشانه قطعی «حذف» نیست — ناسازگاری همگام‌سازی
+       هم همین را می‌سازد؛ نشان همگام‌سازی ترمیم و حساب پایین‌تر دوباره ثبت می‌شود */
     const ident = phone || email || "";
     const st = await cloudUserStatus(ident);
     if (st.reachable && st.status === "blocked") {
@@ -350,7 +432,8 @@ function authLogin(body: Json): Promise<Response> {
       return json({ error: "حساب شما مسدود شده است — با پشتیبانی درمسیر تماس بگیرید" }, 403);
     }
     if (st.reachable && user.synced && !st.exists) {
-      return json({ error: "این حساب توسط پشتیبانی حذف شده است" }, 403);
+      user.synced = false; /* ترمیم — با cloudSyncUser پایین‌تر دوباره ثبت می‌شود */
+      lsSet(LS.users, users);
     }
     user.lastLoginAt = new Date().toISOString();
     lsSet(LS.users, users);
@@ -422,14 +505,19 @@ function authOtpVerify(body: Json): Promise<Response> {
         if (cloudKnown) markSynced(phone);
       }
     } else {
-      /* بررسی وضعیت واقعی در دیتابیس ابری — مسدود/حذف‌شده رد می‌شود */
+      /* بررسی وضعیت واقعی در دیتابیس ابری — فقط مسدود بودن قطعی رد می‌شود.
+         مهم: نبودن رکورد در ابر (!exists) به‌تنهایی نشانه «حذف توسط پشتیبانی» نیست —
+         ناسازگاری همگام‌سازی (ریست دیتابیس ابری / خطای موقت ثبت) همین حالت را می‌سازد
+         و قبلاً باعث بن‌بست کامل ورود می‌شد («حذف شده ← ثبت‌نام کنید ← قبلاً ثبت شده»).
+         تأیید کد پیامکی = اثبات مالکیت شماره؛ حساب دوباره در ابر ثبت می‌شود و ورود ادامه می‌یابد.
+         مسدودسازی واقعی همچنان از طریق status=blocked اعمال می‌شود */
       const st = await cloudUserStatus(phone);
       if (st.reachable && st.status === "blocked") {
         revokeUserSessions(user.id);
         return json({ error: "حساب شما مسدود شده است — با پشتیبانی درمسیر تماس بگیرید" }, 403);
       }
       if (st.reachable && user.synced && !st.exists) {
-        return json({ error: "این حساب توسط پشتیبانی حذف شده است" }, 403);
+        user.synced = false; /* ترمیم نشان همگام‌سازی — با cloudSyncUser پایین‌تر دوباره ثبت می‌شود */
       }
       user.lastLoginAt = nowIso;
       lsSet(LS.users, users);
@@ -1347,7 +1435,15 @@ export function installNativeApiBridge(): void {
             body = null;
           }
         }
-        const res = await handle(url.pathname, url.searchParams, method, body, new Headers(init?.headers ?? undefined));
+        let res: Response | null = null;
+        try {
+          res = await handle(url.pathname, url.searchParams, method, body, new Headers(init?.headers ?? undefined));
+        } catch {
+          /* هرگز به fetch اصلی برنمی‌گردیم — در WebView اندروید سروری وجود ندارد و
+             خطای شبکه با پیام غلط «اتصال به سرور برقرار نشد — اینترنت را بررسی کنید»
+             نمایش داده می‌شد در حالی که اینترنت روشن است. پاسخ کنترل‌شده داده می‌شود */
+          return json({ error: "خطای غیرمنتظره در پردازش درخواست — دوباره تلاش کنید" }, 500);
+        }
         if (res) return res;
         // مسیرهای صوتی و سایر مسیرها → پاسخ خطای کنترل‌شده
         return json({ message: "در حالت آفلاین در دسترس نیست" }, 503);
