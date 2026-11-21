@@ -1,0 +1,1686 @@
+{
+  "lines": [
+    {
+      "code": "l1",
+      "name": "خط ۱",
+      "kind": "METRO",
+      "color": "#e52421",
+      "stationCount": 29,
+      "direction": "شمال - جنوب"
+    },
+    {
+      "code": "l2",
+      "name": "خط ۲",
+      "kind": "METRO",
+      "color": "#15397a",
+      "stationCount": 22,
+      "direction": "غرب - شرق"
+    },
+    {
+      "code": "l3",
+      "name": "خط ۳",
+      "kind": "METRO",
+      "color": "#00a3e0",
+      "stationCount": 25,
+      "direction": "شمال‌شرق - جنوب‌غرب"
+    },
+    {
+      "code": "l4",
+      "name": "خط ۴",
+      "kind": "METRO",
+      "color": "#f6b400",
+      "stationCount": 20,
+      "direction": "غرب - شرق"
+    },
+    {
+      "code": "l5",
+      "name": "خط ۵",
+      "kind": "METRO",
+      "color": "#009640",
+      "stationCount": 13,
+      "direction": "تهران - کرج"
+    },
+    {
+      "code": "l6",
+      "name": "خط ۶",
+      "kind": "METRO",
+      "color": "#d82572",
+      "stationCount": 26,
+      "direction": "جنوب‌شرق - شمال‌غرب"
+    },
+    {
+      "code": "l7",
+      "name": "خط ۷",
+      "kind": "METRO",
+      "color": "#7d2382",
+      "stationCount": 22,
+      "direction": "جنوب‌شرق - شمال‌غرب"
+    },
+    {
+      "code": "k1",
+      "name": "مترو کرج",
+      "kind": "METRO",
+      "color": "#009640",
+      "stationCount": 3,
+      "direction": "شمال - جنوب"
+    },
+    {
+      "code": "m1",
+      "name": "خط ۱ مشهد",
+      "kind": "METRO",
+      "color": "#e52421",
+      "stationCount": 24,
+      "direction": "جنوب‌غرب - شمال‌شرق"
+    },
+    {
+      "code": "m2",
+      "name": "خط ۲ مشهد",
+      "kind": "METRO",
+      "color": "#15397a",
+      "stationCount": 13,
+      "direction": "شمال‌غرب - جنوب‌شرق"
+    },
+    {
+      "code": "e1",
+      "name": "خط ۱ اصفهان",
+      "kind": "METRO",
+      "color": "#15397a",
+      "stationCount": 20,
+      "direction": "شمال - جنوب"
+    }
+  ],
+  "stations": [
+    {
+      "name": "کهریزک",
+      "lineCode": "l1",
+      "lat": 35.568,
+      "lng": 51.3628,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "حرم مطهر امام خمینی",
+      "lineCode": "l1",
+      "lat": 35.5782,
+      "lng": 51.368,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "شاهد - باقرشهر",
+      "lineCode": "l1",
+      "lat": 35.5895,
+      "lng": 51.3698,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "پالایشگاه",
+      "lineCode": "l1",
+      "lat": 35.5993,
+      "lng": 51.3728,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهرری",
+      "lineCode": "l1",
+      "lat": 35.6082,
+      "lng": 51.3765,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "جوانمرد قصاب",
+      "lineCode": "l1",
+      "lat": 35.6165,
+      "lng": 51.3808,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "علی‌آباد",
+      "lineCode": "l1",
+      "lat": 35.6252,
+      "lng": 51.3858,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید بخارایی",
+      "lineCode": "l1",
+      "lat": 35.6341,
+      "lng": 51.3912,
+      "order": 7,
+      "kind": "METRO"
+    },
+    {
+      "name": "پایانه جنوب",
+      "lineCode": "l1",
+      "lat": 35.643,
+      "lng": 51.3972,
+      "order": 8,
+      "kind": "METRO"
+    },
+    {
+      "name": "شوش",
+      "lineCode": "l1",
+      "lat": 35.6523,
+      "lng": 51.404,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان محمدیه",
+      "lineCode": "l1",
+      "lat": 35.6612,
+      "lng": 51.4102,
+      "order": 10,
+      "kind": "METRO"
+    },
+    {
+      "name": "خیام",
+      "lineCode": "l1",
+      "lat": 35.6697,
+      "lng": 51.4152,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "پانزده خرداد",
+      "lineCode": "l1",
+      "lat": 35.6775,
+      "lng": 51.419,
+      "order": 12,
+      "kind": "METRO"
+    },
+    {
+      "name": "امام خمینی",
+      "lineCode": "l1",
+      "lat": 35.6842,
+      "lng": 51.4211,
+      "order": 13,
+      "kind": "METRO"
+    },
+    {
+      "name": "سعدی",
+      "lineCode": "l1",
+      "lat": 35.6935,
+      "lng": 51.4225,
+      "order": 14,
+      "kind": "METRO"
+    },
+    {
+      "name": "دروازه دولت",
+      "lineCode": "l1",
+      "lat": 35.7013,
+      "lng": 51.4243,
+      "order": 15,
+      "kind": "METRO"
+    },
+    {
+      "name": "طالقانی",
+      "lineCode": "l1",
+      "lat": 35.7095,
+      "lng": 51.4245,
+      "order": 16,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهدای هفتم تیر",
+      "lineCode": "l1",
+      "lat": 35.7154,
+      "lng": 51.4238,
+      "order": 17,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید مفتح",
+      "lineCode": "l1",
+      "lat": 35.7225,
+      "lng": 51.4252,
+      "order": 18,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید بهشتی",
+      "lineCode": "l1",
+      "lat": 35.7298,
+      "lng": 51.4262,
+      "order": 19,
+      "kind": "METRO"
+    },
+    {
+      "name": "مصلی امام خمینی",
+      "lineCode": "l1",
+      "lat": 35.7443,
+      "lng": 51.4278,
+      "order": 20,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید همت",
+      "lineCode": "l1",
+      "lat": 35.754,
+      "lng": 51.4287,
+      "order": 21,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید حقانی",
+      "lineCode": "l1",
+      "lat": 35.7603,
+      "lng": 51.4292,
+      "order": 22,
+      "kind": "METRO"
+    },
+    {
+      "name": "میرداماد",
+      "lineCode": "l1",
+      "lat": 35.7672,
+      "lng": 51.4299,
+      "order": 23,
+      "kind": "METRO"
+    },
+    {
+      "name": "دکتر شریعتی",
+      "lineCode": "l1",
+      "lat": 35.7746,
+      "lng": 51.4308,
+      "order": 24,
+      "kind": "METRO"
+    },
+    {
+      "name": "قلهک",
+      "lineCode": "l1",
+      "lat": 35.781,
+      "lng": 51.4307,
+      "order": 25,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید صدر",
+      "lineCode": "l1",
+      "lat": 35.7873,
+      "lng": 51.4324,
+      "order": 26,
+      "kind": "METRO"
+    },
+    {
+      "name": "قیطریه",
+      "lineCode": "l1",
+      "lat": 35.7927,
+      "lng": 51.4334,
+      "order": 27,
+      "kind": "METRO"
+    },
+    {
+      "name": "تجریش",
+      "lineCode": "l1",
+      "lat": 35.7997,
+      "lng": 51.4337,
+      "order": 28,
+      "kind": "METRO"
+    },
+    {
+      "name": "صادقیه",
+      "lineCode": "l2",
+      "lat": 35.6997,
+      "lng": 51.3396,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "طرشت",
+      "lineCode": "l2",
+      "lat": 35.7003,
+      "lng": 51.351,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "دانشگاه شریف",
+      "lineCode": "l2",
+      "lat": 35.7008,
+      "lng": 51.3612,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "شادمان",
+      "lineCode": "l2",
+      "lat": 35.7012,
+      "lng": 51.3708,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید نواب صفوی",
+      "lineCode": "l2",
+      "lat": 35.7016,
+      "lng": 51.38,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان حر",
+      "lineCode": "l2",
+      "lat": 35.702,
+      "lng": 51.3895,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "دانشگاه امام علی",
+      "lineCode": "l2",
+      "lat": 35.7023,
+      "lng": 51.3968,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "حسن‌آباد",
+      "lineCode": "l2",
+      "lat": 35.7028,
+      "lng": 51.403,
+      "order": 7,
+      "kind": "METRO"
+    },
+    {
+      "name": "ملت",
+      "lineCode": "l2",
+      "lat": 35.6817,
+      "lng": 51.4303,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "بهارستان",
+      "lineCode": "l2",
+      "lat": 35.6807,
+      "lng": 51.436,
+      "order": 10,
+      "kind": "METRO"
+    },
+    {
+      "name": "دروازه شمیران",
+      "lineCode": "l2",
+      "lat": 35.6864,
+      "lng": 51.441,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "امام حسین",
+      "lineCode": "l2",
+      "lat": 35.6957,
+      "lng": 51.4512,
+      "order": 12,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید مدنی",
+      "lineCode": "l2",
+      "lat": 35.7045,
+      "lng": 51.462,
+      "order": 13,
+      "kind": "METRO"
+    },
+    {
+      "name": "سبلان",
+      "lineCode": "l2",
+      "lat": 35.7118,
+      "lng": 51.47,
+      "order": 14,
+      "kind": "METRO"
+    },
+    {
+      "name": "فدک",
+      "lineCode": "l2",
+      "lat": 35.7185,
+      "lng": 51.478,
+      "order": 15,
+      "kind": "METRO"
+    },
+    {
+      "name": "جانبازان",
+      "lineCode": "l2",
+      "lat": 35.7252,
+      "lng": 51.486,
+      "order": 16,
+      "kind": "METRO"
+    },
+    {
+      "name": "سرسبز",
+      "lineCode": "l2",
+      "lat": 35.7318,
+      "lng": 51.494,
+      "order": 17,
+      "kind": "METRO"
+    },
+    {
+      "name": "دانشگاه علم و صنعت",
+      "lineCode": "l2",
+      "lat": 35.738,
+      "lng": 51.5015,
+      "order": 18,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید باقری",
+      "lineCode": "l2",
+      "lat": 35.7435,
+      "lng": 51.5085,
+      "order": 19,
+      "kind": "METRO"
+    },
+    {
+      "name": "تهرانپارس",
+      "lineCode": "l2",
+      "lat": 35.7482,
+      "lng": 51.5155,
+      "order": 20,
+      "kind": "METRO"
+    },
+    {
+      "name": "فرهنگسرا",
+      "lineCode": "l2",
+      "lat": 35.7524,
+      "lng": 51.5271,
+      "order": 21,
+      "kind": "METRO"
+    },
+    {
+      "name": "آزادگان",
+      "lineCode": "l3",
+      "lat": 35.6512,
+      "lng": 51.3161,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "نعمت‌آباد",
+      "lineCode": "l3",
+      "lat": 35.6548,
+      "lng": 51.3285,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "عبدل‌آباد",
+      "lineCode": "l3",
+      "lat": 35.6578,
+      "lng": 51.341,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهرک شریعتی",
+      "lineCode": "l3",
+      "lat": 35.6605,
+      "lng": 51.354,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "زمزم",
+      "lineCode": "l3",
+      "lat": 35.6622,
+      "lng": 51.3665,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "جوادیه",
+      "lineCode": "l3",
+      "lat": 35.663,
+      "lng": 51.3785,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "راه‌آهن",
+      "lineCode": "l3",
+      "lat": 35.6638,
+      "lng": 51.389,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "مهدیه",
+      "lineCode": "l3",
+      "lat": 35.6665,
+      "lng": 51.403,
+      "order": 7,
+      "kind": "METRO"
+    },
+    {
+      "name": "منیریه",
+      "lineCode": "l3",
+      "lat": 35.6682,
+      "lng": 51.4175,
+      "order": 8,
+      "kind": "METRO"
+    },
+    {
+      "name": "تئاتر شهر",
+      "lineCode": "l3",
+      "lat": 35.701,
+      "lng": 51.4054,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان ولیعصر",
+      "lineCode": "l3",
+      "lat": 35.7105,
+      "lng": 51.4065,
+      "order": 10,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان جهاد",
+      "lineCode": "l3",
+      "lat": 35.7168,
+      "lng": 51.4095,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "میرزای شیرازی",
+      "lineCode": "l3",
+      "lat": 35.7225,
+      "lng": 51.4145,
+      "order": 12,
+      "kind": "METRO"
+    },
+    {
+      "name": "سهروردی",
+      "lineCode": "l3",
+      "lat": 35.733,
+      "lng": 51.433,
+      "order": 14,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید قدوسی",
+      "lineCode": "l3",
+      "lat": 35.737,
+      "lng": 51.44,
+      "order": 15,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید صیاد شیرازی",
+      "lineCode": "l3",
+      "lat": 35.742,
+      "lng": 51.447,
+      "order": 16,
+      "kind": "METRO"
+    },
+    {
+      "name": "خواجه عبدالله انصاری",
+      "lineCode": "l3",
+      "lat": 35.7465,
+      "lng": 51.454,
+      "order": 17,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید زین‌الدین",
+      "lineCode": "l3",
+      "lat": 35.751,
+      "lng": 51.461,
+      "order": 18,
+      "kind": "METRO"
+    },
+    {
+      "name": "هروی",
+      "lineCode": "l3",
+      "lat": 35.7565,
+      "lng": 51.469,
+      "order": 19,
+      "kind": "METRO"
+    },
+    {
+      "name": "حسین‌آباد",
+      "lineCode": "l3",
+      "lat": 35.762,
+      "lng": 51.477,
+      "order": 20,
+      "kind": "METRO"
+    },
+    {
+      "name": "نوبنیاد",
+      "lineCode": "l3",
+      "lat": 35.7675,
+      "lng": 51.4845,
+      "order": 21,
+      "kind": "METRO"
+    },
+    {
+      "name": "اقدسیه",
+      "lineCode": "l3",
+      "lat": 35.77,
+      "lng": 51.475,
+      "order": 22,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید محلاتی",
+      "lineCode": "l3",
+      "lat": 35.775,
+      "lng": 51.4725,
+      "order": 23,
+      "kind": "METRO"
+    },
+    {
+      "name": "قائم",
+      "lineCode": "l3",
+      "lat": 35.78,
+      "lng": 51.4702,
+      "order": 24,
+      "kind": "METRO"
+    },
+    {
+      "name": "علامه جعفری",
+      "lineCode": "l4",
+      "lat": 35.7039,
+      "lng": 51.3113,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "ارم سبز",
+      "lineCode": "l4",
+      "lat": 35.7058,
+      "lng": 51.323,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهرک اکباتان",
+      "lineCode": "l4",
+      "lat": 35.7066,
+      "lng": 51.3315,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "بیمه",
+      "lineCode": "l4",
+      "lat": 35.7072,
+      "lng": 51.339,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان آزادی",
+      "lineCode": "l4",
+      "lat": 35.6997,
+      "lng": 51.338,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "استاد معین",
+      "lineCode": "l4",
+      "lat": 35.7008,
+      "lng": 51.348,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "دکتر حبیب‌الله",
+      "lineCode": "l4",
+      "lat": 35.701,
+      "lng": 51.358,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "توحید",
+      "lineCode": "l4",
+      "lat": 35.701,
+      "lng": 51.3855,
+      "order": 8,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان انقلاب اسلامی",
+      "lineCode": "l4",
+      "lat": 35.701,
+      "lng": 51.3906,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "فردوسی",
+      "lineCode": "l4",
+      "lat": 35.7008,
+      "lng": 51.416,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان شهدا",
+      "lineCode": "l4",
+      "lat": 35.68,
+      "lng": 51.476,
+      "order": 14,
+      "kind": "METRO"
+    },
+    {
+      "name": "ابن‌سینا",
+      "lineCode": "l4",
+      "lat": 35.683,
+      "lng": 51.484,
+      "order": 15,
+      "kind": "METRO"
+    },
+    {
+      "name": "پیروزی",
+      "lineCode": "l4",
+      "lat": 35.685,
+      "lng": 51.492,
+      "order": 16,
+      "kind": "METRO"
+    },
+    {
+      "name": "نبرد",
+      "lineCode": "l4",
+      "lat": 35.69,
+      "lng": 51.5,
+      "order": 17,
+      "kind": "METRO"
+    },
+    {
+      "name": "نیروهوایی",
+      "lineCode": "l4",
+      "lat": 35.698,
+      "lng": 51.51,
+      "order": 18,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید کلاهدوز",
+      "lineCode": "l4",
+      "lat": 35.706,
+      "lng": 51.52,
+      "order": 19,
+      "kind": "METRO"
+    },
+    {
+      "name": "ورزشگاه آزادی",
+      "lineCode": "l5",
+      "lat": 35.7237,
+      "lng": 51.278,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "چیتگر",
+      "lineCode": "l5",
+      "lat": 35.7295,
+      "lng": 51.264,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "ایران خودرو",
+      "lineCode": "l5",
+      "lat": 35.7365,
+      "lng": 51.251,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "وردآورد",
+      "lineCode": "l5",
+      "lat": 35.744,
+      "lng": 51.238,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "گرم‌دره",
+      "lineCode": "l5",
+      "lat": 35.754,
+      "lng": 51.224,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "اتمسفر",
+      "lineCode": "l5",
+      "lat": 35.766,
+      "lng": 51.208,
+      "order": 7,
+      "kind": "METRO"
+    },
+    {
+      "name": "کرج (شهید سلطانی)",
+      "lineCode": "l5",
+      "lat": 35.795,
+      "lng": 51.155,
+      "order": 8,
+      "kind": "METRO"
+    },
+    {
+      "name": "محمدشهر",
+      "lineCode": "l5",
+      "lat": 35.815,
+      "lng": 51.08,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "گلشهر",
+      "lineCode": "l5",
+      "lat": 35.835,
+      "lng": 51.015,
+      "order": 10,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید فخری‌زاده",
+      "lineCode": "l5",
+      "lat": 35.848,
+      "lng": 50.988,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید قاسم سلیمانی",
+      "lineCode": "l5",
+      "lat": 35.858,
+      "lng": 50.962,
+      "order": 12,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهدای دولت‌آباد",
+      "lineCode": "l6",
+      "lat": 35.647,
+      "lng": 51.487,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "کیان‌شهر",
+      "lineCode": "l6",
+      "lat": 35.652,
+      "lng": 51.479,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "بعثت",
+      "lineCode": "l6",
+      "lat": 35.657,
+      "lng": 51.471,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید رضایی",
+      "lineCode": "l6",
+      "lat": 35.662,
+      "lng": 51.463,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان خراسان",
+      "lineCode": "l6",
+      "lat": 35.6637,
+      "lng": 51.4663,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "امیرکبیر",
+      "lineCode": "l6",
+      "lat": 35.67,
+      "lng": 51.473,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "سرباز وطن",
+      "lineCode": "l6",
+      "lat": 35.7035,
+      "lng": 51.4435,
+      "order": 8,
+      "kind": "METRO"
+    },
+    {
+      "name": "بهار شیراز",
+      "lineCode": "l6",
+      "lat": 35.7097,
+      "lng": 51.4355,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "مریم مقدس",
+      "lineCode": "l6",
+      "lat": 35.7128,
+      "lng": 51.4152,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "بوستان لاله",
+      "lineCode": "l6",
+      "lat": 35.704,
+      "lng": 51.399,
+      "order": 13,
+      "kind": "METRO"
+    },
+    {
+      "name": "کارگر",
+      "lineCode": "l6",
+      "lat": 35.7,
+      "lng": 51.376,
+      "order": 14,
+      "kind": "METRO"
+    },
+    {
+      "name": "دانشگاه تربیت مدرس",
+      "lineCode": "l6",
+      "lat": 35.7347,
+      "lng": 51.3884,
+      "order": 15,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهرک آزمایش",
+      "lineCode": "l6",
+      "lat": 35.736,
+      "lng": 51.379,
+      "order": 16,
+      "kind": "METRO"
+    },
+    {
+      "name": "مرزداران",
+      "lineCode": "l6",
+      "lat": 35.739,
+      "lng": 51.369,
+      "order": 17,
+      "kind": "METRO"
+    },
+    {
+      "name": "یادگار امام",
+      "lineCode": "l6",
+      "lat": 35.742,
+      "lng": 51.359,
+      "order": 18,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید اشرفی اصفهانی",
+      "lineCode": "l6",
+      "lat": 35.745,
+      "lng": 51.344,
+      "order": 19,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید ستاری",
+      "lineCode": "l6",
+      "lat": 35.7455,
+      "lng": 51.335,
+      "order": 20,
+      "kind": "METRO"
+    },
+    {
+      "name": "آیت‌الله کاشانی",
+      "lineCode": "l6",
+      "lat": 35.746,
+      "lng": 51.326,
+      "order": 21,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهر زیبا",
+      "lineCode": "l6",
+      "lat": 35.748,
+      "lng": 51.318,
+      "order": 22,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهران",
+      "lineCode": "l6",
+      "lat": 35.753,
+      "lng": 51.313,
+      "order": 23,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهدای کن",
+      "lineCode": "l6",
+      "lat": 35.76,
+      "lng": 51.308,
+      "order": 24,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید آرمان علی‌وردی",
+      "lineCode": "l6",
+      "lat": 35.7663,
+      "lng": 51.3163,
+      "order": 25,
+      "kind": "METRO"
+    },
+    {
+      "name": "ورزشگاه تختی",
+      "lineCode": "l7",
+      "lat": 35.641,
+      "lng": 51.503,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "بسیج",
+      "lineCode": "l7",
+      "lat": 35.645,
+      "lng": 51.494,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "آهنگ",
+      "lineCode": "l7",
+      "lat": 35.649,
+      "lng": 51.486,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "دولاب",
+      "lineCode": "l7",
+      "lat": 35.653,
+      "lng": 51.477,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "هفده شهریور",
+      "lineCode": "l7",
+      "lat": 35.657,
+      "lng": 51.468,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان قیام",
+      "lineCode": "l7",
+      "lat": 35.66,
+      "lng": 51.46,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "مولوی",
+      "lineCode": "l7",
+      "lat": 35.6555,
+      "lng": 51.4085,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "هلال احمر",
+      "lineCode": "l7",
+      "lat": 35.674,
+      "lng": 51.3965,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "بریانک",
+      "lineCode": "l7",
+      "lat": 35.683,
+      "lng": 51.3855,
+      "order": 10,
+      "kind": "METRO"
+    },
+    {
+      "name": "کمیل",
+      "lineCode": "l7",
+      "lat": 35.686,
+      "lng": 51.382,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "رودکی",
+      "lineCode": "l7",
+      "lat": 35.688,
+      "lng": 51.379,
+      "order": 12,
+      "kind": "METRO"
+    },
+    {
+      "name": "مدافعان سلامت",
+      "lineCode": "l7",
+      "lat": 35.715,
+      "lng": 51.387,
+      "order": 15,
+      "kind": "METRO"
+    },
+    {
+      "name": "بوستان گفتگو",
+      "lineCode": "l7",
+      "lat": 35.74,
+      "lng": 51.383,
+      "order": 17,
+      "kind": "METRO"
+    },
+    {
+      "name": "برج میلاد تهران",
+      "lineCode": "l7",
+      "lat": 35.7448,
+      "lng": 51.376,
+      "order": 18,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان صنعت",
+      "lineCode": "l7",
+      "lat": 35.752,
+      "lng": 51.365,
+      "order": 19,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید دادمان",
+      "lineCode": "l7",
+      "lat": 35.7585,
+      "lng": 51.3635,
+      "order": 20,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان کتاب",
+      "lineCode": "l7",
+      "lat": 35.7796,
+      "lng": 51.376,
+      "order": 21,
+      "kind": "METRO"
+    },
+    {
+      "name": "آیت‌الله طالقانی",
+      "lineCode": "k1",
+      "lat": 0,
+      "lng": 0,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "رجایی‌شهر",
+      "lineCode": "k1",
+      "lat": 0,
+      "lng": 0,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "چهل‌وپنج متری گلشهر",
+      "lineCode": "k1",
+      "lat": 0,
+      "lng": 0,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "وکیل‌آباد",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "کوهستان پارک",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "نمایشگاه",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "اقبال لاهوری",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید صیاد شیرازی",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "صدف",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "هفت تیر",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "دانش‌آموز",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 7,
+      "kind": "METRO"
+    },
+    {
+      "name": "سید رضی",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 8,
+      "kind": "METRO"
+    },
+    {
+      "name": "کوثر",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "پارک ملت (دانشگاه فردوسی)",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 10,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان آزادی",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "خیام",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 12,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان فلسطین",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 13,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید فرج‌الله شوشتری",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 14,
+      "kind": "METRO"
+    },
+    {
+      "name": "قائم",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 15,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان شریعتی (تقی‌آباد)",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 16,
+      "kind": "METRO"
+    },
+    {
+      "name": "امام خمینی (ره)",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 17,
+      "kind": "METRO"
+    },
+    {
+      "name": "میدان بسیج",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 18,
+      "kind": "METRO"
+    },
+    {
+      "name": "هفده شهریور",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 19,
+      "kind": "METRO"
+    },
+    {
+      "name": "پروین اعتصامی",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 20,
+      "kind": "METRO"
+    },
+    {
+      "name": "غدیر",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 21,
+      "kind": "METRO"
+    },
+    {
+      "name": "بوستان ریحانه",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 22,
+      "kind": "METRO"
+    },
+    {
+      "name": "فرودگاه شهید هاشمی‌نژاد",
+      "lineCode": "m1",
+      "lat": 0,
+      "lng": 0,
+      "order": 23,
+      "kind": "METRO"
+    },
+    {
+      "name": "طبرسی",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "ولایت",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "فجر",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "نبوت",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید مفتح",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "راه‌آهن",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهدا",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "سعدی",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 7,
+      "kind": "METRO"
+    },
+    {
+      "name": "الندشت",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "کوهسنگی",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 10,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید کاوه",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید فکوری",
+      "lineCode": "m2",
+      "lat": 0,
+      "lng": 0,
+      "order": 12,
+      "kind": "METRO"
+    },
+    {
+      "name": "قدس",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 0,
+      "kind": "METRO"
+    },
+    {
+      "name": "بهارستان",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 1,
+      "kind": "METRO"
+    },
+    {
+      "name": "گلستان",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 2,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید مفتح",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 3,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید علیخانی",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 4,
+      "kind": "METRO"
+    },
+    {
+      "name": "جابر",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 5,
+      "kind": "METRO"
+    },
+    {
+      "name": "کاوه",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 6,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید چمران",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 7,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهید باهنر",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 8,
+      "kind": "METRO"
+    },
+    {
+      "name": "شهدا",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 9,
+      "kind": "METRO"
+    },
+    {
+      "name": "تختی",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 10,
+      "kind": "METRO"
+    },
+    {
+      "name": "امام حسین",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 11,
+      "kind": "METRO"
+    },
+    {
+      "name": "انقلاب",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 12,
+      "kind": "METRO"
+    },
+    {
+      "name": "سی‌وسه‌پل",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 13,
+      "kind": "METRO"
+    },
+    {
+      "name": "دکتر شریعتی",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 14,
+      "kind": "METRO"
+    },
+    {
+      "name": "آزادی",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 15,
+      "kind": "METRO"
+    },
+    {
+      "name": "دانشگاه",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 16,
+      "kind": "METRO"
+    },
+    {
+      "name": "کارگر",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 17,
+      "kind": "METRO"
+    },
+    {
+      "name": "کوی امام",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 18,
+      "kind": "METRO"
+    },
+    {
+      "name": "دفاع مقدس",
+      "lineCode": "e1",
+      "lat": 0,
+      "lng": 0,
+      "order": 19,
+      "kind": "METRO"
+    }
+  ]
+}

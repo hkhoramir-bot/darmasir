@@ -1,29 +1,45 @@
 import type { StationDef } from "@/lib/metro-data";
 import { landmarksFor } from "@/lib/metro-data";
+import { matchPoiPhrase, CITY_POIS, type CityPoi } from "@/lib/city-pois";
+import { normalizeFa } from "@/lib/fa-normalize";
+
+export { normalizeFa };
 
 /* ============================================================
-   هوش صوتی متروجو — از جمله فارسی کاربر، مبدأ و مقصد را می‌فهمد
+   هوش صوتی درمسیر — از جمله فارسی کاربر، مبدأ و مقصد را می‌فهمد
    نمونه‌های پشتیبانی‌شده:
    • «از علی آباد تا تجریش میخوام برم»
    • «از میدان انقلاب به قیطریه»
    • «مبدا صادقیه مقصد فردوسی»
    • «از اینجا تا تجریش چقدر راهه؟»  (مبدأ = ایستگاه فعلی GPS)
    • «میخوام برم میدان آزادی»       (فقط مقصد)
+   • «میخوام با مترو برم بیمارستان میلاد»  (نشانه شهری + وسیله)
+   • «پیاده تا برج میلاد چقدر راهه؟»       (پیاده‌روی/خودرو → نقشه)
    نکته مهم: ASR فارسی معمولاً «نیم‌فاصله» را فاصله می‌نویسد و
    «ي/ك» عربی می‌فرستد — همه‌چیز قبل از مقایسه نرمال می‌شود.
    ============================================================ */
 
-/** نرمال‌سازی متن فارسی برای مقایسه — نیم‌فاصله، حروف عربی، اعراب */
-export function normalizeFa(s: string): string {
-  return s
-    .replace(/[\u064A\u0649]/g, "ی") // ي ی → ی
-    .replace(/\u0643/g, "ک") // ك → ک
-    .replace(/\u200c|\u200f|\u200e/g, " ") // نیم‌فاصله و علائم جهت → فاصله
-    .replace(/\u0629/g, "ه") // ة → ه
-    .replace(/[\u064B-\u0652\u0670]/g, "") // اعراب و تشدید
-    .replace(/[«»"'،,؛;:.!?()\-\+_]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+/* ------------------------ تشخیص وسیله نقلیه ------------------------
+   قانون‌محور — بدون مدل زبانی؛ فقط الگوی واژگانی */
+
+export type TravelMode = "walking" | "driving" | "metro" | "bus";
+
+const TRAVEL_MODE_PATTERNS: { mode: TravelMode; re: RegExp }[] = [
+  { mode: "walking", re: /پیاده|قدم|فوتی/ },
+  { mode: "driving", re: /ماشین|اسنپ|تپسی|تاکسی|خودرو|سواری|رانندگی|درایو/ },
+  { mode: "metro", re: /مترو|قطار/ },
+  { mode: "bus", re: /اتوبوس|بی\s*[آا]ر\s*تی|برتی|بیارتی|تندرو/ },
+];
+
+/** تشخیص وسیله نقلیه از جمله — null یعنی چیزی نگفت (پیش‌فرض بهترین حالت) */
+export function detectTravelMode(text: string): TravelMode | null {
+  const t = normalizeFa(text).toLowerCase();
+  if (!t) return null;
+  if (TRAVEL_MODE_PATTERNS[0].re.test(t)) return "walking";
+  if (TRAVEL_MODE_PATTERNS[1].re.test(t)) return "driving";
+  if (TRAVEL_MODE_PATTERNS[2].re.test(t)) return "metro";
+  if (TRAVEL_MODE_PATTERNS[3].re.test(t) || /\bbrt\b/.test(t)) return "bus";
+  return null;
 }
 
 /** فاصله ویرایشی برای تحمل خطای تایپ/گفتار در نام ایستگاه */
@@ -145,31 +161,52 @@ export interface VoiceRouteIntent {
   fromId: string | null;
   /** شناسه ایستگاه مقصد — null یعنی در جمله نبود */
   toId: string | null;
-  /** حداقل یک ایستگاه شناسایی شد؟ */
+  /** حداقل یک ایستگاه یا نشانه شهری شناسایی شد؟ */
   matched: boolean;
   /** «از اینجا» گفته شده — مبدأ باید از GPS گرفته شود */
   originFromHere: boolean;
+  /** وسیله نقلیه تشخیص داده‌شده — null یعنی نگفت (پیش‌فرض بهترین حالت) */
+  mode: TravelMode | null;
+  /** نشانه شهری (POI) مقصد — بیمارستان میلاد، برج میلاد، ... */
+  poiId: string | null;
+  /** نشانه شهری (POI) مبدأ */
+  poiFromId: string | null;
 }
 
-/** استخراج مبدأ و مقصد از جمله فارسی */
+/** استخراج مبدأ و مقصد از جمله فارسی — ایستگاه + نشانه شهری + وسیله نقلیه
+    pois اختیاری است؛ پیش‌فرض همه نشانه‌های شهری درمسیر */
 export function parseVoiceRoute(
   text: string,
-  stations: StationDef[]
+  stations: StationDef[],
+  pois: CityPoi[] = CITY_POIS
 ): VoiceRouteIntent {
   const t = normalizeFa(text);
+  const mode = detectTravelMode(t);
+
+  /** حل یک قطعه جمله به ایستگاه + نشانه شهری (هر دو مستقل امتحان می‌شوند) */
+  const resolveSegment = (
+    raw: string
+  ): { st: StationDef | null; poi: CityPoi | null } => {
+    const st = matchStationPhrase(raw, stations);
+    const poi = matchPoiPhrase(raw, pois);
+    return { st, poi };
+  };
 
   const tryPair = (
     rawFrom: string | undefined,
     rawTo: string
   ): VoiceRouteIntent | null => {
-    const from = rawFrom ? matchStationPhrase(rawFrom, stations) : null;
-    const to = matchStationPhrase(rawTo, stations);
-    if (!from && !to) return null;
+    const from = rawFrom ? resolveSegment(rawFrom) : { st: null, poi: null };
+    const to = resolveSegment(rawTo);
+    if (!from.st && !from.poi && !to.st && !to.poi) return null;
     return {
-      fromId: from?.id ?? null,
-      toId: to?.id ?? null,
+      fromId: from.st?.id ?? null,
+      toId: to.st?.id ?? null,
       matched: true,
       originFromHere: false,
+      mode,
+      poiId: to.poi?.id ?? null,
+      poiFromId: from.poi?.id ?? null,
     };
   };
 
@@ -191,15 +228,25 @@ export function parseVoiceRoute(
     const m = t.match(re);
     if (!m) continue;
     if (here) {
-      const to = matchStationPhrase(m[1], stations);
-      if (to) return { fromId: null, toId: to.id, matched: true, originFromHere: true };
+      const to = resolveSegment(m[1]);
+      if (to.st || to.poi) {
+        return {
+          fromId: null,
+          toId: to.st?.id ?? null,
+          matched: true,
+          originFromHere: true,
+          mode,
+          poiId: to.poi?.id ?? null,
+          poiFromId: null,
+        };
+      }
       continue;
     }
     const r = tryPair(m[1], m[2]);
     if (r) {
       // «مقصد Y از X» — ترتیب گروه‌ها برعکس است
       if (t.startsWith("مقصد") && r.fromId && r.toId) {
-        return { ...r, fromId: r.toId, toId: r.fromId };
+        return { ...r, fromId: r.toId, toId: r.fromId, poiId: r.poiFromId, poiFromId: r.poiId };
       }
       return r;
     }
@@ -215,11 +262,21 @@ export function parseVoiceRoute(
   for (const re of destPatterns) {
     const m = t.match(re);
     if (!m) continue;
-    const to = matchStationPhrase(m[1], stations);
-    if (to) return { fromId: null, toId: to.id, matched: true, originFromHere: false };
+    const to = resolveSegment(m[1]);
+    if (to.st || to.poi) {
+      return {
+        fromId: null,
+        toId: to.st?.id ?? null,
+        matched: true,
+        originFromHere: false,
+        mode,
+        poiId: to.poi?.id ?? null,
+        poiFromId: null,
+      };
+    }
   }
 
-  /* ---------- آخرین راه: نام ایستگاه داخل جمله (طولانی‌ترین تطابق) ---------- */
+  /* ---------- آخرین راه: نام ایستگاه/نشانه داخل جمله (طولانی‌ترین تطابق) ---------- */
   let found: StationDef | null = null;
   let foundLen = 0;
   for (const s of stations) {
@@ -229,10 +286,35 @@ export function parseVoiceRoute(
       foundLen = n.length;
     }
   }
+  let foundPoi: CityPoi | null = null;
+  let foundPoiLen = 0;
+  for (const poi of pois) {
+    const names = [poi.name, ...poi.aliases].map((x) => normalizeFa(x));
+    for (const n of names) {
+      if (n.length >= 5 && t.includes(n) && n.length > foundPoiLen) {
+        foundPoi = poi;
+        foundPoiLen = n.length;
+      }
+    }
+  }
+  if (foundPoi && foundPoiLen > foundLen) {
+    return {
+      fromId: null,
+      toId: null,
+      matched: true,
+      originFromHere: false,
+      mode,
+      poiId: foundPoi.id,
+      poiFromId: null,
+    };
+  }
   return {
     fromId: null,
     toId: found?.id ?? null,
-    matched: found !== null,
+    matched: found !== null || foundPoi !== null,
     originFromHere: false,
+    mode,
+    poiId: foundPoi?.id ?? null,
+    poiFromId: null,
   };
 }

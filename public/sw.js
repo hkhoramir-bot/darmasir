@@ -1,6 +1,11 @@
 /* متروجو Service Worker — نصب‌پذیری و کار آفلاین سبک (شبکه-اول) */
-const CACHE = "metrojo-v3";
-const PRECACHE = ["/metrojo-app-icon.png", "/metrojo-symbol.png", "/manifest.json"];
+const CACHE = "metrojo-v6";
+const PRECACHE = [
+  "/metrojo-logo.svg",
+  "/logo-icon-192.png",
+  "/logo-icon-512.png",
+  "/manifest.json",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -46,6 +51,8 @@ self.addEventListener("fetch", (event) => {
 
   const isImmutableAsset =
     url.pathname.startsWith("/icons") ||
+    url.pathname === "/metrojo-logo.svg" ||
+    url.pathname.startsWith("/logo-icon-") ||
     url.pathname === "/metrojo-app-icon.png" ||
     url.pathname === "/metrojo-symbol.png" ||
     url.pathname === "/manifest.json";

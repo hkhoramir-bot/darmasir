@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">متروجو</string>
-    <string name="title_activity_main">متروجو</string>
+    <string name="app_name">درمسیر</string>
+    <string name="title_activity_main">درمسیر</string>
     <string name="package_name">ir.metrojo.app</string>
     <string name="custom_url_scheme">ir.metrojo.app</string>
 </resources>

@@ -3,9 +3,10 @@
 import { useCallback, useRef, useState } from "react";
 import { getVoicePrefs, type VoiceGender } from "@/lib/voice-settings";
 import { CLOUD_TTS_BASES, CLOUD_TTS_TIMEOUT_MS } from "@/lib/cloud-config";
+import { applyLexicon, ensureLexiconLoaded } from "@/lib/voice-lexicon";
 
 /* ============================================================
-   دستیار صوتی متروجو — کاملاً فارسی و بدون نیاز به هیچ کلید/API
+   دستیار صوتی درمسیر — کاملاً فارسی و بدون نیاز به هیچ کلید/API
    دو گوینده فارسی:
    • زن  — دلاورا (fa-IR-DilaraNeural) یا صدای فارسی دستگاه
    • مرد — فرید  (fa-IR-FaridNeural)  یا صدای دستگاه بم‌شده
@@ -19,7 +20,7 @@ export const VOICE_ERRORS = {
   asrUnsupported: "جستجوی صوتی در این مرورگر پشتیبانی نمی‌شود — لطفاً عبارت را تایپ کنید",
   micDenied: "دسترسی به میکروفون داده نشد — اجازه دسترسی را در تنظیمات مرورگر بررسی کنید",
   micBlocked:
-    "میکروفن در این پنجره مسدود است — متروجو را در تب جدید مرورگر باز کنید (دکمه زیر) یا از نسخه اندروید استفاده کنید",
+    "میکروفن در این پنجره مسدود است — درمسیر را در تب جدید مرورگر باز کنید (دکمه زیر) یا از نسخه اندروید استفاده کنید",
   micNotFound: "میکروفنی روی این دستگاه پیدا نشد",
 };
 
@@ -36,7 +37,7 @@ export function isInIframe(): boolean {
   }
 }
 
-/** باز کردن متروجو در تب جدید (خارج از iframe) تا میکروفن فعال شود */
+/** باز کردن درمسیر در تب جدید (خارج از iframe) تا میکروفن فعال شود */
 export function openStandaloneTab(): void {
   if (typeof window === "undefined") return;
   try {
@@ -247,15 +248,23 @@ export function useAnnouncer() {
       stop();
       setSpeaking(true);
       const finish = () => setSpeaking(false);
+      // فرهنگ تلفظ پنل — پیش از پخش، نوشتار‌ها با تلفظ درست پنل جایگزین می‌شوند (مثل شوُش)
+      // کش موجود → فوری؛ کش خالی → منتظر واکشی از پنل/ابر (تا اولین اعلام هم درست خوانده شود)
+      try {
+        await ensureLexiconLoaded();
+      } catch {
+        /* فرهنگ در دسترس نیست — متن اصلی خوانده می‌شود */
+      }
+      const finalText = applyLexicon(text);
       const prefs = getVoicePrefs();
 
       // اندروید: اول موتور نیتیو، بعد موتور مرورگر
       const playOnDevice = async (): Promise<boolean> => {
-        if (await nativeSpeak(text, prefs.rate, prefs.gender)) {
+        if (await nativeSpeak(finalText, prefs.rate, prefs.gender)) {
           finish();
           return true;
         }
-        return deviceSpeak(text, prefs.rate, prefs.gender, finish);
+        return deviceSpeak(finalText, prefs.rate, prefs.gender, finish);
       };
 
       const playInCloud = async () => {
@@ -263,7 +272,7 @@ export function useAnnouncer() {
         const a = audioRef.current;
         a.onended = finish;
         a.onerror = finish;
-        await serverSpeak(text, prefs.rate, prefs.gender, a);
+        await serverSpeak(finalText, prefs.rate, prefs.gender, a);
       };
 
       try {

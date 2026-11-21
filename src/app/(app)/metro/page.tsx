@@ -66,9 +66,9 @@ export default function MetroPage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-bold text-on-surface">{s.title}</h2>
-              <p className="text-body-sm text-outline mt-0.5 leading-relaxed">{s.desc}</p>
+              <p className="text-body-sm text-on-surface-variant mt-0.5 leading-relaxed">{s.desc}</p>
             </div>
-            <MI name="chevron_left" size={22} className="text-outline-variant shrink-0" />
+            <MI name="chevron_left" size={22} className="text-on-surface-variant shrink-0" />
           </button>
         ))}
       </main>

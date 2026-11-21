@@ -13,19 +13,21 @@
     (function () {
       var qp = new URLSearchParams(location.search).get("XTransformPort");
       var suffix = qp ? "?XTransformPort=" + encodeURIComponent(qp) : "";
+      var P = location.pathname.indexOf("/admin") === 0 ? "/admin/" : "";
       window.__ASSET_Q = suffix;
-      document.write('<link rel="stylesheet" href="style.css' + suffix + '" />');
+      window.__ADMIN_P = P;
+      document.write('<link rel="stylesheet" href="' + P + 'style.css' + suffix + '" />');
       document.write(
         '<style>' +
-        '@font-face{font-family:"Vazirmatn";src:url("fonts/vazirmatn-arabic.woff2' + suffix + '") format("woff2");font-weight:400 800;font-display:swap;unicode-range:U+0600-06FF,U+200C-200E,U+2010-2011,U+FB50-FDFF;}' +
-        '@font-face{font-family:"Vazirmatn";src:url("fonts/vazirmatn-latin.woff2' + suffix + '") format("woff2");font-weight:400 800;font-display:swap;}' +
-        '@font-face{font-family:"Material Symbols Outlined";font-style:normal;font-weight:100 700;font-display:block;src:url("fonts/material-symbols.woff2' + suffix + '") format("woff2");}' +
+        '@font-face{font-family:"Vazirmatn";src:url("' + P + 'fonts/vazirmatn-arabic.woff2' + suffix + '") format("woff2");font-weight:400 800;font-display:swap;unicode-range:U+0600-06FF,U+200C-200E,U+2010-2011,U+FB50-FDFF;}' +
+        '@font-face{font-family:"Vazirmatn";src:url("' + P + 'fonts/vazirmatn-latin.woff2' + suffix + '") format("woff2");font-weight:400 800;font-display:swap;}' +
+        '@font-face{font-family:"Material Symbols Outlined";font-style:normal;font-weight:100 700;font-display:block;src:url("' + P + 'fonts/material-symbols.woff2' + suffix + '") format("woff2");}' +
         '<\/style>'
       );
+      document.write('<link rel="icon" type="image/svg+xml" href="' + P + 'metrojo-logo.svg' + suffix + '" />');
     })();
   </script>
-  <meta name="theme-color" content="#00417f" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300417f'/%3E%3Ctext x='16' y='21' font-size='14' text-anchor='middle' fill='white' font-family='sans-serif'%3Eد%3C/text%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#07805f" />
 </head>
 <body>
   <div id="app"></div>
@@ -34,7 +36,7 @@
   <script>
     (function () {
       var s = document.createElement("script");
-      s.src = "app.js" + (window.__ASSET_Q || "");
+      s.src = (window.__ADMIN_P || "") + "app.js" + (window.__ASSET_Q || "");
       document.body.appendChild(s);
     })();
   </script>

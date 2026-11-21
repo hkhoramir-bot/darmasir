@@ -100,7 +100,7 @@ export default function JourneyCard() {
               </span>
             )}
             {journey.source === "estimate" && !arrived && (
-              <span className="text-[9px] font-bold text-outline bg-surface-container dark:bg-surface-container-high px-1.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="text-[9px] font-bold text-on-surface-variant bg-surface-container dark:bg-surface-container-high px-1.5 py-0.5 rounded-full flex items-center gap-1">
                 <MI name="schedule" size={11} className="shrink-0" />
                 پیش‌بینی زمانی
               </span>
@@ -235,7 +235,7 @@ export default function JourneyCard() {
                   : "مقصد"}
           </span>
         </span>
-        <span className="shrink-0 font-medium text-outline flex items-center gap-1">
+        <span className="shrink-0 font-medium text-on-surface-variant flex items-center gap-1">
           <MI name="route" size={12} className="text-primary shrink-0" />
           {arrived
             ? journey.toName
@@ -273,7 +273,7 @@ export default function JourneyCard() {
                       : "bg-surface-container-lowest border-outline-variant/30 hover:bg-surface-container"
                   }`}
                 >
-                  <span className="w-6 h-6 rounded-full bg-surface-container text-[10px] font-bold text-outline flex items-center justify-center shrink-0">
+                  <span className="w-6 h-6 rounded-full bg-surface-container text-[10px] font-bold text-on-surface-variant flex items-center justify-center shrink-0">
                     {toFa(i + 1)}
                   </span>
                   <span className="min-w-0 flex-1">
