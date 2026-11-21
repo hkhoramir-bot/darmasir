@@ -11,7 +11,8 @@ import { toFa } from "@/lib/metro-data";
    تماس با ما — همه بخش‌ها از پنل مدیریت (تک منبع حقیقت)
    — راه‌های ارتباطی: افزودن/حذف/نمایش هر مورد در پنل
    — فرم ثبت تیکت: نمایش/عدم نمایش و متن‌ها در پنل
-   — تیکت‌های من: پاسخ مدیر در پنل، بلافاصله همین‌جا نمایش داده می‌شود
+   — تیکت‌های من: روی خود اپ ذخیره می‌شوند و از رندر اول همین‌جا هستند؛
+     فقط «پاسخ مدیر» از سرور یک بار چک و در مخزن محلی ادغام می‌شود
    ============================================================ */
 
 type Category = "general" | "bug" | "idea" | "ad";
@@ -39,6 +40,7 @@ interface MyTicket {
   reply: string | null;
   repliedAt: string | null;
   createdAt: string;
+  contact?: string;
 }
 
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -49,47 +51,69 @@ const STATUS_FA: Record<string, { label: string; cls: string }> = {
   closed: { label: "بسته شده", cls: "bg-surface-container text-on-surface-variant" },
 };
 
-/* ---------- کش «تیکت‌های من» — ماژولی + localStorage ----------
-   بخش تیکت‌ها از رندر اول با داده واقعی نمایش داده می‌شود — بدون غیبت
-   چندثانیه‌ای تا برگشتن پاسخ سرور؛ واکشی پس‌زمینه فقط وقتی setState می‌کند
-   که داده واقعاً تغییر کرده باشد (بدون رندر بی‌دلیل هر ۲۰ ثانیه) */
-const TICKETS_LS_KEY = "darmasir-my-tickets-v1";
-const ticketsCache = new Map<string, MyTicket[]>();
-let appliedTicketsJson = ""; /* آخرین داده اعمال‌شده برای contactsKey جاری */
+/* ---------- مخزن محلی «تیکت‌های من» — منبع حقیقت روی خود اپ ----------
+   تیکت‌ها روی خود اپ ذخیره می‌شوند و از رندر اول همان‌جا نمایش داده می‌شوند؛
+   سرور فقط برای «پاسخ مدیر» یک بار در هر بازدید چک می‌شود و پاسخ در همین
+   مخزن محلی ادغام می‌ماند — هیچ رندری وابسته به سرور نیست و هیچ polling هم نیست */
+const TICKETS_LS_KEY = "darmasir-my-tickets-v2";
+let ticketsStore: MyTicket[] | null = null;
+let appliedTicketsJson = ""; /* آخرین فهرست اعمال‌شده — برای جلوگیری از setState بی‌دلیل */
 
-function readCachedTickets(key: string): MyTicket[] | null {
-  if (key && ticketsCache.has(key)) return ticketsCache.get(key) as MyTicket[];
+const ticketKey = (t: MyTicket) => `${String(t.subject ?? "")}|${String(t.message ?? "").slice(0, 100)}`;
+
+function readStore(): MyTicket[] {
+  if (ticketsStore) return ticketsStore;
+  let list: MyTicket[] = [];
   if (typeof window !== "undefined") {
     try {
       const raw = window.localStorage.getItem(TICKETS_LS_KEY);
       if (raw) {
-        const p = JSON.parse(raw) as { k: string; t: MyTicket[] }[];
-        if (Array.isArray(p)) {
-          for (const e of p.slice(0, 6)) {
-            if (e && typeof e.k === "string" && Array.isArray(e.t)) ticketsCache.set(e.k, e.t);
-          }
-        }
+        const p = JSON.parse(raw);
+        if (Array.isArray(p)) list = p.filter((t) => t && typeof t === "object" && !!t.subject);
       }
     } catch {
       /* JSON خراب یا دسترسی محدود — بی‌صدا */
     }
+    /* مهاجرت یک‌باره از کش نسخه قبل (per-contactsKey) به مخزن تخت */
+    if (list.length === 0) {
+      try {
+        const raw1 = window.localStorage.getItem("darmasir-my-tickets-v1");
+        if (raw1) {
+          const p = JSON.parse(raw1);
+          const seen = new Set<string>();
+          if (Array.isArray(p)) {
+            for (const e of p) {
+              for (const t of (e?.t ?? []) as MyTicket[]) {
+                const k = `${String(t?.id)}|${ticketKey(t)}`;
+                if (t && t.subject && !seen.has(k)) {
+                  seen.add(k);
+                  list.push(t);
+                }
+              }
+            }
+          }
+          list.sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+        }
+        window.localStorage.removeItem("darmasir-my-tickets-v1");
+      } catch {
+        /* بی‌صدا */
+      }
+    }
   }
-  return key ? (ticketsCache.get(key) ?? null) : null;
+  ticketsStore = list.slice(0, 30);
+  return ticketsStore;
 }
 
-function writeCachedTickets(key: string, tickets: MyTicket[]) {
-  if (!key) return;
-  ticketsCache.set(key, tickets);
+function writeStore(list: MyTicket[]): MyTicket[] {
+  ticketsStore = list.slice(0, 30);
   if (typeof window !== "undefined") {
     try {
-      const entries = Array.from(ticketsCache.entries())
-        .slice(-4)
-        .map(([k, t]) => ({ k, t }));
-      window.localStorage.setItem(TICKETS_LS_KEY, JSON.stringify(entries));
+      window.localStorage.setItem(TICKETS_LS_KEY, JSON.stringify(ticketsStore));
     } catch {
       /* دسترسی محدود — بی‌صدا */
     }
   }
+  return ticketsStore;
 }
 
 export default function ContactPage() {
@@ -112,7 +136,6 @@ export default function ContactPage() {
      همه راه‌های تماسی که کاربر تا حالا تیکت با آنها زده (حساب + تایپ‌شده‌ها) —
      تیکت با هر کدام از این‌ها ثبت شده باشد، در «تیکت‌های من» دیده می‌شود */
   const [myTickets, setMyTickets] = useState<MyTicket[]>([]);
-  const [repliesLoaded, setRepliesLoaded] = useState(false);
   const [expanded, setExpanded] = useState<string | number | null>(null);
   const TICKET_CONTACTS_LS = "darmasir-ticket-contacts";
   const [contactsVersion, setContactsVersion] = useState(0); /* راه تماس جدید ذخیره شد — کش راه‌ها دوباره خوانده شود */
@@ -153,99 +176,150 @@ export default function ContactPage() {
 
   const contactsKey = allMyContacts.join(",");
 
-  /* هیدراتاسیون پیش از رنگ‌آمیزی — تیکت‌های کش‌شده از رندر اول همین‌جا هستند */
+  /* هیدراتاسیون پیش از رنگ‌آمیزی — تیکت‌ها از مخزن خود اپ، از رندر اول همین‌جا هستند */
   useIsoLayoutEffect(() => {
-    const cached = readCachedTickets(contactsKey);
-    if (cached && cached.length > 0) {
-      appliedTicketsJson = JSON.stringify(cached);
-      setMyTickets(cached);
-      setRepliesLoaded(true);
-    } else {
-      appliedTicketsJson = "";
+    const local = readStore();
+    if (local.length > 0) {
+      appliedTicketsJson = JSON.stringify(local);
+      setMyTickets(local);
     }
-  }, [contactsKey]);
+  }, []);
 
-  const loadReplies = useCallback(async (who: string) => {
+  /* چک پاسخ‌ها — فقط یک بار برای هر مجموعه راه تماس (نه polling):
+     فقط «پاسخ مدیر» از سرور می‌آید و در مخزن محلی ادغام می‌شود؛
+     اگر پاسخ تازه‌ای نباشد، هیچ setState و هیچ رندری رخ نمی‌دهد */
+  const checkReplies = useCallback(async (who: string) => {
     if (!who) return;
     try {
       const res = await fetch(`/api/tickets/replies?contacts=${encodeURIComponent(who)}`, { cache: "no-store" });
       const data = await res.json();
-      if (res.ok && data.ok) {
-        const list: MyTicket[] = Array.isArray(data.tickets) ? data.tickets : [];
-        writeCachedTickets(who, list);
-        /* فقط وقتی داده واقعاً تغییر کرده setState — هر ۲۰ ثانیه یک رندر بی‌دلیل نه */
-        const nextJson = JSON.stringify(list);
+      if (!res.ok || !data?.ok) return;
+      const serverList: MyTicket[] = Array.isArray(data.tickets) ? data.tickets : [];
+      if (serverList.length === 0) return;
+      const store = [...readStore()];
+      let changed = false;
+      for (const s of serverList) {
+        const idx = store.findIndex(
+          (l) => String(l.id) === String(s.id) || ticketKey(l) === ticketKey(s)
+        );
+        if (idx >= 0) {
+          const l = store[idx];
+          if (s.reply && !l.reply) {
+            /* پاسخ تازه مدیر — تنها چیزی که از سرور رندر می‌شود */
+            store[idx] = { ...l, reply: s.reply, repliedAt: s.repliedAt ?? null, status: s.status || "answered" };
+            changed = true;
+          } else if (!l.reply && /^local-/.test(String(l.id)) && s.id) {
+            /* شناسه واقعی سرور جای شناسه محلی — بدون تغییر ظاهری */
+            store[idx] = { ...l, id: s.id };
+            changed = true;
+          }
+        } else {
+          /* تیکت‌های دستگاه/نشست دیگر — یک بار به مخزن محلی اضافه و بعد از همان رندر می‌شوند */
+          store.unshift(s);
+          changed = true;
+        }
+      }
+      if (changed) {
+        store.sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+        const saved = writeStore(store);
+        const nextJson = JSON.stringify(saved);
         if (nextJson !== appliedTicketsJson) {
           appliedTicketsJson = nextJson;
-          setMyTickets(list);
-          setRepliesLoaded(true);
+          setMyTickets(saved);
         }
       }
     } catch {
-      /* قطعی شبکه — بی‌صدا؛ داده کش‌شده سر جایش می‌ماند */
+      /* قطعی شبکه — مخزن محلی سر جایش می‌ماند */
     }
   }, []);
 
   useEffect(() => {
-    loadReplies(contactsKey);
-    const timer = setInterval(() => loadReplies(contactsKey), 20_000);
-    return () => clearInterval(timer);
-  }, [contactsKey, loadReplies]);
+    if (contactsKey) checkReplies(contactsKey);
+  }, [contactsKey, checkReplies]);
 
   const submitTicket = async () => {
     if (sending) return;
-    setSending(true);
+    const name = form.name.trim();
     const typedContact = form.contact.trim();
+    const subject = form.subject.trim();
+    const message = form.message.trim();
+    /* اعتبارسنجی سمت اپ — مثل سرور، پیش از هر چیز */
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedContact);
+    const isPhone = /^0?\d{9,11}$/.test(typedContact.replace(/[\s-]/g, ""));
+    if (name.length < 2) {
+      toast({ title: "نام ناقص است", description: "نام و نام خانوادگی را وارد کنید" });
+      return;
+    }
+    if (!isEmail && !isPhone) {
+      toast({ title: "راه تماس نامعتبر", description: "ایمیل یا شماره تماس معتبر وارد کنید" });
+      return;
+    }
+    if (subject.length < 3) {
+      toast({ title: "موضوع کوتاه است", description: "موضوع تیکت باید حداقل ۳ نویسه باشد" });
+      return;
+    }
+    if (message.length < 10) {
+      toast({ title: "متن پیام کوتاه است", description: "متن پیام باید حداقل ۱۰ نویسه باشد" });
+      return;
+    }
+
+    setSending(true);
+    const localId = `local-${Date.now()}`;
+    /* ۱) تیکت فوراً روی خود اپ ذخیره و نمایش داده می‌شود — «در انتظار بررسی» تا رسیدن پاسخ مدیر */
+    const optimistic: MyTicket = {
+      id: localId,
+      subject,
+      category: form.category,
+      message,
+      status: "open",
+      reply: null,
+      repliedAt: null,
+      createdAt: new Date().toISOString(),
+      contact: typedContact,
+    };
+    const nextList = writeStore([optimistic, ...readStore()]);
+    appliedTicketsJson = JSON.stringify(nextList);
+    setMyTickets(nextList);
+    /* راه تماس تایپ‌شده به‌خاطر سپرده شود — تیکت با همین ثبت شده است */
+    if (typedContact) saveTicketContact(typedContact);
     try {
+      /* ۲) همگام‌سازی با سرور فقط برای اینکه مدیر بتواند پاسخ بدهد — پاسخ بعداً یک بار چک می‌شود */
       const res = await fetch("/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ name, contact: typedContact, category: form.category, subject, message }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.ok) {
         setDone(true);
-        /* راه تماس تایپ‌شده را به‌خاطر بسپار — تیکت با همان ثبت شده و باید در «تیکت‌های من» بیاید */
-        if (typedContact) saveTicketContact(typedContact);
+        setForm({ name: "", contact: "", category: "general", subject: "", message: "" });
         if (user?.email) saveTicketContact(user.email);
         if (user?.phone) saveTicketContact(user.phone);
-        /* به‌روزرسانی خوش‌بینانه — تیکت بلافاصله در «تیکت‌های من» دیده می‌شود */
-        const optimistic: MyTicket = {
-          id: typeof data.id === "string" || typeof data.id === "number" ? data.id : `local-${Date.now()}`,
-          subject: form.subject.trim(),
-          category: form.category,
-          message: form.message.trim(),
-          status: "open",
-          reply: null,
-          repliedAt: null,
-          createdAt: new Date().toISOString(),
-        };
-        const keyNow = allMyContacts.join(",") || typedContact;
-        if (keyNow) {
-          const prevList = readCachedTickets(keyNow) ?? myTickets;
-          const nextList = [optimistic, ...prevList.filter((t) => String(t.id) !== String(optimistic.id))];
-          appliedTicketsJson = JSON.stringify(nextList);
-          writeCachedTickets(keyNow, nextList);
-          setMyTickets(nextList);
-          setRepliesLoaded(true);
+        /* شناسه واقعی سرور جای شناسه محلی — در مخزن، بدون رندر محسوس */
+        if (data.id) {
+          const store = [...readStore()];
+          const idx = store.findIndex((t) => String(t.id) === localId);
+          if (idx >= 0) {
+            store[idx] = { ...store[idx], id: data.id };
+            const saved = writeStore(store);
+            appliedTicketsJson = JSON.stringify(saved);
+          }
         }
-        setForm({ name: "", contact: "", category: "general", subject: "", message: "" });
         toast({
           title: "تیکت ثبت شد",
           description: "پاسخ در بخش «تیکت‌های من» همین صفحه اعلام می‌شود",
         });
-        /* بلافاصله همه تیکت‌های همه راه‌های تماس را مرور کن */
-        setTimeout(() => loadReplies(allMyContacts.join(",")), 800);
       } else {
+        /* تیکت روی اپ مانده ولی به سرور نرسید — کاربر همان را می‌بیند */
         toast({
-          title: "ثبت تیکت ناموفق بود",
-          description: data.error ?? "لطفاً اطلاعات را بررسی و دوباره تلاش کنید",
+          title: "همگام‌سازی ناموفق بود",
+          description: data.error ?? "تیکت در حافظه اپ ثبت شد؛ با اتصال بهتر دوباره تلاش کنید",
         });
       }
     } catch {
       toast({
         title: "خطای شبکه",
-        description: "اتصال اینترنت را بررسی و دوباره تلاش کنید",
+        description: "تیکت در حافظه اپ ثبت شد؛ برای رسیدن پاسخ مدیر، اتصال اینترنت لازم است",
       });
     } finally {
       setSending(false);
@@ -333,8 +407,8 @@ export default function ContactPage() {
           </section>
         )}
 
-        {/* ------------------- تیکت‌های من و پاسخ‌های مدیر ------------------- */}
-        {repliesLoaded && myTickets.length > 0 && (
+        {/* ------------------- تیکت‌های من و پاسخ‌های مدیر (مخزن محلی اپ) ------------------- */}
+        {myTickets.length > 0 && (
           <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm space-y-2">
             <div className="flex items-center gap-2 pb-2 border-b border-outline-variant/20 text-primary">
               <MI name="forum" size={20} />
