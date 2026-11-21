@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MI, PageHeader } from "@/components/metro/shell";
 import { useToast } from "@/hooks/use-toast";
 import { useContactPage, type ContactMethod } from "@/components/metro/panel-banners";
@@ -116,6 +116,37 @@ function writeStore(list: MyTicket[]): MyTicket[] {
   return ticketsStore;
 }
 
+/* ---------- قوانین تماس سروریِ کادر تیکت‌ها ----------
+   رفرش صفحه هرگز سرور را صدا نمی‌زند؛ تماس فقط وقتی که معنادار است:
+   ۱) تیکت بی‌پاسخی در مخزن باشد (یا مخزن خالی باشد — بازیابی یک‌باره)
+   ۲) از آخرین چک بیش از آستانه گذشته باشد (رفرش پشت‌سرهم بی‌تماس می‌ماند) */
+const REPLY_CHECK_THROTTLE_MS = 60_000;
+const REPLY_CHECK_AT_KEY = "darmasir-reply-check-at";
+let lastReplyCheckAt = 0;
+
+function readLastCheckAt(): number {
+  if (lastReplyCheckAt) return lastReplyCheckAt;
+  if (typeof window !== "undefined") {
+    try {
+      lastReplyCheckAt = Number(window.localStorage.getItem(REPLY_CHECK_AT_KEY)) || 0;
+    } catch {
+      /* بی‌صدا */
+    }
+  }
+  return lastReplyCheckAt;
+}
+
+function markCheckAt(now: number) {
+  lastReplyCheckAt = now;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(REPLY_CHECK_AT_KEY, String(now));
+    } catch {
+      /* بی‌صدا */
+    }
+  }
+}
+
 export default function ContactPage() {
   const { toast } = useToast();
   const contact = useContactPage();
@@ -175,6 +206,8 @@ export default function ContactPage() {
   }, [user?.email, user?.phone, contactsVersion]);
 
   const contactsKey = allMyContacts.join(",");
+  const contactsKeyRef = useRef(contactsKey);
+  contactsKeyRef.current = contactsKey;
 
   /* هیدراتاسیون پیش از رنگ‌آمیزی — تیکت‌ها از مخزن خود اپ، از رندر اول همین‌جا هستند */
   useIsoLayoutEffect(() => {
@@ -185,11 +218,22 @@ export default function ContactPage() {
     }
   }, []);
 
-  /* چک پاسخ‌ها — فقط یک بار برای هر مجموعه راه تماس (نه polling):
-     فقط «پاسخ مدیر» از سرور می‌آید و در مخزن محلی ادغام می‌شود؛
-     اگر پاسخ تازه‌ای نباشد، هیچ setState و هیچ رندری رخ نمی‌دهد */
-  const checkReplies = useCallback(async (who: string) => {
+  /* چک پاسخ‌ها — تنها مسیر سروریِ این کادر، با سه قید سخت‌گیرانه:
+     ۱) اگر همه تیکت‌ها پاسخ گرفته‌اند — صفر تماس، برای همیشه؛ فقط مخزن محلی رندر می‌شود
+     ۲) داخل آستانه ۶۰ ثانیه از آخرین چک — هیچ تماسی (رفرش پشت‌سرهم بی‌تماس است)
+     ۳) فقط «پاسخ مدیر» ادغام می‌شود؛ اگر پاسخ تازه‌ای نباشد هیچ setState و هیچ رندری رخ نمی‌دهد */
+  const checkReplies = useCallback(async (who: string, force = false) => {
     if (!who) return;
+    const localNow = readStore();
+    const hasWaiting = localNow.some((t) => !t.reply && t.status !== "closed");
+    if (localNow.length > 0 && !hasWaiting) {
+      return; /* همه پاسخ گرفته‌اند — سرور برای این کادر هیچ چیزی ندارد */
+    }
+    const now = Date.now();
+    if (!force && now - readLastCheckAt() < REPLY_CHECK_THROTTLE_MS) {
+      return; /* داخل آستانه رفرش — فقط از حافظه اپ رندر می‌شود */
+    }
+    markCheckAt(now);
     try {
       const res = await fetch(`/api/tickets/replies?contacts=${encodeURIComponent(who)}`, { cache: "no-store" });
       const data = await res.json();
@@ -309,6 +353,9 @@ export default function ContactPage() {
           title: "تیکت ثبت شد",
           description: "پاسخ در بخش «تیکت‌های من» همین صفحه اعلام می‌شود",
         });
+        /* یک چک بی‌درنگ پس از ثبت — اگر مدیر همان لحظه پاسخ داده باشد یک بار از سرور می‌آید
+           (این چک روی آستانه ۶۰ ثانیه اثر نمی‌گذارد و رفرش‌های بعدی را محدود نمی‌کند) */
+        setTimeout(() => checkReplies(contactsKeyRef.current, true), 2500);
       } else {
         /* تیکت روی اپ مانده ولی به سرور نرسید — کاربر همان را می‌بیند */
         toast({
