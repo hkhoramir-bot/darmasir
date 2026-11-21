@@ -2,39 +2,33 @@
 
 > این فایل به‌عنوان نشانگر نسخه در گیت نگه داشته می‌شود تا ریست روزانه از origin/main هیچ تغییری را از دست ندهد.
 
-## نسخه فعلی: 4.8.23 (versionCode 503) — انتشار 2026-11-21 با درخواست کاربر
+## نسخه فعلی: 4.8.21 (versionCode 501) — بازگشت به نسخه صحیح تأییدشده کاربر
 
-> **انتشار قانونی طبق GUARDIAN بخش ۶** — کاربر درخواست «نسخه apk جدید بده» داد؛ versionCode
-> صعودی 501 → 503 (502 سوزانده‌شده توسط انتشار رد‌شده 4.8.22). همه APKهای قدیمی‌تر از
-> `public/` حذف شدند؛ تنها `metrojo-4.8.23.apk` (md5 70abf2f0…) قابل دانلود است.
-> مرجع تاریخی 4.8.21/501 با تگ `v4.8.21-locked` و آرشیو `cloudflare-worker/assets/` حفظ شده است.
+> **مهم (2026-11-20):** نسخه 4.8.22/502 به‌اشتباه UI بازطراحی‌شده را منتشر و فایل‌های دانلود
+> `metrojo-4.8.21.apk` و نسخه‌های سازگار را با محتوای 4.8.22 بازنویسی کرده بود؛ نسخه صحیح از
+> دید کاربر همان APK 4.8.21/versionCode 501 است. کل زنجیره به 4.8.21/501 بازگردانده شد:
 >
-> - `android/app/build.gradle` → versionName 4.8.23 / versionCode 503
-> - رشته‌های نسخه: `panel-banners.tsx` (FALLBACK_APP_VERSION)، `apk-download.tsx` + `settings/page.tsx` (لینک دانلود)،
->   `settings-screen.tsx` (نسخه نصب‌شده) → همه 4.8.23
-> - پنل + ورکر ابری → app_version=4.8.23 (scripts/fix-app-version.ts 4.8.23 + cloud-sync)
-> - زنجیره ساخت: JDK Temurin 21.0.13.1 (`/home/z/jdks`) + SDK اندروید (`/home/z/android-sdk`) بازسازی شد
-> - فیکس‌های داخل این نسخه: ورود کامل با کد پیامکی (OTP)، بن‌بست حساب بدون رمز، بخش اطلاعیه‌ها، رفرش تیکت
+> - `src/app/page.tsx` (روت `/` که `MetrojoApp`/خانه جدید SPA را رندر می‌کرد) حذف شد —
+>   `/` دوباره از `(app)/page.tsx` (خانه اصلیِ تأییدشده: مسیریابی، مقایسه مدهای سفر، بخش تبلیغ) سرو می‌شود
+> - رشته‌های نسخه در `settings/page.tsx`، `settings-screen.tsx`، `panel-banners.tsx` (FALLBACK_APP_VERSION)،
+>   `apk-download.tsx` (لینک دانلود)، `globals.css` (cache-buster فونت v17) → همه 4.8.21
+> - `public/fonts/material-symbols-subset.woff2` → subset فونتِ همان نسخه صحیح
+> - `android/app/build.gradle` → versionName 4.8.21 / versionCode 501
+> - فایل‌های دانلود: `public/metrojo-4.8.21.apk` و نسخه‌های سازگار 4.8.20/4.8.17/4.9.0 →
+>   محتوای APK صحیح کاربر (md5 32d8efa4…, versionCode=501) — `metrojo-4.8.22.apk` حذف شد
+> - خروجی استاتیک بازسازی شد و **مجموعه chunk ها بایت‌به‌بایت با APK صحیح کاربر یکسان است**
+> - پنل + ورکر ابری (`dataid.hurremmed.ir`) → app_version=4.8.21 (sync با `scripts/sync-panel-to-cloud.ts`)
 
 | مورد | وضعیت |
 |---|---|
-| نسخه اندروید | 4.8.23 / versionCode 503 (`android/app/build.gradle`) |
-| APK منتشرشده | `public/metrojo-4.8.23.apk` — versionCode=503, versionName=4.8.23 (aapt) |
-| دانلود مستقیم | `/metrojo-4.8.23.apk` (سایت) |
+| نسخه اندروید | 4.8.21 / versionCode 501 (`android/app/build.gradle`) |
+| APK منتشرشده | `public/metrojo-4.8.21.apk` — versionCode=501, versionName=4.8.21 (aapt) |
+| دانلود مستقیم | `/metrojo-4.8.21.apk` (سایت) — نسخه‌های سازگار 4.8.20/4.8.17/4.9.0 با همان محتوا |
 | ورکر کلادفلر | `cloudflare-worker/src/index.ts` — دامنه `dataid.hurremmed.ir` |
-| دیتابیس پنل | SQLite محلی (`mini-services/darmasir-admin/data/admin.db`) |
+| دیتابیس پنل | SQLite محلی (`mini-services/darmasir-admin/data/admin.db`) — پس از بازسازی سندباکس؛ اعتبارنامه Turso در `.env` محو شده و در صورت نیاز باید دوباره تنظیم شود |
 | همگام‌سازی محتوا | پنل → ورکر (`POST /api/v1/public/content/sync` با X-Sync-Key) — اپ از ورکر می‌خواند |
+| اسکریپت‌های مهاجرت | `scripts/migrate-to-turso.ts`، `scripts/turso-schema.ts`، `scripts/turso-count.ts`، `mini-services/darmasir-admin/scripts/turso-migrate-once.ts` |
 | پنل مدیریت | `mini-services/darmasir-admin` (پورت 3035) — `src/api.ts` متصل به Turso |
-
-## فیکس‌های 4.8.23 — ورود با کد پیامکی و بن‌بست حساب
-
-- ورکر ابری: نبود رمز دیگر NOT_FOUND نیست — NO_PASSWORD با راهنمای دقیق
-- ورکر ابری: ثبت‌نام روی حساب پیامکیِ بدون رمز = بازیابی همان حساب و تنظیم رمز
-- ورکر ابری: پس از ورود OTP، هش scrypt غیرقابل‌تأیید پاک می‌شود
-- اپ اندروید: نبود رکورد در ابر دیگر رد نیست — ترمیم نشان synced و ثبت مجدد در ابر
-- اپ اندروید: خطای هندلر → پاسخ کنترل‌شده (دیگر پیام غلط «اینترنت را بررسی کنید»)
-- صفحه ورود: دکمه اقدام سریع — پرش یک‌ضربه‌ای به کد پیامکی/ورود
-- تست E2E وب تأیید شد: ورود OTP با 09120000001 موفق
 
 ## تغییرات 4.8.21 — مسیریابی صوتی نشانه‌های شهری
 
