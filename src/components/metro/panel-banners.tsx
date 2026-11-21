@@ -394,7 +394,7 @@ export function usePanelCities(): { id: number; name: string; isActive: boolean 
 /* ---------------- نسخه اپ — تک منبع حقیقت: تنظیمات پنل (app_version) ---------------- */
 
 /** نسخه محلی — فقط وقتی پنل در دسترس نیست یا مقدار نامعتبر است */
-export const FALLBACK_APP_VERSION = "4.8.21";
+export const FALLBACK_APP_VERSION = "4.8.23";
 
 /** پاک‌سازی نسخه: فقط رقم و نقطه، حداکثر ۱۲ کاراکتر */
 function sanitizeVersion(raw: unknown): string {

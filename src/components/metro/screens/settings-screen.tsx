@@ -142,7 +142,7 @@ export default function SettingsScreen() {
           <div className="min-w-0">
             <p className="text-xs font-medium text-metro-onsurface">بررسی آپدیت نرم‌افزار</p>
             <p className="text-[10px] text-metro-outline mt-0.5">
-              نسخه نصب‌شده: {toFa("4.8.21")} (آخرین تغییرات خطوط)
+              نسخه نصب‌شده: {toFa("4.8.23")} (آخرین تغییرات خطوط)
             </p>
           </div>
           <button
