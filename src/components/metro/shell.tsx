@@ -181,7 +181,7 @@ export function AppBar() {
       {/* چپ (انتهای RTL): اعلان‌ها + انتخابگر شهر */}
       <div className="flex items-center gap-2 relative min-w-0" ref={dropRef}>
         <button
-          aria-label="اعلان‌ها و اطلاعیه‌ها"
+          aria-label="اطلاعیه‌ها"
           onClick={() => router.push("/status")}
           className="relative w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container active:scale-95 transition-all"
         >
@@ -250,7 +250,7 @@ const METRO_GROUP: {
   children: [
     { label: "خطوط مترو", icon: "route", href: "/lines" },
     { label: "ایستگاه‌ها", icon: "directions_subway", href: "/stations" },
-    { label: "وضعیت خطوط و اطلاعیه‌ها", icon: "campaign", href: "/status" },
+    { label: "اطلاعیه‌ها", icon: "campaign", href: "/status" },
   ],
 };
 

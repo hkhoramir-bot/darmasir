@@ -32,8 +32,8 @@ const METRO_SECTIONS: {
   {
     href: "/status",
     icon: "campaign",
-    title: "وضعیت خطوط و اطلاعیه‌ها",
-    desc: "وضعیت لحظه‌ای خطوط، تاخیرها و اطلاعیه‌های رسمی",
+    title: "اطلاعیه‌ها",
+    desc: "هشدارهای رسمی خطوط، تاخیرها و آرشیو ۲۴ ساعت گذشته",
     color: "bg-secondary/15 text-secondary",
   },
 ];
