@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# protect-version.sh — بازرسی و ترمیم خودکار قفل نسخه 4.8.23 (versionCode 503)
+# protect-version.sh — بازرسی و ترمیم خودکار قفل نسخه 4.8.21 (versionCode 501)
 #
 # طبق GUARDIAN.md و VERSION_LOCK.md — این اسکریپت را بعد از هر restore
 # اسنپ‌شات، ریست روزانه یا هرگاه مشکوک به تغییر نسخه هستید اجرا کنید:
@@ -17,11 +17,11 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 ROOT="$(pwd)"
 
-CANONICAL_VERSION="4.8.23"
-CANONICAL_CODE="503"
-CANONICAL_MD5="70abf2f04856e76786aff5d8b50da780"
-APK_PRIMARY="public/metrojo-4.8.23.apk"
-APK_MASTER="cloudflare-worker/assets/metrojo-4.8.23.apk"
+CANONICAL_VERSION="4.8.21"
+CANONICAL_CODE="501"
+CANONICAL_MD5="32d8efa4c2147aaad29aabcc0f9bb3f0"
+APK_ALIASES="public/metrojo-4.8.21.apk public/metrojo-4.8.20.apk public/metrojo-4.8.17.apk public/metrojo-4.9.0.apk"
+APK_MASTER="cloudflare-worker/assets/metrojo-4.8.21.apk"
 AAPT="/home/z/android-sdk/build-tools/36.0.0/aapt"
 UI_MARKER="مقایسه مدهای سفر شهری"
 AD_MARKER="بخش تبلیغ"
@@ -32,13 +32,15 @@ ok()   { echo "[protect]   ✓ $*"; OK=$((OK+1)); }
 bad()  { echo "[protect]   ✗ $*"; FAIL=$((FAIL+1)); }
 fixed(){ echo "[protect]   🔧 ترمیم شد: $*"; REPAIRED=$((REPAIRED+1)); }
 
-# ---------- رفرنس مرجع (تگ یا کامیت) ----------
+# ---------- رفرنس مرجع (کامیت یا تگ) ----------
 CANONICAL_REF=""
-if git rev-parse -q --verify "v4.8.23-locked^{commit}" >/dev/null 2>&1; then
-  CANONICAL_REF="v4.8.23-locked"
+if git rev-parse -q --verify "db841b8^{commit}" >/dev/null 2>&1; then
+  CANONICAL_REF="db841b8"
+elif git rev-parse -q --verify "v4.8.21-locked^{commit}" >/dev/null 2>&1; then
+  CANONICAL_REF="v4.8.21-locked"
 fi
 if [ -z "$CANONICAL_REF" ]; then
-  log "⚠ هشدار: تگ v4.8.23-locked در تاریخچه نیست — ترمیم git غیرفعال"
+  log "⚠ هشدار: کامیت مرجع db841b8 و تگ v4.8.21-locked در تاریخچه نیستند — ترمیم git غیرفعال"
 fi
 
 md5_of() { md5sum "$1" 2>/dev/null | cut -d' ' -f1; }
@@ -47,41 +49,41 @@ log "بازرسی قفل نسخه $CANONICAL_VERSION (versionCode $CANONICAL_COD
 log "---------------------------------------------------------------"
 
 # ---------- 1) APK مرجع عمومی ----------
-log "[1/8] فایل APK قابل دانلود"
-FIRST_MD5="$(md5_of "$APK_PRIMARY")"
+log "[1/8] فایل‌های APK قابل دانلود"
+FIRST_MD5="$(md5_of public/metrojo-4.8.21.apk)"
 if [ "$FIRST_MD5" = "$CANONICAL_MD5" ]; then
-  ok "$APK_PRIMARY md5 صحیح"
+  ok "public/metrojo-4.8.21.apk md5 صحیح"
 else
-  bad "$APK_PRIMARY گم‌شده یا خراب (md5=${FIRST_MD5:-none})"
+  bad "public/metrojo-4.8.21.apk گم‌شده یا خراب (md5=${FIRST_MD5:-none})"
   if [ -f "$APK_MASTER" ] && [ "$(md5_of "$APK_MASTER")" = "$CANONICAL_MD5" ]; then
-    cp -f "$APK_MASTER" "$APK_PRIMARY" && fixed "بازگردانی از $APK_MASTER"
+    cp -f "$APK_MASTER" public/metrojo-4.8.21.apk && fixed "بازگردانی از $APK_MASTER"
   fi
 fi
+for apk in $APK_ALIASES; do
+  [ "$apk" = "public/metrojo-4.8.21.apk" ] && continue
+  if [ "$(md5_of "$apk")" = "$CANONICAL_MD5" ]; then
+    ok "$apk md5 صحیح"
+  else
+    bad "$apk گم‌شده یا ناهمسان — هم‌سان‌سازی با نسخه مرجع"
+    [ -f public/metrojo-4.8.21.apk ] && cp -f public/metrojo-4.8.21.apk "$apk" && fixed "$apk"
+  fi
+done
 if [ -f "$APK_MASTER" ]; then
   if [ "$(md5_of "$APK_MASTER")" = "$CANONICAL_MD5" ]; then
     ok "$APK_MASTER md5 صحیح"
   else
     bad "$APK_MASTER ناهمسان با مرجع — بازنویسی از نسخه عمومی صحیح"
-    [ -f "$APK_PRIMARY" ] && cp -f "$APK_PRIMARY" "$APK_MASTER" && fixed "$APK_MASTER"
+    [ -f public/metrojo-4.8.21.apk ] && cp -f public/metrojo-4.8.21.apk "$APK_MASTER" && fixed "$APK_MASTER"
   fi
 else
   bad "$APK_MASTER وجود ندارد — بازگردانی از نسخه عمومی"
-  [ -f "$APK_PRIMARY" ] && cp -f "$APK_PRIMARY" "$APK_MASTER" && fixed "$APK_MASTER"
+  [ -f public/metrojo-4.8.21.apk ] && cp -f public/metrojo-4.8.21.apk "$APK_MASTER" && fixed "$APK_MASTER"
 fi
-# APKهای قدیمی‌تر طبق GUARDIAN بخش ۶ نباید در public/ باشند — همه به‌جز نسخه جاری حذف می‌شوند
-for old in public/metrojo-*.apk; do
-  [ -e "$old" ] || continue
-  case "$old" in
-    "$APK_PRIMARY") continue ;;
-  esac
-  bad "$old قدیمی است — طبق GUARDIAN بخش ۶ حذف می‌شود"
-  rm -f "$old" && fixed "$old حذف شد"
-done
 
 # ---------- 2) aapt (در صورت موجود بودن) ----------
 log "[2/8] متادیتای APK (aapt)"
-if [ -x "$AAPT" ] && [ -f "$APK_PRIMARY" ]; then
-  BADGE="$("$AAPT" dump badging "$APK_PRIMARY" 2>/dev/null | grep '^package:' | head -1)"
+if [ -x "$AAPT" ] && [ -f public/metrojo-4.8.21.apk ]; then
+  BADGE="$("$AAPT" dump badging public/metrojo-4.8.21.apk 2>/dev/null | grep '^package:' | head -1)"
   if echo "$BADGE" | grep -q "versionCode='$CANONICAL_CODE'" && echo "$BADGE" | grep -q "versionName='$CANONICAL_VERSION'"; then
     ok "aapt: versionCode=$CANONICAL_CODE versionName=$CANONICAL_VERSION"
   else
@@ -103,13 +105,13 @@ fi
 
 # ---------- 4) رشته‌های سورس ----------
 log "[4/8] رشته‌های نسخه در src"
-if grep -q 'FALLBACK_APP_VERSION = "4.8.23"' src/components/metro/panel-banners.tsx; then
-  ok "FALLBACK_APP_VERSION = 4.8.23"
+if grep -q 'FALLBACK_APP_VERSION = "4.8.21"' src/components/metro/panel-banners.tsx; then
+  ok "FALLBACK_APP_VERSION = 4.8.21"
 else
   bad "FALLBACK_APP_VERSION در panel-banners.tsx ناهمسان"
 fi
-if grep -q '/metrojo-4.8.23.apk' src/components/metro/apk-download.tsx && grep -q '/metrojo-4.8.23.apk' 'src/app/(app)/settings/page.tsx'; then
-  ok "لینک دانلود /metrojo-4.8.23.apk صحیح"
+if grep -q '/metrojo-4.8.21.apk' src/components/metro/apk-download.tsx && grep -q '/metrojo-4.8.21.apk' 'src/app/(app)/settings/page.tsx'; then
+  ok "لینک دانلود /metrojo-4.8.21.apk صحیح"
 else
   bad "لینک دانلود در apk-download.tsx یا settings/page.tsx ناهمسان"
 fi
@@ -203,7 +205,7 @@ fi
 # ---------- ترمیم git در صورت ناهمسانی ----------
 NEED_GIT_REPAIR=0
 if [ "$GRN" != "$CANONICAL_VERSION" ] || [ "$GRC" != "$CANONICAL_CODE" ] \
-   || ! grep -q 'FALLBACK_APP_VERSION = "4.8.23"' src/components/metro/panel-banners.tsx 2>/dev/null \
+   || ! grep -q 'FALLBACK_APP_VERSION = "4.8.21"' src/components/metro/panel-banners.tsx 2>/dev/null \
    || [ -f src/app/page.tsx ]; then
   NEED_GIT_REPAIR=1
 fi
@@ -220,15 +222,17 @@ fi
 
 # ---------- کامیت + پوش ترمیم‌ها ----------
 if git status --porcelain -- android/app/build.gradle src/components/metro/panel-banners.tsx src/components/metro/apk-download.tsx 'src/app/(app)/settings/page.tsx' src/app/page.tsx public/*.apk "$APK_MASTER" 2>/dev/null | grep -q .; then
-  git add android/app/build.gradle src/components/metro/panel-banners.tsx src/components/metro/apk-download.tsx 'src/app/(app)/settings/page.tsx' src/app/page.tsx "$APK_PRIMARY" "$APK_MASTER" 2>/dev/null
+  git add android/app/build.gradle src/components/metro/panel-banners.tsx src/components/metro/apk-download.tsx 'src/app/(app)/settings/page.tsx' src/app/page.tsx public/metrojo-4.8.21.apk public/metrojo-4.8.20.apk public/metrojo-4.8.17.apk public/metrojo-4.9.0.apk "$APK_MASTER" 2>/dev/null
   git commit -m "guard: enforce locked version ${CANONICAL_VERSION} (versionCode ${CANONICAL_CODE}) — ترمیم خودکار طبق GUARDIAN.md" >/dev/null 2>&1 \
     && { log "[protect] ترمیم‌ها کامیت شد — در حال push ..."; git push origin HEAD 2>&1 | tail -1; } \
     || bad "کامیت/پوش ترمیم ناموفق"
 fi
 
 # ---------- تضمین تگ محافظتی ----------
-if ! git rev-parse -q --verify "refs/tags/v4.8.23-locked" >/dev/null 2>&1; then
-  log "⚠ تگ v4.8.23-locked هنوز ساخته نشده — پس از انتشار نسخه جدید ساخته و پوش شود"
+if ! git rev-parse -q --verify "refs/tags/v4.8.21-locked" >/dev/null 2>&1; then
+  if git rev-parse -q --verify "db841b8^{commit}" >/dev/null 2>&1; then
+    git tag -f v4.8.21-locked db841b8 2>/dev/null && git push origin v4.8.21-locked 2>&1 | tail -1 && log "[protect] تگ v4.8.21-locked ساخته و پوش شد"
+  fi
 fi
 
 log "---------------------------------------------------------------"
