@@ -46,9 +46,24 @@ export async function POST(req: NextRequest) {
       if (dup.status === "blocked") {
         return NextResponse.json({ error: MSG_BLOCKED }, { status: 403 });
       }
+      /* حساب ساخته‌شده با کد پیامکی رمز ندارد — ثبت‌نام = بازیابی همان حساب اصلی و تنظیم رمز
+         (رفع حلقه «وارد شوید ← رمز ندارم ← از پیامکی استفاده کنید») */
+      if (!dup.passwordHash) {
+        const claimed = await db.user.update({
+          where: { id: dup.id },
+          data: {
+            passwordHash: hashPassword(password),
+            ...(name.length >= 2 ? { name } : {}),
+            lastLoginAt: new Date(),
+          },
+        });
+        const { token } = await createSession(claimed.id, device);
+        syncAppUser({ phone: claimed.phone, email: claimed.email, name: claimed.name });
+        return NextResponse.json({ token, user: publicUser(claimed), claimed: true });
+      }
       const which = dup.phone && phone && dup.phone === phone ? "شماره موبایل" : "ایمیل";
       return NextResponse.json(
-        { error: `این ${which} قبلاً ثبت شده است — وارد شوید` },
+        { error: `این ${which} قبلاً ثبت شده است — با رمز خود وارد شوید یا از کد پیامکی استفاده کنید` },
         { status: 409 }
       );
     }

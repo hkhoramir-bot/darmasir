@@ -187,7 +187,42 @@ function authRegister(body: Json): Promise<Response> {
         void syncNow();
         return json({ token, user: publicUserLocal(restored), reclaimed: true });
       }
-      if (cloud.reachable && cloud.code && cloud.code !== "NOT_FOUND" && cloud.code !== "DB_ERROR") {
+      /* حساب روی سرور بدون رمز است؟ — مستقل از نسخه سرور:
+         نسخه قدیم سرور برای حساب‌های پیامکیِ بدون رمز هم NOT_FOUND می‌دهد؛
+         با بررسی مستقل وضعیت حساب، «حساب هست ولی رمز ندارد» از «حساب اصلاً نیست» جدا می‌شود */
+      let noPasswordAccount = cloud.reachable && cloud.code === "NO_PASSWORD";
+      if (!noPasswordAccount && cloud.reachable && cloud.code === "NOT_FOUND") {
+        const st0 = await cloudUserStatus(ident0);
+        noPasswordAccount = st0.reachable && st0.exists;
+      }
+      if (noPasswordAccount) {
+        /* ثبت‌نام = بازیابی همان حساب اصلی و تنظیم رمز روی سرور
+           (نه حساب موازی، نه خطای تکراری — حلقه «ثبت‌نام کنید ← قبلاً ثبت شده» رفع می‌شود) */
+        const claimed = await cloudRegister(name, phone, email, password);
+        if (claimed.ok && claimed.token) {
+          const nowIso0 = new Date().toISOString();
+          const restored: NativeUser = {
+            id: uid(),
+            name: String(claimed.user?.name ?? name).trim() || name,
+            phone,
+            email,
+            passwordHash: await hashPasswordLocal(password),
+            createdAt: String(claimed.user?.createdAt ?? "") || nowIso0,
+            lastLoginAt: nowIso0,
+            synced: true,
+          };
+          users.push(restored);
+          lsSet(LS.users, users);
+          const token = uid() + uid();
+          const sessions = lsGet<Record<string, string>>(LS.sessions, {});
+          sessions[token] = restored.id;
+          lsSet(LS.sessions, sessions);
+          markSynced(ident0);
+          void syncNow();
+          return json({ token, user: publicUserLocal(restored), reclaimed: true });
+        }
+        /* ادعای ابری ناموفق (قطعی/خطا) — ثبت‌نام محلی مثل قبل ادامه می‌یابد */
+      } else if (cloud.reachable && cloud.code && cloud.code !== "NOT_FOUND" && cloud.code !== "DB_ERROR") {
         return json(
           {
             error:
@@ -276,10 +311,23 @@ function authLogin(body: Json): Promise<Response> {
         if (cloud.code === "BAD_PASSWORD") return json({ error: "رمز عبور اشتباه است" }, 401);
         if (cloud.code === "FORBIDDEN")
           return json({ error: "حساب شما مسدود شده است — با پشتیبانی درمسیر تماس بگیرید" }, 403);
-        if (cloud.code === "USE_APP_OR_OTP")
-          return json({ error: "ورود با رمز برای این حساب فعال نیست — از ورود با کد پیامکی استفاده کنید" }, 400);
-        if (cloud.code === "NOT_FOUND")
+        if (cloud.code === "USE_APP_OR_OTP" || cloud.code === "NO_PASSWORD")
+          return json(
+            { error: "برای این حساب رمز عبور تنظیم نشده است — از ورود با کد پیامکی استفاده کنید یا ثبت‌نام را با همین شماره کامل کنید" },
+            400
+          );
+        if (cloud.code === "NOT_FOUND") {
+          /* نسخه قدیم سرور برای حساب‌های پیامکیِ بدون رمز هم NOT_FOUND می‌دهد —
+             با بررسی مستقل وضعیت، پیام درست نمایش داده می‌شود: حساب هست ولی رمز ندارد */
+          const st = await cloudUserStatus(ident);
+          if (st.reachable && st.exists) {
+            return json(
+              { error: "برای این حساب رمز عبور تنظیم نشده است — از ورود با کد پیامکی استفاده کنید یا ثبت‌نام را با همین شماره کامل کنید" },
+              400
+            );
+          }
           return json({ error: "حسابی با این مشخصات پیدا نشد — ابتدا ثبت‌نام کنید" }, 404);
+        }
         return json({ error: cloud.error || "خطا در ورود — دوباره تلاش کنید" }, 502);
       }
       return json(
@@ -1134,6 +1182,54 @@ async function cloudLogin(identifier: string, password: string): Promise<CloudLo
     return { reachable: true, ok: false, code: "DB_ERROR", error: "خطا در ورود — دوباره تلاش کنید" };
   }
   return { reachable: false, ok: false };
+}
+
+type CloudRegisterResult = {
+  ok: boolean;
+  token?: string;
+  user?: CloudLoginResult["user"];
+  code?: string;
+};
+
+/** ثبت‌نام ابری — برای بازیابی حساب پیامکیِ بدون رمز (تنظیم رمز روی همان حساب اصلی سرور).
+    ترتیبی (نه موازی) چون عملیات نوشتنی است؛ هر سرور فقط یک‌بار صدا زده می‌شود */
+async function cloudRegister(
+  name: string,
+  phone: string | null,
+  email: string | null,
+  password: string
+): Promise<CloudRegisterResult> {
+  const bases = CLOUD_CONTENT_BASES.map((b) => b.trim().replace(/\/+$/, "")).filter(Boolean);
+  for (const base of bases) {
+    try {
+      const res = await (deviceFetch ?? fetch)(`${base}/api/v1/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          ...(phone ? { phone } : {}),
+          ...(email ? { email } : {}),
+          password,
+          device: "android",
+        }),
+        signal: AbortSignal.timeout(6000),
+      });
+      const j = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        data?: { token?: string; user?: CloudLoginResult["user"] };
+        error?: { code?: string; message?: string };
+      } | null;
+      if (!j) continue;
+      cloudLastSeen = Date.now();
+      if (j.ok && j.data?.token) {
+        return { ok: true, token: j.data.token, user: j.data.user };
+      }
+      return { ok: false, code: String(j.error?.code ?? "") };
+    } catch {
+      /* سرور بعدی امتحان می‌شود */
+    }
+  }
+  return { ok: false };
 }
 
 /* ---------------------------- dispatcher ---------------------------- */

@@ -136,6 +136,26 @@ export function AuthScreen() {
     setOtpErr("");
   };
 
+  /* ---------------- پرش سریع بین روش‌های ورود بر اساس پیام خطا ----------------
+     پیام‌هایی که به «کد پیامکی» ارجاع می‌دهند → رفتن مستقیم به فرم کد پیامکی با همان شماره؛
+     پیام‌هایی که به «وارد شوید» ارجاع می‌دهند → برگشت به فرم ورود با همان مشخصات */
+  const quickSwitchOtp = (ident: string) => {
+    const raw = ident.trim();
+    if (raw && !raw.includes("@")) setOtpPhone(raw);
+    setOtpCode("");
+    setOtpStep("phone");
+    setOtpDevCode(null);
+    setView("otp");
+    resetErrors();
+  };
+  const quickSwitchLogin = (ident: string) => {
+    if (ident.trim()) setIdentifier(ident.trim());
+    setView("login");
+    resetErrors();
+  };
+  const errorSuggestsOtp = (msg: string) => msg.includes("پیامکی");
+  const errorSuggestsLogin = (msg: string) => msg.includes("وارد شوید");
+
   /* ---------------- عملیات‌ها ---------------- */
   const doLogin = async () => {
     if (loginBusy) return;
@@ -338,6 +358,17 @@ export function AuthScreen() {
 
                 {loginErr && <ErrorBox msg={loginErr} />}
 
+                {loginErr && errorSuggestsOtp(loginErr) && (
+                  <button
+                    type="button"
+                    onClick={() => quickSwitchOtp(identifier)}
+                    className="w-full bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-xl py-2.5 text-sm font-bold border border-secondary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <MI name="sms" size={17} />
+                    ورود با کد پیامکی
+                  </button>
+                )}
+
                 <SubmitButton
                   busy={loginBusy}
                   icon="login"
@@ -424,6 +455,31 @@ export function AuthScreen() {
                 </div>
 
                 {regErr && <ErrorBox msg={regErr} />}
+
+                {regErr && (errorSuggestsOtp(regErr) || errorSuggestsLogin(regErr)) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {errorSuggestsOtp(regErr) && (
+                      <button
+                        type="button"
+                        onClick={() => quickSwitchOtp(rPhone || rEmail)}
+                        className="bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-xl py-2.5 text-[12px] font-bold border border-secondary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <MI name="sms" size={15} />
+                        کد پیامکی
+                      </button>
+                    )}
+                    {errorSuggestsLogin(regErr) && (
+                      <button
+                        type="button"
+                        onClick={() => quickSwitchLogin(rPhone || rEmail)}
+                        className="bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 text-[12px] font-bold border border-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <MI name="login" size={15} />
+                        ورود به حساب
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <SubmitButton
                   busy={regBusy}

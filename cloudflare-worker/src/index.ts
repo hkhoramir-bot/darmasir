@@ -643,7 +643,21 @@ async function handleApi(req: Request, env: Env, url: URL, ctx: ExecutionContext
       const dupe = phone ? await getUserByPhone(q, phone) : await getUserByEmail(q, email!);
       if (dupe) {
         if (dupe.status === "blocked") return fail("FORBIDDEN", MSG_BLOCKED, 403);
-        return fail("DUPLICATE", "حسابی با این مشخصات قبلاً ثبت شده", 409);
+        const dupeHash = String(dupe.passwordHash ?? "");
+        if (!dupeHash) {
+          /* حساب پیامکیِ بدون رمز — ثبت‌نام = بازیابی همان حساب اصلی و تنظیم رمز
+             (نه ساخت حساب موازی و نه خطای تکراری) — کاربر همان حساب قبلی را با رمز به دست می‌گیرد */
+          const hash = await hashPassword(password);
+          await q.run(
+            `UPDATE "User" SET "passwordHash" = ?, "name" = CASE WHEN ? != '' THEN ? ELSE "name" END, "lastLoginAt" = ? WHERE "id" = ?`,
+            [hash, name, name, String(Date.now()), String(dupe.id)]
+          );
+          const claimed = await (phone ? getUserByPhone(q, phone) : getUserByEmail(q, email!));
+          if (!claimed) return fail("DB_ERROR", "خطا در بازیابی حساب", 502);
+          const token = await createSession(q, String(claimed.id), String(body?.device ?? "web"));
+          return json({ token, user: publicUser(claimed), claimed: true });
+        }
+        return fail("DUPLICATE", "حسابی با این مشخصات قبلاً ثبت شده — با رمز خود وارد شوید یا از کد پیامکی استفاده کنید", 409);
       }
       const id = "u" + hex(crypto.getRandomValues(new Uint8Array(8)));
       const hash = await hashPassword(password);
@@ -682,7 +696,14 @@ async function handleApi(req: Request, env: Env, url: URL, ctx: ExecutionContext
       if (!user) return fail("NOT_FOUND", "حسابی با این مشخصات پیدا نشد", 404);
       if (user.status === "blocked") return fail("FORBIDDEN", MSG_BLOCKED, 403);
       const stored = String(user.passwordHash ?? "");
-      if (!stored) return fail("NOT_FOUND", "حسابی با این مشخصات پیدا نشد", 404);
+      /* حساب‌های ساخته‌شده با کد پیامکی رمز ندارند — نبود رمز به معنی «نبودن حساب» نیست؛
+         پیام دقیق: ورود با کد پیامکی یا تکمیل ثبت‌نام برای ساخت رمز (رفع حلقه «ثبت‌نام کنید ← قبلاً ثبت شده») */
+      if (!stored)
+        return fail(
+          "NO_PASSWORD",
+          "برای این حساب رمز عبور تنظیم نشده است — از ورود با کد پیامکی استفاده کنید یا ثبت‌نام را با همین شماره کامل کنید",
+          400
+        );
       if (isScryptHash(stored)) return fail("USE_APP_OR_OTP", MSG_SCRYPT, 400);
       if (!(await verifyPassword(password, stored))) return fail("BAD_PASSWORD", "رمز عبور اشتباه است", 401);
       await q.run(`UPDATE "User" SET "lastLoginAt" = ? WHERE "id" = ?`, [String(Date.now()), user.id]);
@@ -762,6 +783,12 @@ async function handleApi(req: Request, env: Env, url: URL, ctx: ExecutionContext
         user = await getUserByPhone(q, phone);
       } else {
         await q.run(`UPDATE "User" SET "lastLoginAt" = ? WHERE "id" = ?`, [t, user.id]);
+        /* هش scrypt (ساخت اپ وب) در این پلتفرم قابل تأیید نیست — با اثبات مالکیت از راه
+           کد پیامکی، حساب به «بدون رمز» تبدیل می‌شود تا ثبت‌نام با همان شماره،
+           حساب را بازیابی و رمز جدید بسازد (رفع کامل بن‌بست «قبلاً ثبت شده ← رمز ندارم») */
+        if (isScryptHash(String(user.passwordHash ?? ""))) {
+          await q.run(`UPDATE "User" SET "passwordHash" = NULL WHERE "id" = ?`, [user.id]);
+        }
       }
       if (!user) return fail("DB_ERROR", "خطا در ساخت حساب", 502);
       const token = await createSession(q, String(user.id), device);
