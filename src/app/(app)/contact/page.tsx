@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { MI, PageHeader } from "@/components/metro/shell";
 import { useToast } from "@/hooks/use-toast";
 import { useContactPage, type ContactMethod } from "@/components/metro/panel-banners";
@@ -41,11 +41,56 @@ interface MyTicket {
   createdAt: string;
 }
 
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 const STATUS_FA: Record<string, { label: string; cls: string }> = {
   open: { label: "در انتظار بررسی", cls: "bg-secondary/15 text-secondary" },
   answered: { label: "پاسخ داده شد", cls: "bg-primary/10 text-primary" },
   closed: { label: "بسته شده", cls: "bg-surface-container text-on-surface-variant" },
 };
+
+/* ---------- کش «تیکت‌های من» — ماژولی + localStorage ----------
+   بخش تیکت‌ها از رندر اول با داده واقعی نمایش داده می‌شود — بدون غیبت
+   چندثانیه‌ای تا برگشتن پاسخ سرور؛ واکشی پس‌زمینه فقط وقتی setState می‌کند
+   که داده واقعاً تغییر کرده باشد (بدون رندر بی‌دلیل هر ۲۰ ثانیه) */
+const TICKETS_LS_KEY = "darmasir-my-tickets-v1";
+const ticketsCache = new Map<string, MyTicket[]>();
+let appliedTicketsJson = ""; /* آخرین داده اعمال‌شده برای contactsKey جاری */
+
+function readCachedTickets(key: string): MyTicket[] | null {
+  if (key && ticketsCache.has(key)) return ticketsCache.get(key) as MyTicket[];
+  if (typeof window !== "undefined") {
+    try {
+      const raw = window.localStorage.getItem(TICKETS_LS_KEY);
+      if (raw) {
+        const p = JSON.parse(raw) as { k: string; t: MyTicket[] }[];
+        if (Array.isArray(p)) {
+          for (const e of p.slice(0, 6)) {
+            if (e && typeof e.k === "string" && Array.isArray(e.t)) ticketsCache.set(e.k, e.t);
+          }
+        }
+      }
+    } catch {
+      /* JSON خراب یا دسترسی محدود — بی‌صدا */
+    }
+  }
+  return key ? (ticketsCache.get(key) ?? null) : null;
+}
+
+function writeCachedTickets(key: string, tickets: MyTicket[]) {
+  if (!key) return;
+  ticketsCache.set(key, tickets);
+  if (typeof window !== "undefined") {
+    try {
+      const entries = Array.from(ticketsCache.entries())
+        .slice(-4)
+        .map(([k, t]) => ({ k, t }));
+      window.localStorage.setItem(TICKETS_LS_KEY, JSON.stringify(entries));
+    } catch {
+      /* دسترسی محدود — بی‌صدا */
+    }
+  }
+}
 
 export default function ContactPage() {
   const { toast } = useToast();
@@ -70,6 +115,7 @@ export default function ContactPage() {
   const [repliesLoaded, setRepliesLoaded] = useState(false);
   const [expanded, setExpanded] = useState<string | number | null>(null);
   const TICKET_CONTACTS_LS = "darmasir-ticket-contacts";
+  const [contactsVersion, setContactsVersion] = useState(0); /* راه تماس جدید ذخیره شد — کش راه‌ها دوباره خوانده شود */
 
   const readSavedTicketContacts = (): string[] => {
     try {
@@ -88,6 +134,7 @@ export default function ContactPage() {
       const list = readSavedTicketContacts();
       if (!list.includes(v)) {
         localStorage.setItem(TICKET_CONTACTS_LS, JSON.stringify([v, ...list].slice(0, 5)));
+        setContactsVersion((n) => n + 1); /* contactsKey به‌روز می‌شود و واکشی خودکار تکرار می‌شود */
       }
     } catch {
       /* حافظه در دسترس نیست */
@@ -102,9 +149,21 @@ export default function ContactPage() {
     if (user?.phone) set.add(user.phone.trim());
     for (const c of readSavedTicketContacts()) set.add(c);
     return Array.from(set).filter(Boolean).slice(0, 6);
-  }, [user?.email, user?.phone]);
+  }, [user?.email, user?.phone, contactsVersion]);
 
   const contactsKey = allMyContacts.join(",");
+
+  /* هیدراتاسیون پیش از رنگ‌آمیزی — تیکت‌های کش‌شده از رندر اول همین‌جا هستند */
+  useIsoLayoutEffect(() => {
+    const cached = readCachedTickets(contactsKey);
+    if (cached && cached.length > 0) {
+      appliedTicketsJson = JSON.stringify(cached);
+      setMyTickets(cached);
+      setRepliesLoaded(true);
+    } else {
+      appliedTicketsJson = "";
+    }
+  }, [contactsKey]);
 
   const loadReplies = useCallback(async (who: string) => {
     if (!who) return;
@@ -112,11 +171,18 @@ export default function ContactPage() {
       const res = await fetch(`/api/tickets/replies?contacts=${encodeURIComponent(who)}`, { cache: "no-store" });
       const data = await res.json();
       if (res.ok && data.ok) {
-        setMyTickets(Array.isArray(data.tickets) ? data.tickets : []);
-        setRepliesLoaded(true);
+        const list: MyTicket[] = Array.isArray(data.tickets) ? data.tickets : [];
+        writeCachedTickets(who, list);
+        /* فقط وقتی داده واقعاً تغییر کرده setState — هر ۲۰ ثانیه یک رندر بی‌دلیل نه */
+        const nextJson = JSON.stringify(list);
+        if (nextJson !== appliedTicketsJson) {
+          appliedTicketsJson = nextJson;
+          setMyTickets(list);
+          setRepliesLoaded(true);
+        }
       }
     } catch {
-      /* قطعی شبکه — بی‌صدا */
+      /* قطعی شبکه — بی‌صدا؛ داده کش‌شده سر جایش می‌ماند */
     }
   }, []);
 
@@ -143,6 +209,26 @@ export default function ContactPage() {
         if (typedContact) saveTicketContact(typedContact);
         if (user?.email) saveTicketContact(user.email);
         if (user?.phone) saveTicketContact(user.phone);
+        /* به‌روزرسانی خوش‌بینانه — تیکت بلافاصله در «تیکت‌های من» دیده می‌شود */
+        const optimistic: MyTicket = {
+          id: typeof data.id === "string" || typeof data.id === "number" ? data.id : `local-${Date.now()}`,
+          subject: form.subject.trim(),
+          category: form.category,
+          message: form.message.trim(),
+          status: "open",
+          reply: null,
+          repliedAt: null,
+          createdAt: new Date().toISOString(),
+        };
+        const keyNow = allMyContacts.join(",") || typedContact;
+        if (keyNow) {
+          const prevList = readCachedTickets(keyNow) ?? myTickets;
+          const nextList = [optimistic, ...prevList.filter((t) => String(t.id) !== String(optimistic.id))];
+          appliedTicketsJson = JSON.stringify(nextList);
+          writeCachedTickets(keyNow, nextList);
+          setMyTickets(nextList);
+          setRepliesLoaded(true);
+        }
         setForm({ name: "", contact: "", category: "general", subject: "", message: "" });
         toast({
           title: "تیکت ثبت شد",
