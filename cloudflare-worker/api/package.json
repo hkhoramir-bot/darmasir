@@ -1,0 +1,20 @@
+{
+  "name": "darmasir-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API عمومی اپ درمسیر روی Cloudflare Workers — متصل به Turso (مشترک با پنل مدیریت). جدا از ورکر صوتی metrojo-voice.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "bundle": "esbuild src/index.ts --bundle --format=esm --outfile=api-worker.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251008.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.42.0"
+  }
+}

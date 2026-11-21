@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { MI, PageHeader, useInitCity, useShell } from "@/components/metro/shell";
 import { useVoiceSearch, openStandaloneTab } from "@/components/metro/voice";
@@ -26,6 +27,7 @@ import {
 
 const CITY_NAME: Record<string, string> = {
   tehran: "تهران",
+  karaj: "کرج",
   mashhad: "مشهد",
   isfahan: "اصفهان",
 };
@@ -39,7 +41,29 @@ interface FavRow {
   lines: { id: string; color: string }[];
 }
 
-/* ---------------------- کارت ایستگاه (طرح _13) ---------------------- */
+/* رنگ متن مناسب روی رنگ خط (زرد/روشن → متن تیره، بقیه → سفید) */
+function bestTextOn(hex: string): string {
+  try {
+    const n = hex.replace("#", "");
+    const r = parseInt(n.slice(0, 2), 16);
+    const g = parseInt(n.slice(2, 4), 16);
+    const b = parseInt(n.slice(4, 6), 16);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return lum > 0.62 ? "#1c2431" : "#ffffff";
+  } catch {
+    return "#ffffff";
+  }
+}
+
+/* چیپ متن رنگ خط — در تم تاریک رنگ خط با سفید ترکیب می‌شود تا خوانا بماند */
+const LINE_TEXT_CLS =
+  "text-[color:var(--chip-c)] dark:text-[color-mix(in_oklab,var(--chip-c)_58%,white)]";
+
+function chipStyle(color: string): CSSProperties {
+  return { backgroundColor: `${color}1A`, "--chip-c": color } as CSSProperties;
+}
+
+/* ---------------------- کارت ایستگاه (طرح بازطراحی‌شده) ---------------------- */
 function StationCard({
   st,
   fav,
@@ -77,144 +101,148 @@ function StationCard({
   const crowd = liveArr?.arr ?? arrivals?.find((a) => a.arr)?.arr ?? null;
 
   return (
-    <article className="group bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all relative overflow-hidden">
-      {/* نوار رنگی خط(ها) — هویت بصری باریک */}
-      <div className="absolute top-0 right-0 left-0 h-[3px] flex" aria-hidden>
+    <article className="group relative overflow-hidden rounded-3xl bg-surface-container-lowest border border-outline-variant/40 shadow-sm hover:shadow-lg hover:border-primary/40 hover:-translate-y-0.5 transition-all">
+      {/* ریل رنگی خط(ها) — لبه راست (RTL) با هویت بصری پررنگ */}
+      <div className="absolute inset-y-0 right-0 w-[5px] flex flex-col" aria-hidden>
         {lines.map((l) => (
           <div key={l.id} className="flex-1" style={{ backgroundColor: l.color }} />
         ))}
       </div>
+      {/* هاله رنگی خط در پس‌زمینه — عمق و شخصیت کارت */}
+      <div
+        className="absolute -top-14 -left-14 w-36 h-36 rounded-full blur-2xl opacity-15 pointer-events-none"
+        style={{ backgroundColor: first.color }}
+        aria-hidden
+      />
 
-      {/* سر فشرده: حباب خط + نام + متادیتا + نشان */}
-      <div className="flex items-center gap-2.5 pt-0.5">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border relative"
-          style={
-            interchange
-              ? { backgroundColor: "var(--color-surface-container)", borderColor: "var(--color-outline-variant)" }
-              : { backgroundColor: `${first.color}1A`, borderColor: `${first.color}40` }
-          }
-        >
-          <span
-            className="flex"
-            style={interchange ? undefined : { color: first.color }}
-          >
-            <MI name={interchange ? "alt_route" : "directions_subway"} size={19} fill={interchange} className={interchange ? "text-primary" : ""} />
-          </span>
-          {lines.slice(0, 2).map((l, i) => (
-            <span
-              key={l.id}
-              className={`absolute -bottom-1 ${
-                i === 0 ? "-right-1" : "-left-1"
-              } w-4 h-4 rounded-full text-[8.5px] text-white font-bold flex items-center justify-center border-2 border-surface-container-lowest`}
-              style={{ backgroundColor: l.color }}
+      <div className="relative p-4 pr-5">
+        {/* سر کارت: حباب خط + نام و نشان‌ها + دکمه نشان */}
+        <div className="flex items-start gap-3">
+          <div className="relative shrink-0">
+            <div
+              className="w-11 h-11 rounded-2xl flex items-center justify-center border shadow-sm"
+              style={
+                interchange
+                  ? { backgroundColor: "var(--color-surface-container)", borderColor: "var(--color-outline-variant)" }
+                  : { backgroundColor: `${first.color}1F`, borderColor: `${first.color}45` }
+              }
             >
-              {toFa(l.number)}
-            </span>
-          ))}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <h2 className="text-[14px] font-bold text-on-surface truncate leading-5">{st.name}</h2>
-          <div className="flex items-center gap-1 mt-1 text-[10px] text-outline font-medium flex-wrap">
-            {interchange ? (
-              <span className="px-1.5 py-px rounded-full bg-primary/10 text-primary font-bold">
-                خط {lines.map((l) => toFa(l.number)).join(" + ")} • تقاطع
+              <span className="flex" style={interchange ? undefined : { color: first.color }}>
+                <MI name={interchange ? "alt_route" : "directions_subway"} size={22} fill={!interchange} />
               </span>
-            ) : (
+            </div>
+            {lines.slice(0, 2).map((l, i) => (
               <span
-                className="px-1.5 py-px rounded-full font-bold"
-                style={{ backgroundColor: `${first.color}1A`, color: first.color }}
+                key={l.id}
+                className={`absolute -bottom-1.5 ${
+                  i === 0 ? "-right-1.5" : "-left-1.5"
+                } w-[18px] h-[18px] rounded-full text-[9px] font-bold flex items-center justify-center border-2 border-surface-container-lowest shadow-sm`}
+                style={{ backgroundColor: l.color, color: bestTextOn(l.color) }}
               >
-                {isTerminal ? `پایانه ${first.name}` : first.name}
+                {toFa(l.number)}
               </span>
-            )}
-            <span aria-hidden className="text-outline-variant">•</span>
-            <span>{toFa(total)} ایستگاه</span>
-            <span aria-hidden className="text-outline-variant">•</span>
-            <span className="whitespace-nowrap">هر {toFa(headway)} دقیقه</span>
+            ))}
           </div>
-        </div>
 
-        <button
-          type="button"
-          aria-label={fav ? "حذف از نشان‌شده‌ها" : "افزودن به نشان‌شده‌ها"}
-          aria-pressed={fav}
-          onClick={() => onToggleFav(st)}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 active:scale-90 transition-all ${
-            fav ? "text-amber-400 bg-amber-400/10" : "text-outline-variant hover:text-primary hover:bg-surface-container"
-          }`}
-        >
-          <MI name="star" size={18} fill={fav} />
-        </button>
-      </div>
-
-      {/* امکانات — چیپ‌های ریز */}
-      {st.amenities.length > 0 && (
-        <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-          {st.amenities.slice(0, 4).map((k) => (
-            <span
-              key={k}
-              title={AMENITIES[k].label}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-surface-container text-[10px] font-medium text-on-surface-variant"
-            >
-              <MI name={AMENITIES[k].icon} size={12} className="text-primary" />
-              {AMENITIES[k].label}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* ورود قطار بعدی هر خط + ازدحام */}
-      <div className="mt-2 px-2.5 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/25 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-          {liveArr && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping shrink-0" aria-hidden />}
-          {arrivals === null ? (
-            <span className="text-[10px] font-bold text-outline">در حال دریافت...</span>
-          ) : liveArr ? (
-            arrivals.map((a) =>
-              a.arr && !a.arr.outOfService && a.arr.minutes.length > 0 ? (
-                <span
-                  key={a.line.id}
-                  className="px-1.5 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap"
-                  style={{ backgroundColor: `${a.line.color}1A`, color: a.line.color }}
-                >
-                  {a.line.name}: {toFa(a.arr.minutes[0])}′
+          <div className="min-w-0 flex-1 pt-0.5">
+            <h2 className="text-[15px] font-extrabold text-on-surface truncate leading-6">{st.name}</h2>
+            <div className="flex items-center gap-1 mt-1 text-[10px] font-medium flex-wrap">
+              {interchange ? (
+                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                  تقاطع خط {lines.map((l) => toFa(l.number)).join(" + ")}
                 </span>
-              ) : null
-            )
-          ) : (
-            <span className="text-[10px] font-bold text-outline">خارج از ساعات سرویس</span>
+              ) : (
+                <span className={`px-2 py-0.5 rounded-full font-bold ${LINE_TEXT_CLS}`} style={chipStyle(first.color)}>
+                  {isTerminal ? `پایانه ${first.name}` : first.name}
+                </span>
+              )}
+              <span className="text-on-surface-variant whitespace-nowrap">هر {toFa(headway)} دقیقه</span>
+              <span aria-hidden className="text-on-surface-variant">•</span>
+              <span className="text-on-surface-variant whitespace-nowrap">{toFa(total)} ایستگاه</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            aria-label={fav ? "حذف از نشان‌شده‌ها" : "افزودن به نشان‌شده‌ها"}
+            aria-pressed={fav}
+            onClick={() => onToggleFav(st)}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 active:scale-90 transition-all ${
+              fav ? "text-amber-400 bg-amber-400/15" : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+            }`}
+          >
+            <MI name="star" size={19} fill={fav} />
+          </button>
+        </div>
+
+        {/* ورود زنده قطار بعدی هر خط — نوار شیشه‌ای با پیل‌های رنگ خط */}
+        <div className="mt-3 rounded-2xl bg-surface-container px-3 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            {liveArr && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" aria-hidden />}
+            {arrivals === null ? (
+              <span className="text-[10px] font-bold text-on-surface-variant">در حال دریافت…</span>
+            ) : liveArr ? (
+              arrivals.map((a) =>
+                a.arr && !a.arr.outOfService && a.arr.minutes.length > 0 ? (
+                  <span
+                    key={a.line.id}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap inline-flex items-center gap-1 ${LINE_TEXT_CLS}`}
+                    style={chipStyle(a.line.color)}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: a.line.color }} aria-hidden />
+                    {a.line.name} — {toFa(a.arr.minutes[0])}′
+                  </span>
+                ) : null
+              )
+            ) : (
+              <span className="text-[10px] font-bold text-on-surface-variant">خارج از ساعات سرویس</span>
+            )}
+          </div>
+          {crowd && liveArr && (
+            <span
+              className="px-2 py-1 rounded-full text-[10px] font-bold shrink-0 whitespace-nowrap"
+              style={{ color: CROWD_COLOR[crowd.crowd], backgroundColor: `${CROWD_COLOR[crowd.crowd]}14` }}
+            >
+              {crowd.crowdLabel}
+            </span>
           )}
         </div>
-        {crowd && liveArr && (
-          <span
-            className="px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 whitespace-nowrap"
-            style={{ color: CROWD_COLOR[crowd.crowd], backgroundColor: `${CROWD_COLOR[crowd.crowd]}14` }}
-          >
-            {crowd.crowdLabel}
-          </span>
-        )}
-      </div>
 
-      {/* اقدامات */}
-      <div className="mt-2.5 flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => router.push(`/plan?to=${st.id}`)}
-          className="flex-1 h-9 rounded-xl bg-primary text-white text-[12px] font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-all"
-        >
-          <MI name="directions" size={16} />
-          مسیریابی
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push(`/stations/${st.id}`)}
-          className="px-3.5 h-9 rounded-xl bg-surface-container text-primary text-[12px] font-semibold flex items-center justify-center gap-0.5 hover:bg-surface-container-high active:scale-[0.98] transition-all"
-        >
-          جزئیات
-          <MI name="chevron_left" size={14} />
-        </button>
+        {/* امکانات — چیپ‌های ریز با آیکون رنگی */}
+        {st.amenities.length > 0 && (
+          <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+            {st.amenities.slice(0, 4).map((k) => (
+              <span
+                key={k}
+                title={AMENITIES[k].label}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-container text-[10px] font-medium text-on-surface-variant"
+              >
+                <MI name={AMENITIES[k].icon} size={12} className="text-primary" />
+                {AMENITIES[k].label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* اقدامات — دکمه گرادیانی اصلی + جزئیات */}
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.push(`/plan?to=${st.id}`)}
+            className="flex-1 h-9.5 rounded-xl bg-gradient-to-l from-primary-container to-primary text-white text-[12px] font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-all"
+          >
+            <MI name="directions" size={16} />
+            مسیریابی
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push(`/stations/${st.id}`)}
+            className="px-3.5 h-9.5 rounded-xl bg-surface-container text-primary text-[12px] font-bold flex items-center justify-center gap-0.5 hover:bg-surface-container-high active:scale-[0.98] transition-all"
+          >
+            جزئیات
+            <MI name="chevron_left" size={14} />
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -358,7 +386,7 @@ export default function StationsPage() {
               onChange={(e) => setQ(e.target.value)}
               placeholder="جستجوی نام ایستگاه یا خط (مثلاً تجریش، تئاتر شهر...)"
               aria-label="جستجوی ایستگاه"
-              className="w-full bg-surface-container-lowest border border-outline-variant/60 rounded-xl pr-11 pl-12 py-3 text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
+              className="w-full bg-surface-container-lowest border border-outline-variant/60 rounded-xl pr-11 pl-12 py-3 text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
             />
             <div className="absolute left-2 flex items-center gap-1">
               {q.trim() !== "" && (
@@ -369,7 +397,7 @@ export default function StationsPage() {
                     setQ("");
                     setQDebounced("");
                   }}
-                  className="w-7 h-7 flex items-center justify-center rounded-full text-outline-variant hover:text-on-surface-variant active:scale-90 transition-all"
+                  className="w-7 h-7 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface-variant active:scale-90 transition-all"
                 >
                   <MI name="close" size={18} />
                 </button>
@@ -402,7 +430,7 @@ export default function StationsPage() {
           {voice.errorKind === "blocked" && (
             <div className="flex items-center justify-between gap-2 bg-error/10 rounded-lg px-3 py-2 border border-error/20 mt-2">
               <span className="text-[10px] font-medium text-error leading-snug">
-                میکروفن در این پنجره (پیش‌نمایش) مسدود است — برای گفتار صوتی، متروجو را در تب جدید باز کنید.
+                میکروفن در این پنجره (پیش‌نمایش) مسدود است — برای گفتار صوتی، درمسیر را در تب جدید باز کنید.
               </span>
               <button
                 type="button"
@@ -447,7 +475,7 @@ export default function StationsPage() {
                       setFavIds((prev) => prev.filter((x) => x !== f.id));
                       fetch(`/api/favorites?stationId=${f.id}`, { method: "DELETE" }).catch(() => loadFavs());
                     }}
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-outline-variant hover:text-error active:scale-90 transition-all"
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-on-surface-variant hover:text-error active:scale-90 transition-all"
                   >
                     <MI name="close" size={14} />
                   </button>
@@ -557,7 +585,7 @@ export default function StationsPage() {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary-container" aria-hidden />
             <span className="text-title-md text-on-surface font-bold">{toFa(results.length)} ایستگاه</span>
-            <span className="px-2 py-0.5 rounded-full bg-surface-container text-outline text-[12px] font-medium">
+            <span className="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[12px] font-medium">
               نزدیک‌ترین
             </span>
           </div>
@@ -586,7 +614,7 @@ export default function StationsPage() {
           <div className="px-4 mt-3">
             <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-6 flex flex-col items-center gap-2.5 shadow-sm">
               <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center">
-                <MI name="search_off" size={26} className="text-outline" />
+                <MI name="search_off" size={26} className="text-on-surface-variant" />
               </div>
               <p className="text-title-md text-on-surface font-bold">ایستگاهی یافت نشد</p>
               <p className="text-body-sm text-on-surface-variant">عبارت جستجو یا فیلترها را تغییر دهید</p>
@@ -631,7 +659,7 @@ export default function StationsPage() {
                   type="button"
                   aria-label="بستن راهنما"
                   onClick={() => setShowHelp(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container transition-all"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-all"
                 >
                   <MI name="close" size={20} />
                 </button>

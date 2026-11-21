@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   applicationName: "درمسیر",
   manifest: "/manifest.json",
   icons: {
-    icon: "/metrojo-app-icon.png",
-    apple: "/metrojo-app-icon.png",
+    icon: "/logo-icon-192.png",
+    apple: "/logo-icon-192.png",
   },
   appleWebApp: {
     capable: true,
@@ -28,7 +28,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0d58a6",
+  themeColor: "#07805f",
   viewportFit: "cover",
 };
 
@@ -46,7 +46,7 @@ export default function RootLayout({
       <body className="antialiased">
         <ThemeProvider>
           <div className="min-h-dvh w-full bg-metro-surface-dim/70 flex justify-center">
-            <div className="relative w-full max-w-md min-h-dvh flex flex-col bg-surface shadow-[0_0_60px_rgba(13,88,166,0.14)] sm:border-x sm:border-outline-variant/40 selection:bg-primary-fixed selection:text-on-primary-fixed">
+            <div className="relative w-full max-w-md min-h-dvh flex flex-col bg-surface shadow-[0_0_60px_rgba(7,128,95,0.14)] sm:border-x sm:border-outline-variant/40 selection:bg-primary-fixed selection:text-on-primary-fixed">
               {children}
             </div>
           </div>

@@ -32,7 +32,7 @@ export default function AppError({
         </div>
         <div className="space-y-1.5">
           <h1 className="font-bold text-sm text-on-surface">مشکلی پیش آمد</h1>
-          <p className="text-[11px] text-outline leading-6">
+          <p className="text-[11px] text-on-surface-variant leading-6">
             متأسفیم — یک خطای غیرمنتظره رخ داد. می‌توانید دوباره تلاش کنید یا به صفحه اصلی بازگردید.
           </p>
         </div>

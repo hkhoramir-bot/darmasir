@@ -12,6 +12,7 @@ import {
   toFa,
 } from "@/lib/metro-data";
 import { MI, PageHeader, useInitCity, useShell } from "@/components/metro/shell";
+import { PanelAdSlot, useTravelModes } from "@/components/metro/panel-banners";
 
 /* ============================================================
    مسیرهای برگزیده — بازطراحی دقیق بر اساس ui/_7/code.html
@@ -129,12 +130,12 @@ function StationPicker({
         onFocus={() => setOpen(true)}
         onBlur={() => window.setTimeout(() => setOpen(false), 120)}
         placeholder="جستجوی ایستگاه..."
-        className="w-full bg-surface-container rounded-xl px-3 py-2.5 text-body-md text-on-surface placeholder:text-outline border border-outline-variant/40 focus:outline-none focus:border-primary"
+        className="w-full bg-surface-container rounded-xl px-3 py-2.5 text-body-md text-on-surface placeholder:text-on-surface-variant border border-outline-variant/40 focus:outline-none focus:border-primary"
       />
       {open && (
         <div className="absolute z-10 top-full mt-1 inset-x-0 bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-lg max-h-56 overflow-y-auto py-1">
           {results.length === 0 ? (
-            <p className="text-body-sm text-outline px-3 py-2">ایستگاهی یافت نشد</p>
+            <p className="text-body-sm text-on-surface-variant px-3 py-2">ایستگاهی یافت نشد</p>
           ) : (
             results.map((s) => (
               <button
@@ -178,6 +179,15 @@ export default function SavedPage() {
   const router = useRouter();
   useInitCity();
 
+  /* ---------------------- سربرگ مدهای سفر (از پنل مدیریت) ----------------------
+     ذخیره‌ها فقط مختص مترو نیست — هر مد سفر فعال پنل یک سربرگ دارد؛
+     مد بدون داده با برچسب «بزودی» و جای‌نگهداشت خالی نمایش داده می‌شود */
+  const travelModes = useTravelModes();
+  const [activeTab, setActiveTab] = useState("metro");
+  const enabledModes = useMemo(() => travelModes.filter((m) => m.enabled), [travelModes]);
+  const activeMode = enabledModes.find((m) => m.id === activeTab);
+  const isMetroTab = !activeMode || activeMode.id === "metro";
+
   const [routes, setRoutes] = useState<DailyRoute[]>([]);
   const [favs, setFavs] = useState<FavStation[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -192,7 +202,6 @@ export default function SavedPage() {
   const [toSel, setToSel] = useState<Sel | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [hideAd, setHideAd] = useState(false);
   const [, setTick] = useState(0);
 
   /** مرجع زمانی برای محاسبات زنده — با تیک هر دقیقه رفرش می‌شود */
@@ -227,8 +236,6 @@ export default function SavedPage() {
       const v = localStorage.getItem("metrojo-smart-alert");
       if (v !== null) setSmartAlert(v === "1");
     } catch {}
-    const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
-    if (w.Capacitor?.isNativePlatform?.() === true) setHideAd(true);
     Promise.allSettled([loadRoutes(), loadFavs(), loadTrips()]).then(() => {
       if (alive) setLoading(false);
     });
@@ -345,22 +352,64 @@ export default function SavedPage() {
               aria-label="راهنما"
               title="راهنمای مسیرهای برگزیده"
               onClick={() => setHelpOpen(true)}
-              className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary active:scale-95 transition-all"
+              className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary active:scale-95 transition-all"
             >
               <MI name="help" size={18} />
             </button>
-            <button
-              onClick={openAdd}
-              className="flex items-center gap-1 px-3 py-2 bg-primary-container text-on-primary rounded-xl text-label-md shadow-sm hover:bg-primary active:scale-95 transition-all shrink-0"
-            >
-              <MI name="bookmark_add" size={18} />
-              <span>مقصد جدید</span>
-            </button>
+            {isMetroTab && (
+              <button
+                onClick={openAdd}
+                className="flex items-center gap-1 px-3 py-2 bg-primary-container text-on-primary rounded-xl text-label-md shadow-sm hover:bg-primary active:scale-95 transition-all shrink-0"
+              >
+                <MI name="bookmark_add" size={18} />
+                <span>مقصد جدید</span>
+              </button>
+            )}
           </>
         }
       />
 
       <main className="flex-1 w-full max-w-lg mx-auto px-4 pt-4 pb-28">
+        {/* ==================== سربرگ مدهای سفر — هر مد فعال از پنل یک سربرگ ==================== */}
+        {enabledModes.length > 0 && (
+          <div
+            role="tablist"
+            aria-label="بخش‌های ذخیره‌ها"
+            className="flex gap-2 overflow-x-auto pb-1.5 mb-4 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {enabledModes.map((m) => {
+              const selected = m.id === (activeMode?.id ?? "metro");
+              return (
+                <button
+                  key={m.id}
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setActiveTab(m.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold whitespace-nowrap shrink-0 border transition-all active:scale-95 ${
+                    selected
+                      ? "bg-primary text-white border-primary shadow-sm"
+                      : "bg-surface-container-lowest text-on-surface-variant border-outline-variant/40 hover:bg-surface-container-low"
+                  }`}
+                >
+                  <MI name={m.icon} size={16} />
+                  <span>{m.label}</span>
+                  {m.status === "soon" && (
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                        selected ? "bg-white/20 text-white" : "bg-surface-container text-on-surface-variant"
+                      }`}
+                    >
+                      بزودی
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {isMetroTab ? (
+          <>
         {/* ==================== ۱. هشدار هوشمند حرکت ==================== */}
         <section className="mb-5 bg-surface-container-low rounded-xl p-3.5 border border-outline-variant/40 flex items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
@@ -399,7 +448,7 @@ export default function SavedPage() {
             <div className="h-40 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
           ) : routes.length === 0 ? (
             <div className="bg-surface-container-lowest rounded-xl border-2 border-dashed border-outline-variant/60 p-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mx-auto mb-3 text-outline">
+              <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mx-auto mb-3 text-on-surface-variant">
                 <MI name="bookmark_add" size={24} />
               </div>
               <h4 className="text-title-md text-on-surface mb-1">هنوز مقصدی ذخیره نشده است</h4>
@@ -453,7 +502,7 @@ export default function SavedPage() {
                           )}
                           {plan && (
                             <>
-                              <span className="text-outline">•</span>
+                              <span className="text-on-surface-variant">•</span>
                               <span className="text-primary font-bold">
                                 {toFa(Math.round(plan.totalMinutes))} دقیقه
                               </span>
@@ -466,7 +515,7 @@ export default function SavedPage() {
                       <button
                         aria-label="ویرایش"
                         onClick={() => openEdit(r)}
-                        className="p-1.5 rounded-lg text-outline hover:bg-surface-container hover:text-on-surface active:scale-95 transition-all"
+                        className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface active:scale-95 transition-all"
                       >
                         <MI name="edit" size={20} />
                       </button>
@@ -520,7 +569,7 @@ export default function SavedPage() {
                             {toFa(headwayAt(fromLine, nowMin))} دقیقه
                           </strong>
                         </span>
-                        <span className="text-label-sm text-outline whitespace-nowrap">
+                        <span className="text-label-sm text-on-surface-variant whitespace-nowrap">
                           {plan && plan.transfers > 0 && plan.transferStations[0]
                             ? `تعویض در ${plan.transferStations[0]}`
                             : "بدون تعویض"}
@@ -561,7 +610,7 @@ export default function SavedPage() {
               <div className="h-20 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse" />
             ) : favs.length === 0 ? (
               <div className="bg-surface-container-lowest rounded-xl border-2 border-dashed border-outline-variant/60 p-5 text-center">
-                <MI name="push_pin" size={22} className="text-outline mx-auto mb-2" />
+                <MI name="push_pin" size={22} className="text-on-surface-variant mx-auto mb-2" />
                 <p className="text-body-md text-on-surface-variant mb-3">
                   هنوز ایستگاهی نشان نکرده‌اید — از صفحه ایستگاه‌ها به علاقه‌مندی‌ها اضافه کنید.
                 </p>
@@ -628,11 +677,11 @@ export default function SavedPage() {
                         </div>
                         <div className="flex items-center gap-3 text-body-sm text-on-surface-variant mt-1">
                           {arrivals.length === 0 ? (
-                            <span className="text-outline">خارج از ساعات سرویس</span>
+                            <span className="text-on-surface-variant">خارج از ساعات سرویس</span>
                           ) : (
                             arrivals.map((a, i) => (
                               <span key={a.name} className="flex items-center gap-1">
-                                {i > 0 && <span className="text-outline mr-1.5">•</span>}
+                                {i > 0 && <span className="text-on-surface-variant mr-1.5">•</span>}
                                 {i === 0 && <MI name="train" size={14} className="text-tertiary-container dark:text-tertiary-fixed-dim" />}
                                 <span className={i === 0 ? "text-tertiary-container font-semibold dark:text-tertiary-fixed-dim" : "text-on-surface"}>
                                   {a.name}: {toFa(a.min ?? 0)} دقیقه
@@ -650,11 +699,11 @@ export default function SavedPage() {
                           e.stopPropagation();
                           void removeFav(f.id);
                         }}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-error hover:bg-error-container/20 active:scale-95 transition-all"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container/20 active:scale-95 transition-all"
                       >
                         <MI name="delete" size={20} />
                       </button>
-                      <MI name="chevron_left" size={20} className="text-outline" />
+                      <MI name="chevron_left" size={20} className="text-on-surface-variant" />
                     </div>
                   </div>
                 );
@@ -676,7 +725,7 @@ export default function SavedPage() {
               <div className="h-28 rounded-xl bg-surface-container-lowest border border-outline-variant/40 animate-pulse sm:col-span-2" />
             ) : recentTrips.length === 0 ? (
               <div className="bg-surface-container-lowest rounded-xl border-2 border-dashed border-outline-variant/60 p-5 text-center sm:col-span-2">
-                <MI name="history" size={22} className="text-outline mx-auto mb-2" />
+                <MI name="history" size={22} className="text-on-surface-variant mx-auto mb-2" />
                 <p className="text-body-md text-on-surface-variant">
                   هنوز سفری ثبت نشده است — با اولین ناوبری، سفرها اینجا جمع می‌شوند.
                 </p>
@@ -696,7 +745,7 @@ export default function SavedPage() {
                       <span className="bg-surface-container px-2 py-0.5 rounded text-primary font-bold">
                         {isFrequent ? "مسیر پرتردد" : "سفر اخیر"}
                       </span>
-                      <span className="text-label-sm text-outline">{relDate(t.createdAt)}</span>
+                      <span className="text-label-sm text-on-surface-variant">{relDate(t.createdAt)}</span>
                     </div>
                     <div className="flex items-center gap-2 text-title-md text-on-surface mb-2 font-bold">
                       <span className="truncate">{t.fromName}</span>
@@ -705,7 +754,7 @@ export default function SavedPage() {
                     </div>
                     <div className="flex items-center justify-between text-body-sm pt-2 border-t border-outline-variant/20 text-on-surface-variant">
                       <span className="flex items-center gap-1">
-                        <MI name="timer" size={16} className="text-outline" />
+                        <MI name="timer" size={16} className="text-on-surface-variant" />
                         {toFa(t.minutes)} دقیقه{firstLineName ? ` (${firstLineName})` : ""}
                       </span>
                     </div>
@@ -715,35 +764,37 @@ export default function SavedPage() {
             )}
           </div>
         </section>
-
-        {/* ==================== ۵. بنر تبلیغاتی ==================== */}
-        {!hideAd && (
-          <div className="rounded-xl bg-surface-container-low border border-outline-variant/30 p-3 flex items-center justify-between gap-3 shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center">
-                <MI name="credit_card" size={20} />
+          </>
+        ) : (
+          activeMode && (
+            <div className="bg-surface-container-lowest rounded-2xl border-2 border-dashed border-outline-variant/50 p-8 text-center mb-6">
+              <div
+                className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
+                  activeMode.status === "soon"
+                    ? "bg-surface-container text-on-surface-variant"
+                    : "bg-primary-fixed text-primary"
+                }`}
+              >
+                <MI name={activeMode.icon} size={30} />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-label-sm bg-outline/20 text-outline px-1.5 py-0.2 rounded font-bold">آگهی</span>
-                  <h5 className="text-title-md text-on-surface text-[13px]">
-                    شارژ آنلاین بلیت مترو و اتوبوس با شهرزاد
-                  </h5>
-                </div>
-                <p className="text-body-sm text-on-surface-variant text-[11px] mt-0.5">
-                  بدون صف با ۱۰٪ تخفیف شارژ ماهانه
-                </p>
-              </div>
+              <h3 className="text-title-lg text-on-surface font-bold mb-2">ذخیره‌های {activeMode.label}</h3>
+              <p className="text-body-md text-on-surface-variant leading-relaxed max-w-xs mx-auto">
+                {activeMode.status === "soon"
+                  ? "این بخش به‌زودی فعال می‌شود — پس از اتصال به داده رسمی، موارد ذخیره‌شده‌اش همین‌جا نمایش داده می‌شود."
+                  : "هنوز موردی ذخیره نشده است — پس از استفاده از این بخش، موارد ذخیره‌شده اینجا جمع می‌شوند."}
+              </p>
+              {activeMode.status === "soon" && (
+                <span className="inline-flex items-center gap-1 mt-4 text-[10px] font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">
+                  <MI name="hourglass_empty" size={13} />
+                  به‌زودی
+                </span>
+              )}
             </div>
-            <a
-              href="/metrojo-4.8.17.apk"
-              download
-              className="px-3 py-1.5 bg-primary-container text-on-primary rounded-lg text-label-md shrink-0 active:scale-95 transition-all"
-            >
-              نصب اپ
-            </a>
-          </div>
+          )
         )}
+
+        {/* ==================== ۵. جایگاه آگهی — محتوای واقعی از پنل مدیریت (placement = saved) ==================== */}
+        <PanelAdSlot placement="saved" />
       </main>
 
       {/* ==================== مودال راهنما ==================== */}
@@ -764,7 +815,7 @@ export default function SavedPage() {
               <button
                 aria-label="بستن"
                 onClick={() => setHelpOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container active:scale-95 transition-all"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container active:scale-95 transition-all"
               >
                 <MI name="close" size={20} />
               </button>
@@ -822,7 +873,7 @@ export default function SavedPage() {
               <button
                 aria-label="بستن"
                 onClick={closeAdd}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container active:scale-95 transition-all"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container active:scale-95 transition-all"
               >
                 <MI name="close" size={20} />
               </button>
@@ -857,7 +908,7 @@ export default function SavedPage() {
                 placeholder={
                   kind === "home" ? "به سمت خانه" : kind === "work" ? "به سمت محل کار" : "مثلاً مسیر باشگاه"
                 }
-                className="w-full bg-surface-container rounded-xl px-3 py-2.5 text-body-md text-on-surface placeholder:text-outline border border-outline-variant/40 focus:outline-none focus:border-primary"
+                className="w-full bg-surface-container rounded-xl px-3 py-2.5 text-body-md text-on-surface placeholder:text-on-surface-variant border border-outline-variant/40 focus:outline-none focus:border-primary"
               />
             </label>
 

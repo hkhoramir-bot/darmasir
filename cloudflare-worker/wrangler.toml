@@ -1,3 +1,32 @@
-name = "metrojo-voice"
-main = "worker.js"
-compatibility_date = "2025-01-01"
+# ============================================================
+# درمسیر — ورکر یکپارچه (dataid.hurremmed.ir)
+# دیتابیس ابری KV + صدای فارسی TTS در یک ورکر
+# deploy: CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... bunx wrangler deploy
+# دامین متصل: dataid.hurremmed.ir → darmasir-api (Workers Custom Domain)
+# ============================================================
+name = "darmasir-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+account_id = "732f026fc120a50b835fa91d8a6b303e"
+
+[vars]
+DARMASIR_SYNC_KEY = "darmasir-sync-1404"
+# دیتابیس واقعی همه سرویس‌ها (اپ + پنل + ورکر) — Turso/libSQL
+# توکن با secret تنظیم می‌شود: echo "<TOKEN>" | bunx wrangler secret put TURSO_AUTH_TOKEN
+TURSO_DATABASE_URL = "libsql://darmasir-darmasir.turso.io"
+# KAVENEGAR_API_KEY = ""  # برای پیامک واقعی به‌صورت secret بدهید: wrangler secret put KAVENEGAR_API_KEY
+
+[[kv_namespaces]]
+binding = "KV"
+id = "9aec33fa7f884002b0f981cab9c2b427"
+
+# دیتابیس واقعی کاربران اپ (D1 رایگان) — ثبت/بررسی وضعیت کاربران اپ اندروید
+# منبع حقیقت پنل مدیریت؛ ثبت‌نام موبایل اینجا مستقیم در همان جدول User ثبت می‌شود
+[[d1_databases]]
+binding = "DB"
+database_name = "darmasir-db"
+database_id = "9313466b-e4ae-431a-ac48-9a4cf43410c3"
+
+# فایلهای استاتیک (APK اندروید) — مستقیم از دامنه dataid.hurremmed.ir سرو میشوند
+[assets]
+directory = "./assets"
