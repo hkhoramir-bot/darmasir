@@ -49,7 +49,7 @@ export function InstallBanner() {
           <MI name="download_for_offline" size={22} fill />
         </div>
         <div className="min-w-0">
-          <h3 className="text-sm font-bold">متروجو را نصب کنید</h3>
+          <h3 className="text-sm font-bold">درمسیر را نصب کنید</h3>
           <p className="text-[11px] text-white/80 mt-0.5">دسترسی سریع از صفحه اصلی گوشی، حتی بدون اینترنت</p>
         </div>
       </div>

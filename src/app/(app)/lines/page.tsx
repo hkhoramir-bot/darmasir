@@ -17,6 +17,7 @@ import {
   type LineDef,
 } from "@/lib/metro-data";
 import { AppBar, MI, useInitCity, useShell } from "@/components/metro/shell";
+import { PanelAdSlot } from "@/components/metro/panel-banners";
 
 /* ============================================================
    خطوط و نقشه — بازسازی دقیق ui/_23/code.html
@@ -123,7 +124,7 @@ function LineCard({
             ))}
           </div>
         ) : (
-          <span className="text-[11px] text-outline">بدون تقاطع</span>
+          <span className="text-[11px] text-on-surface-variant">بدون تقاطع</span>
         )}
       </div>
     </button>
@@ -179,24 +180,8 @@ export default function LinesPage() {
       <AppBar />
 
       <main className="w-full max-w-md mx-auto px-4 flex-1 flex flex-col gap-4 mt-3 pb-28">
-        {/* ------------------- بنر آگهی ------------------- */}
-        <section className="w-full bg-surface-container-low rounded-xl border border-outline-variant/40 p-2.5 flex items-center justify-between shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="bg-error text-white text-label-sm font-bold px-2 py-0.5 rounded-md shrink-0">
-              آگهی
-            </span>
-            <p className="text-body-sm text-on-surface-variant line-clamp-1">
-              شارژ سریع بلیت اعتباری و متروکارت بدون صف
-            </p>
-          </div>
-          <a
-            href="#"
-            className="text-label-sm text-primary-container font-bold flex items-center gap-0.5 hover:underline whitespace-nowrap pl-1 shrink-0"
-          >
-            مشاهده
-            <MI name="chevron_left" size={14} />
-          </a>
-        </section>
+        {/* ------------------- جایگاه آگهی — محتوای واقعی از پنل مدیریت (placement = lines) ------------------- */}
+        <PanelAdSlot placement="lines" />
 
         {/* ------------------- چیپ‌های انتخاب شهر ------------------- */}
         <section className="w-full">
@@ -273,12 +258,12 @@ export default function LinesPage() {
             <MI
               name="search"
               size={20}
-              className="text-outline absolute right-3 pointer-events-none"
+              className="text-on-surface-variant absolute right-3 pointer-events-none"
             />
             <button
               type="button"
               aria-label="جستجوی صوتی"
-              className="absolute left-3 text-outline hover:text-on-surface flex items-center justify-center"
+              className="absolute left-3 text-on-surface-variant hover:text-on-surface flex items-center justify-center"
             >
               <MI name="mic" size={18} />
             </button>
@@ -294,7 +279,7 @@ export default function LinesPage() {
                     className="w-full flex items-center justify-between gap-2 px-3 py-2 hover:bg-surface-container-low active:bg-surface-container-low text-right transition-colors"
                   >
                     <span className="flex items-center gap-2 min-w-0">
-                      <MI name="location_on" size={14} className="text-outline shrink-0" />
+                      <MI name="location_on" size={14} className="text-on-surface-variant shrink-0" />
                       <span className="text-xs font-bold text-on-surface truncate">{s.name}</span>
                     </span>
                     <span className="flex items-center gap-1 shrink-0">

@@ -1,0 +1,25 @@
+# ============================================================
+# API ابری «درمسیر» — Cloudflare Worker + D1
+# استقرار:  wrangler login  →  wrangler d1 create darmasir-db
+#           database_id را اینجا بگذارید  →  wrangler deploy
+# راهنمای کامل: README-FA.md
+# ============================================================
+
+name = "darmasir-api"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# D1 — دیتابیس رایگان SQLite روی همان حساب Cloudflare
+# پس از `wrangler d1 create darmasir-db` شناسه را جایگزین کنید
+[[d1_databases]]
+binding = "DB"
+database_name = "darmasir-db"
+database_id = "REPLACE_WITH_YOUR_D1_ID"
+
+[vars]
+# دامنه‌های مجاز CORS — جدا شده با کاما. در تولید فقط دامنه پنل را بگذارید،
+# مثل: https://panel.darmasir.example ,https://darmasir.pages.dev
+ALLOWED_ORIGINS = "*"
+
+# نیازهای اسرار (بدون مقدار در git):
+#   wrangler secret put ADMIN_BOOTSTRAP_PASSWORD   ← گذرواژه مدیر اولیه admin

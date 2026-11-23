@@ -1051,7 +1051,7 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
               <polyline
                 points={routePath.map((p) => `${p.x},${p.y}`).join(" ")}
                 fill="none"
-                stroke="#0d58a6"
+                stroke="#07805f"
                 strokeWidth={8.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1089,13 +1089,13 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
               >
                 <circle cx={s.x} cy={s.y} r={16} fill="transparent" />
                 {isInter && <circle cx={s.x} cy={s.y} r={r + 3.4} fill="var(--mq-card)" opacity={0.95} />}
-                {isHi && <circle cx={s.x} cy={s.y} r={13} fill="#0d58a6" opacity={0.18} className="map-pulse" />}
+                {isHi && <circle cx={s.x} cy={s.y} r={13} fill="#07805f" opacity={0.18} className="map-pulse" />}
                 <circle
                   cx={s.x}
                   cy={s.y}
                   r={isHi ? 7.4 : r}
-                  fill={isHi ? "#0d58a6" : "var(--mq-card)"}
-                  stroke={isHi ? "#0d58a6" : isInter ? "var(--mq-ink)" : ringColor}
+                  fill={isHi ? "#07805f" : "var(--mq-card)"}
+                  stroke={isHi ? "#07805f" : isInter ? "var(--mq-ink)" : ringColor}
                   strokeWidth={isHi ? 2.6 : isInter ? 1.7 : 2.4}
                 />
               </g>
@@ -1181,7 +1181,7 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
           <MI
             name="expand_more"
             size={14}
-            className={`text-outline mr-auto transition-transform ${legendOpen ? "rotate-180" : ""}`}
+            className={`text-on-surface-variant mr-auto transition-transform ${legendOpen ? "rotate-180" : ""}`}
           />
         </button>
         {legendOpen && (
@@ -1209,7 +1209,7 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
                   aria-pressed={!isHidden}
                   className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 active:scale-90 transition-all text-metro-primary-c hover:bg-surface-container"
                 >
-                  <MI name={isHidden ? "visibility_off" : "visibility"} size={15} className={isHidden ? "text-outline-variant" : ""} />
+                  <MI name={isHidden ? "visibility_off" : "visibility"} size={15} className={isHidden ? "text-on-surface-variant" : ""} />
                 </button>
               ) : null;
               return (
@@ -1253,7 +1253,7 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
           <button
             onClick={() => setLocate({ kind: "idle" })}
             aria-label="بستن"
-            className="text-outline shrink-0 active:scale-90 transition-transform"
+            className="text-on-surface-variant shrink-0 active:scale-90 transition-transform"
           >
             <MI name="close" size={13} />
           </button>
@@ -1268,7 +1268,7 @@ export default forwardRef<MetroMapHandle, MetroMapProps>(function MetroMap(
           <button
             onClick={() => setLocate({ kind: "idle" })}
             aria-label="بستن"
-            className="text-outline shrink-0 active:scale-90 transition-transform"
+            className="text-on-surface-variant shrink-0 active:scale-90 transition-transform"
           >
             <MI name="close" size={13} />
           </button>

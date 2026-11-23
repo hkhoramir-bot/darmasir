@@ -46,42 +46,43 @@ html {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  /* نسخه ۱۵ — زیرمجموعه با ۱۴۲ آیکون استفاده‌شده در اپ
-     (نسخه ۱۴ آیکون‌های صفحه‌های جدید settings/support_agent/login/
-     confirmation_number/send/call/apps/language و ... را نداشت) */
-  src: url("/fonts/material-symbols-subset.woff2?v=15") format("woff2");
+  /* نسخه ۱۷ — زیرمجموعه با ۱۶۲ آیکون استفاده‌شده در اپ
+     (نسخه ۱۵ آیکون‌های جدید ورود/ثبت‌نام/اثر انگشت را نداشت:
+     fingerprint/sms/login/person_add/badge/smartphone/mail/
+     send_to_mobile/password/verified/timer/science/key/lock_open/logout ...) */
+  src: url("/fonts/material-symbols-subset.woff2?v=20") format("woff2");
 }
 
 /* ============================================================
-   متروجو — پالت تاییدشده code.html (مقادیر لفظی برای Tailwind v4)
+   درمسیر — پالت تاییدشده code.html (مقادیر لفظی برای Tailwind v4)
    ============================================================ */
 @theme {
-  /* ---- palette from approved design ---- */
-  --color-primary: #00417f;
-  --color-primary-container: #0d58a6;
-  --color-primary-fixed: #d5e3ff;
-  --color-primary-fixed-dim: #a8c8ff;
+  /* ---- palette from approved design (سبز برند درمسیر) ---- */
+  --color-primary: #07805f;
+  --color-primary-container: #0fa37c;
+  --color-primary-fixed: #cff2e4;
+  --color-primary-fixed-dim: #8fdcc2;
   --color-on-primary: #ffffff;
-  --color-on-primary-container: #b6d0ff;
-  --color-on-primary-fixed: #001b3c;
-  --color-on-primary-fixed-variant: #004689;
-  --color-surface: #f9f9ff;
-  --color-surface-dim: #cfdaf2;
-  --color-surface-bright: #f9f9ff;
-  --color-surface-variant: #d8e3fb;
-  --color-surface-tint: #1a5eac;
+  --color-on-primary-container: #c4f1e0;
+  --color-on-primary-fixed: #00251b;
+  --color-on-primary-fixed-variant: #045c44;
+  --color-surface: #f4fbf8;
+  --color-surface-dim: #cfe8dd;
+  --color-surface-bright: #f4fbf8;
+  --color-surface-variant: #d5ece2;
+  --color-surface-tint: #12866a;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f0f3ff;
-  --color-surface-container: #e7eeff;
-  --color-surface-container-high: #dee8ff;
-  --color-surface-container-highest: #d8e3fb;
-  --color-on-surface: #111c2d;
-  --color-on-surface-variant: #424751;
-  --color-outline: #727782;
-  --color-outline-variant: #c2c6d3;
-  --color-inverse-surface: #263143;
-  --color-inverse-on-surface: #ecf1ff;
-  --color-inverse-primary: #a8c8ff;
+  --color-surface-container-low: #eef7f2;
+  --color-surface-container: #e4f2ec;
+  --color-surface-container-high: #dbefe7;
+  --color-surface-container-highest: #d5ece2;
+  --color-on-surface: #0f1d18;
+  --color-on-surface-variant: #3e4c46;
+  --color-outline: #6f7f78;
+  --color-outline-variant: #c0d4cb;
+  --color-inverse-surface: #253a32;
+  --color-inverse-on-surface: #ebf5f0;
+  --color-inverse-primary: #8fdcc2;
   --color-secondary: #bc000c;
   --color-secondary-container: #e32220;
   --color-secondary-fixed: #ffdad5;
@@ -104,23 +105,23 @@ html {
   --color-on-error-container: #93000a;
 
   /* ---- shadcn/ui compatibility (literal, light) ---- */
-  --color-background: #f9f9ff;
-  --color-foreground: #111c2d;
+  --color-background: #f4fbf8;
+  --color-foreground: #0f1d18;
   --color-card: #ffffff;
-  --color-card-foreground: #111c2d;
+  --color-card-foreground: #0f1d18;
   --color-popover: #ffffff;
-  --color-popover-foreground: #111c2d;
+  --color-popover-foreground: #0f1d18;
   --color-primary-foreground: #ffffff;
-  --color-secondary-foreground: #00417f;
-  --color-muted: #f0f3ff;
-  --color-muted-foreground: #424751;
-  --color-accent: #dee8ff;
-  --color-accent-foreground: #00417f;
+  --color-secondary-foreground: #07805f;
+  --color-muted: #eef7f2;
+  --color-muted-foreground: #3e4c46;
+  --color-accent: #dbefe7;
+  --color-accent-foreground: #07805f;
   --color-destructive: #ba1a1a;
   --color-destructive-foreground: #ffffff;
-  --color-border: #c2c6d3;
-  --color-input: #e2e8f0;
-  --color-ring: #0d58a6;
+  --color-border: #c0d4cb;
+  --color-input: #dfede6;
+  --color-ring: #0fa37c;
 
   /* ---- radius ---- */
   --radius-sm: 0.25rem;
@@ -167,57 +168,58 @@ html {
 
 /* ============ توکن‌های متغیر (مپ/اجزای داخلی، پشتیبانی دارک) ============ */
 :root {
-  --mq-bg: #f9f9ff;
-  --mq-surface: #f9f9ff;
-  --mq-surface-dim: #cfdaf2;
+  --mq-bg: #f4fbf8;
+  --mq-surface: #f4fbf8;
+  --mq-surface-dim: #cfe8dd;
   --mq-card: #ffffff;
-  --mq-c-low: #f0f3ff;
-  --mq-c: #e7eeff;
-  --mq-c-high: #dee8ff;
-  --mq-c-highest: #d8e3fb;
-  --mq-onsurface: #111c2d;
-  --mq-onvar: #424751;
-  --mq-outline: #727782;
-  --mq-outline-var: #c2c6d3;
-  --mq-primary: #00417f;
-  --mq-primary-c: #0d58a6;
-  --mq-onprimary-c: #b6d0ff;
-  --mq-fixed: #d5e3ff;
+  --mq-c-low: #eef7f2;
+  --mq-c: #e4f2ec;
+  --mq-c-high: #dbefe7;
+  --mq-c-highest: #d5ece2;
+  --mq-onsurface: #0f1d18;
+  --mq-onvar: #3e4c46;
+  --mq-outline: #6f7f78;
+  --mq-outline-var: #c0d4cb;
+  --mq-primary: #07805f;
+  --mq-primary-c: #0fa37c;
+  --mq-onprimary-c: #c4f1e0;
+  --mq-fixed: #cff2e4;
   --mq-error-c: #ffdad6;
-  --mq-ink: #0f172a;
-  --mq-map-bg: #f1f5f9;
-  --mq-map-grid: #e2e8f0;
-  --mq-tertiary: #004c28;
-  --mq-tertiary-c: #006638;
+  --mq-ink: #0e1b16;
+  --mq-map-bg: #eff5f2;
+  --mq-map-grid: #e0ece6;
+  --mq-tertiary: #05604a;
+  --mq-tertiary-c: #0a7a5e;
 }
 
 .dark {
-  --mq-bg: #0f1522;
-  --mq-surface: #131a29;
-  --mq-surface-dim: #0b101a;
-  --mq-card: #182033;
-  --mq-c-low: #151d2e;
-  --mq-c: #1d2739;
-  --mq-c-high: #232e45;
-  --mq-c-highest: #293450;
-  --mq-onsurface: #e2e8f8;
-  --mq-onvar: #a9b3c9;
-  --mq-outline: #8b93a7;
-  --mq-outline-var: #36415c;
-  --mq-primary: #a8c8ff;
-  --mq-primary-c: #3f82d6;
-  --mq-onprimary-c: #cfe1ff;
-  --mq-fixed: #1c2b46;
+  --mq-bg: #0d1712;
+  --mq-surface: #101d17;
+  --mq-surface-dim: #0a130e;
+  --mq-card: #17261f;
+  --mq-c-low: #13231b;
+  --mq-c: #192b22;
+  --mq-c-high: #1f352a;
+  --mq-c-highest: #253f32;
+  /* کنتراست بالاتر متن‌ها در تم تاریک — درخواست کاربر */
+  --mq-onsurface: #eef8f3;
+  --mq-onvar: #bcd3c8;
+  --mq-outline: #9ab3a7;
+  --mq-outline-var: #40584a;
+  --mq-primary: #6fddb4;
+  --mq-primary-c: #17a97c;
+  --mq-onprimary-c: #e2f9f0;
+  --mq-fixed: #16352a;
   --mq-error-c: #3d1518;
-  --mq-ink: #e6ecfa;
-  --mq-map-bg: #121928;
-  --mq-map-grid: #1f2941;
+  --mq-ink: #f0faf5;
+  --mq-map-bg: #101c16;
+  --mq-map-grid: #1e2f27;
   --mq-tertiary: #4ade80;
   --mq-tertiary-c: #6ee7a0;
 }
 
 /* ============================================================
-   پالت اصلی برنامه در حالت تاریک (Material 3 — متروجو)
+   پالت اصلی برنامه در حالت تاریک (Material 3 — درمسیر)
    utilitiesهای Tailwind به var(--color-*) ارجاع می‌دهند؛ با این
    override کل اپ (سطح، کارت، متن، خطوط، منو و...) تیره می‌شود.
    primary/primary-container عمداً آبی برند با روشنایی کافی برای
@@ -225,29 +227,31 @@ html {
    ============================================================ */
 .dark {
   /* سطوح و کانتینرها */
-  --color-surface: #131a29;
-  --color-surface-dim: #0b101a;
-  --color-surface-bright: #1a2334;
-  --color-surface-variant: #293450;
-  --color-surface-tint: #a8c8ff;
-  --color-surface-container-lowest: #101725;
-  --color-surface-container-low: #151d2e;
-  --color-surface-container: #1d2739;
-  --color-surface-container-high: #232e45;
-  --color-surface-container-highest: #293450;
+  --color-surface: #101d17;
+  --color-surface-dim: #0a130e;
+  --color-surface-bright: #182b23;
+  --color-surface-variant: #28453a;
+  --color-surface-tint: #8fdcc2;
+  --color-surface-container-lowest: #0d1713;
+  --color-surface-container-low: #122019;
+  --color-surface-container: #17281f;
+  --color-surface-container-high: #1d3127;
+  --color-surface-container-highest: #233a2f;
 
-  /* متن و خطوط */
-  --color-on-surface: #e2e8f8;
-  --color-on-surface-variant: #a9b3c9;
-  --color-outline: #8b93a7;
-  --color-outline-variant: #36415c;
-  --color-inverse-surface: #ecf1ff;
-  --color-inverse-on-surface: #263143;
-  --color-inverse-primary: #3579d1;
+  /* متن و خطوط — کنتراست بهبودیافته در تم تاریک */
+  --color-on-surface: #eef8f3;
+  --color-on-surface-variant: #bcd3c8;
+  --color-outline: #9ab3a7;
+  --color-outline-variant: #40584a;
+  --color-inverse-surface: #ebf5f0;
+  --color-inverse-on-surface: #253a32;
+  --color-inverse-primary: #2bbf8e;
+  /* متن روی کانتینر سبز برند در تاریک — روشن‌تر برای خوانایی */
+  --color-on-primary-container: #dcf7ec;
 
-  /* آبی برند — برای حفظ متن سفید روی دکمه‌ها */
-  --color-primary: #3579d1;
-  --color-primary-container: #1565c7;
+  /* سبز برند — برای حفظ متن سفید روی دکمه‌ها */
+  --color-primary: #17a97c;
+  --color-primary-container: #0e7a5c;
 
   /* قرمز / سبز — به‌صورت متنِ خوانا روی زمینه تیره */
   --color-secondary: #ff5449;
@@ -260,21 +264,21 @@ html {
   --color-error-container: #3d1518;
   --color-on-error-container: #ffdad6;
 
-  /* سازگاری shadcn */
-  --color-background: #0f1522;
-  --color-foreground: #e2e8f8;
-  --color-card: #182033;
-  --color-card-foreground: #e2e8f8;
-  --color-popover: #182033;
-  --color-popover-foreground: #e2e8f8;
-  --color-muted: #1d2739;
-  --color-muted-foreground: #a9b3c9;
-  --color-accent: #232e45;
-  --color-accent-foreground: #d5e3ff;
+  /* سازگاری shadcn — متن‌های روشن‌تر برای کنتراست بهتر */
+  --color-background: #0d1712;
+  --color-foreground: #eef8f3;
+  --color-card: #17261f;
+  --color-card-foreground: #eef8f3;
+  --color-popover: #17261f;
+  --color-popover-foreground: #eef8f3;
+  --color-muted: #1d3027;
+  --color-muted-foreground: #bcd3c8;
+  --color-accent: #24382e;
+  --color-accent-foreground: #ddf6ec;
   --color-destructive: #e0413a;
-  --color-border: #36415c;
-  --color-input: #232e45;
-  --color-ring: #3f82d6;
+  --color-border: #40584a;
+  --color-input: #243d30;
+  --color-ring: #2bbf8e;
 
   /* رنگ خطای نقشه */
   --color-metro-error: #ff8a80;
@@ -282,10 +286,10 @@ html {
   /* رنگ‌های fixed (کارت‌های آیکون و نشان‌ها) — در تاریک به کانتینرهای
      تیره هم‌خانواده تبدیل می‌شوند تا کاشی‌ها و چیپ‌ها خوانا بمانند.
      (روشنایی کافی برای متن/آیکون روشن روی خودشان) */
-  --color-primary-fixed: #1e3050;
-  --color-primary-fixed-dim: #a8c8ff;
-  --color-on-primary-fixed: #d5e3ff;
-  --color-on-primary-fixed-variant: #a8c8ff;
+  --color-primary-fixed: #16352a;
+  --color-primary-fixed-dim: #8fdcc2;
+  --color-on-primary-fixed: #cff2e4;
+  --color-on-primary-fixed-variant: #8fdcc2;
   --color-secondary-fixed: #5c1f1e;
   --color-secondary-fixed-dim: #ffb4ab;
   --color-on-secondary-fixed: #ffdad6;
@@ -337,7 +341,7 @@ html {
   --color-ink: #0f172a;
   --color-ink-2: #475569;
   --color-ink-3: #94a3b8;
-  --color-hairline: #e2e8f0;
+  --color-hairline: #dfede6;
 }
 
 @layer base {
@@ -399,7 +403,7 @@ html {
   width: 4px;
 }
 .pretty-scroll::-webkit-scrollbar-thumb {
-  background: #c2c6d3;
+  background: #c0d4cb;
   border-radius: 999px;
 }
 .pretty-scroll::-webkit-scrollbar-track {
@@ -415,8 +419,8 @@ html {
 .line-dashed {
   background-image: repeating-linear-gradient(
     to bottom,
-    var(--tw-line-color, #c2c6d3) 0,
-    var(--tw-line-color, #c2c6d3) 6px,
+    var(--tw-line-color, #c0d4cb) 0,
+    var(--tw-line-color, #c0d4cb) 6px,
     transparent 6px,
     transparent 12px
   );
@@ -575,6 +579,6 @@ html {
     background-color: rgba(255, 255, 255, 0.97);
   }
   .dark .mj-nav-frost {
-    background-color: rgba(16, 23, 37, 0.97);
+    background-color: rgba(13, 23, 18, 0.97);
   }
 }
