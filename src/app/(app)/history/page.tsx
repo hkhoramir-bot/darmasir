@@ -339,7 +339,7 @@ export default function HistoryPage() {
                 <MI name="work_history" size={24} />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-base font-bold text-white">سوابق من در متروجو</h2>
+                <h2 className="text-base font-bold text-white">سوابق من در درمسیر</h2>
                 <p
                   className={`text-[11px] mt-1 inline-flex items-center gap-1.5 max-w-full ${
                     heroStatus.live ? "text-emerald-200" : "text-white/80"
@@ -446,8 +446,8 @@ export default function HistoryPage() {
               <MI name="route" size={30} />
             </div>
             <p className="text-title-md text-on-surface font-bold">هنوز سفری ثبت نشده است</p>
-            <p className="text-body-sm text-outline">
-              اولین سفر خود را از مسیریاب متروجو ثبت کنید تا سوابق اینجا نمایش داده شود
+            <p className="text-body-sm text-on-surface-variant">
+              اولین سفر خود را از مسیریاب درمسیر ثبت کنید تا سوابق اینجا نمایش داده شود
             </p>
             <button
               type="button"
@@ -499,7 +499,7 @@ export default function HistoryPage() {
             </div>
 
             {recents.length === 0 ? (
-              <p className="text-label-md text-outline text-center py-3">موردی برای نمایش نیست</p>
+              <p className="text-label-md text-on-surface-variant text-center py-3">موردی برای نمایش نیست</p>
             ) : (
               <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
                 {recents.map((r) => {
@@ -514,7 +514,7 @@ export default function HistoryPage() {
                         type="button"
                         aria-label="حذف این مورد از تاریخچه"
                         onClick={() => removeRecent(r.stationId)}
-                        className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-outline-variant hover:text-secondary hover:bg-surface-container active:scale-90 transition-all z-10"
+                        className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-on-surface-variant hover:text-secondary hover:bg-surface-container active:scale-90 transition-all z-10"
                       >
                         <MI name="close" size={14} />
                       </button>
@@ -550,7 +550,7 @@ export default function HistoryPage() {
                       )}
 
                       <h4 className="mt-2 text-[13px] font-bold text-on-surface truncate">{r.name}</h4>
-                      <p className="text-[10px] text-outline mt-0.5 flex items-center gap-1">
+                      <p className="text-[10px] text-on-surface-variant mt-0.5 flex items-center gap-1">
                         <MI name="schedule" size={11} />
                         {relShort(r.date)}
                       </p>
@@ -593,7 +593,7 @@ export default function HistoryPage() {
                   <MI name="help" size={15} />
                 </button>
               </div>
-              <span className="text-[11px] text-outline">{toFa(Math.min(10, trips.length))} مورد اخیر</span>
+              <span className="text-[11px] text-on-surface-variant">{toFa(Math.min(10, trips.length))} مورد اخیر</span>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -623,7 +623,7 @@ export default function HistoryPage() {
                         <p className="text-[13px] font-bold text-on-surface truncate leading-5 mt-1.5">{t.toName}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-[10px] text-outline flex items-center gap-1">
+                        <span className="text-[10px] text-on-surface-variant flex items-center gap-1">
                           <MI name="schedule" size={12} />
                           {relShort(t.createdAt)}
                         </span>
@@ -641,7 +641,7 @@ export default function HistoryPage() {
                             type="button"
                             aria-label="حذف این سفر از تاریخچه"
                             onClick={() => deleteTrip(t.id)}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-outline-variant hover:text-secondary hover:bg-surface-container active:scale-90 transition-all"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-secondary hover:bg-surface-container active:scale-90 transition-all"
                           >
                             <MI name="close" size={16} />
                           </button>
@@ -688,7 +688,7 @@ export default function HistoryPage() {
                           className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                             wakeOn
                               ? "bg-tertiary-fixed text-on-tertiary-fixed-variant"
-                              : "bg-surface-container-high text-outline"
+                              : "bg-surface-container-high text-on-surface-variant"
                           }`}
                         >
                           {wakeOn ? "فعال" : "غیرفعال"}
@@ -704,7 +704,7 @@ export default function HistoryPage() {
                     aria-label="لغو یا مدیریت هشدار"
                     onClick={toggleWake}
                     className={`p-1.5 rounded-full hover:bg-surface-container active:scale-90 transition-all shrink-0 ${
-                      wakeOn ? "text-outline hover:text-secondary" : "text-primary"
+                      wakeOn ? "text-on-surface-variant hover:text-secondary" : "text-primary"
                     }`}
                   >
                     <MI name={wakeOn ? "notifications_off" : "notifications_active"} size={20} />
@@ -724,7 +724,7 @@ export default function HistoryPage() {
             <MI name="verified_user" size={20} className="text-primary shrink-0" />
             <div className="flex flex-col min-w-0">
               <span className="text-label-md font-bold text-on-surface">کارت بلیت متروی خود را متصل کنید</span>
-              <span className="text-body-sm text-outline">ثبت خودکار تراکنش‌ها و تردد ایستگاهی با NFC</span>
+              <span className="text-body-sm text-on-surface-variant">ثبت خودکار تراکنش‌ها و تردد ایستگاهی با NFC</span>
             </div>
           </div>
           <span className="text-label-sm bg-surface-container-highest px-2 py-1 rounded text-primary font-medium shrink-0">
@@ -762,7 +762,7 @@ export default function HistoryPage() {
           <div className="flex items-center justify-between pt-1">
             <div className="flex flex-col gap-0.5">
               <span className="text-label-lg text-on-surface font-semibold">ذخیره خودکار تاریخچه بازدیدها</span>
-              <span className="text-body-sm text-outline">ذخیره‌سازی سریع ایستگاه‌ها و مسیرها در حافظه دستگاه</span>
+              <span className="text-body-sm text-on-surface-variant">ذخیره‌سازی سریع ایستگاه‌ها و مسیرها در حافظه دستگاه</span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer select-none">
               <input type="checkbox" className="sr-only peer" checked={autoSave} onChange={toggleAutoSave} />
@@ -810,7 +810,7 @@ export default function HistoryPage() {
               type="button"
               aria-label="بستن"
               onClick={() => setHelp(null)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container active:scale-90 transition-all"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container active:scale-90 transition-all"
             >
               <MI name="close" size={20} />
             </button>

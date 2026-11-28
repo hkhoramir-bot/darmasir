@@ -42,14 +42,98 @@ model TripHistory {
   createdAt     DateTime @default(now())
 }
 
-// تیکت‌های پشتیبانی (ثبت تیکت در بخش تماس با ما)
+// کاربران اپ — ورود با ایمیل/رمز یا شماره موبایل + کد پیامکی
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  phone        String?   @unique
+  email        String?   @unique
+  passwordHash String? // scrypt: salt:hash
+  status       String    @default("active") // active | blocked
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+  sessions     Session[]
+}
+
+// نشست‌های ورود (توکن Bearer — ۳۰ روز اعتبار)
+model Session {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device     String   @default("web")
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([userId])
+}
+
+// کد یک‌بارمصرف پیامکی — ورود با شماره موبایل + بازیابی رمز عبور
+model OtpCode {
+  id          String   @id @default(cuid())
+  phone       String
+  code        String
+  purpose     String   @default("login") // login | password_reset
+  attempts    Int      @default(0)
+  used        Boolean  @default(false)
+  emailTo     String? // گیرنده ایمیل کد (اگر کاربر ایمیل داشته باشد)
+  emailStatus String? // sent | failed | no_smtp — وضعیت ارسال ایمیل کد
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([phone])
+}
+
+// تیکت‌های پشتیبانی (ثبت تیکت در بخش تماس با ما) — پاسخ مدیر در پنل مدیریت
 model SupportTicket {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   contact   String // ایمیل یا شماره تماس کاربر
-  category  String   @default("general") // general | bug | idea | ad
+  category  String    @default("general") // general | bug | idea | ad
   subject   String
   message   String
-  status    String   @default("open") // open | in_progress | closed
-  createdAt DateTime @default(now())
+  status    String    @default("open") // open | answered | closed
+  reply     String? // پاسخ پشتیبانی (از پنل مدیریت)
+  repliedAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// فعالیت واقعی کاربر اپ اندروید — سفرهای ثبت‌شده (شناسه = شماره/ایمیل کاربر)
+model AppUserTrip {
+  id         String   @id
+  identifier String
+  fromName   String
+  toName     String
+  minutes    Int      @default(0)
+  transfers  Int      @default(0)
+  fare       Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([identifier])
+}
+
+// ایستگاه‌های نشان‌شده کاربر اپ اندروید
+model AppUserFavorite {
+  id          String   @id
+  identifier  String
+  stationId   String
+  stationName String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@unique([identifier, stationId])
+  @@index([identifier])
+}
+
+// مسیرهای روزمره کاربر اپ اندروید (خانه/محل کار/سفارشی)
+model AppUserDailyRoute {
+  id         String   @id
+  identifier String
+  kind       String   @default("custom")
+  label      String   @default("")
+  fromName   String
+  toName     String
+  createdAt  DateTime @default(now())
+
+  @@index([identifier])
 }

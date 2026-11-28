@@ -5,7 +5,11 @@ export const dynamic = "force-dynamic";
 
 const CATEGORIES = ["general", "bug", "idea", "ad"];
 
-/** POST /api/tickets — ثبت تیکت پشتیبانی از بخش «تماس با ما» */
+const PANEL_BASE = (process.env.PANEL_API_BASE || "http://localhost:3035").replace(/\/+$/, "");
+const SYNC_KEY = process.env.DARMASIR_SYNC_KEY || "darmasir-sync-1404";
+
+/** POST /api/tickets — ثبت تیکت پشتیبانی از بخش «تماس با ما»
+ *  ذخیره محلی + فوروارد به پنل مدیریت (بخش تیکت‌ها) + اطلاع ایمیلی مدیر (سمت پنل، اگر SMTP تنظیم شده باشد) */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
 
@@ -35,7 +39,23 @@ export async function POST(req: NextRequest) {
     const ticket = await db.supportTicket.create({
       data: { name, contact, category, subject, message },
     });
-    return NextResponse.json({ ok: true, id: ticket.id });
+
+    /* فوروارد به پنل مدیریت — best-effort؛ اگر پنل قطع باشد تیکت محلی می‌ماند */
+    let forwarded = false;
+    try {
+      const res = await fetch(`${PANEL_BASE}/api/v1/public/tickets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Sync-Key": SYNC_KEY },
+        body: JSON.stringify({ name, contact, category, subject, message }),
+        signal: AbortSignal.timeout(6000),
+      });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      forwarded = !!(res.ok && json?.ok);
+    } catch {
+      /* پنل در دسترس نیست — پاسخ به کاربر نباید وابسته باشد */
+    }
+
+    return NextResponse.json({ ok: true, id: ticket.id, forwarded });
   } catch (e) {
     console.error("[tickets] create failed:", e);
     return NextResponse.json({ error: "خطا در ثبت تیکت — دوباره تلاش کنید" }, { status: 500 });

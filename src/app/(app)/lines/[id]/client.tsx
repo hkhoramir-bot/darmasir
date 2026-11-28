@@ -94,10 +94,10 @@ export default function LineDetailPage() {
               <h2 className="text-sm font-bold text-on-surface">{line.name}</h2>
               <div className="flex items-center gap-1.5 text-[11px] text-on-surface-variant font-medium">
                 <span className="truncate">{line.terminals[0]}</span>
-                <MI name="sync_alt" size={13} className="text-outline shrink-0" />
+                <MI name="sync_alt" size={13} className="text-on-surface-variant shrink-0" />
                 <span className="truncate">{line.terminals[1]}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-outline">
+              <div className="flex items-center gap-1.5 text-[10px] text-on-surface-variant">
                 <MI name="swap_vert" size={12} />
                 جهت خط: {line.direction}
               </div>
@@ -109,27 +109,27 @@ export default function LineDetailPage() {
             <div className="flex flex-col items-center justify-center gap-0.5">
               <MI name="schedule" size={15} className="text-primary" />
               <span className="text-xs font-bold text-on-surface">هر {toFa(line.headway)} دقیقه</span>
-              <span className="text-[9px] text-outline">فاصله قطارها</span>
+              <span className="text-[9px] text-on-surface-variant">فاصله قطارها</span>
             </div>
             <div className="flex flex-col items-center justify-center gap-0.5 border-x border-outline-variant/20">
               <MI name="wb_twilight" size={15} className="text-primary" />
               <span className="text-xs font-bold text-on-surface" dir="ltr">
                 {toFa(line.firstTrain)} - {toFa(line.lastTrain)}
               </span>
-              <span className="text-[9px] text-outline">ساعت سرویس</span>
+              <span className="text-[9px] text-on-surface-variant">ساعت سرویس</span>
             </div>
             <div className="flex flex-col items-center justify-center gap-0.5">
               {inService ? (
                 <>
                   <MI name="check_circle" size={15} className="text-tertiary" />
                   <span className="text-xs font-bold text-tertiary">در حال سرویس</span>
-                  <span className="text-[9px] text-outline">وضعیت شبکه</span>
+                  <span className="text-[9px] text-on-surface-variant">وضعیت شبکه</span>
                 </>
               ) : (
                 <>
-                  <MI name="bedtime" size={15} className="text-outline" />
-                  <span className="text-xs font-bold text-outline">خارج از سرویس</span>
-                  <span className="text-[9px] text-outline">وضعیت شبکه</span>
+                  <MI name="bedtime" size={15} className="text-on-surface-variant" />
+                  <span className="text-xs font-bold text-on-surface-variant">خارج از سرویس</span>
+                  <span className="text-[9px] text-on-surface-variant">وضعیت شبکه</span>
                 </>
               )}
             </div>
@@ -139,7 +139,7 @@ export default function LineDetailPage() {
           <div className="bg-surface-container-low rounded-xl p-2.5 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-[10px] text-outline shrink-0">ورود بعدی از {firstStation ? firstStation.name : "مبدأ"}:</span>
+              <span className="text-[10px] text-on-surface-variant shrink-0">ورود بعدی از {firstStation ? firstStation.name : "مبدأ"}:</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               {arrivals.map((m, i) => (
@@ -252,7 +252,7 @@ export default function LineDetailPage() {
                     <MI
                       name="chevron_left"
                       size={16}
-                      className="text-outline-variant shrink-0 self-center group-hover:text-primary transition-colors"
+                      className="text-on-surface-variant shrink-0 self-center group-hover:text-primary transition-colors"
                     />
                   </div>
                 </button>
@@ -276,7 +276,7 @@ export default function LineDetailPage() {
               >
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-on-surface truncate">{row.direction}</p>
-                  <p className="text-[10px] text-outline mt-0.5">
+                  <p className="text-[10px] text-on-surface-variant mt-0.5">
                     اولین قطار {row.first} • آخرین قطار {row.last}
                   </p>
                 </div>
@@ -322,7 +322,7 @@ export default function LineDetailPage() {
           <p className="text-center text-[10px] text-error">{announcer.error}</p>
         )}
 
-        <p className="text-center text-[10px] text-outline-variant pt-1">
+        <p className="text-center text-[10px] text-on-surface-variant pt-1">
           فاصله قطارها و وضعیت ازدحام به‌صورت زنده محاسبه می‌شود
         </p>
       </main>

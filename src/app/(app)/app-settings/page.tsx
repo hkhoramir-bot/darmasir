@@ -3,15 +3,21 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { MI, PageHeader } from "@/components/metro/shell";
+import { useToast } from "@/hooks/use-toast";
 import { toFa } from "@/lib/metro-data";
 import { useVoicePrefs } from "@/lib/voice-settings";
+import { useAuth } from "@/lib/auth-client";
+import { useAppVersion } from "@/components/metro/panel-banners";
+import {
+  authenticateBiometric,
+  detectBiometricSupport,
+  BioSupport,
+} from "@/lib/biometric";
 
 /* ============================================================
    تنظیمات برنامه — جدا از «حساب من»
    هشدارها و اعلانات + دستیار صوتی و صدا + تنظیمات ظاهری و موقعیت
    ============================================================ */
-
-const APP_VERSION = "4.8.17";
 
 /* ------------------- کلیدهای ذخیره‌سازی روی دستگاه ------------------- */
 const NOTIFY_LINES_KEY = "metrojo-notify-lines";
@@ -20,6 +26,7 @@ const MIC_GAIN_KEY = "metrojo-mic-gain";
 const GPS_KEY = "mj-gps-enabled"; // کلیدی که نقشه می‌خواند («false» یعنی خاموش)
 const GPS_KEY_ALT = "metrojo-gps";
 const VOICE_BG_KEY = "metrojo-voice-bg";
+const BIO_KEY = "metrojo-biometric"; // کلید مشترک با auth-client («true» = ورود با اثر انگشت)
 
 /* ------------------------------ تم برنامه ------------------------------ */
 type ThemeChoice = "light" | "dark" | "system";
@@ -63,6 +70,8 @@ function gainLabel(v: number): string {
 }
 
 export default function AppSettingsPage() {
+  const { toast } = useToast();
+  const appVersion = useAppVersion();
   /* ---------- تم برنامه (روشن/تاریک/دستگاه) ---------- */
   const { theme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(
@@ -83,6 +92,12 @@ export default function AppSettingsPage() {
     voiceBg: true, // اعلام صوتی ایستگاه در پس‌زمینه
   });
   const [micGain, setMicGain] = useState(70);
+
+  /* ---------- اثر انگشت (ورود سریع) ---------- */
+  const user = useAuth((s) => s.user);
+  const [bioOn, setBioOn] = useState(false);
+  const [bioSupport, setBioSupport] = useState<BioSupport>("demo");
+  const [bioBusy, setBioBusy] = useState(false);
 
   /* ---------- بررسی به‌روزرسانی ---------- */
   const [updateState, setUpdateState] = useState<"idle" | "checking" | "done">("idle");
@@ -107,7 +122,10 @@ export default function AppSettingsPage() {
           const n = Number(gain);
           if (Number.isFinite(n)) setMicGain(Math.min(100, Math.max(0, Math.round(n))));
         }
+        // وضعیت اثر انگشت
+        setBioOn(localStorage.getItem(BIO_KEY) === "true");
       } catch {}
+      void detectBiometricSupport().then(setBioSupport);
     }, 0);
     return () => window.clearTimeout(id);
   }, []);
@@ -131,6 +149,44 @@ export default function AppSettingsPage() {
       localStorage.setItem(MIC_GAIN_KEY, String(v));
     } catch {}
   };
+
+  /* ---------- فعال/غیرفعال کردن ورود با اثر انگشت ---------- */
+  const onBioToggle = async (v: boolean) => {
+    if (bioBusy) return;
+    if (v) {
+      setBioBusy(true);
+      const r = await authenticateBiometric("برای فعال‌سازی ورود سریع، اثر انگشت خود را تأیید کنید");
+      setBioBusy(false);
+      if (!r.ok) {
+        toast({
+          title: "فعال‌سازی ناموفق",
+          description: "اثر انگشت تأیید نشد — دوباره تلاش کنید",
+        });
+        return;
+      }
+      try {
+        localStorage.setItem(BIO_KEY, "true");
+      } catch {}
+      setBioOn(true);
+      toast({
+        title: "ورود با اثر انگشت فعال شد",
+        description: "از این به بعد با هر شروع برنامه، اثر انگشت شما درخواست می‌شود",
+      });
+    } else {
+      try {
+        localStorage.setItem(BIO_KEY, "false");
+      } catch {}
+      setBioOn(false);
+      toast({ title: "ورود با اثر انگشت غیرفعال شد" });
+    }
+  };
+
+  const bioSupportLabel =
+    bioSupport === "native"
+      ? "سنسور اثر انگشت دستگاه آماده است"
+      : bioSupport === "webauthn"
+        ? "تأیید بیومتریک مرورگر در دسترس است"
+        : "حالت نمایشی — در اپ اندروید سنسور واقعی استفاده می‌شود";
 
   const checkUpdate = () => {
     if (updateState !== "idle") return;
@@ -193,7 +249,7 @@ export default function AppSettingsPage() {
           <div className="flex items-center justify-between py-1 gap-3">
             <div className="space-y-0.5 min-w-0">
               <p className="text-sm font-medium text-on-surface">بررسی آپدیت نرم‌افزار</p>
-              <p className="text-body-sm text-outline">نسخه نصب‌شده: {toFa(APP_VERSION)}</p>
+              <p className="text-body-sm text-on-surface-variant">نسخه نصب‌شده: {toFa(appVersion)}</p>
             </div>
             <button
               type="button"
@@ -223,6 +279,42 @@ export default function AppSettingsPage() {
               به‌روزترین نسخه را دارید
             </p>
           )}
+        </section>
+
+        {/* ------------------- امنیت و ورود ------------------- */}
+        <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+            <div className="flex items-center gap-2 text-primary">
+              <MI name="fingerprint" size={20} />
+              <h2 className="text-sm font-bold text-on-surface">امنیت و ورود</h2>
+            </div>
+            <span className="text-label-sm text-primary bg-primary-fixed/50 dark:bg-primary/20 dark:text-primary-fixed-dim px-2 py-0.5 rounded-full">
+              {bioOn ? "فعال" : "غیرفعال"}
+            </span>
+          </div>
+
+          {/* ورود سریع با اثر انگشت */}
+          <div className="py-1 space-y-1.5">
+            <div className="flex items-center justify-between py-1 gap-3">
+              <div className="space-y-0.5 max-w-[70%] min-w-0">
+                <p className="text-sm font-medium text-on-surface">ورود سریع با اثر انگشت</p>
+                <p className="text-body-sm text-on-surface-variant leading-relaxed">
+                  {user
+                    ? "با هر بار باز شدن برنامه، ابتدا اثر انگشت شما درخواست می‌شود"
+                    : "برای فعال‌سازی ابتدا وارد حساب کاربری شوید"}
+                </p>
+              </div>
+              <Toggle
+                checked={bioBusy ? !bioOn : bioOn}
+                onChange={(v) => void onBioToggle(v)}
+                label="ورود سریع با اثر انگشت"
+              />
+            </div>
+            <p className="text-[11px] text-on-surface-variant flex items-center gap-1 pt-0.5">
+              <MI name="info" size={12} className="shrink-0" />
+              {bioSupportLabel}
+            </p>
+          </div>
         </section>
 
         {/* ------------------- دستیار صوتی و صدا ------------------- */}
@@ -259,7 +351,7 @@ export default function AppSettingsPage() {
               </span>
             </div>
             <div className="relative flex items-center">
-              <MI name="mic_off" size={16} className="text-outline-variant ml-2 shrink-0" />
+              <MI name="mic_off" size={16} className="text-on-surface-variant ml-2 shrink-0" />
               <input
                 type="range"
                 min={0}
@@ -354,14 +446,6 @@ export default function AppSettingsPage() {
             />
           </div>
         </section>
-
-        {/* ------------------- پانوشت ------------------- */}
-        <div className="text-center pt-2 pb-6 space-y-1">
-          <p className="text-body-sm text-outline">طراحی شده برای ناوبری سریع مسافران کلان‌شهرها</p>
-          <p className="text-label-sm text-outline-variant font-medium">
-            تمامی حقوق برای سامانه متروجو محفوظ است © ۱۴۰۳
-          </p>
-        </div>
       </main>
     </>
   );

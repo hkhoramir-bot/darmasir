@@ -1,6 +1,6 @@
 /* ============================================================
    پنل مدیریت درمسیر — اپلیکیشن تک‌صفحه‌ای فارسی RTL
-   نسخه ۲.۸ — رفع خروجی PDF (دانلود مستقیم فایل) + انتخاب سریع مانده پرداخت
+   نسخه ۲.۹.۱ — محافظ ضد ناپدیدشدن ردیف‌ها + هم‌اندازه‌سازی ستون‌های صفحه امنیت + جلوگیری از پنهان‌شدن لیست مدیران (جستجوی باقی‌مانده/autofill)
    ============================================================ */
 "use strict";
 
@@ -9,7 +9,8 @@ const TOKEN_KEY = "darmasir_admin_token";
 const ADMIN_KEY = "darmasir_admin_me";
 
 /* دسترسی از مسیر تمیز /admin/ یا مستقیم با ?XTransformPort=3035 */
-const API_BASE = location.pathname.startsWith("/admin/") ? "/admin/api/v1/" : "/api/v1/";
+const ASSET_P = location.pathname.indexOf("/admin") === 0 ? "/admin/" : "";
+const API_BASE = ASSET_P ? "/admin/api/v1/" : "/api/v1/";
 const API_Q = window.__ASSET_Q || "";
 
 function apiPath(path) {
@@ -68,6 +69,14 @@ async function api(path, opts = {}) {
     headers,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
+  /* حالت raw: پاسخ باینری (مثلاً mp3 تست صدا) مستقیم برمی‌گردد */
+  if (opts.raw) {
+    if (!res.ok) {
+      const j = await res.json().catch(() => null);
+      throw new Error(j?.error?.message || "خطای ناشناخته");
+    }
+    return res;
+  }
   const json = await res.json().catch(() => ({ ok: false, error: { code: "PARSE", message: "پاسخ نامعتبر سرور" } }));
   if (!json.ok) {
     if (res.status === 401 && !path.startsWith("auth/")) { logoutLocal(); throw new Error(json.error?.message || "نشست منقضی شده"); }
@@ -136,9 +145,9 @@ let me = null;
 try { me = JSON.parse(localStorage.getItem(ADMIN_KEY) || "null"); } catch {}
 
 const ROLE_LABEL = { super: "مدیر کل", operator: "اپراتور", viewer: "ناظر" };
-const STATUS_LABEL = { active: ["فعال", "ok"], limited: ["محدود", "warn"], disabled: ["غیرفعال", "bad"] };
+const STATUS_LABEL = { active: ["فعال", "ok"], limited: ["محدود", "warn"], disabled: ["غیرفعال", "bad"], blocked: ["مسدود", "bad"] };
 const MODE_LABEL = { metro: "مترو", bus: "اتوبوس", brt: "اتوبوس تندرو" };
-const PLACE_LABEL = { home: "خانه", map: "نقشه", plan: "مسیریابی", station: "جزئیات ایستگاه", line: "جزئیات خط", splash: "صفحه اسپلش", drawer: "منوی کناری" };
+const PLACE_LABEL = { home: "خانه — بالای صفحه", home_bottom: "خانه — پایین صفحه", lines: "صفحه خطوط", status: "صفحه وضعیت", settings: "صفحه تنظیمات", saved: "صفحه ذخیره‌ها", map: "نقشه", plan: "مسیریابی", station: "جزئیات ایستگاه", line: "جزئیات خط", splash: "صفحه اسپلش", drawer: "منوی کناری" };
 
 const can = (role) => me && ({ viewer: 1, operator: 2, super: 3 }[me.role] ?? 0) >= ({ viewer: 1, operator: 2, super: 3 }[role] ?? 9);
 
@@ -171,11 +180,54 @@ function kpi(label, icon, num, sub, tone = "t-primary") {
 
 function filterTables(q) {
   document.querySelectorAll("table.tbl tbody").forEach((tb) => {
+    let any = false;
     tb.querySelectorAll("tr").forEach((tr) => {
-      tr.style.display = !q || tr.textContent.includes(q) ? "" : "none";
+      if (tr.dataset.emptyHint) return;
+      const show = !q || tr.textContent.includes(q);
+      tr.style.display = show ? "" : "none";
+      if (show) any = true;
     });
+    /* وقتی جستجو همه‌ی ردیف‌ها را پنهان می‌کند، پیام روشن نمایش داده می‌شود
+       تا «ناپدید شدن» لیست‌ها گمراه‌کننده نباشد */
+    let hint = tb.querySelector("tr[data-empty-hint]");
+    if (!any && q) {
+      if (!hint) {
+        hint = document.createElement("tr");
+        hint.dataset.emptyHint = "1";
+        hint.innerHTML = '<td colspan="9" class="empty" style="text-align:center;color:var(--ink-2);padding:14px">موردی مطابق جستجو یافت نشد — عبارت جستجو را پاک کنید</td>';
+        tb.appendChild(hint);
+      }
+      hint.style.display = "";
+    } else if (hint) {
+      hint.style.display = "none";
+    }
   });
 }
+
+/* ---------- محافظ ردیف‌های جدول — ضد «ناپدید شدن» لیست‌ها ----------
+   هر مکانیزمی (autofill مرورگر، افزونه‌ها، مقدار باقی‌مانده جستجو،
+   هر کد ناشناخته) که ردیف‌ها را وقتی جستجو خالی است پنهان کند،
+   بلافاصله خنثی می‌شود: در هر کلیک، بعد از هر رندر، روی هر تغییر DOM
+   و به‌صورت دوره‌ای هر ۱.۵ ثانیه. */
+function guardTables() {
+  const ts = document.getElementById("top-search");
+  if (ts && ts.value.trim()) return; /* جستجوی فعال — فیلتر قانونی است */
+  document.querySelectorAll("table.tbl tbody tr").forEach((tr) => {
+    if (tr.dataset.emptyHint) return; /* ردیف راهنمای «یافت نشد» از محافظ مستثناست */
+    if (tr.style.display === "none") tr.style.display = "";
+  });
+}
+let __tblObs = null;
+function armTableGuard() {
+  if (__tblObs) __tblObs.disconnect();
+  try {
+    __tblObs = new MutationObserver(() => guardTables());
+    document.querySelectorAll("table.tbl tbody").forEach((tb) =>
+      __tblObs.observe(tb, { attributes: true, attributeFilter: ["style"], subtree: true, childList: true })
+    );
+  } catch {}
+}
+setInterval(guardTables, 1500);
 
 /* ---------------- مسیریابی ---------------- */
 
@@ -186,6 +238,10 @@ const PAGES = [
   { id: "lines", title: "خطوط", icon: "alt_route" },
   { id: "stations", title: "ایستگاه‌ها", icon: "location_on" },
   { id: "ads", title: "تبلیغات و بنرها", icon: "campaign" },
+  { id: "travel", title: "مدهای سفر", icon: "commute" },
+  { id: "tickets", title: "تیکت‌ها", icon: "confirmation_number" },
+  { id: "about-content", title: "درباره ما (اپ)", icon: "info" },
+  { id: "contact-content", title: "تماس با ما (اپ)", icon: "support_agent" },
   { id: "revenues", title: "درآمدها و قراردادها", icon: "payments" },
   { id: "invoices", title: "فاکتور تبلیغات", icon: "receipt_long" },
   { id: "voice", title: "دستیار صوتی", icon: "record_voice_over" },
@@ -215,37 +271,53 @@ function render() {
   const cur = PAGES.find((p) => p.id === currentPage()) ?? PAGES[0];
   if (cur.super && me.role !== "super") { location.hash = "#/dashboard"; return; }
   app.innerHTML = layout(cur);
+  /* آیتم فعال منو همیشه کامل در دید باشد (سایدبار در نمایش‌های کوتاه اسکرول می‌خورد) */
+  document.querySelector(".nav a.active")?.scrollIntoView({ block: "nearest" });
   document.getElementById("logout-btn").onclick = async () => {
     try { await api("auth/logout", { method: "POST" }); } catch {}
     logoutLocal();
   };
   const burger = document.getElementById("burger");
   const sidebar = document.getElementById("sidebar");
-  burger.onclick = () => sidebar.classList.toggle("open");
-  document.addEventListener("click", function onDoc(e) {
-    if (sidebar.classList.contains("open") && !sidebar.contains(e.target) && e.target !== burger && !burger.contains(e.target)) {
-      sidebar.classList.remove("open");
-      document.querySelectorAll(".sidebar-back").forEach((x) => x.remove());
+  burger.onclick = () => {
+    const open = sidebar.classList.toggle("open");
+    document.querySelectorAll(".sidebar-back").forEach((x) => x.remove());
+    if (open) {
+      const back = document.createElement("div");
+      back.className = "sidebar-back";
+      document.body.appendChild(back);
     }
-  });
-  if (sidebar.classList.contains("open")) {
-    const back = document.createElement("div");
-    back.className = "sidebar-back";
-    document.body.appendChild(back);
+  };
+  /* شنونده کلیک سطح سند — فقط یک‌بار بسته می‌شود و همیشه سایدبارِ جاری را
+     می‌گیرد (قبلاً روی هر رندر یک شنونده‌ی تازه اضافه می‌شد که انباشت می‌کرد) */
+  if (!document.documentElement.dataset.sidebarBound) {
+    document.documentElement.dataset.sidebarBound = "1";
+    document.addEventListener("click", function (e) {
+      const sb = document.getElementById("sidebar");
+      const bg = document.getElementById("burger");
+      if (sb && sb.classList.contains("open") && !sb.contains(e.target) && !(bg && (bg === e.target || bg.contains(e.target)))) {
+        sb.classList.remove("open");
+        document.querySelectorAll(".sidebar-back").forEach((x) => x.remove());
+      }
+      guardTables(); /* هر کلیک — ردیف‌های پنهانِ بدون فیلتر برگردانده می‌شوند */
+    });
   }
   const ts = document.getElementById("top-search");
   if (ts) {
+    /* جستجو در هر ورود به صفحه تازه می‌شود — مقدار باقی‌مانده‌ی مرورگر
+       (autofill/restore) هرگز نباید ردیف‌های جدول‌ها را پنهان کند */
+    ts.value = "";
     ts.oninput = () => filterTables(ts.value.trim());
+    ts.onkeydown = (e) => { if (e.key === "Escape") { ts.value = ""; filterTables(""); } };
   }
   renderPage(cur.id);
-  if (ts && ts.value.trim()) filterTables(ts.value.trim());
 }
 
 function loginView() {
   return `
   <div class="login-wrap">
     <div class="login-card">
-      <div class="login-logo"><span class="material fill">subway</span></div>
+      <div class="login-logo"><img src="${ASSET_P}metrojo-logo.svg${API_Q}" alt="لوگوی درمسیر" /></div>
       <h1>پنل مدیریت درمسیر</h1>
       <p class="sub">دستیار هوشمند سفر شهری — ورود مدیران</p>
       <div class="login-err" id="login-err"></div>
@@ -295,9 +367,9 @@ function layout(cur) {
     <aside class="sidebar" id="sidebar">
       <div class="side-scroll">
         <div class="brand">
-          <div class="brand-logo"><span class="material fill">subway</span></div>
+          <div class="brand-logo"><img src="${ASSET_P}metrojo-logo.svg${API_Q}" alt="لوگوی درمسیر" /></div>
           <div class="brand-txt">
-            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۸</span></div>
+            <div class="brand-title-row"><b>درمسیر</b><span class="ver-chip">نسخه ۲.۹.۱</span></div>
             <span class="brand-sub">پنل مدیریت سامانه ناوبری شهری</span>
           </div>
         </div>
@@ -317,7 +389,7 @@ function layout(cur) {
         <button class="burger" id="burger" aria-label="منو"><span class="material">menu</span></button>
         <div class="top-search">
           <span class="material">search</span>
-          <input id="top-search" type="search" placeholder="جستجو در جدول‌های این صفحه…" aria-label="جستجو در صفحه" />
+          <input id="top-search" type="search" autocomplete="off" placeholder="جستجو در جدول‌های این صفحه…" aria-label="جستجو در صفحه" />
         </div>
         <span class="spacer"></span>
         <div class="db-chip"><span class="pulse"></span><span>اتصال پایگاه داده فعال</span></div>
@@ -336,6 +408,10 @@ async function renderPage(id) {
     else if (id === "lines") await pageLines(host);
     else if (id === "stations") await pageStations(host);
     else if (id === "ads") await pageAds(host);
+    else if (id === "travel") await pageTravel(host);
+    else if (id === "tickets") await pageTickets(host);
+    else if (id === "about-content") await pageAboutContent(host);
+    else if (id === "contact-content") await pageContactContent(host);
     else if (id === "revenues") await pageRevenues(host);
     else if (id === "invoices") await pageInvoices(host);
     else if (id === "voice") await pageVoice(host);
@@ -345,6 +421,7 @@ async function renderPage(id) {
   } catch (ex) {
     host.innerHTML = `<div class="card"><div class="empty">${esc(ex.message)}</div></div>`;
   }
+  armTableGuard();
 }
 
 /* ---------------- صفحات ---------------- */
@@ -373,7 +450,7 @@ async function pageDashboard(host) {
       <div class="card">
         <h3><span class="material" style="color:var(--primary)">dns</span>وضعیت سرویس‌ها</h3>
         ${d.services.map((s) => `
-          <div style="display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid rgba(194,198,211,.35)">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid rgba(192,212,203,.35)">
             <div><b style="font-size:13px">${esc(s.name)}</b><div style="font-size:11px;color:var(--ink-3)">${esc(s.note || "")}</div></div>
             <span class="badge ${s.status === "ok" ? "ok" : "off"}">${s.status === "ok" ? "برقرار" : "غیرفعال"}</span>
           </div>`).join("")}
@@ -459,131 +536,287 @@ function actionLabel(a) {
 async function pageUsers(host) {
   const writable = can("operator");
   host.innerHTML = `
-    ${pageHead("کاربران", "مشاهده و مدیریت حساب‌های مسافران، وضعیت و محدودیت‌های دسترسی.",
-      `${writable ? `<button class="btn btn-primary" id="u-add"><span class="material">add</span><span>کاربر جدید</span></button>` : ""}
+    ${pageHead("کاربران", "کاربران واقعی اپ درمسیر — مستقیم از دیتابیس ابری اپ (Cloudflare D1). مسدودسازی، تنظیم رمز و حذف واقعی همین‌جا روی دیتابیس انجام می‌شود.",
+      `<button class="btn" id="u-refresh"><span class="material">refresh</span><span>بروزرسانی</span></button>
        <button class="btn" id="u-csv"><span class="material">download</span><span>خروجی CSV</span></button>`)}
     <div class="toolbar">
-      <input id="u-q" placeholder="جست‌وجوی نام یا شماره…" style="min-width:220px" />
+      <input id="u-q" placeholder="جست‌وجوی نام، شماره یا ایمیل…" style="min-width:240px" />
       <select id="u-status">
         <option value="">همه وضعیت‌ها</option>
         <option value="active">فعال</option>
-        <option value="limited">محدود</option>
-        <option value="disabled">غیرفعال</option>
+        <option value="blocked">مسدود</option>
       </select>
+      <span class="hint" id="u-src">منبع: دیتابیس واقعی اپ</span>
     </div>
     <div id="u-table"></div>`;
   let lastRows = [];
   const load = async () => {
-    const q = document.getElementById("u-q").value.trim();
-    const st = document.getElementById("u-status").value;
-    const rows = await api(`users?q=${encodeURIComponent(q)}&status=${st}`);
-    lastRows = rows;
-    document.getElementById("u-table").innerHTML = rows.length ? `
+    const qEl = document.getElementById("u-q");
+    if (!qEl) return;
+    const q = qEl.value.trim();
+    const stEl = document.getElementById("u-status");
+    const st = stEl ? stEl.value : "";
+    const table = document.getElementById("u-table");
+    const src = document.getElementById("u-src");
+    try {
+      const d = await api(`users/cloud?q=${encodeURIComponent(q)}`);
+      let rows = d.users || [];
+      if (st) rows = rows.filter((u) => u.status === st);
+      lastRows = rows;
+      if (src) src.textContent = `${faNum(rows.length)} کاربر واقعی — دیتابیس Turso اپ`;
+      if (!table) return;
+      table.innerHTML = rows.length ? `
       <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>نام</th><th>شماره</th><th>وضعیت</th><th>سفرها</th><th>عضویت</th><th>آخرین بازدید</th><th>عملیات</th></tr></thead>
+        <thead><tr><th>نام</th><th>تماس</th><th>وضعیت</th><th>فعالیت واقعی</th><th>نشست فعال</th><th>رمز</th><th>عضویت</th><th>آخرین ورود</th><th>عملیات</th></tr></thead>
         <tbody>
           ${rows.map((u) => {
             const [lbl, cls] = STATUS_LABEL[u.status] || [u.status, "off"];
+            const isBlocked = u.status === "blocked";
+            const ident = u.phone || u.email || "";
+            const act = (u.trips || 0) + (u.favorites || 0) + (u.daily_routes || 0);
             return `<tr>
-              <td><b>${esc(u.display_name)}</b></td>
-              <td>${esc(u.phone || "—")}</td>
+              <td><b>${esc(u.name)}</b></td>
+              <td>${esc(u.phone || u.email || "—")}</td>
               <td><span class="badge ${cls}">${lbl}</span></td>
-              <td>${faNum(u.trips_count)}</td>
+              <td>${act > 0 ? `<button class="icon-btn" data-act="${esc(u.id)}" title="مشاهده سفرها، علاقه‌مندی‌ها و مسیرهای روزمره این کاربر"><span class="badge ok">سفر ${faNum(u.trips || 0)}</span> <span class="badge ok">نشان ${faNum(u.favorites || 0)}</span> <span class="badge ok">مسیر ${faNum(u.daily_routes || 0)}</span></button>` : `<span class="hint">بدون فعالیت ثبت‌شده</span>`}</td>
+              <td>${faNum(u.sessions)}</td>
+              <td>${u.has_password ? `<span class="badge ok">دارد</span>` : `<span class="badge off">ندارد</span>`}</td>
               <td>${faTime(u.created_at)}</td>
-              <td>${faTime(u.last_seen)}</td>
+              <td>${u.last_login_at ? faTime(u.last_login_at) : "—"}</td>
               <td><div class="acts">
-                <button class="icon-btn" data-detail="${u.id}" title="پروفایل و تنظیم سفرها"><span class="material">person</span></button>
-                ${writable ? `<button class="icon-btn" data-edit="${u.id}" title="ویرایش کاربر"><span class="material">edit</span></button>
-                <button class="icon-btn danger" data-del="${u.id}" data-name="${esc(u.display_name)}" title="حذف کاربر"><span class="material">delete</span></button>` : ""}
+                ${writable && u.phone ? `<button class="icon-btn" data-otp="${esc(u.id)}" title="کد پیامکی ارسالی"><span class="material">sms</span></button>` : ""}
+                ${ident ? `<button class="icon-btn" data-act="${esc(u.id)}" title="سفرها، علاقه‌مندی‌ها و مسیرهای روزمره کاربر"><span class="material">insights</span></button>` : ""}
+                ${writable && ident ? `<button class="icon-btn" data-pass="${esc(u.id)}" title="تنظیم رمز عبور کاربر"><span class="material">key</span></button>
+                <button class="icon-btn ${isBlocked ? "" : "danger"}" data-block="${esc(u.id)}" title="${isBlocked ? "رفع مسدودی کاربر (واقعی)" : "مسدودسازی کاربر (واقعی)"}"><span class="material">${isBlocked ? "lock_open" : "block"}</span></button>` : ""}
+                ${writable ? `<button class="icon-btn danger" data-del="${esc(u.id)}" data-name="${esc(u.name)}" title="حذف واقعی از دیتابیس — برگشت‌ناپذیر"><span class="material">delete</span></button>` : ""}
               </div></td>
             </tr>`;
           }).join("")}
         </tbody>
-      </table></div>` : `<div class="card"><div class="empty"><span class="material">group_off</span>کاربری یافت نشد</div></div>`;
-    document.querySelectorAll("[data-detail]").forEach((b) => (b.onclick = () => openUserDetail(lastRows.find((x) => x.id === Number(b.dataset.detail)))));
-    if (writable) {
-      document.querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openUserForm(rows.find((x) => x.id === Number(b.dataset.edit)))));
-      document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () =>
-        confirmDialog(`کاربر «${b.dataset.name}» حذف شود؟`, async () => {
-          await api(`users/${b.dataset.del}`, { method: "DELETE" });
-          toast("کاربر حذف شد", "ok2"); load();
-        })));
+      </table></div>
+      <p class="hint" style="margin-top:10px">مسدودسازی = تغییر وضعیت در دیتابیس + ابطال همه نشست‌های فعال (خروج اجباری فوری). حذف = پاک شدن واقعی رکورد کاربر، نشست‌ها و کدهای پیامکی از دیتابیس — برگشت‌ناپذیر. ستون «فعالیت واقعی» از جداول سفر/علاقه‌مندی/مسیر روزمره همان دیتابیس ابری می‌آید — هر کاری کاربر در اپ اندروید انجام دهد اینجا دیده می‌شود.</p>`
+        : `<div class="card"><div class="empty"><span class="material">group_off</span>کاربری در دیتابیس اپ یافت نشد${q ? " — عبارت جست‌وجو را تغییر دهید" : ""}</div></div>`;
+      /* مشاهده فعالیت کاربر — برای همه نقش‌ها (فقط خواندنی) */
+      document.querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => openUserActivity(lastRows.find((x) => x.id === b.dataset.act))));
+      if (writable) {
+        document.querySelectorAll("[data-otp]").forEach((b) => (b.onclick = () => openUserOtp(lastRows.find((x) => x.id === b.dataset.otp))));
+        document.querySelectorAll("[data-pass]").forEach((b) => (b.onclick = () => openUserPassword(lastRows.find((x) => x.id === b.dataset.pass), load)));
+        document.querySelectorAll("[data-block]").forEach((b) => (b.onclick = () => {
+          const u = lastRows.find((x) => x.id === b.dataset.block);
+          if (!u) return;
+          const isBlocked = u.status === "blocked";
+          const ident = u.phone || u.email;
+          if (!ident) { toast("این کاربر شماره یا ایمیل ندارد", "err"); return; }
+          confirmDialog(
+            isBlocked
+              ? `مسدودی کاربر «${u.name}» از دیتابیس برداشته شود؟ کاربر می‌تواند دوباره وارد اپ شود.`
+              : `کاربر «${u.name}» در دیتابیس مسدود شود؟ همه نشست‌های فعال او بلافاصله باطل و ورود با رمز یا کد پیامکی رد می‌شود.`,
+            async () => {
+              try {
+                await api("users/status", { method: "POST", body: { phone: ident, status: isBlocked ? "active" : "blocked" } });
+                toast(isBlocked ? "مسدودی کاربر برداشته شد" : "کاربر در دیتابیس مسدود شد و نشست‌هایش باطل شد", isBlocked ? "ok2" : "warn");
+                load();
+              } catch (ex) { toast(ex.message, "err"); }
+            }
+          );
+        }));
+        document.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => {
+          const u = lastRows.find((x) => x.id === b.dataset.del);
+          if (!u) return;
+          confirmDialog(
+            `حذف واقعی کاربر «${u.name}» از دیتابیس اپ؟ رکورد کاربر، همه نشست‌های فعال و کدهای پیامکی او واقعاً از دیتابیس ابری پاک می‌شود و ورود با این اطلاعات دیگر ممکن نیست. این عمل برگشت‌ناپذیر است.`,
+            async () => {
+              try {
+                const r = await api("users/delete", { method: "POST", body: { id: u.id, phone: u.phone || "" } });
+                toast(`کاربر واقعاً از دیتابیس حذف شد${r.sessions_revoked ? ` — ${faNum(r.sessions_revoked)} نشست باطل شد` : ""}`, "ok2");
+                load();
+              } catch (ex) { toast(ex.message, "err"); }
+            }
+          );
+        }));
+      }
+    } catch (ex) {
+      if (table) table.innerHTML = `<div class="card"><div class="empty"><span class="material">cloud_off</span>${esc(ex.message)}</div></div>`;
+      if (src) src.textContent = "اتصال به دیتابیس اپ ناموفق بود";
     }
   };
   document.getElementById("u-q").oninput = load;
   document.getElementById("u-status").onchange = load;
+  document.getElementById("u-refresh").onclick = load;
   document.getElementById("u-csv").onclick = () => {
-    csvExport("darmasir-users.csv", ["نام", "شماره", "وضعیت", "سفرها", "عضویت", "آخرین بازدید"],
-      lastRows.map((u) => [u.display_name, u.phone || "", STATUS_LABEL[u.status]?.[0] || u.status, u.trips_count, faTime(u.created_at), faTime(u.last_seen)]));
+    csvExport("darmasir-users.csv", ["نام", "تماس", "وضعیت", "نشست فعال", "رمز دارد", "عضویت", "آخرین ورود"],
+      lastRows.map((u) => [u.name, u.phone || u.email || "", STATUS_LABEL[u.status]?.[0] || u.status, u.sessions, u.has_password ? "دارد" : "ندارد", faTime(u.created_at), u.last_login_at ? faTime(u.last_login_at) : "—"]));
   };
-  const addBtn = document.getElementById("u-add");
-  if (addBtn) addBtn.onclick = () => openUserForm(null, load);
   await load();
 }
 
-/* پروفایل کاربر + تنظیم سفرها */
-function openUserDetail(user) {
+/* نمایش کدهای یک‌بارمصرف ارسالی به کاربر (پیامک + ایمیل) — بروزرسانی خودکار هر ۴ ثانیه */
+function openUserOtp(user) {
   if (!user) return;
-  const writable = can("operator");
-  const close = modal(`پروفایل — ${user.display_name}`, `
-    <div class="detail-grid">
-      <div class="detail-row"><span>شماره تماس</span><b style="direction:ltr">${esc(user.phone || "—")}</b></div>
-      <div class="detail-row"><span>وضعیت</span><span class="badge ${(STATUS_LABEL[user.status] || ["", "off"])[1]}">${(STATUS_LABEL[user.status] || [user.status])[0]}</span></div>
-      <div class="detail-row"><span>تاریخ عضویت</span><b>${faTime(user.created_at)}</b></div>
-      <div class="detail-row"><span>آخرین بازدید</span><b>${faTime(user.last_seen)}</b></div>
-      <div class="detail-row"><span>سفرهای ثبت‌شده</span><b id="ud-trips">${faNum(user.trips_count)}</b></div>
-    </div>
-    ${writable ? `
-    <div class="field" style="margin-top:14px"><label>تنظیم دستی تعداد سفرها</label>
-      <div class="trips-adjust">
-        <button class="btn btn-sm" data-delta="-10">−۱۰</button>
-        <button class="btn btn-sm" data-delta="-5">−۵</button>
-        <button class="btn btn-sm" data-delta="-1">−۱</button>
-        <button class="btn btn-sm" data-delta="1">+۱</button>
-        <button class="btn btn-sm" data-delta="5">+۵</button>
-        <button class="btn btn-sm" data-delta="10">+۱۰</button>
-      </div>
-      <span class="hint">برای همگام‌سازی با سامانه پرداخت یا اصلاح خطای شمارش استفاده می‌شود.</span>
-    </div>` : ""}`,
-    `<button class="btn" id="f-cancel">بستن</button>`);
+  if (!user.phone) { toast("این کاربر شماره موبایل ندارد", "err"); return; }
+  const PURPOSE_LABEL = { login: "ورود", password_reset: "بازیابی رمز" };
+  const EMAIL_LABEL = { sent: "ارسال شد", failed: "ناموفق", no_smtp: "SMTP تنظیم نشده" };
+  let timer = null;
+  const rawClose = modal(
+    `کدهای یک‌بارمصرف — ${user.display_name || user.name || user.phone || ""}`,
+    `<div class="detail-row" style="border-bottom:none"><span>شماره</span><b style="direction:ltr">${esc(user.phone)}</b></div>
+     <div id="otp-list" style="margin-top:10px"><div class="empty"><span class="material">hourglass_top</span>در حال دریافت کدها…</div></div>
+     <span class="hint" style="display:block;margin-top:10px">کدهای اخیر ارسالی به این کاربر (ورود یا بازیابی رمز) — کد فعال با برچسب سبز و اعتبار ۳ دقیقه مشخص شده است. وضعیت ارسال ایمیل کد هم نمایش داده می‌شود. این پنجره هر ۴ ثانیه خودکار بروزرسانی می‌شود.</span>`,
+    `<button class="btn" id="otp-refresh"><span class="material">refresh</span><span>بروزرسانی</span></button>
+     <button class="btn" id="f-cancel">بستن</button>`
+  );
+  const close = () => { if (timer) { clearInterval(timer); timer = null; } rawClose(); };
   document.getElementById("f-cancel").onclick = close;
-  if (writable) {
-    document.querySelectorAll("[data-delta]").forEach((b) => (b.onclick = async () => {
-      try {
-        const r = await api(`users/trips/${user.id}`, { method: "POST", body: { delta: Number(b.dataset.delta) } });
-        user.trips_count = r.trips_count;
-        document.getElementById("ud-trips").textContent = faNum(r.trips_count);
-        toast("سفرها بروزرسانی شد", "ok2");
-        renderPage("users");
-      } catch (ex) { toast(ex.message, "err"); }
-    }));
-  }
+  document.getElementById("modal-x").onclick = close;
+  document.getElementById("modal-back").onclick = (e) => { if (e.target.id === "modal-back") close(); };
+  const load = async () => {
+    const host = document.getElementById("otp-list");
+    if (!host) { if (timer) { clearInterval(timer); timer = null; } return; }
+    try {
+      const d = await api(`users/otp?phone=${encodeURIComponent(user.phone)}`);
+      const codes = d.codes || [];
+      if (!host) return;
+      host.innerHTML = codes.length
+        ? `<div class="detail-grid">${codes.map((c) => {
+            const active = c.valid;
+            const purpose = PURPOSE_LABEL[c.purpose] || (c.purpose === "password_reset" ? "بازیابی رمز" : "ورود");
+            const emailBits = [];
+            if (c.email_to) emailBits.push(`<span class="hint" style="direction:ltr">✉ ${esc(c.email_to)}</span>`);
+            if (c.email_status) {
+              const st = EMAIL_LABEL[c.email_status] || c.email_status;
+              emailBits.push(`<span class="badge ${c.email_status === "sent" ? "ok" : "bad"}">ایمیل: ${esc(st)}</span>`);
+            }
+            return `<div class="detail-row" style="align-items:center">
+              <span style="display:flex;gap:6px;align-items:center;min-width:0;flex-wrap:wrap">
+                <span style="direction:ltr;font-family:monospace;font-size:20px;font-weight:800;letter-spacing:4px;color:var(--primary)">${esc(c.code)}</span>
+                <span class="badge ${c.purpose === "password_reset" ? "warn" : "info"}">${esc(purpose)}</span>
+              </span>
+              <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                ${active ? `<span class="badge ok">فعال — تا ${faTime(c.expires_at)}</span>` : c.used ? `<span class="badge off">مصرف‌شده</span>` : `<span class="badge bad">منقضی</span>`}
+                ${emailBits.join(" ")}
+                <span class="hint">${faTime(c.created_at)}${c.attempts ? ` — ${faNum(c.attempts)} تلاش ناموفق` : ""}</span>
+              </span>
+            </div>`;
+          }).join("")}</div>`
+        : `<div class="empty"><span class="material">sms_failed</span>هنوز کدی برای این کاربر ارسال نشده است</div>`;
+    } catch (ex) {
+      host.innerHTML = `<div class="empty"><span class="material">error</span>${esc(ex.message)}</div>`;
+    }
+  };
+  document.getElementById("otp-refresh").onclick = load;
+  timer = setInterval(load, 4000);
+  load();
 }
 
-function openUserForm(user, after) {
-  const isEdit = !!user;
-  const close = modal(isEdit ? "ویرایش کاربر" : "کاربر جدید", `
-    <div class="field"><label>نام نمایشی</label><input id="f-name" value="${esc(user?.display_name || "")}" placeholder="مثلاً کاربر نمونه" /></div>
-    <div class="field"><label>شماره تماس</label><input id="f-phone" value="${esc(user?.phone || "")}" placeholder="۰۹…" /></div>
-    <div class="field"><label>وضعیت</label>
-      <select id="f-status">
-        <option value="active" ${user?.status === "active" ? "selected" : ""}>فعال</option>
-        <option value="limited" ${user?.status === "limited" ? "selected" : ""}>محدود</option>
-        <option value="disabled" ${user?.status === "disabled" ? "selected" : ""}>غیرفعال</option>
-      </select></div>`,
-    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-save">${isEdit ? "ذخیره" : "افزودن"}</button>`);
+/* فعالیت واقعی کاربر اپ اندروید — سفرها / ایستگاه‌های نشان‌شده / مسیرهای روزمره / تیکت‌ها
+   منبع: دیتابیس ابری (D1) — همان جایی که اپ اندروید هر تغییر کاربر را با ورکر ثبت می‌کند */
+function openUserActivity(user) {
+  if (!user) return;
+  const ident = user.phone || user.email || "";
+  if (!ident) { toast("این کاربر شماره یا ایمیل ندارد", "err"); return; }
+  const rawClose = modal(
+    `فعالیت واقعی — ${user.display_name || user.name || ident}`,
+    `<div class="detail-row" style="border-bottom:none"><span>شناسه</span><b style="direction:ltr">${esc(ident)}</b></div>
+     <div id="uact-body" style="margin-top:10px"><div class="empty"><span class="material">hourglass_top</span>در حال خواندن از دیتابیس ابری…</div></div>
+     <span class="hint" style="display:block;margin-top:10px">این داده‌ها مستقیماً از دیتابیس ابری می‌آید — هر سفر، نشان‌شدن ایستگاه یا مسیر روزمره که کاربر در اپ اندروید انجام داده باشد اینجا واقعاً ثبت شده است.</span>`,
+    `<button class="btn" id="uact-refresh"><span class="material">refresh</span><span>بروزرسانی</span></button>
+     <button class="btn" id="f-cancel">بستن</button>`
+  );
+  const close = () => rawClose();
   document.getElementById("f-cancel").onclick = close;
-  document.getElementById("f-save").onclick = async () => {
-    const body = {
-      display_name: document.getElementById("f-name").value.trim(),
-      phone: document.getElementById("f-phone").value.trim(),
-      status: document.getElementById("f-status").value,
-    };
-    if (!body.display_name) { toast("نام الزامی است", "err"); return; }
+  document.getElementById("modal-x").onclick = close;
+  document.getElementById("modal-back").onclick = (e) => { if (e.target.id === "modal-back") close(); };
+  const load = async () => {
+    const host = document.getElementById("uact-body");
+    if (!host) return;
+    host.innerHTML = `<div class="empty"><span class="material">hourglass_top</span>در حال خواندن از دیتابیس ابری…</div>`;
     try {
-      await api(isEdit ? `users/${user.id}` : "users", { method: isEdit ? "PUT" : "POST", body });
-      toast(isEdit ? "کاربر بروزرسانی شد" : "کاربر اضافه شد", "ok2");
-      close(); after ? after() : renderPage("users");
+      const d = await api(`users/activity?identifier=${encodeURIComponent(ident)}`);
+      const trips = d.trips || [];
+      const favs = d.favorites || [];
+      const daily = d.daily_routes || [];
+      const tickets = d.tickets || [];
+      const sec = (title, icon, emptyText, rowsHtml) => `
+        <div class="card" style="margin-top:10px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span class="material" style="color:var(--primary)">${icon}</span><b>${title}</b>
+          </div>
+          ${rowsHtml || `<div class="empty" style="padding:10px"><span class="material">${icon}</span>${emptyText}</div>`}
+        </div>`;
+      let html = "";
+      html += sec("سفرهای ثبت‌شده (" + faNum(trips.length) + ")", "luggage",
+        "کاربر هنوز سفری ثبت نکرده است",
+        trips.length ? `<div class="detail-grid" style="max-height:240px;overflow-y:auto;pretty-scroll">${trips.map((t) => `
+          <div class="detail-row">
+            <span><b>${esc(t.from_name)}</b> ← <b>${esc(t.to_name)}</b></span>
+            <span style="display:flex;gap:6px;align-items:center">
+              <span class="badge ok">${faNum(t.minutes)} دقیقه</span>
+              <span class="hint">${faTime(t.created_at)}</span>
+            </span>
+          </div>`).join("")}</div>` : "");
+      html += sec("ایستگاه‌های نشان‌شده (" + faNum(favs.length) + ")", "bookmark",
+        "ایستگاه نشان‌شده‌ای ندارد",
+        favs.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px">${favs.map((f) => `
+          <span class="badge ok">${esc(f.station_name || f.station_id)}</span>`).join("")}</div>` : "");
+      html += sec("مسیرهای روزمره (" + faNum(daily.length) + ")", "alt_route",
+        "مسیر روزمره‌ای ثبت نکرده است",
+        daily.length ? `<div class="detail-grid">${daily.map((r) => `
+          <div class="detail-row">
+            <span><b>${esc(r.label)}</b> — ${esc(r.from_name)} ← ${esc(r.to_name)}</span>
+            <span class="hint">${faTime(r.created_at)}</span>
+          </div>`).join("")}</div>` : "");
+      html += sec("تیکت‌های پشتیبانی (" + faNum(tickets.length) + ")", "support_agent",
+        "تیکتی ثبت نکرده است",
+        tickets.length ? `<div class="detail-grid">${tickets.map((t) => `
+          <div class="detail-row">
+            <span>${esc(t.subject || "—")}</span>
+            <span class="badge ${t.status === "open" ? "warn" : "off"}">${t.status === "open" ? "باز" : t.status === "answered" ? "پاسخ داده شد" : "بسته"}</span>
+          </div>`).join("")}</div>` : "");
+      host.innerHTML = html;
+    } catch (ex) {
+      host.innerHTML = `<div class="empty"><span class="material">error</span>${esc(ex.message)}</div>`;
+    }
+  };
+  document.getElementById("uact-refresh").onclick = load;
+  load();
+}
+
+/* تنظیم/تغییر رمز عبور کاربر واقعی اپ توسط مدیر */
+function openUserPassword(user, after) {
+  if (!user) return;
+  if (!user.phone) { toast("این کاربر شماره موبایل ندارد", "err"); return; }
+  const genRandom = () => {
+    const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+    let out = "";
+    const buf = new Uint32Array(8);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < 8; i++) out += chars[buf[i] % chars.length];
+    return out;
+  };
+  const close = modal(
+    `تنظیم رمز عبور — ${user.display_name || user.name || user.phone || ""}`,
+    `<div class="detail-row" style="border-bottom:none"><span>شماره</span><b style="direction:ltr">${esc(user.phone)}</b></div>
+     <div class="field" style="margin-top:10px"><label>رمز عبور جدید (حداقل ۶ کاراکتر)</label>
+       <div style="display:flex;gap:8px">
+         <input id="f-newpass" style="direction:ltr;flex:1" placeholder="مثلاً Metro1404" autocomplete="new-password" />
+         <button class="btn btn-sm" id="f-genpass" type="button" title="تولید رمز تصادفی"><span class="material">casino</span><span>تصادفی</span></button>
+       </div>
+       <span class="hint">با این رمز، کاربر می‌تواند با شماره یا ایمیل خود از بخش ورود با رمز وارد اپ شود.</span>
+     </div>`,
+    `<button class="btn" id="f-cancel">انصراف</button><button class="btn btn-primary" id="f-savepass"><span class="material">save</span><span>ذخیره رمز</span></button>`
+  );
+  document.getElementById("f-cancel").onclick = close;
+  document.getElementById("f-genpass").onclick = () => {
+    document.getElementById("f-newpass").value = genRandom();
+  };
+  document.getElementById("f-savepass").onclick = async () => {
+    const password = document.getElementById("f-newpass").value;
+    if (password.length < 6) { toast("رمز عبور باید حداقل ۶ کاراکتر باشد", "err"); return; }
+    try {
+      await api("users/password", { method: "POST", body: { phone: user.phone, password } });
+      toast("رمز عبور کاربر بروزرسانی شد", "ok2");
+      close();
+      if (after) after();
     } catch (ex) { toast(ex.message, "err"); }
   };
 }
@@ -968,6 +1201,12 @@ function openStationForm(station, after, lines, cities = []) {
 
 const AD_PLACE_META = {
   home: { icon: "view_carousel", cls: "" },
+  home_bottom: { icon: "vertical_align_bottom", cls: "warn2" },
+  lines: { icon: "view_list", cls: "alt" },
+  status: { icon: "info", cls: "warn2" },
+  settings: { icon: "tune", cls: "alt" },
+  saved: { icon: "bookmarks", cls: "" },
+  /* جایگاه‌های قدیمی — برای سازگاری */
   map: { icon: "map", cls: "alt" },
   plan: { icon: "alt_route", cls: "warn2" },
   station: { icon: "location_on", cls: "alt" },
@@ -1642,10 +1881,10 @@ function openStatementModal() {
   };
 }
 
-/* بازکردن سند چاپی — سازگار با دروازه XTransformPort */
+/* بازکردن سند چاپی — سازگار با دروازه XTransformPort و مسیر تمیز /admin */
 function printOpen(query) {
   const qp = new URLSearchParams(location.search).get("XTransformPort");
-  window.open(`print.html?${query}${qp ? `&XTransformPort=${encodeURIComponent(qp)}` : ""}`, "_blank", "noopener");
+  window.open(`${ASSET_P}print.html?${query}${qp ? `&XTransformPort=${encodeURIComponent(qp)}` : ""}`, "_blank", "noopener");
 }
 
 /* ---------- فاکتور تبلیغات ---------- */
@@ -1832,6 +2071,7 @@ async function pageVoice(host) {
           <div class="lex-test">
             <input id="v-test-input" placeholder="مثلاً میلاد یا تجریش…" />
             <button class="btn btn-primary btn-sm" id="v-test-btn"><span class="material">play_arrow</span><span>آزمایش</span></button>
+            <button class="btn btn-primary btn-sm" id="v-speak-btn"><span class="material">volume_up</span><span>تست صدا</span></button>
           </div>
           <div id="v-test-result"></div>
         </div>
@@ -1905,6 +2145,33 @@ async function pageVoice(host) {
   };
   testBtn.onclick = runTest;
   document.getElementById("v-test-input").addEventListener("keydown", (e) => { if (e.key === "Enter") runTest(); });
+
+  /* ---- تست صدا: پخش واقعی تلفظ از سرویس ابری (پروکسی سمت سرور پنل) ---- */
+  const speakBtn = document.getElementById("v-speak-btn");
+  if (speakBtn) {
+    let speakAudio = null;
+    speakBtn.onclick = async () => {
+      const text = document.getElementById("v-test-input").value.trim();
+      const out = document.getElementById("v-test-result");
+      if (!text) { toast("ابتدا متنی برای آزمایش وارد کنید", "err"); return; }
+      speakBtn.disabled = true;
+      speakBtn.innerHTML = '<span class="material">hourglass_top</span><span>در حال بارگذاری…</span>';
+      try {
+        const res = await api("tts", { method: "POST", raw: true, body: { text, gender: "female" } });
+        const blob = await res.blob();
+        if (!res.ok || !String(blob.type).includes("audio")) throw new Error("سرویس صدا پاسخ نامعتبر داد");
+        if (speakAudio) { speakAudio.pause(); speakAudio = null; }
+        speakAudio = new Audio(URL.createObjectURL(blob));
+        await speakAudio.play();
+        toast("پخش صدا آغاز شد", "ok2");
+      } catch (ex) {
+        toast(ex.message || "پخش صدا ممکن نشد", "err");
+      } finally {
+        speakBtn.disabled = false;
+        speakBtn.innerHTML = '<span class="material">volume_up</span><span>تست صدا</span>';
+      }
+    };
+  }
   document.getElementById("v-import")?.addEventListener("click", () =>
     confirmDialog("نام همه ایستگاه‌های فعال به‌عنوان مدخل تلفظ (اولویت ۵) وارد فرهنگ شود؟ مدخل‌های موجود رد می‌شوند.", async () => {
       try {
@@ -1963,6 +2230,7 @@ async function pageSettings(host) {
         <h3><span class="material" style="color:var(--primary)">app_shortcut</span>هویت برنامه</h3>
         ${F("app_name", "نام برنامه")}
         ${F("app_version", "نسخه فعلی")}
+        ${F("app_subtitle", "زیرنویس لوگو", "text", "متن کوچک زیر عنوان «درمسیر» در هدر اپ و صفحه ورود — پیش‌فرض: دستیار هوشمند سفر شهری. خالی بگذارید = پیش‌فرض نمایش داده می‌شود.")}
         ${F("welcome_message", "پیام خوش‌آمد")}
         ${F("support_message", "پیام پشتیبانی")}
         ${F("support_phone", "تلفن پشتیبانی")}
@@ -1981,8 +2249,36 @@ async function pageSettings(host) {
         </div>
         <div class="card">
           <h3><span class="material" style="color:var(--primary)">campaign</span>پارامترهای تبلیغات</h3>
+          <div class="field"><label>کلید اصلی تبلیغات در اپ</label>
+            <select id="st-ads_enabled" ${readOnly ? "disabled" : ""}>
+              <option value="on" ${s.ads_enabled?.value !== "off" ? "selected" : ""}>روشن — تبلیغ‌ها در اپ نمایش داده می‌شوند</option>
+              <option value="off" ${s.ads_enabled?.value === "off" ? "selected" : ""}>خاموش — همه جایگاه‌های آگهی اپ خالی می‌شوند</option>
+            </select>
+            <p class="hint">با خاموش‌کردن این کلید، همه تبلیغ‌ها (همه جایگاه‌ها) در اپ و ابر حذف می‌شوند؛ کمپین‌ها حذف نمی‌شوند و با روشن‌کردن دوباره فعال می‌مانند.</p>
+          </div>
           ${F("ads_rotation_seconds", "فاصله چرخش بنرها (ثانیه)", "number", "هر چند ثانیه بنر بعدی در یک جایگاه نمایش داده می‌شود.")}
           ${F("max_ads_per_placement", "حداکثر بنر در هر جایگاه", "number", "سقف کمپین‌های هم‌زمان فعال در یک جایگاه نمایش.")}
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3><span class="material" style="color:var(--primary)">cloud</span>سرور ابری (Cloudflare)</h3>
+          ${F("cloud_api_url", "آدرس سرور ابری (Worker)", "text", "مثلاً https://darmasir-api.hkhoramir.workers.dev — پس از wrangler deploy")}
+          ${F("cloud_sync_key", "کلید همگام‌سازی ابر", "text", "همان مقدار DARMASIR_SYNC_KEY در wrangler.toml ورکر")}
+          ${F("app_server_url", "نشانی عمومی سرور اپ (همگام‌سازی مستقیم کاربران)", "text", "مثلاً https://app.example.ir — اپ اندروید ثبت‌نام و فعالیت کاربران را به این آدرس هم می‌فرستد تا مستقیم در Turso بنشیند؛ خالی = فقط ورکر ابری")}
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            ${!readOnly ? `<button class="btn" id="cloud-test">تست اتصال ابر</button>` : ""}
+            ${!readOnly ? `<button class="btn btn-primary" id="cloud-sync">همگام‌سازی محتوا با ابر</button>` : ""}
+          </div>
+          <p class="hint" id="cloud-status">محتوا (شهرها/خطوط/ایستگاه‌ها/بنرها/تنظیمات/واژگان) به دیتابیس رایگان D1 کپی می‌شود.</p>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3><span class="material" style="color:var(--primary)">mail</span>ایمیل (SMTP) — اطلاع تیکت‌ها</h3>
+          <p class="card-sub">با تنظیم ایمیل، هر تیکت جدید به «ایمیل مدیر» اطلاع داده می‌شود و پاسخ تیکت به کاربر (اگر با ایمیل ثبت کرده باشد) ارسال می‌شود. بدون SMTP هم تیکت‌ها در بخش «تیکت‌ها» ثبت و پاسخ داده می‌شوند.</p>
+          ${F("admin_email", "ایمیل مدیر (دریافت اطلاع تیکت جدید)", "text", "مثلاً support@metrojo.ir — خالی = اطلاع ایمیلی ارسال نمی‌شود.")}
+          ${F("smtp_host", "SMTP سرور", "text", "مثلاً smtp.gmail.com یا mail.metrojo.ir")}
+          ${F("smtp_port", "پورت SMTP", "number", "۵۸۷ برای STARTTLS / ۴۶۵ برای SSL")}
+          ${F("smtp_user", "نام کاربری SMTP")}
+          ${F("smtp_pass", "رمز SMTP", "text", "برای Gmail از App Password استفاده کنید.")}
+          ${F("smtp_from", "فرستنده نمایشی", "text", "مثلاً درمسیر <support@metrojo.ir> — خالی = از نام کاربری SMTP")}
         </div>
         ${!readOnly ? `<button class="btn btn-primary" id="st-save" style="margin-top:16px">ذخیره همه تنظیمات</button>` : `<p class="card-sub">ذخیره تنظیمات فقط برای مدیر کل مجاز است.</p>`}
       </div>
@@ -1992,6 +2288,7 @@ async function pageSettings(host) {
     const body = {
       app_name: g("app_name"),
       app_version: g("app_version"),
+      app_subtitle: g("app_subtitle"),
       welcome_message: g("welcome_message"),
       support_message: g("support_message"),
       support_phone: g("support_phone"),
@@ -2001,12 +2298,542 @@ async function pageSettings(host) {
       store_link: g("store_link"),
       ads_rotation_seconds: g("ads_rotation_seconds"),
       max_ads_per_placement: g("max_ads_per_placement"),
+      ads_enabled: document.getElementById("st-ads_enabled").value,
+      cloud_api_url: g("cloud_api_url"),
+      cloud_sync_key: g("cloud_sync_key"),
+      app_server_url: g("app_server_url"),
+      admin_email: g("admin_email"),
+      smtp_host: g("smtp_host"),
+      smtp_port: g("smtp_port"),
+      smtp_user: g("smtp_user"),
+      smtp_pass: g("smtp_pass"),
+      smtp_from: g("smtp_from"),
     };
     try {
       await api("settings", { method: "PUT", body });
       toast("تنظیمات ذخیره شد", "ok2");
     } catch (ex) { toast(ex.message, "err"); }
   });
+
+  /* --- سرور ابری: تست اتصال و همگام‌سازی محتوا --- */
+  const saveCloudSettings = async () => {
+    const g = (k) => document.getElementById(`st-${k}`).value.trim();
+    await api("settings", { method: "PUT", body: { cloud_api_url: g("cloud_api_url"), cloud_sync_key: g("cloud_sync_key") } });
+  };
+  document.getElementById("cloud-test")?.addEventListener("click", async () => {
+    const out = document.getElementById("cloud-status");
+    try {
+      out.textContent = "در حال تست اتصال...";
+      await saveCloudSettings();
+      const r = await api("cloud/status");
+      if (!r.configured) out.textContent = "ابتدا آدرس سرور ابری را وارد و ذخیره کنید.";
+      else if (r.reachable) out.textContent = `اتصال برقرار است — سرویس: ${r.info?.service ?? "?"} | دیتابیس: ${r.info?.db ?? "?"}`;
+      else out.textContent = "سرور ابری در دسترس نیست — آدرس را بررسی کنید یا wrangler deploy را اجرا کنید.";
+    } catch (ex) { out.textContent = "خطا در تست اتصال: " + ex.message; }
+  });
+  document.getElementById("cloud-sync")?.addEventListener("click", async () => {
+    const out = document.getElementById("cloud-status");
+    try {
+      out.textContent = "در حال ارسال محتوا به سرور ابری...";
+      await saveCloudSettings();
+      const r = await api("cloud/sync", { method: "POST" });
+      const p = r.pushed || {};
+      out.textContent = `همگام‌سازی انجام شد در ${r.elapsedMs}ms — شهرها: ${p.cities ?? 0}، خطوط: ${p.lines ?? 0}، ایستگاه‌ها: ${p.stations ?? 0}، بنرها: ${p.ads ?? 0}، واژگان: ${p.lexicon ?? 0}`;
+      toast("محتوا با سرور ابری همگام شد", "ok2");
+    } catch (ex) { out.textContent = "خطا در همگام‌سازی: " + ex.message; toast(ex.message, "err"); }
+  });
+}
+
+/* ---------- مدهای سفر شهری — کارت‌های «مقایسه مدهای سفر» در صفحه خانه اپ ---------- */
+
+const TRAVEL_ICONS = [
+  ["directions_subway", "مترو"], ["alt_route", "ترکیبی"], ["directions_bus", "اتوبوس"],
+  ["directions_bus_filled", "اتوبوس (پر)"], ["local_taxi", "تاکسی"], ["directions_car", "خودرو"],
+  ["two_wheeler", "موتور"], ["electric_rickshaw", "برقی/ترو"], ["tram", "ترام"], ["train", "قطار"],
+  ["directions_boat", "شناور"], ["pedal_bike", "دوچرخه"], ["scooter", "اسکوتر"],
+  ["commute", "سفر شهری"], ["subway", "متروی زیرزمینی"],
+];
+
+async function pageTravel(host) {
+  let modes = [];
+  let columns = 3;
+  try {
+    const r = await api("travel-modes");
+    modes = Array.isArray(r.modes) ? r.modes : [];
+    columns = [2, 3, 4].includes(Number(r.columns)) ? Number(r.columns) : 3;
+  } catch (ex) {
+    host.innerHTML = `<div class="card"><div class="empty">${esc(ex.message)}</div></div>`;
+    return;
+  }
+  const readOnly = !(me.role === "super" || me.role === "operator");
+
+  const iconOptions = (sel) => TRAVEL_ICONS.map(([v, l]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${l} — ${v}</option>`).join("");
+
+  host.innerHTML = `
+    ${pageHead("مدهای سفر شهری", "کارت‌های بخش «مقایسه مدهای سفر شهری» در صفحه خانه اپ — نمایش/عدم نمایش، افزودن/حذف، ترتیب، وضعیت (فعال یا بزودی)، لینک هر کارت و تعداد ستون‌های نمایش.")}
+    <div class="card">
+      <h3><span class="material" style="color:var(--primary)">commute</span>کارت‌های مدهای سفر</h3>
+      <p class="card-sub">دو کارت «مترو» و «ترکیبی» داده واقعی موتور مسیریابی دارند و حذف‌شدنی نیستند (می‌توانید ترتیب، نمایش، وضعیت و لینک آن‌ها را تغییر دهید). کارت‌های «بزودی» با ساعت شنی نمایش داده می‌شوند. با «تعداد ستون‌ها»، چیدمان گرید کارت‌ها را کنترل کنید تا خانه خالی نماند.</p>
+      <div class="field" style="max-width:260px">
+        <label>تعداد ستون‌های نمایش کارت‌ها</label>
+        <select id="tm-columns" ${readOnly ? "disabled" : ""}>
+          <option value="2" ${columns === 2 ? "selected" : ""}>۲ ستون</option>
+          <option value="3" ${columns === 3 ? "selected" : ""}>۳ ستون</option>
+          <option value="4" ${columns === 4 ? "selected" : ""}>۴ ستون</option>
+        </select>
+        <span class="hint">مثلاً با ۴ کارت، «۲ ستون» یا «۴ ستون» چیدمان بدون خانه خالی می‌دهد.</span>
+      </div>
+      <div id="tm-rows" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"></div>
+      ${readOnly ? "" : `<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" id="tm-add"><span class="material">add</span><span>افزودن کارت جدید</span></button>
+        <button class="btn btn-primary" id="tm-save"><span class="material">save</span><span>ذخیره کارت‌ها</span></button>
+        <button class="btn" id="tm-sync"><span class="material">cloud_sync</span><span>همگام‌سازی با ابر</span></button>
+        <button class="btn" id="tm-reset"><span class="material">restart_alt</span><span>بازگرداندن پیش‌فرض</span></button>
+      </div>`}
+      ${readOnly ? `<p class="card-sub">ویرایش فقط برای مدیر کل و اپراتور مجاز است.</p>` : `<p class="hint" id="tm-status" style="margin-top:10px">لینک می‌تواند مسیر داخلی اپ (مثل /lines) یا آدرس کامل اینترنتی باشد؛ کارت فعال با لینک، کاربر را به همان‌جا می‌برد. پس از ذخیره، برای اعمال در اپ «همگام‌سازی با ابر» را بزنید (تغییرات بدون sync هم تا ۱۰ ثانیه در اپ می‌افتد).</p>`}
+    </div>`;
+
+  const rowsHost = document.getElementById("tm-rows");
+  const canEdit = !readOnly;
+
+  function harvest() {
+    document.querySelectorAll("#tm-rows .tm-row").forEach((row) => {
+      const i = Number(row.dataset.idx);
+      if (!modes[i]) return;
+      modes[i].label = (row.querySelector(".tm-label")?.value || "").trim();
+      modes[i].icon = row.querySelector(".tm-icon")?.value || "commute";
+      modes[i].status = row.querySelector(".tm-status")?.value === "active" ? "active" : "soon";
+      modes[i].enabled = row.querySelector(".tm-enabled")?.checked !== false;
+      modes[i].link = (row.querySelector(".tm-link")?.value || "").trim();
+    });
+  }
+
+  function renderRows() {
+    rowsHost.innerHTML = modes.map((m, i) => {
+      const isReal = m.kind === "real" || m.id === "metro" || m.id === "combo";
+      return `
+      <div class="tm-row" data-idx="${i}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface-1,rgba(0,0,0,.03));border:1px solid var(--border,#e2e8e5);border-radius:12px;padding:10px 12px">
+        <span class="material" style="color:var(--primary)">${esc(m.icon || "commute")}</span>
+        ${isReal ? `<span style="font-size:10px;font-weight:700;color:var(--primary);background:color-mix(in srgb,var(--primary) 12%,transparent);padding:3px 8px;border-radius:99px;white-space:nowrap">داده واقعی</span>` : ""}
+        <input class="tm-label" placeholder="نام روش (مثلاً اتوبوس)" value="${esc(m.label || "")}" maxlength="30" ${canEdit ? "" : "disabled"} style="flex:1;min-width:120px" />
+        <input class="tm-link" placeholder="لینک / مسیر اپ (اختیاری — مثل /lines)" value="${esc(m.link || "")}" maxlength="300" dir="ltr" ${canEdit ? "" : "disabled"} style="flex:1.2;min-width:170px" />
+        <select class="tm-icon" ${canEdit ? "" : "disabled"} style="min-width:150px">${iconOptions(m.icon || "commute")}</select>
+        <select class="tm-status" ${canEdit ? "" : "disabled"} style="min-width:110px">
+          <option value="active" ${m.status === "active" ? "selected" : ""}>فعال</option>
+          <option value="soon" ${m.status !== "active" ? "selected" : ""}>بزودی</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap">
+          <input type="checkbox" class="tm-enabled" ${m.enabled !== false ? "checked" : ""} ${canEdit ? "" : "disabled"} /> نمایش
+        </label>
+        ${canEdit ? `
+        <button class="btn btn-sm" data-tm-up="${i}" title="بالا" ${i === 0 ? "disabled" : ""}><span class="material">arrow_upward</span></button>
+        <button class="btn btn-sm" data-tm-down="${i}" title="پایین" ${i === modes.length - 1 ? "disabled" : ""}><span class="material">arrow_downward</span></button>
+        ${isReal ? "" : `<button class="btn btn-sm" data-tm-del="${i}" title="حذف"><span class="material">delete</span></button>`}` : ""}
+      </div>`;
+    }).join("") || `<div class="empty">هیچ کارتی تعریف نشده — «افزودن کارت جدید» را بزنید.</div>`;
+
+    rowsHost.querySelectorAll("[data-tm-del]").forEach((b) => (b.onclick = () => { harvest(); modes.splice(Number(b.dataset.tmDel), 1); renderRows(); }));
+    rowsHost.querySelectorAll("[data-tm-up]").forEach((b) => (b.onclick = () => {
+      harvest();
+      const i = Number(b.dataset.tmUp);
+      if (i > 0) { [modes[i - 1], modes[i]] = [modes[i], modes[i - 1]]; renderRows(); }
+    }));
+    rowsHost.querySelectorAll("[data-tm-down]").forEach((b) => (b.onclick = () => {
+      harvest();
+      const i = Number(b.dataset.tmDown);
+      if (i < modes.length - 1) { [modes[i + 1], modes[i]] = [modes[i], modes[i + 1]]; renderRows(); }
+    }));
+  }
+  renderRows();
+
+  document.getElementById("tm-add")?.addEventListener("click", () => {
+    harvest();
+    modes.push({ id: `mode-${Date.now().toString(36)}`, label: "", icon: "commute", status: "soon", enabled: true, link: "", kind: "extra" });
+    renderRows();
+    const last = rowsHost.querySelector(".tm-row:last-of-type .tm-label");
+    last?.focus();
+  });
+  document.getElementById("tm-reset")?.addEventListener("click", async () => {
+    try {
+      const r = await api("travel-modes");
+      modes = Array.isArray(r.modes) ? r.modes : [];
+      renderRows();
+      toast("پیش‌فرض بازگردانده شد (هنوز ذخیره نشده)", "ok2");
+    } catch (ex) { toast(ex.message, "err"); }
+  });
+  document.getElementById("tm-save")?.addEventListener("click", async () => {
+    harvest();
+    const payload = modes.filter((m) => (m.label || "").trim());
+    if (payload.length < 2) { toast("حداقل دو کارت با نام معتبر لازم است", "err"); return; }
+    try {
+      const r = await api("travel-modes", { method: "PUT", body: { modes: payload, columns: Number(document.getElementById("tm-columns").value) } });
+      modes = r.modes || payload;
+      columns = r.columns || columns;
+      renderRows();
+      toast("کارت‌های مدهای سفر ذخیره شد", "ok2");
+    } catch (ex) { toast(ex.message, "err"); }
+  });
+  document.getElementById("tm-sync")?.addEventListener("click", async () => {
+    const out = document.getElementById("tm-status");
+    try {
+      out.textContent = "در حال ارسال محتوا به سرور ابری...";
+      const r = await api("cloud/sync", { method: "POST" });
+      out.textContent = `همگام‌سازی انجام شد در ${r.elapsedMs}ms — اپ تا حداکثر ۱۰ ثانیه بعد کارت‌های جدید را می‌بیند.`;
+      toast("محتوا با سرور ابری همگام شد", "ok2");
+    } catch (ex) { out.textContent = "خطا در همگام‌سازی: " + ex.message; toast(ex.message, "err"); }
+  });
+}
+
+/* ---------- صفحه «درباره ما» اپ — همه متن‌ها و ردیف‌ها ---------- */
+
+async function pageAboutContent(host) {
+  let content;
+  try {
+    content = (await api("about-page")).content;
+  } catch (ex) {
+    host.innerHTML = `<div class="card"><div class="empty">${esc(ex.message)}</div></div>`;
+    return;
+  }
+  const readOnly = !(me.role === "super" || me.role === "operator");
+
+  host.innerHTML = `
+    ${pageHead("درباره ما (اپ)", "همه متن‌های صفحه «درباره ما» در اپ — عنوان، معرفی، ردیف‌های مشخصات، پانوشت. هر ردیف می‌تواند نمایش/عدم نمایش، لینک یا نشانگر زنده داشته باشد.")}
+    <div class="card">
+      <h3><span class="material" style="color:var(--primary)">info</span>متن‌های اصلی</h3>
+      <div class="grid cols-2">
+        <div class="field"><label>عنوان صفحه</label><input id="ab-title" value="${esc(content.title)}" maxlength="40" ${readOnly ? "disabled" : ""} /></div>
+        <div class="field"><label>زیرعنوان صفحه</label><input id="ab-subtitle" value="${esc(content.subtitle)}" maxlength="60" ${readOnly ? "disabled" : ""} /></div>
+        <div class="field"><label>نام اپ در معرفی</label><input id="ab-appname" value="${esc(content.app_name)}" maxlength="60" ${readOnly ? "disabled" : ""} /></div>
+      </div>
+      <div class="field"><label>متن معرفی</label><textarea id="ab-desc" rows="4" maxlength="600" ${readOnly ? "disabled" : ""}>${esc(content.description)}</textarea></div>
+    </div>
+    <div class="card">
+      <h3><span class="material" style="color:var(--primary)">table_rows</span>ردیف‌های مشخصات</h3>
+      <p class="card-sub">هر ردیف یک «عنوان + مقدار» است (مثل وضعیت سرویس / وب‌سایت). با لینک، مقدار قابل کلیک می‌شود؛ با «نشانگر زنده» یک دات سبز چشمک‌زن کنار مقدار می‌آید. بخش «طراح» و «پشتیبانی» حذف شد — هر ردیف که نخواهید را غیرفعال یا حذف کنید.</p>
+      <div id="ab-rows" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
+      ${readOnly ? "" : `<button class="btn" id="ab-row-add" style="margin-top:12px"><span class="material">add</span><span>افزودن ردیف</span></button>`}
+    </div>
+    <div class="card">
+      <h3><span class="material" style="color:var(--primary)">notes</span>پانوشت</h3>
+      <div class="field"><label>خط اول پانوشت</label><input id="ab-fnote" value="${esc(content.footer_note)}" maxlength="120" ${readOnly ? "disabled" : ""} /></div>
+      <div class="field"><label>خط حقوق (کپی‌رایت)</label><input id="ab-fcopy" value="${esc(content.footer_copy)}" maxlength="120" ${readOnly ? "disabled" : ""} /></div>
+      ${readOnly ? "" : `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="ab-save"><span class="material">save</span><span>ذخیره تغییرات</span></button>
+        <button class="btn" id="ab-sync"><span class="material">cloud_sync</span><span>همگام‌سازی با ابر</span></button>
+      </div>
+      <p class="hint" id="ab-status" style="margin-top:10px">پس از ذخیره، اپ تا حداکثر ۱۰ ثانیه بعد (یا با بازکردن دوباره صفحه) متن‌های جدید را می‌بیند.</p>`}
+      ${readOnly ? `<p class="card-sub">ویرایش فقط برای مدیر کل و اپراتور مجاز است.</p>` : ""}
+    </div>`;
+
+  const rowsHost = document.getElementById("ab-rows");
+  const canEdit = !readOnly;
+
+  function harvest() {
+    document.querySelectorAll("#ab-rows .ab-row").forEach((row) => {
+      const i = Number(row.dataset.idx);
+      if (!content.rows[i]) return;
+      content.rows[i].label = (row.querySelector(".ab-label")?.value || "").trim();
+      content.rows[i].value = (row.querySelector(".ab-value")?.value || "").trim();
+      content.rows[i].link = (row.querySelector(".ab-link")?.value || "").trim();
+      content.rows[i].live = row.querySelector(".ab-live")?.checked === true;
+      content.rows[i].enabled = row.querySelector(".ab-enabled")?.checked !== false;
+    });
+  }
+
+  function renderRows() {
+    rowsHost.innerHTML = (content.rows || []).map((r, i) => `
+      <div class="ab-row" data-idx="${i}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface-1,rgba(0,0,0,.03));border:1px solid var(--border,#e2e8e5);border-radius:12px;padding:10px 12px">
+        <input class="ab-label" placeholder="عنوان (مثلاً وضعیت سرویس)" value="${esc(r.label || "")}" maxlength="40" ${canEdit ? "" : "disabled"} style="flex:1;min-width:130px" />
+        <input class="ab-value" placeholder="مقدار (مثلاً آنلاین)" value="${esc(r.value || "")}" maxlength="60" ${canEdit ? "" : "disabled"} style="flex:1;min-width:120px" />
+        <input class="ab-link" placeholder="لینک (اختیاری)" value="${esc(r.link || "")}" maxlength="300" dir="ltr" ${canEdit ? "" : "disabled"} style="flex:1.2;min-width:150px" />
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap"><input type="checkbox" class="ab-live" ${r.live ? "checked" : ""} ${canEdit ? "" : "disabled"} /> دات زنده</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap"><input type="checkbox" class="ab-enabled" ${r.enabled !== false ? "checked" : ""} ${canEdit ? "" : "disabled"} /> نمایش</label>
+        ${canEdit ? `
+        <button class="btn btn-sm" data-ab-up="${i}" ${i === 0 ? "disabled" : ""}><span class="material">arrow_upward</span></button>
+        <button class="btn btn-sm" data-ab-down="${i}" ${i === content.rows.length - 1 ? "disabled" : ""}><span class="material">arrow_downward</span></button>
+        <button class="btn btn-sm" data-ab-del="${i}"><span class="material">delete</span></button>` : ""}
+      </div>`).join("") || `<div class="empty">ردیفی نیست — «افزودن ردیف» را بزنید.</div>`;
+
+    rowsHost.querySelectorAll("[data-ab-del]").forEach((b) => (b.onclick = () => { harvest(); content.rows.splice(Number(b.dataset.abDel), 1); renderRows(); }));
+    rowsHost.querySelectorAll("[data-ab-up]").forEach((b) => (b.onclick = () => {
+      harvest(); const i = Number(b.dataset.abUp);
+      if (i > 0) { [content.rows[i - 1], content.rows[i]] = [content.rows[i], content.rows[i - 1]]; renderRows(); }
+    }));
+    rowsHost.querySelectorAll("[data-ab-down]").forEach((b) => (b.onclick = () => {
+      harvest(); const i = Number(b.dataset.abDown);
+      if (i < content.rows.length - 1) { [content.rows[i + 1], content.rows[i]] = [content.rows[i], content.rows[i + 1]]; renderRows(); }
+    }));
+  }
+  renderRows();
+
+  document.getElementById("ab-row-add")?.addEventListener("click", () => {
+    harvest();
+    content.rows.push({ id: `row-${Date.now().toString(36)}`, label: "", value: "", link: "", live: false, enabled: true });
+    renderRows();
+  });
+  document.getElementById("ab-save")?.addEventListener("click", async () => {
+    harvest();
+    const body = {
+      title: document.getElementById("ab-title").value.trim(),
+      subtitle: document.getElementById("ab-subtitle").value.trim(),
+      app_name: document.getElementById("ab-appname").value.trim(),
+      description: document.getElementById("ab-desc").value.trim(),
+      rows: content.rows,
+      footer_note: document.getElementById("ab-fnote").value.trim(),
+      footer_copy: document.getElementById("ab-fcopy").value.trim(),
+    };
+    try {
+      const r = await api("about-page", { method: "PUT", body: { content: body } });
+      content = r.content || content;
+      renderRows();
+      toast("محتوای «درباره ما» ذخیره شد", "ok2");
+    } catch (ex) { toast(ex.message, "err"); }
+  });
+  document.getElementById("ab-sync")?.addEventListener("click", async () => {
+    const out = document.getElementById("ab-status");
+    try {
+      out.textContent = "در حال ارسال محتوا به سرور ابری...";
+      const r = await api("cloud/sync", { method: "POST" });
+      out.textContent = `همگام‌سازی انجام شد در ${r.elapsedMs}ms.`;
+      toast("محتوا با سرور ابری همگام شد", "ok2");
+    } catch (ex) { out.textContent = "خطا در همگام‌سازی: " + ex.message; toast(ex.message, "err"); }
+  });
+}
+
+/* ---------- صفحه «تماس با ما» اپ — بخش‌ها و راه‌های ارتباطی ---------- */
+
+const CONTACT_ICONS = [
+  ["support_agent", "پشتیبانی"], ["call", "تماس تلفنی"], ["sms", "پیامک"], ["email", "ایمیل"],
+  ["alternate_email", "آدرس ایمیل"], ["chat", "گفتگو"], ["forum", "انجمن"], ["send", "تلگرام / ارسال"],
+  ["language", "وب‌سایت"], ["campaign", "تبلیغات"], ["apps", "محصولات"], ["public", "شبکه اجتماعی"],
+  ["location_on", "آدرس"], ["schedule", "ساعات کاری"], ["help_outline", "پرسش متداول"],
+];
+
+async function pageContactContent(host) {
+  let content;
+  try {
+    content = (await api("contact-page")).content;
+  } catch (ex) {
+    host.innerHTML = `<div class="card"><div class="empty">${esc(ex.message)}</div></div>`;
+    return;
+  }
+  const readOnly = !(me.role === "super" || me.role === "operator");
+  const canEdit = !readOnly;
+  const iconOptions = (sel) => CONTACT_ICONS.map(([v, l]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${l} — ${v}</option>`).join("");
+
+  host.innerHTML = `
+    ${pageHead("تماس با ما (اپ)", "همه بخش‌های صفحه «تماس با ما» در اپ — راه‌های ارتباطی (افزودن/حذف/ترتیب/نمایش) و بخش ثبت تیکت.")}
+    <div class="card">
+      <h3><span class="material" style="color:var(--primary)">support_agent</span>متن‌های اصلی</h3>
+      <div class="grid cols-2">
+        <div class="field"><label>عنوان صفحه</label><input id="ct-title" value="${esc(content.title)}" maxlength="40" ${canEdit ? "" : "disabled"} /></div>
+        <div class="field"><label>زیرعنوان صفحه</label><input id="ct-subtitle" value="${esc(content.subtitle)}" maxlength="60" ${canEdit ? "" : "disabled"} /></div>
+      </div>
+      <div class="field"><label>عنوان بخش راه‌های ارتباطی</label><input id="ct-methodstitle" value="${esc(content.methods_title)}" maxlength="40" ${canEdit ? "" : "disabled"} /></div>
+    </div>
+    <div class="card">
+      <h3><span class="material" style="color:var(--primary)">call</span>راه‌های ارتباطی</h3>
+      <p class="card-sub">نوع رفتار هر مورد: «تماس» شماره را شمارش می‌کند، «لینک» صفحه را باز می‌کند، «ایمیل» برنامه ایمیل را باز می‌کند، «بزودی» پیام به‌زودی می‌دهد. موارد غیرفعال در اپ نمایش داده نمی‌شوند.</p>
+      <div id="ct-rows" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
+      ${canEdit ? `<button class="btn" id="ct-add" style="margin-top:12px"><span class="material">add</span><span>افزودن مورد جدید</span></button>` : ""}
+    </div>
+    <div class="card">
+      <h3><span class="material" style="color:var(--primary)">confirmation_number</span>بخش ثبت تیکت</h3>
+      <div class="field"><label>نمایش فرم ثبت تیکت در اپ</label>
+        <select id="ct-ticketenabled" ${canEdit ? "" : "disabled"}>
+          <option value="1" ${content.ticket_enabled !== false ? "selected" : ""}>نمایش داده شود</option>
+          <option value="0" ${content.ticket_enabled === false ? "selected" : ""}>نمایش داده نشود</option>
+        </select></div>
+      <div class="field"><label>عنوان بخش تیکت</label><input id="ct-tickettitle" value="${esc(content.ticket_title)}" maxlength="40" ${canEdit ? "" : "disabled"} /></div>
+      <div class="field"><label>پیام موفقیت پس از ثبت تیکت</label><input id="ct-success" value="${esc(content.success_message)}" maxlength="200" ${canEdit ? "" : "disabled"} /></div>
+      ${canEdit ? `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="ct-save"><span class="material">save</span><span>ذخیره تغییرات</span></button>
+        <button class="btn" id="ct-sync"><span class="material">cloud_sync</span><span>همگام‌سازی با ابر</span></button>
+      </div>
+      <p class="hint" id="ct-status" style="margin-top:10px">پس از ذخیره، اپ تا حداکثر ۱۰ ثانیه بعد تغییرات را می‌بیند. تیکت‌های کاربران در بخش «تیکت‌ها» همین پنل بررسی و پاسخ داده می‌شوند.</p>` : `<p class="card-sub">ویرایش فقط برای مدیر کل و اپراتور مجاز است.</p>`}
+    </div>`;
+
+  const rowsHost = document.getElementById("ct-rows");
+
+  function harvest() {
+    document.querySelectorAll("#ct-rows .ct-row").forEach((row) => {
+      const i = Number(row.dataset.idx);
+      if (!content.methods[i]) return;
+      content.methods[i].icon = row.querySelector(".ct-icon")?.value || "support_agent";
+      content.methods[i].title = (row.querySelector(".ct-title")?.value || "").trim();
+      content.methods[i].value = (row.querySelector(".ct-value")?.value || "").trim();
+      content.methods[i].type = row.querySelector(".ct-type")?.value || "url";
+      content.methods[i].link = (row.querySelector(".ct-link")?.value || "").trim();
+      content.methods[i].enabled = row.querySelector(".ct-enabled")?.checked !== false;
+    });
+  }
+
+  function renderRows() {
+    rowsHost.innerHTML = (content.methods || []).map((m, i) => `
+      <div class="ct-row" data-idx="${i}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface-1,rgba(0,0,0,.03));border:1px solid var(--border,#e2e8e5);border-radius:12px;padding:10px 12px">
+        <span class="material" style="color:var(--primary)">${esc(m.icon || "support_agent")}</span>
+        <select class="ct-icon" ${canEdit ? "" : "disabled"} style="min-width:150px">${iconOptions(m.icon || "support_agent")}</select>
+        <input class="ct-title" placeholder="عنوان مورد" value="${esc(m.title || "")}" maxlength="60" ${canEdit ? "" : "disabled"} style="flex:1.3;min-width:150px" />
+        <input class="ct-value" placeholder="مقدار نمایشی (اختیاری — مثل شماره)" value="${esc(m.value || "")}" maxlength="100" ${canEdit ? "" : "disabled"} style="flex:1;min-width:140px" />
+        <select class="ct-type" ${canEdit ? "" : "disabled"} style="min-width:110px">
+          <option value="tel" ${m.type === "tel" ? "selected" : ""}>تماس</option>
+          <option value="url" ${m.type === "url" ? "selected" : ""}>لینک</option>
+          <option value="mailto" ${m.type === "mailto" ? "selected" : ""}>ایمیل</option>
+          <option value="toast" ${m.type === "toast" ? "selected" : ""}>بزودی</option>
+        </select>
+        <input class="ct-link" placeholder="مقصد (شماره/لینک/ایمیل)" value="${esc(m.link || "")}" maxlength="300" dir="ltr" ${canEdit ? "" : "disabled"} style="flex:1.2;min-width:150px" />
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap"><input type="checkbox" class="ct-enabled" ${m.enabled !== false ? "checked" : ""} ${canEdit ? "" : "disabled"} /> نمایش</label>
+        ${canEdit ? `
+        <button class="btn btn-sm" data-ct-up="${i}" ${i === 0 ? "disabled" : ""}><span class="material">arrow_upward</span></button>
+        <button class="btn btn-sm" data-ct-down="${i}" ${i === content.methods.length - 1 ? "disabled" : ""}><span class="material">arrow_downward</span></button>
+        <button class="btn btn-sm" data-ct-del="${i}"><span class="material">delete</span></button>` : ""}
+      </div>`).join("") || `<div class="empty">موردی نیست — «افزودن مورد جدید» را بزنید.</div>`;
+
+    rowsHost.querySelectorAll("[data-ct-del]").forEach((b) => (b.onclick = () => { harvest(); content.methods.splice(Number(b.dataset.ctDel), 1); renderRows(); }));
+    rowsHost.querySelectorAll("[data-ct-up]").forEach((b) => (b.onclick = () => {
+      harvest(); const i = Number(b.dataset.ctUp);
+      if (i > 0) { [content.methods[i - 1], content.methods[i]] = [content.methods[i], content.methods[i - 1]]; renderRows(); }
+    }));
+    rowsHost.querySelectorAll("[data-ct-down]").forEach((b) => (b.onclick = () => {
+      harvest(); const i = Number(b.dataset.ctDown);
+      if (i < content.methods.length - 1) { [content.methods[i + 1], content.methods[i]] = [content.methods[i], content.methods[i + 1]]; renderRows(); }
+    }));
+  }
+  renderRows();
+
+  document.getElementById("ct-add")?.addEventListener("click", () => {
+    harvest();
+    content.methods.push({ id: `method-${Date.now().toString(36)}`, icon: "support_agent", title: "", value: "", type: "url", link: "", enabled: true });
+    renderRows();
+    const last = rowsHost.querySelector(".ct-row:last-of-type .ct-title");
+    last?.focus();
+  });
+  document.getElementById("ct-save")?.addEventListener("click", async () => {
+    harvest();
+    const body = {
+      title: document.getElementById("ct-title").value.trim(),
+      subtitle: document.getElementById("ct-subtitle").value.trim(),
+      methods_title: document.getElementById("ct-methodstitle").value.trim(),
+      methods: content.methods,
+      ticket_enabled: document.getElementById("ct-ticketenabled").value === "1",
+      ticket_title: document.getElementById("ct-tickettitle").value.trim(),
+      success_message: document.getElementById("ct-success").value.trim(),
+    };
+    try {
+      const r = await api("contact-page", { method: "PUT", body: { content: body } });
+      content = r.content || content;
+      renderRows();
+      toast("بخش‌های «تماس با ما» ذخیره شد", "ok2");
+    } catch (ex) { toast(ex.message, "err"); }
+  });
+  document.getElementById("ct-sync")?.addEventListener("click", async () => {
+    const out = document.getElementById("ct-status");
+    try {
+      out.textContent = "در حال ارسال محتوا به سرور ابری...";
+      const r = await api("cloud/sync", { method: "POST" });
+      out.textContent = `همگام‌سازی انجام شد در ${r.elapsedMs}ms.`;
+      toast("محتوا با سرور ابری همگام شد", "ok2");
+    } catch (ex) { out.textContent = "خطا در همگام‌سازی: " + ex.message; toast(ex.message, "err"); }
+  });
+}
+
+/* ---------- تیکت‌ها — بررسی و پاسخ تیکت‌های کاربران اپ ---------- */
+
+const TICKET_CATS = { general: "پرسش عمومی", bug: "گزارش خطا", idea: "پیشنهاد", ad: "تبلیغات" };
+const TICKET_STATUS = {
+  open: ["در انتظار بررسی", "warn"],
+  answered: ["پاسخ داده شده", "ok"],
+  closed: ["بسته شده", "off"],
+};
+
+async function pageTickets(host) {
+  const writable = can("operator");
+  let filterStatus = "";
+  let lastRows = [];
+  let smtpOk = false;
+
+  host.innerHTML = `
+    ${pageHead("تیکت‌ها", "تیکت‌های ثبت‌شده در اپ (بخش تماس با ما) — پاسخ بدهید؛ پاسخ بلافاصله در اپ کاربر و (در صورت تنظیم ایمیل) در صندوق ایمیل او می‌رسد.")}
+    <div class="toolbar">
+      <input id="tk-q" placeholder="جست‌وجو در موضوع/نام/متن…" style="min-width:220px" />
+      <select id="tk-status">
+        <option value="">همه وضعیت‌ها</option>
+        <option value="open">در انتظار بررسی</option>
+        <option value="answered">پاسخ داده شده</option>
+        <option value="closed">بسته شده</option>
+      </select>
+      <span class="toolbar-note" id="tk-count"></span>
+    </div>
+    <div id="tk-table"></div>
+    <p class="toolbar-note" id="tk-smtp" style="margin-top:8px"></p>`;
+
+  const load = async () => {
+    const r = await api(`tickets?status=${encodeURIComponent(filterStatus)}&q=${encodeURIComponent(document.getElementById("tk-q").value.trim())}`);
+    lastRows = r.tickets || [];
+    smtpOk = !!r.smtp;
+    const c = r.counts || {};
+    document.getElementById("tk-count").textContent = `${faNum(lastRows.length)} تیکت — باز: ${faNum(c.open ?? 0)} • پاسخ‌داده: ${faNum(c.answered ?? 0)} • بسته: ${faNum(c.closed ?? 0)}`;
+    document.getElementById("tk-smtp").textContent = smtpOk
+      ? "ایمیل فعال است — اطلاع تیکت جدید به مدیر و پاسخ ایمیلی به کاربر ارسال می‌شود."
+      : "ایمیل تنظیم نشده — برای اطلاع ایمیلی، SMTP و ایمیل مدیر را در «تنظیمات سامانه» تکمیل کنید (پاسخ دادن در اپ بدون ایمیل هم کار می‌کند).";
+    document.getElementById("tk-table").innerHTML = lastRows.length ? `
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>#</th><th>فرستنده</th><th>موضوع</th><th>دسته</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead>
+        <tbody>
+          ${lastRows.map((t) => {
+            const st = TICKET_STATUS[t.status] || TICKET_STATUS.open;
+            return `
+            <tr>
+              <td>${faNum(t.id)}</td>
+              <td><b>${esc(t.name)}</b><br /><span style="font-size:11px;color:var(--muted)" dir="ltr">${esc(t.contact)}</span></td>
+              <td>${esc(t.subject)}</td>
+              <td><span class="badge info">${TICKET_CATS[t.category] || t.category}</span></td>
+              <td><span class="badge ${st[1]}">${st[0]}</span></td>
+              <td>${faTime(t.createdAt)}</td>
+              <td><div class="acts">
+                ${writable ? `<button class="icon-btn" data-reply="${t.id}" title="مشاهده و پاسخ"><span class="material">reply</span></button>` : ""}
+                ${writable && t.status !== "closed" ? `<button class="icon-btn" data-close="${t.id}" title="بستن تیکت"><span class="material">lock</span></button>` : ""}
+              </div></td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table></div>` : `<div class="card"><div class="empty"><span class="material">confirmation_number</span>تیکتی یافت نشد</div></div>`;
+
+    document.querySelectorAll("[data-reply]").forEach((b) => (b.onclick = () => openReply(lastRows.find((x) => x.id === Number(b.dataset.reply)))));
+    document.querySelectorAll("[data-close]").forEach((b) => (b.onclick = () =>
+      confirmDialog("این تیکت بدون پاسخ بسته شود؟", async () => {
+        try { await api(`tickets/${b.dataset.close}/status`, { method: "POST", body: { status: "closed" } }); toast("تیکت بسته شد", "ok2"); load(); }
+        catch (ex) { toast(ex.message, "err"); }
+      })));
+  };
+
+  function openReply(t) {
+    if (!t) return;
+    const st = TICKET_STATUS[t.status] || TICKET_STATUS.open;
+    const close = modal(`تیکت #${t.id} — ${esc(t.subject)}`, `
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:13px">
+        <div><b>فرستنده:</b> ${esc(t.name)} — <span dir="ltr">${esc(t.contact)}</span> <span class="badge info">${TICKET_CATS[t.category] || t.category}</span> <span class="badge ${st[1]}">${st[0]}</span></div>
+        <div style="background:var(--surface-1,rgba(0,0,0,.03));border:1px solid var(--border,#e2e8e5);border-radius:10px;padding:12px;white-space:pre-wrap">${esc(t.message)}</div>
+        ${t.reply ? `<div style="background:#eef7f3;border:1px solid #cfe6dc;border-radius:10px;padding:12px;white-space:pre-wrap"><b>پاسخ قبلی:</b><br />${esc(t.reply)}</div>` : ""}
+      </div>
+      <div class="field"><label>پاسخ پشتیبانی</label><textarea id="tk-replytext" rows="4" placeholder="پاسخ خود را بنویسید… این پاسخ در اپ کاربر نمایش داده می‌شود">${esc(t.reply || "")}</textarea></div>
+      <span class="hint">با ذخیره پاسخ، وضعیت تیکت «پاسخ داده شده» می‌شود و کاربر در اپ (تماس با ما ← تیکت‌های من) آن را می‌بیند${t.contact.includes("@") ? " و ایمیل پاسخ به او می‌رود" : ""}.</span>`,
+      `<button class="btn" id="tk-close">انصراف</button><button class="btn btn-primary" id="tk-sendreply"><span class="material">reply</span><span>ثبت پاسخ</span></button>`);
+    document.getElementById("tk-close").onclick = close;
+    document.getElementById("tk-sendreply").onclick = async () => {
+      const reply = document.getElementById("tk-replytext").value.trim();
+      if (!reply) { toast("متن پاسخ را بنویسید", "err"); return; }
+      try {
+        await api(`tickets/${t.id}/reply`, { method: "POST", body: { reply } });
+        toast("پاسخ ثبت شد و در اپ کاربر نمایش داده می‌شود", "ok2");
+        close(); load();
+      } catch (ex) { toast(ex.message, "err"); }
+    };
+  }
+
+  document.getElementById("tk-q").oninput = load;
+  document.getElementById("tk-status").onchange = (e) => { filterStatus = e.target.value; load(); };
+  await load();
 }
 
 /* ---------- گزارش‌ها ---------- */
@@ -2136,19 +2963,19 @@ async function pageSecurity(host) {
   const s = await api("security");
   host.innerHTML = `
     ${pageHead("امنیت و وقایع‌نگاری", "مدیران پنل، نقش‌ها، نشست‌های فعال، تغییر گذرواژه و گزارش رویدادهای امنیتی.")}
-    <div class="grid cols-2">
-      <div>
-        <div class="card" style="margin-bottom:16px">
+    <div class="grid cols-2 sec-grid">
+      <div class="col">
+        <div class="card card-pw">
           <h3><span class="material" style="color:var(--primary)">password</span>تغییر گذرواژه من</h3>
           <div class="field"><label>گذرواژه فعلی</label><input id="pw-cur" type="password" autocomplete="current-password" /></div>
           <div class="field"><label>گذرواژه جدید (حداقل ۸ کاراکتر)</label><input id="pw-new" type="password" autocomplete="new-password" /></div>
           <div class="field"><label>تکرار گذرواژه جدید</label><input id="pw-new2" type="password" autocomplete="new-password" /></div>
           <button class="btn btn-primary" id="pw-save"><span class="material">lock_reset</span><span>تغییر گذرواژه</span></button>
         </div>
-        <div class="card">
+        <div class="card card-adm">
           <h3><span class="material" style="color:var(--primary)">admin_panel_settings</span>مدیران پنل</h3>
           <div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" id="adm-add">+ مدیر جدید</button></div>
-          <div class="tbl-wrap" style="max-height:300px"><table class="tbl">
+          <div class="tbl-wrap"><table class="tbl">
             <thead><tr><th>نام</th><th>نام کاربری</th><th>نقش</th><th>وضعیت</th><th>آخرین ورود</th><th></th></tr></thead>
             <tbody>${s.admins.map((a) => `
               <tr>
@@ -2165,9 +2992,9 @@ async function pageSecurity(host) {
           </table></div>
         </div>
       </div>
-      <div class="card">
+      <div class="card card-sessions">
         <h3><span class="material" style="color:var(--primary)">wifi_tethering</span>نشست‌های فعال (${faNum(s.sessions.length)})</h3>
-        <div class="tbl-wrap" style="max-height:190px"><table class="tbl">
+        <div class="tbl-wrap"><table class="tbl">
           <thead><tr><th>مدیر</th><th>IP</th><th>ایجاد</th><th>انقضا</th><th></th></tr></thead>
           <tbody>${s.sessions.length ? s.sessions.map((x) => `
             <tr><td><b>${esc(x.display_name)}</b><span class="cell-sub" title="${esc(x.user_agent || "")}">${esc(x.username)}</span></td>
@@ -2175,8 +3002,8 @@ async function pageSecurity(host) {
             <td>${faTime(x.created_at)}</td><td>${faTime(x.expires_at)}</td>
             <td>${x.username !== me.username ? `<button class="icon-btn danger" data-revoke="${esc(x.token)}" data-name="${esc(x.username)}" title="ابطال نشست"><span class="material">block</span></button>` : '<span class="badge info">نشست شما</span>'}</td></tr>`).join("") : `<tr><td colspan="5" class="empty">نشستی فعال نیست</td></tr>`}</tbody>
         </table></div>
-        <h3 style="margin-top:16px"><span class="material" style="color:var(--primary)">security</span>گزارش رویدادهای امنیتی (۱۰۰ مورد اخیر)</h3>
-        <div class="feed" style="max-height:260px">
+        <h3><span class="material" style="color:var(--primary)">security</span>گزارش رویدادهای امنیتی (۱۰۰ مورد اخیر)</h3>
+        <div class="feed feed-audit">
           ${s.audit.length ? s.audit.map((a) => `
             <div class="feed-item">
               <span class="fi-dot" style="background:${a.action === "login_failed" ? "var(--error)" : "var(--tertiary-container)"}"></span>

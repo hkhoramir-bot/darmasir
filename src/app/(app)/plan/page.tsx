@@ -40,7 +40,7 @@ const PREFS: { id: Pref; label: string }[] = [
 
 const TRANSFER_WALK_MIN = 2;
 
-/* رنگ روشن برای نشان خط (مطابق الگوی صفحات دیگر متروجو) */
+/* رنگ روشن برای نشان خط (مطابق الگوی صفحات دیگر درمسیر) */
 const LINE_CHIP: Record<string, string> = {
   l1: "bg-red-50 text-red-800 dark:bg-red-500/15 dark:text-red-300",
   l2: "bg-blue-50 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300",
@@ -171,21 +171,21 @@ function StationField({
         autoFocus={open}
         placeholder={isFrom ? "ایستگاه مبدأ..." : "ایستگاه مقصد..."}
         aria-label={isFrom ? "ایستگاه مبدأ" : "ایستگاه مقصد"}
-        className="flex-1 min-w-0 bg-transparent text-body-md font-body-md font-medium text-on-surface placeholder:text-outline focus:outline-none border-none p-0"
+        className="flex-1 min-w-0 bg-transparent text-body-md font-body-md font-medium text-on-surface placeholder:text-on-surface-variant focus:outline-none border-none p-0"
       />
       {text && (
         <button
           type="button"
           aria-label="پاک کردن"
           onClick={() => onClear(field)}
-          className="text-outline hover:text-on-surface p-1 rounded-full hover:bg-surface-container-high transition-colors shrink-0 active:scale-95"
+          className="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-high transition-colors shrink-0 active:scale-95"
         >
           <MI name="close" size={16} />
         </button>
       )}
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/40 py-1 z-[60] text-xs">
-          {suggestions.length === 0 && <div className="px-3 py-2 text-outline">ایستگاهی یافت نشد</div>}
+          {suggestions.length === 0 && <div className="px-3 py-2 text-on-surface-variant">ایستگاهی یافت نشد</div>}
           {suggestions.map((s) => {
             const c = chipFor(s);
             return (
@@ -363,7 +363,7 @@ function LegArrivalPill({ leg }: { leg: RouteLeg }) {
         </span>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <span className="text-label-sm font-label-sm text-outline">شلوغی سکو:</span>
+        <span className="text-label-sm font-label-sm text-on-surface-variant">شلوغی سکو:</span>
         <span className={`text-label-sm font-label-sm font-bold px-1.5 py-0.5 rounded ${CROWD_CHIP[info.crowd]}`}>
           {info.crowdLabel}
         </span>
@@ -447,7 +447,7 @@ function LegAccordionRow({ leg }: { leg: RouteLeg }) {
           <MI
             name="expand_more"
             size={20}
-            className={`text-outline transition-transform duration-200 shrink-0 ${open ? "rotate-180" : ""}`}
+            className={`text-on-surface-variant transition-transform duration-200 shrink-0 ${open ? "rotate-180" : ""}`}
           />
         </button>
         {open && (
@@ -464,7 +464,7 @@ function LegAccordionRow({ leg }: { leg: RouteLeg }) {
                     <span className="w-1.5 h-1.5 rounded-full bg-outline-variant shrink-0" />
                     <span className="truncate">{name}</span>
                   </div>
-                  {hint && <span className="text-label-sm font-label-sm text-outline shrink-0">{hint}</span>}
+                  {hint && <span className="text-label-sm font-label-sm text-on-surface-variant shrink-0">{hint}</span>}
                 </div>
               );
             })}
@@ -503,7 +503,7 @@ function TransferNodeRow({ name, prevLeg, nextLeg }: { name: string; prevLeg: Ro
           <div className="min-w-0">
             <h3 className="text-title-md font-title-md font-bold text-on-surface truncate">{tName}</h3>
             {interLines.length > 1 && (
-              <span className="text-label-sm font-label-sm text-outline">
+              <span className="text-label-sm font-label-sm text-on-surface-variant">
                 ایستگاه تبادلی تقاطع {interLines.map((n) => `خط ${toFa(n)}`).join(" و ")}
               </span>
             )}
@@ -536,7 +536,7 @@ function TransferNodeRow({ name, prevLeg, nextLeg }: { name: string; prevLeg: Ro
             </span>
           </div>
           {helpOpen && (
-            <p className="text-body-sm font-body-sm text-outline mt-2 pt-2 border-t border-outline-variant/20">
+            <p className="text-body-sm font-body-sm text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/20">
               پس از پیاده شدن از خط {toFa(prevNo)}، تابلوهای راهنمای خط {toFa(nextNo)} به سمت {nextLeg.toName} را
               دنبال کنید.
             </p>
@@ -612,7 +612,7 @@ function JourneySection({
 }) {
   const headerChip =
     plan.pref === "least_transfers" ? "کم‌ترین تعویض خط" : plan.pref === "quietest" ? "کم‌ترین ازدحام" : "بهینه‌ترین مسیر";
-  const lastColor = plan.legs[plan.legs.length - 1]?.color ?? "#00417f";
+  const lastColor = plan.legs[plan.legs.length - 1]?.color ?? "#07805f";
 
   return (
     <section
@@ -924,12 +924,12 @@ function PlanInner() {
   const doShare = async () => {
     const text =
       fromStation && toStation
-        ? `مسیر ${fromStation.name} → ${toStation.name} — متروجو`
-        : "متروجو — مسیریابی هوشمند سفر";
+        ? `مسیر ${fromStation.name} → ${toStation.name} — درمسیر`
+        : "درمسیر — مسیریابی هوشمند سفر";
     const url = typeof window !== "undefined" ? window.location.href : "";
     try {
       if (navigator.share) {
-        await navigator.share({ title: "متروجو", text, url });
+        await navigator.share({ title: "درمسیر", text, url });
         return;
       }
       await navigator.clipboard.writeText(`${text} ${url}`);
@@ -986,27 +986,27 @@ function PlanInner() {
             {/* ---------- آمار کلی سفر ---------- */}
             <section className="grid grid-cols-3 gap-2" aria-label="آمار کلی سفر">
               <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-3 text-center shadow-sm flex flex-col justify-between h-24">
-                <span className="text-body-sm font-body-sm text-outline">زمان تقریبی</span>
+                <span className="text-body-sm font-body-sm text-on-surface-variant">زمان تقریبی</span>
                 <div className="text-title-md font-title-md font-bold text-primary flex items-center justify-center gap-1">
                   <span>{toFa(Math.round(plan.totalMinutes))}</span>
                   <span className="text-label-md font-label-md font-normal">دقیقه</span>
                 </div>
               </div>
               <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-3 text-center shadow-sm flex flex-col justify-between h-24">
-                <span className="text-body-sm font-body-sm text-outline">تعداد ایستگاه</span>
+                <span className="text-body-sm font-body-sm text-on-surface-variant">تعداد ایستگاه</span>
                 <div className="text-title-md font-title-md font-bold text-on-surface flex items-center justify-center gap-1">
                   <span>{toFa(plan.totalStations)}</span>
                   <span className="text-label-md font-label-md font-normal">ایستگاه</span>
                 </div>
               </div>
               <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-3 text-center shadow-sm flex flex-col justify-between h-24">
-                <span className="text-body-sm font-body-sm text-outline">تعویض خط</span>
+                <span className="text-body-sm font-body-sm text-on-surface-variant">تعویض خط</span>
                 <div className="flex flex-col items-center">
                   <span className="text-title-md font-title-md font-bold text-on-surface">
                     {plan.transfers === 0 ? "بدون تعویض" : `${toFa(plan.transfers)} بار`}
                   </span>
                   {plan.transfers > 0 && (
-                    <span className="text-label-sm font-label-sm text-outline truncate max-w-[85px]">
+                    <span className="text-label-sm font-label-sm text-on-surface-variant truncate max-w-[85px]">
                       ({plan.transferStations[0] ?? ""})
                     </span>
                   )}
@@ -1033,7 +1033,7 @@ function PlanInner() {
                 </div>
                 <div className="min-w-0">
                   <span className="text-label-lg font-label-lg text-on-surface font-bold">اعلام صوتی ایستگاه‌ها</span>
-                  <p className="text-body-sm font-body-sm text-outline">پخش هشدار قبل از ایستگاه تعویض خط و مقصد</p>
+                  <p className="text-body-sm font-body-sm text-on-surface-variant">پخش هشدار قبل از ایستگاه تعویض خط و مقصد</p>
                 </div>
               </div>
               <Switch checked={voiceOn} onChange={toggleVoice} label="اعلام صوتی ایستگاه‌ها" />
@@ -1085,10 +1085,10 @@ function PlanInner() {
                   </div>
                   <div className="min-w-0">
                     <span className="text-label-lg font-label-lg text-on-surface font-bold">بیدارباش مقصد</span>
-                    <p className="text-body-sm font-body-sm text-outline truncate">
+                    <p className="text-body-sm font-body-sm text-on-surface-variant truncate">
                       هشدار {toFa(alarm.minutes)} دقیقه پیش از رسیدن به {toStation?.name ?? "مقصد"}
                     </p>
-                    <p className="text-[10px] text-outline-variant mt-0.5 flex items-center gap-1">
+                    <p className="text-[10px] text-on-surface-variant mt-0.5 flex items-center gap-1">
                       <MI name="satellite_alt" size={12} className="shrink-0" />
                       با رصد GPS/اینترنت، رسیدن به هر ایستگاه لحظه‌ای اعلام می‌شود
                     </p>
@@ -1102,7 +1102,7 @@ function PlanInner() {
               </div>
               {alarm.on && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-label-sm font-label-sm text-outline shrink-0">زمان هشدار:</span>
+                  <span className="text-label-sm font-label-sm text-on-surface-variant shrink-0">زمان هشدار:</span>
                   {[1, 2, 3].map((m) => (
                     <button
                       key={m}
@@ -1172,7 +1172,7 @@ function PlanInner() {
               showCta
               onCta={submit}
             />
-            <p className="text-body-sm font-body-sm text-outline text-center px-4">
+            <p className="text-body-sm font-body-sm text-on-surface-variant text-center px-4">
               ایستگاه مبدأ و مقصد را انتخاب کنید تا سریع‌ترین مسیر با اعلام صوتی برایتان محاسبه شود.
             </p>
           </div>
